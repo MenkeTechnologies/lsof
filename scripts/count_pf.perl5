@@ -3,24 +3,29 @@
 # count_pf.perl5 -- run lsof in repeat mode and count processes and
 #		    files
 
-sub interrupt { print "\n"; exit 0; }
+sub interrupt {
+    print "\n";
+    exit 0;
+}
 
-$RPT = 15;				# lsof repeat time
+$RPT = 15; # lsof repeat time
 
 # Set path to lsof.
 
-if (($LSOF = &isexec("../lsof")) eq "") {	# Try .. first
-    if (($LSOF = &isexec("lsof")) eq "") {	# Then try . and $PATH
-	print "can't execute $LSOF\n"; exit 1
+if (($LSOF = &isexec("../lsof")) eq "") { # Try .. first
+    if (($LSOF = &isexec("lsof")) eq "") {
+                                          # Then try . and $PATH
+        print "can't execute $LSOF\n";
+        exit 1
     }
 }
 
 # Read lsof -nPF0 output repeatedly from a pipe.
 
-$| = 1;					# unbuffer output
-$SIG{'INT'} = 'interrupt';		# catch interrupt
+$| = 1;                    # unbuffer output
+$SIG{'INT'} = 'interrupt'; # catch interrupt
 $proc = $files = $tcp = $udp = 0;
-$progress="/";
+$progress = "/";
 open(P, "$LSOF -nPF0 -r $RPT|") || die "can't open pipe to $LSOF\n";
 
 LSOF_LINE:
@@ -29,40 +34,41 @@ while (<P>) {
     chop;
     if (/^m/) {
 
-    # A marker line signals the end of an lsof repetition.
+        # A marker line signals the end of an lsof repetition.
 
-	printf "%s  Processes: %5d,  Files: %6d,  TCP: %6d, UDP: %6d\r",
-	    $progress, $proc, $files, $tcp, $udp;
-	$proc = $files = $tcp = $udp = 0;
-	if ($progress eq "/") { $progress = "\\"; } else { $progress = "/"; }
-	next LSOF_LINE;
+        printf "%s  Processes: %5d,  Files: %6d,  TCP: %6d, UDP: %6d\r",
+            $progress, $proc, $files, $tcp, $udp;
+        $proc = $files = $tcp = $udp = 0;
+        if ($progress eq "/") {$progress = "\\";}
+        else {$progress = "/";}
+        next LSOF_LINE;
     }
     if (/^p/) {
 
-    # Count process.
+        # Count process.
 
-	$proc++;
-	next LSOF_LINE;
+        $proc++;
+        next LSOF_LINE;
     }
     if (/^f/) {
 
-    # Count files.
+        # Count files.
 
-	$files++;
-	@F = split("\0", $_, 999);
-	foreach $i (0 .. ($#F - 1)) {
+        $files++;
+        @F = split("\0", $_, 999);
+        foreach $i (0 .. ($#F - 1)) {
 
-	# Search for protocol field.
+            # Search for protocol field.
 
-	    if ($F[$i] =~ /^P(.*)/) {
+            if ($F[$i] =~ /^P(.*)/) {
 
-	    # Count instances of TCP and UDP protocols.
+                # Count instances of TCP and UDP protocols.
 
-		if ($1 eq "TCP") { $tcp++; }
-		elsif ($1 eq "UDP") { $udp++; }
-		next LSOF_LINE;
-	    }
-	}
+                if ($1 eq "TCP") {$tcp++;}
+                elsif ($1 eq "UDP") {$udp++;}
+                next LSOF_LINE;
+            }
+        }
     }
 }
 
@@ -80,15 +86,15 @@ isexec {
     my ($i, @P, $PATH);
 
     $path =~ s/^\s+|\s+$//g;
-    if ($path eq "") { return(""); }
+    if ($path eq "") {return("");}
     if (($path =~ m#^[\/\.]#)) {
-	if (-x $path) { return($path); }
-	return("");
+        if (-x $path) {return($path);}
+        return("");
     }
     $PATH = $ENV{PATH};
     @P = split(":", $PATH);
     for ($i = 0; $i <= $#P; $i++) {
-	if (-x "$P[$i]/$path") { return("$P[$i]/$path"); }
+        if (-x "$P[$i]/$path") {return("$P[$i]/$path");}
     }
     return("");
 }

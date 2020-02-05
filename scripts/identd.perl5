@@ -24,9 +24,11 @@ require 'getopts.pl';
 
 # Set path to lsof.
 
-if (($LSOF = &isexec("../lsof")) eq "") {	# Try .. first
-    if (($LSOF = &isexec("lsof")) eq "") {	# Then try . and $PATH
-	print "can't execute $LSOF\n"; exit 1
+if (($LSOF = &isexec("../lsof")) eq "") { # Try .. first
+    if (($LSOF = &isexec("lsof")) eq "") {
+                                          # Then try . and $PATH
+        print "can't execute $LSOF\n";
+        exit 1
     }
 }
 
@@ -47,7 +49,7 @@ $peer_addr = inet_ntoa($iaddr);
 # read ident-query from socket (STDIN) with a timeout.
 $timeout = int($Timeout);
 eval {
-    local $SIG{ALRM} = sub { die "alarm\n" };
+    local $SIG{ALRM} = sub {die "alarm\n"};
     alarm $timeout;
     $query = <STDIN>;
     alarm 0;
@@ -63,29 +65,31 @@ $query =~ s/\s//g;
 
 $serv_port = "";
 $cli_port = "";
-($serv_port,$cli_port) = split(/,/,$query);
+($serv_port, $cli_port) = split(/,/, $query);
 
 if ($serv_port =~ /^[0-9]+$/) {
     if (int($serv_port) < 1 || int($serv_port) > 65535) {
-        print $query." : ERROR : INVALID-PORT"."\n";
+        print $query . " : ERROR : INVALID-PORT" . "\n";
         exit;
     }
-} else {
-    print $query." : ERROR : INVALID-PORT"."\n";
+}
+else {
+    print $query . " : ERROR : INVALID-PORT" . "\n";
     exit;
 }
 
 if ($cli_port =~ /^[0-9]+$/) {
     if (int($cli_port) < 1 || int($cli_port) > 65535) {
-        print $query." : ERROR : INVALID-PORT"."\n";
+        print $query . " : ERROR : INVALID-PORT" . "\n";
         exit;
     }
-} else {
-    print $query." : ERROR : INVALID-PORT"."\n";
+}
+else {
+    print $query . " : ERROR : INVALID-PORT" . "\n";
     exit;
 }
 
-open(LSOFP,"$LSOF -nPDi -T -FLn -iTCP@".$peer_addr.":".$cli_port."|");
+open(LSOFP, "$LSOF -nPDi -T -FLn -iTCP@" . $peer_addr . ":" . $cli_port . "|");
 
 $user = "UNKNOWN";
 while ($a_line = <LSOFP>) {
@@ -96,12 +100,12 @@ while ($a_line = <LSOFP>) {
 
     # make sure local port matches.
     if ($a_line =~ /^n.*:\Q$serv_port->/) {
-        print $serv_port.", ".$cli_port." : USERID : UNIX :".$user."\n";
+        print $serv_port . ", " . $cli_port . " : USERID : UNIX :" . $user . "\n";
         exit;
     }
 }
 
-print $serv_port.", ".$cli_port." : ERROR : NO-USER"."\n";
+print $serv_port . ", " . $cli_port . " : ERROR : NO-USER" . "\n";
 
 
 ## isexec($path) -- is $path executable
@@ -117,15 +121,15 @@ isexec {
     my ($i, @P, $PATH);
 
     $path =~ s/^\s+|\s+$//g;
-    if ($path eq "") { return(""); }
+    if ($path eq "") {return("");}
     if (($path =~ m#^[\/\.]#)) {
-	if (-x $path) { return($path); }
-	return("");
+        if (-x $path) {return($path);}
+        return("");
     }
     $PATH = $ENV{PATH};
     @P = split(":", $PATH);
     for ($i = 0; $i <= $#P; $i++) {
-	if (-x "$P[$i]/$path") { return("$P[$i]/$path"); }
+        if (-x "$P[$i]/$path") {return("$P[$i]/$path");}
     }
     return("");
 }

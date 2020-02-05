@@ -35,8 +35,8 @@
  */
 
 
-#if	!defined(NETBSD_LSOF_H)
-#define	NETBSD_LSOF_H	1
+#if    !defined(NETBSD_LSOF_H)
+#define    NETBSD_LSOF_H    1
 
 #include <stdlib.h>
 #include <dirent.h>
@@ -47,19 +47,19 @@
 #include <string.h>
 #include <unistd.h>
 
-# if	defined(HASGETBOOTFILE)
+# if    defined(HASGETBOOTFILE)
 #include <util.h>
-# endif	/* defined(HASGETBOOTFILE) */
+# endif    /* defined(HASGETBOOTFILE) */
 
 #include <sys/filedesc.h>
 #include <sys/mbuf.h>
-  
-# if	defined(HAS_LWP_H)
-#include <sys/lwp.h>
-# endif	/* defined(HAS_LWP_H) */
 
-# if	(defined(OPENBSDV) && OPENBSDV>=3030) \
-  ||	(defined(NETBSDV) && __NetBSD_Version__>=106060000)
+# if    defined(HAS_LWP_H)
+#include <sys/lwp.h>
+# endif    /* defined(HAS_LWP_H) */
+
+# if    (defined(OPENBSDV) && OPENBSDV >= 3030) \
+ || (defined(NETBSDV) && __NetBSD_Version__ >= 106060000)
 
 #  if	defined(OPENBSDV) ||  __NetBSD_Version__<399001100
 #define	_KERNEL
@@ -71,48 +71,48 @@ struct uio;	/* dummy for function prototype in <sys/buf.h> */
 #  endif	/* defined(NETBSDV && __NetBSD_Version__<399001100) */
 
 #include <sys/ucred.h>
-# endif	/* (defined(OPENBSDV) && OPENBSDV>=3030)
+# endif    /* (defined(OPENBSDV) && OPENBSDV>=3030)
 	   || (defined(NETBSDV) && __NetBSD_Version__>=106060000) */
 
-# if	defined(NETBSDV) && __NetBSD_Version__<399001100
+# if    defined(NETBSDV) && __NetBSD_Version__ < 399001100
 #include <sys/buf.h>
-# endif	/* defined(NETBSDV) && __NetBSD_Version__<399001100 */
+# endif    /* defined(NETBSDV) && __NetBSD_Version__<399001100 */
 
-# if	(defined(OPENBSDV) && OPENBSDV>=3030) \
-  ||	(defined(NETBSDV) && __NetBSD_Version__>=106060000 \
-  &&	__NetBSD_Version__<399001100)
+# if    (defined(OPENBSDV) && OPENBSDV >= 3030) \
+ || (defined(NETBSDV) && __NetBSD_Version__ >= 106060000 \
+ && __NetBSD_Version__ < 399001100)
 #undef	_KERNEL
-# endif	/* (defined(OPENBSDV) && OPENBSDV>=3030) \
+# endif    /* (defined(OPENBSDV) && OPENBSDV>=3030) \
 	   || (defined(NETBSDV) && __NetBSD_Version__>=106060000 \
 	   &&  __NetBSD_Version__<399001100) */
 
-#define	NFS
-#define m_stat	mnt_stat
+#define    NFS
+#define m_stat    mnt_stat
 
-# if	(defined(OPENBSDV) && OPENBSDV>=3030) \
-  ||	(defined(NETBSDV) && __NetBSD_Version__>=106060000)
+# if    (defined(OPENBSDV) && OPENBSDV >= 3030) \
+ || (defined(NETBSDV) && __NetBSD_Version__ >= 106060000)
 #define	_KERNEL
-# endif	/* (defined(OPENBSDV) && OPENBSDV<3030)
+# endif    /* (defined(OPENBSDV) && OPENBSDV<3030)
 	   || (defined(NETBSDV) && __NetBSD_Version__>=106060000) */
 
 #include <sys/mount.h>
 
-# if	(defined(OPENBSDV) && OPENBSDV>=3030) \
-  ||	(defined(NETBSDV) && __NetBSD_Version__>=106060000)
+# if    (defined(OPENBSDV) && OPENBSDV >= 3030) \
+ || (defined(NETBSDV) && __NetBSD_Version__ >= 106060000)
 #undef	_KERNEL
-# endif	/* (defined(OPENBSDV) && OPENBSDV>=3030)
+# endif    /* (defined(OPENBSDV) && OPENBSDV>=3030)
 	   || (defined(NETBSDV) && __NetBSD_Version__>=106060000) */
 
 #include <rpc/types.h>
 #include <sys/protosw.h>
 
-# if	defined(NETBSDV) && NETBSDV>=1003000
+# if    defined(NETBSDV) && NETBSDV >= 1003000
 #define	sockproto	NETBSD_sockproto
-# endif	/* defined(NETBSDV) && NETBSDV>=1003000 */
+# endif    /* defined(NETBSDV) && NETBSDV>=1003000 */
 
 #include <sys/socket.h>
 
-# if	defined(HASMSDOSFS)
+# if    defined(HASMSDOSFS)
 #  if	HASMSDOSFS==1
 #include <msdosfs/bpb.h>
 #include <msdosfs/fat.h>
@@ -144,7 +144,7 @@ struct uio;	/* dummy for function prototype in <sys/buf.h> */
 
 #include "netexport.h"
 #  endif	/* (defined(OPENBSDV) && OPENBSDV<3030)
-		   || (defined(NETBSDV) && __NetBSD_Version__<106060000) */
+           || (defined(NETBSDV) && __NetBSD_Version__<106060000) */
 
 #define	_KERNEL
 struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
@@ -152,11 +152,11 @@ struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
 #undef	_KERNEL
 #include <msdosfs/direntry.h>
 #include <msdosfs/denode.h>
-# endif	/* defined(HASMSDOSFS) */
+# endif    /* defined(HASMSDOSFS) */
 
-# if	defined(NETBSDV) && NETBSDV>=1003000
+# if    defined(NETBSDV) && NETBSDV >= 1003000
 #undef	sockproto
-# endif	/* defined(NETBSDV) && NETBSDV>=1003000 */
+# endif    /* defined(NETBSDV) && NETBSDV>=1003000 */
 
 #include <sys/socketvar.h>
 #include <sys/un.h>
@@ -165,10 +165,10 @@ struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 
-# if	defined(HASIPv6) && defined(NETBSDV) && !defined(HASINRIAIPv6)
+# if    defined(HASIPv6) && defined(NETBSDV) && !defined(HASINRIAIPv6)
 #include <netinet/ip6.h>
 #include <netinet6/in6_pcb.h>
-# endif	/* defined(HASIPv6) && defined(NETBSDV) && !defined(HASINRIAIPv6) */
+# endif    /* defined(HASIPv6) && defined(NETBSDV) && !defined(HASINRIAIPv6) */
 
 #include <net/route.h>
 #include <netinet/in_pcb.h>
@@ -179,7 +179,7 @@ struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
 
-# if	defined(OPENBSDV)
+# if    defined(OPENBSDV)
 #  if	!defined(TF_ECN_PERMIT)
 #define	TF_ECN_PERMIT	0x00008000	/* other side said I could ECN */
 #  endif	/* !defined(TF_ECN_PERMIT) */
@@ -196,22 +196,22 @@ struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
 #define	TF_DISABLE_ECN	0x00040000	/* disable ECN for this connection */
 #  endif	/* !defined(TF_DISABLE_ECN) */
 
-# endif	/* defined(OPENBSDV) */
+# endif    /* defined(OPENBSDV) */
 
 #include <sys/ucred.h>
 
-# if	defined(UVM)
+# if    defined(UVM)
 /*
  * Avoid conflicts with definitions in <vm/vm_param.h>.
  */
 
 #undef	FALSE
 #undef	TRUE
-# endif	/* defined(UVM) */
+# endif    /* defined(UVM) */
 
 #include <sys/vnode.h>
 
-# if	defined(NETBSDV) && NETBSDV>=1003000
+# if    defined(NETBSDV) && NETBSDV >= 1003000
 /*
  * Because late in the 1.3I NetBSD development cycle the sockproto structure
  * was placed under _KERNEL in <sys/socket.h>, and because defining _KERNEL
@@ -223,61 +223,70 @@ struct nameidata;	/* to satisfy a function prototype in msdosfsmount.h */
  */
 
 struct sockproto {
-	u_short sp_family;
-	u_short sp_protocol;
+    u_short sp_family;
+    u_short sp_protocol;
 };
-# endif	/* defined(NETBSDV) && NETBSDV>=1003000 */
+# endif    /* defined(NETBSDV) && NETBSDV>=1003000 */
 
 #include <net/raw_cb.h>
 #include <sys/domain.h>
-#define	pmap	RPC_pmap
+
+#define    pmap    RPC_pmap
+
 #include <rpc/rpc.h>
 #include <rpc/pmap_prot.h>
-#undef 	pmap
+
+#undef    pmap
 #define KERNEL
+
 #include <ufs/ufs/quota.h>
-# if	defined(DIRBLKSIZ)
+
+# if    defined(DIRBLKSIZ)
 #define	DIRENT_DIRBLKSIZ	DIRBLKSIZ
 #undef	DIRBLKSIZ
-# endif	/* defined(DIRBLKSIZ) */
+# endif    /* defined(DIRBLKSIZ) */
 
-# if	defined(HASI_FFS1)
+# if    defined(HASI_FFS1)
 #define	_KERNEL
 #include <ufs/ufs/ufsmount.h>
 #undef	_KERNEL
-# endif	/* defined(HASI_FFS1) */
+# endif    /* defined(HASI_FFS1) */
 
 #include <ufs/ufs/inode.h>
 
-# if	defined(DIRENT_BLKSIZ)
+# if    defined(DIRENT_BLKSIZ)
 #define	DIRBLKSIZ	DIRENT_DIRBLKSIZ
 #undef	DIRENT_DIRBLKSIZ
-# endif	/*defined(DIRENT_BLKSIZ) */
+# endif    /*defined(DIRENT_BLKSIZ) */
 
-# if	defined(HASBUFQ_H)
+# if    defined(HASBUFQ_H)
 #  if	defined(NETBSDV) && NETBSDV>=2099010
 #define	_KERNEL
 #include <sys/bufq.h>
 #undef	_KERNEL
 #  endif	/* defined(NETBSDV) && NETBSDV>=2099010 */
-#endif	/* defined(HASBUFQ_H) */
+#endif    /* defined(HASBUFQ_H) */
 
 #undef KERNEL
+
 #include <ufs/mfs/mfsnode.h>
 
-# if	defined(HASNFSPROTO)
+# if    defined(HASNFSPROTO)
 #include <nfs/rpcv2.h>
 #include <nfs/nfsproto.h>
 # else	/* !defined(HASNFSPROTO) */
+
 #include <nfs/nfsv2.h>
-# endif	/* defined(HASNFSPROTO) */
+
+# endif    /* defined(HASNFSPROTO) */
 
 #include <nfs/nfs.h>
 #include <nfs/nfsnode.h>
 #include <sys/proc.h>
 #include <kvm.h>
 #include <sys/sysctl.h>
-#  if	defined(HASKVMGETPROC2)
+
+#  if    defined(HASKVMGETPROC2)
 #define	P_ADDR		p_paddr
 #define	P_COMM		p_comm
 #define	P_CWDI		p_cwdi
@@ -290,26 +299,26 @@ struct sockproto {
 #define	P_UID		p_uid
 #define	P_VMSPACE	p_vmspace
 #  else	/* !defined(HASKVMGETPROC2) */
-#define	P_ADDR		kp_eproc.e_paddr
-#define	P_COMM		kp_proc.p_comm
-#define	P_CWDI		kp_proc.p_cwdi
-#define	P_FD		kp_proc.p_fd
-#define	P_PID		kp_proc.p_pid
-#define	P_PGID		kp_eproc.e_pgid
-#define	P_PPID		kp_eproc.e_ppid
-#define	P_STAT		kp_proc.p_stat
-#define	P_TRACEP	kp_proc.p_tracep
-#define	P_UID		kp_eproc.e_ucred.cr_uid
-#define	P_VMSPACE	kp_proc.p_vmspace
-#  endif	/* defined(HASKVMGETPROC2) */
+#define    P_ADDR        kp_eproc.e_paddr
+#define    P_COMM        kp_proc.p_comm
+#define    P_CWDI        kp_proc.p_cwdi
+#define    P_FD        kp_proc.p_fd
+#define    P_PID        kp_proc.p_pid
+#define    P_PGID        kp_eproc.e_pgid
+#define    P_PPID        kp_eproc.e_ppid
+#define    P_STAT        kp_proc.p_stat
+#define    P_TRACEP    kp_proc.p_tracep
+#define    P_UID        kp_eproc.e_ucred.cr_uid
+#define    P_VMSPACE    kp_proc.p_vmspace
+#  endif    /* defined(HASKVMGETPROC2) */
 
-# if	defined(HASFDESCFS)
+# if    defined(HASFDESCFS)
 #define	_KERNEL
 #include <miscfs/fdesc/fdesc.h>
 #undef	_KERNEL
-# endif	/* defined(HASFDESCFS) */
+# endif    /* defined(HASFDESCFS) */
 
-# if	defined(HASKERNFS)
+# if    defined(HASKERNFS)
 #define	_KERNEL
 #define	Pkern		__Pkern
 #define	Proot		__Proot
@@ -344,19 +353,19 @@ struct sockproto {
 #  if	defined(HASKERNFS_KFS_KT)
 #define	kf_kt	kfs_kt
 #  endif	/* defined(HASKERNFS_KFS_KT) */
-# endif	/* defined(HASKERNFS) */
+# endif    /* defined(HASKERNFS) */
 
-# if	defined(HASNULLFS)
+# if    defined(HASNULLFS)
 #define	_KERNEL
 #  if	defined(NETBSDV) && NETBSDV>=1005000 && __NetBSD_Version__<106060000
 #include "netexport.h"
 #  endif	/* defined(NETBSDV) && NETBSDV>=1005000
-		   && __NetBSD_Version__<106060000 */
+&& __NetBSD_Version__<106060000 */
 #include <miscfs/nullfs/null.h>
 #undef	_KERNEL
-# endif	/* defined(HASNULLFS) */
+# endif    /* defined(HASNULLFS) */
 
-# if	defined(HASPROCFS)
+# if    defined(HASPROCFS)
 #  if	defined(HASPROCFS_PFSROOT)
 #define	_KERNEL
 #  endif	/* defined(HASPROCFS_PFSROOT) */
@@ -385,96 +394,100 @@ struct sockproto {
 #   endif	/* defined(NetBSDV) */
 #  endif	/* defined(HASPROCFS_PFSROOT) */
 #include <machine/reg.h>
-# endif	/* defined(HASPROCFS) */
+# endif    /* defined(HASPROCFS) */
 
-# if	defined(HASPTYFS)
+# if    defined(HASPTYFS)
 #define	_KERNEL
 #include <fs/ptyfs/ptyfs.h>
 #include <miscfs/specfs/specdev.h>
 #undef	_KERNEL
-# endif	/* defined(HASPTYFS) */
+# endif    /* defined(HASPTYFS) */
 
-#define	KERNEL
+#define    KERNEL
 #define _KERNEL
+
 #include <sys/file.h>
 #include <sys/fcntl.h>
 
-# if	defined(HAS_ADVLOCK_ARGS)
+# if    defined(HAS_ADVLOCK_ARGS)
 struct vop_advlock_args;
-# endif	/* defined(HAS_ADVLOCK_ARGS) */
+# endif    /* defined(HAS_ADVLOCK_ARGS) */
 
-# if	defined(DTYPE_KQUEUE)
+# if    defined(DTYPE_KQUEUE)
 #define	HASKQUEUE				/* has the kqueue file type */
 #  if	defined(OPENBSDV)
 #include <sys/eventvar.h>
 #  endif	/* defined(OPENBSDV) */
-# endif	/* defined(DTYPE_KQUEUE) */
+# endif    /* defined(DTYPE_KQUEUE) */
 
 #include <sys/lockf.h>
-#undef	KERNEL
-#undef	_KERNEL
 
-# if	defined(UVM)
+#undef    KERNEL
+#undef    _KERNEL
+
+# if    defined(UVM)
 #  if	defined(OPENBSDV)
 #define	_UVM_UVM_FAULT_I_H_	1		/* avoid OpenBSD's
-						/* <uvm/uvm_fault_i.h */
+/* <uvm/uvm_fault_i.h */
 #  endif	/* defined(OPENBSDV) */
 #define	FALSE	0
 #define	TRUE	1
 #include <uvm/uvm.h>
-# endif	/* defined(UVM) */
+# endif    /* defined(UVM) */
 
-# if	defined(HAS_UVM_INCL)
+# if    defined(HAS_UVM_INCL)
 #include <uvm/uvm.h>
 #include <uvm/uvm_map.h>
 #include <uvm/uvm_object.h>
 #include <uvm/uvm_pager.h>
 # else	/* !defined(HAS_UVM_INCL) */
+
 #include <vm/vm.h>
 #include <vm/vm_map.h>
 #include <vm/vm_object.h>
 #include <vm/vm_pager.h>
-# endif	/* defined(HAS_UVM_INCL) */
 
-# if	defined(HAS_SYS_PIPEH)
+# endif    /* defined(HAS_UVM_INCL) */
+
+# if    defined(HAS_SYS_PIPEH)
 #  if	OPENBSDV==2030 && defined(__sparc__)
 #   if	defined(nbpg)
 #undef	nbpg
 #   endif	/* defined(nbpg) */
 #define	nbpg	4096		/* WARNING!!!  This should be 8192 for sun4,
-				 * but there's not much chance this value will
-				 * ever be used by any lsof code.  (See the
-				 * use of PIPE_NODIRECT in <sys/pipe.h>. */
+* but there's not much chance this value will
+* ever be used by any lsof code.  (See the
+* use of PIPE_NODIRECT in <sys/pipe.h>. */
 #  endif	/* OPENBSDV==2030 && defined(__sparc__) */
 #include <sys/pipe.h>
-#endif	/* defined(HAS_SYS_PIPEH) */
+#endif    /* defined(HAS_SYS_PIPEH) */
 
-#define	COMP_P		const void
-#define DEVINCR		1024	/* device table malloc() increment */
-typedef	u_long		KA_T;
-#define	KMEM		"/dev/kmem"
-#define MALLOC_P	void
-#define FREE_P		MALLOC_P
-#define MALLOC_S	size_t
+#define    COMP_P        const void
+#define DEVINCR        1024    /* device table malloc() increment */
+typedef u_long KA_T;
+#define    KMEM        "/dev/kmem"
+#define MALLOC_P    void
+#define FREE_P        MALLOC_P
+#define MALLOC_S    size_t
 
-# if	!defined(MAXSYSCMDL)
-#define	MAXSYSCMDL	MAXCOMLEN	/* max system command name length */
-# endif	/* !defined(MAXSYSCMDL) */
+# if    !defined(MAXSYSCMDL)
+#define    MAXSYSCMDL    MAXCOMLEN    /* max system command name length */
+# endif    /* !defined(MAXSYSCMDL) */
 
-# if	defined(N_UNIXV)
+# if    defined(N_UNIXV)
 #define	N_UNIX_TMP(x)	#x
 #define	N_UNIX_STR(x)	N_UNIX_TMP(x)
 #define	N_UNIX		N_UNIX_STR(N_UNIXV)
-# endif	/* defined(N_UNIXV) */
+# endif    /* defined(N_UNIXV) */
 
-#define QSORT_P		void
-#define	READLEN_T	int
-#define STRNCPY_L	size_t
-#define SWAP		"/dev/drum"
-#define	SZOFFTYPE	unsigned long long
-					/* size and offset internal storage
-					 * type */
-#define	SZOFFPSPEC	"ll"		/* SZOFFTYPE print specification
+#define QSORT_P        void
+#define    READLEN_T    int
+#define STRNCPY_L    size_t
+#define SWAP        "/dev/drum"
+#define    SZOFFTYPE    unsigned long long
+/* size and offset internal storage
+ * type */
+#define    SZOFFPSPEC    "ll"        /* SZOFFTYPE print specification
 					 * modifier */
 
 
@@ -487,55 +500,55 @@ extern kvm_t *Kd;
 extern KA_T Kpa;
 
 struct l_vfs {
-	KA_T addr;			/* kernel address */
-	fsid_t	fsid;			/* file system ID */
-	char type[MFSNAMELEN];		/* type of file system */
-	char *dir;			/* mounted directory */
-	char *fsname;			/* file system name */
-	struct l_vfs *next;		/* forward link */
+    KA_T addr;            /* kernel address */
+    fsid_t fsid;            /* file system ID */
+    char type[MFSNAMELEN];        /* type of file system */
+    char *dir;            /* mounted directory */
+    char *fsname;            /* file system name */
+    struct l_vfs *next;        /* forward link */
 };
 extern struct l_vfs *Lvfs;
 
 struct mounts {
-        char *dir;              	/* directory (mounted on) */
-	char *fsname;           	/* file system
+    char *dir;                /* directory (mounted on) */
+    char *fsname;            /* file system
 					 * (symbolic links unresolved) */
-	char *fsnmres;           	/* file system
+    char *fsnmres;            /* file system
 					 * (symbolic links resolved) */
-        dev_t dev;              	/* directory st_dev */
-	dev_t rdev;			/* directory st_rdev */
-	INODETYPE inode;		/* directory st_ino */
-	mode_t mode;			/* directory st_mode */
-	mode_t fs_mode;			/* file_system st_mode */
-        struct mounts *next;    	/* forward link */
+    dev_t dev;                /* directory st_dev */
+    dev_t rdev;            /* directory st_rdev */
+    INODETYPE inode;        /* directory st_ino */
+    mode_t mode;            /* directory st_mode */
+    mode_t fs_mode;            /* file_system st_mode */
+    struct mounts *next;        /* forward link */
 };
 
-#define	X_NCACHE	"ncache"
-#define	X_NCSIZE	"ncsize"
-#define	NL_NAME		n_name
+#define    X_NCACHE    "ncache"
+#define    X_NCSIZE    "ncsize"
+#define    NL_NAME        n_name
 
-extern int Np;				/* number of kernel processes */
+extern int Np;                /* number of kernel processes */
 
-# if	defined(HASKVMGETPROC2) 
+# if    defined(HASKVMGETPROC2)
 struct kinfo_proc2 *P;			/* local process table copy */
 # else	/* ! defined(HASKVMGETPROC2) */
-struct kinfo_proc *P;			/* local process table copy */
-# endif	/* defined(HASKVMGETPROC2) */
+struct kinfo_proc *P;            /* local process table copy */
+# endif    /* defined(HASKVMGETPROC2) */
 
-extern int pgshift;			/* kernel's page shift */
+extern int pgshift;            /* kernel's page shift */
 
 struct sfile {
-	char *aname;			/* argument file name */
-	char *name;			/* file name (after readlink()) */
-	char *devnm;			/* device name (optional) */
-	dev_t dev;			/* device */
-	dev_t rdev;			/* raw device */
-	u_short mode;			/* S_IFMT mode bits from stat() */
-	int type;			/* file type: 0 = file system
+    char *aname;            /* argument file name */
+    char *name;            /* file name (after readlink()) */
+    char *devnm;            /* device name (optional) */
+    dev_t dev;            /* device */
+    dev_t rdev;            /* raw device */
+    u_short mode;            /* S_IFMT mode bits from stat() */
+    int type;            /* file type: 0 = file system
 				 	 *	      1 = regular file */
-	INODETYPE i;			/* inode number */
-	int f;				/* file found flag */
-	struct sfile *next;		/* forward link */
+    INODETYPE i;            /* inode number */
+    int f;                /* file found flag */
+    struct sfile *next;        /* forward link */
 
 };
 
@@ -544,8 +557,8 @@ struct sfile {
  * Definitions for rdev.c
  */
 
-#define	DIRTYPE	dirent
-#define HASDNAMLEN	1	/* struct DIRTYPE has d_namlen element */
+#define    DIRTYPE    dirent
+#define HASDNAMLEN    1    /* struct DIRTYPE has d_namlen element */
 
 
 /*
@@ -581,4 +594,4 @@ struct sfile {
 #  endif	/* defined(HASNCVPID) */
 # endif  /* defined(HASNCACHE) */
 
-#endif	/* NETBSD_LSOF_H */
+#endif    /* NETBSD_LSOF_H */

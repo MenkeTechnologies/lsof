@@ -34,14 +34,14 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dnode1.c,v 1.10 2008/10/21 16:16:06 abe Exp abe $";
 #endif
 
 
 #include "lsof.h"
 
-#if	defined(HAS9660FS)
+#if    defined(HAS9660FS)
 
 /*
  * Do a little preparation for #include'ing cd9660_node.h, then #include it.
@@ -74,71 +74,71 @@ static char *rcsid = "$Id: dnode1.c,v 1.10 2008/10/21 16:16:06 abe Exp abe $";
 
 int
 read_iso_node(v, d, dd, ino, nl, sz)
-	struct vnode *v;		/* containing vnode */
-	dev_t *d;			/* returned device number */
-	int *dd;			/* returned device-defined flag */
-	INODETYPE *ino;			/* returned inode number */
-	long *nl;			/* returned number of links */
-	SZOFFTYPE *sz;			/* returned size */
+    struct vnode *v;		/* containing vnode */
+    dev_t *d;			/* returned device number */
+    int *dd;			/* returned device-defined flag */
+    INODETYPE *ino;			/* returned inode number */
+    long *nl;			/* returned number of links */
+    SZOFFTYPE *sz;			/* returned size */
 {
 
 # if	FREEBSDV<2000
-	struct iso_node *ip;
+    struct iso_node *ip;
 # else	/* FREEBSDV>=2000 */
-	struct iso_node i;
+    struct iso_node i;
 # endif	/* FREEBSDV<2000 */
 
 # if	FREEBSDV>=4000
 #  if	FREEBSDV<5000
-	struct specinfo udev;
+    struct specinfo udev;
 #  else	/* FREEBSDV>=5000 */
-	struct cdev udev;
+    struct cdev udev;
 #   if	defined(HAS_NO_ISO_DEV)
-	struct iso_mnt im;
+    struct iso_mnt im;
 #   endif	/* defined(HAS_NO_ISO_DEV) */
 #  endif	/* FREEBSDV<5000 */
 # endif	/* FREEBSDV>=4000 */
 
 # if	FREEBSDV<2000
-	ip = (struct iso_node *)v->v_data;
-	*d = ip->i_dev;
-	*dd = 1;
-	*ino = (INODETYPE)ip->i_number;
-	*nl = (long)ip->inode.iso_links;
-	*sz = (SZOFFTYPE)ip->i_size;
+    ip = (struct iso_node *)v->v_data;
+    *d = ip->i_dev;
+    *dd = 1;
+    *ino = (INODETYPE)ip->i_number;
+    *nl = (long)ip->inode.iso_links;
+    *sz = (SZOFFTYPE)ip->i_size;
 # else	/* FREEBSDV>=2000 */
-	if (!v->v_data
-	||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-	    return(1);
+    if (!v->v_data
+    ||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return(1);
 
 # if	FREEBSDV>=4000
 #  if	defined(HAS_NO_ISO_DEV)
-	if (i.i_mnt && !kread((KA_T)i.i_mnt, (char *)&im, sizeof(im))
-	&&  im.im_dev && !kread((KA_T)im.im_dev, (char *)&udev, sizeof(udev)))
+    if (i.i_mnt && !kread((KA_T)i.i_mnt, (char *)&im, sizeof(im))
+    &&  im.im_dev && !kread((KA_T)im.im_dev, (char *)&udev, sizeof(udev)))
 #  else	/* !defined(HAS_NO_ISO_DEV) */
-	if (i.i_dev && !kread((KA_T)i.i_dev, (char *)&udev, sizeof(udev)))
+    if (i.i_dev && !kread((KA_T)i.i_dev, (char *)&udev, sizeof(udev)))
 #  endif	/* defined(HAS_NO_ISO_DEV) */
 
-	{
+    {
 
 # if	defined(HAS_NO_SI_UDEV)
-	    *d = Dev2Udev(&udev);
+        *d = Dev2Udev(&udev);
 # else	/* !defined(HAS_NO_SI_UDEV) */
-	    *d = udev.si_udev;
+        *d = udev.si_udev;
 # endif	/* defined(HAS_NO_SI_UDEV) */
 
-	    *dd = 1;
-	}
+        *dd = 1;
+    }
 # else	/* FREEBSDV<4000 */
-	*d = i.i_dev;
-	*dd = 1;
+    *d = i.i_dev;
+    *dd = 1;
 # endif	/* FREEBSDV>=4000 */
 
-	*ino = (INODETYPE)i.i_number;
-	*nl = (long)i.inode.iso_links;
-	*sz = (SZOFFTYPE)i.i_size;
+    *ino = (INODETYPE)i.i_number;
+    *nl = (long)i.inode.iso_links;
+    *sz = (SZOFFTYPE)i.i_size;
 # endif	/* FREEBSDV<2000 */
 
-	return(0);
+    return(0);
 }
-#endif	/* defined(HAS9660FS) */
+#endif    /* defined(HAS9660FS) */

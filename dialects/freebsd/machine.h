@@ -35,16 +35,16 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 #include <sys/types.h>
 
-# if	defined(HAS_CONF_MINOR)
+# if    defined(HAS_CONF_MINOR)
 #undef	minor
-# endif	/* defined(HAS_CONF_MINOR) */
+# endif    /* defined(HAS_CONF_MINOR) */
 
-#if	defined(HASCPUMASK_T)
+#if    defined(HASCPUMASK_T)
 /*
  * In FreeBSD >= 5.2 when the cpumask_t typedef is present, it may be defined
  * in <sys/types.h> only if _KERNEL is predefined.  However, predefining
@@ -60,7 +60,7 @@
  */
 
 typedef	__cpumask_t	cpumask_t;
-#endif	/* defined(HASCPUMASK_T) */
+#endif    /* defined(HASCPUMASK_T) */
 
 #include <sys/param.h>
 
@@ -70,7 +70,7 @@ typedef	__cpumask_t	cpumask_t;
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define	CAN_USE_CLNT_CREATE	1
+#define    CAN_USE_CLNT_CREATE    1
 
 
 /*
@@ -78,7 +78,7 @@ typedef	__cpumask_t	cpumask_t;
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -103,9 +103,9 @@ typedef	__cpumask_t	cpumask_t;
  * recorded in BDevtp[].
  */
 
-# if	FREEBSDV<4000
-#define	HASBLKDEV	1
-# endif	/* FREEBSDV<4000 */
+# if    FREEBSDV < 4000
+#define    HASBLKDEV    1
+# endif    /* FREEBSDV<4000 */
 
 
 /*
@@ -133,10 +133,10 @@ typedef	__cpumask_t	cpumask_t;
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -175,7 +175,7 @@ typedef	__cpumask_t	cpumask_t;
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -202,7 +202,7 @@ typedef	__cpumask_t	cpumask_t;
  * use readinode() from node.c.
  */
 
-#define	HASINODE	1
+#define    HASINODE    1
 
 
 /*
@@ -218,7 +218,7 @@ typedef	__cpumask_t	cpumask_t;
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -226,7 +226,7 @@ typedef	__cpumask_t	cpumask_t;
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -273,7 +273,7 @@ typedef	__cpumask_t	cpumask_t;
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -286,7 +286,7 @@ typedef	__cpumask_t	cpumask_t;
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -296,7 +296,7 @@ typedef	__cpumask_t	cpumask_t;
  * kernel symbols.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -307,9 +307,9 @@ typedef	__cpumask_t	cpumask_t;
  * NOTE: don't forget to define a prototype for this function in dproto.h.
  */
 
-# if	FREEBSDV>=2020
+# if    FREEBSDV >= 2020
 #define	HASPIPEFN	process_pipe
-# endif	/* FREEBSDV>=2020 */
+# endif    /* FREEBSDV>=2020 */
 
 
 /*
@@ -332,9 +332,9 @@ typedef	__cpumask_t	cpumask_t;
  * the parent process IDentifier (PPID) of a process.
  */
 
-# if	FREEBSDV>=2000
+# if    FREEBSDV >= 2000
 #define	HASPPID		1
-# endif	/* FREEBSDV>=2000 */
+# endif    /* FREEBSDV>=2000 */
 
 
 /*
@@ -413,17 +413,17 @@ typedef	__cpumask_t	cpumask_t;
  * by inode number.
  */
 
-# if	defined(HASPROCFS)
+# if    defined(HASPROCFS)
 #undef	HASPROCFS
 #define	HASPROCFS	"proc"
-# endif	/* defined(HASPROCFS) */
+# endif    /* defined(HASPROCFS) */
 
 /* #define		HASPROCFS	"proc?" */
 /* #define		HASFSTYPE	1 */
 
-# if	FREEBSDV>=2000
+# if    FREEBSDV >= 2000
 #define	HASPINODEN	1
-# endif	/* FREEBSDV>=2000 */
+# endif    /* FREEBSDV>=2000 */
 
 
 /*
@@ -462,11 +462,11 @@ typedef	__cpumask_t	cpumask_t;
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	FREEBSDV>=5200
+# if    FREEBSDV >= 5200
 #define	HASWIDECHAR	1
-# endif	/* FREEBSDV>=5020 */
+# endif    /* FREEBSDV>=5020 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -491,9 +491,9 @@ typedef	__cpumask_t	cpumask_t;
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -526,7 +526,7 @@ typedef	__cpumask_t	cpumask_t;
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -543,7 +543,7 @@ typedef	__cpumask_t	cpumask_t;
  * speed improvements.
  */
 
-#define	HASTCPUDPSTATE	1
+#define    HASTCPUDPSTATE    1
 
 
 /*
@@ -560,7 +560,7 @@ typedef	__cpumask_t	cpumask_t;
  * doesn't.
  */
 
-#define	HASVNODE	1
+#define    HASVNODE    1
 
 
 /*
@@ -581,9 +581,9 @@ typedef	__cpumask_t	cpumask_t;
  * These are defined here, because they must be used in dlsof.h.
  */
 
-#define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
-#define	INODEPSPEC	"ll"	 	/* INODETYPE printf specification
+#define    INODETYPE    unsigned long long
+/* inode number internal storage type */
+#define    INODEPSPEC    "ll"        /* INODETYPE printf specification
 					 * modifier */
 
 
@@ -592,7 +592,7 @@ typedef	__cpumask_t	cpumask_t;
  * as a function argument.
  */
 
-#define	UID_ARG	int
+#define    UID_ARG    int
 
 
 /*
@@ -604,27 +604,27 @@ typedef	__cpumask_t	cpumask_t;
  * header files.
  */
 
-#define	USE_LIB_CKKV				1	/* ckkv.c */
+#define    USE_LIB_CKKV                1    /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
-#define	USE_LIB_PROCESS_FILE			1	/* prfp.c */
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
-#define	USE_LIB_READDEV				1	/* rdev.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
+#define    USE_LIB_PROCESS_FILE            1    /* prfp.c */
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 
-# if	FREEBSDV<2010
-#define	USE_LIB_RNAM				1	/* rnam.c */
+# if    FREEBSDV < 2010
+#define    USE_LIB_RNAM                1    /* rnam.c */
 # else	/* FREEBSDV>=2010 */
 #define	USE_LIB_RNMH				1	/* rnmh.c */
-# endif	/* FREEBSDV<2010 */
+# endif    /* FREEBSDV<2010 */
 
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define	snpf	snprintf	   /* use the system's snprintf() */
+#define    snpf    snprintf       /* use the system's snprintf() */
 
 
 /*
@@ -633,7 +633,7 @@ typedef	__cpumask_t	cpumask_t;
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define	WARNDEVACCESS	1
+#define    WARNDEVACCESS    1
 
 
 /*
@@ -650,13 +650,13 @@ typedef	__cpumask_t	cpumask_t;
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)	memset(a, 0, l)
+#define    zeromem(a, l)    memset(a, 0, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

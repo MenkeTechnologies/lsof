@@ -33,12 +33,12 @@
 
 # Initialize variables.
 
-$fhdr = 0;							# fd hdr. flag
-$fdst = 0;							# fd state
-$access = $devch = $devn = $fd = $inode = $lock = $name = "";	# | file descr.
-$offset = $proto = $size = $state = $stream = $type = "";	# | variables
-$pidst = 0;							# process state
-$cmd = $login = $pgrp = $pid = $ppid = $uid = "";		# process var.
+$fhdr = 0;                                                    # fd hdr. flag
+$fdst = 0;                                                    # fd state
+$access = $devch = $devn = $fd = $inode = $lock = $name = ""; # | file descr.
+$offset = $proto = $size = $state = $stream = $type = "";     # | variables
+$pidst = 0;                                                   # process state
+$cmd = $login = $pgrp = $pid = $ppid = $uid = "";             # process var.
 
 # Process the ``lsof -F'' output a line at a time, gathering
 # the variables for a process together before printing them;
@@ -49,66 +49,117 @@ while (<>) {
     chop;
     if (/^p(.*)/) {
 
-# A process set begins with a PID field whose ID character is `p'.
+        # A process set begins with a PID field whose ID character is `p'.
 
-	$tpid = $1;
-	if ($pidst) { &list_proc }
-	$pidst = 1;
-	$pid = $tpid;
-	if ($fdst) { &list_fd; $fdst = 0; }
-	next;
+        $tpid = $1;
+        if ($pidst) {&list_proc}
+        $pidst = 1;
+        $pid = $tpid;
+        if ($fdst) {
+            &list_fd;
+            $fdst = 0;
+        }
+        next;
     }
 
-# Save process-related values.
+    # Save process-related values.
 
-    if (/^g(.*)/) { $pgrp = $1; next; }
-    if (/^c(.*)/) { $cmd = $1; next; }
-    if (/^u(.*)/) { $uid = $1; next; }
-    if (/^L(.*)/) { $login = $1; next; }
-    if (/^R(.*)/) { $ppid = $1; next; }
+    if (/^g(.*)/) {
+        $pgrp = $1;
+        next;
+    }
+    if (/^c(.*)/) {
+        $cmd = $1;
+        next;
+    }
+    if (/^u(.*)/) {
+        $uid = $1;
+        next;
+    }
+    if (/^L(.*)/) {
+        $login = $1;
+        next;
+    }
+    if (/^R(.*)/) {
+        $ppid = $1;
+        next;
+    }
 
-# A file descriptor set begins with a file descriptor field whose ID
-# character is `f'.
+    # A file descriptor set begins with a file descriptor field whose ID
+    # character is `f'.
 
     if (/^f(.*)/) {
-	$tfd = $1;
-	if ($pidst) { &list_proc }
-	if ($fdst) { &list_fd }
-	$fd = $tfd;
-	$fdst = 1;
-	next;
+        $tfd = $1;
+        if ($pidst) {&list_proc}
+        if ($fdst) {&list_fd}
+        $fd = $tfd;
+        $fdst = 1;
+        next;
     }
 
-# Save file set information.
+    # Save file set information.
 
-    if (/^a(.*)/) { $access = $1; next; }
-    if (/^C(.*)/) { next; }
-    if (/^d(.*)/) { $devch = $1; next; }
-    if (/^D(.*)/) { $devn = $1; next; }
-    if (/^F(.*)/) { next; }
-    if (/^G(.*)/) { next; }
-    if (/^i(.*)/) { $inode = $1; next; }
-    if (/^k(.*)/) { next; }
-    if (/^l(.*)/) { $lock = $1; next; }
-    if (/^N(.*)/) { next; }
-    if (/^o(.*)/) { $offset = $1; next; }
-    if (/^P(.*)/) { $proto = $1; next; }
-    if (/^s(.*)/) { $size = $1; next; }
-    if (/^S(.*)/) { $stream = $1; next; }
-    if (/^t(.*)/) { $type = $1; next; }
+    if (/^a(.*)/) {
+        $access = $1;
+        next;
+    }
+    if (/^C(.*)/) {next;}
+    if (/^d(.*)/) {
+        $devch = $1;
+        next;
+    }
+    if (/^D(.*)/) {
+        $devn = $1;
+        next;
+    }
+    if (/^F(.*)/) {next;}
+    if (/^G(.*)/) {next;}
+    if (/^i(.*)/) {
+        $inode = $1;
+        next;
+    }
+    if (/^k(.*)/) {next;}
+    if (/^l(.*)/) {
+        $lock = $1;
+        next;
+    }
+    if (/^N(.*)/) {next;}
+    if (/^o(.*)/) {
+        $offset = $1;
+        next;
+    }
+    if (/^P(.*)/) {
+        $proto = $1;
+        next;
+    }
+    if (/^s(.*)/) {
+        $size = $1;
+        next;
+    }
+    if (/^S(.*)/) {
+        $stream = $1;
+        next;
+    }
+    if (/^t(.*)/) {
+        $type = $1;
+        next;
+    }
     if (/^T(.*)/) {
-	if ($state eq "") { $state = "(" . $1; }
-	else { $state = $state . " " . $1; }
-	next;
+        if ($state eq "") {$state = "(" . $1;}
+        else {$state = $state . " " . $1;}
+        next;
     }
-    if (/^n(.*)/) { $name = $1; next; }
+    if (/^n(.*)/) {
+        $name = $1;
+        next;
+    }
     print "ERROR: unrecognized: \"$_\"\n";
 }
 
 # Flush any stored file or process output.
 
-if ($fdst) { &list_fd }
-if ($pidst) { &list_proc }
+if ($fdst) {&list_fd}
+if ($pidst) {&list_proc}
 exit(0);
 
 
@@ -116,25 +167,30 @@ exit(0);
 #	      Values are stored inelegantly in global variables.
 
 sub list_fd {
-    if ( ! $fhdr) {
+    if (!$fhdr) {
 
-    # Print header once.
+        # Print header once.
 
-	print "      FD   TYPE      DEVICE   SIZE/OFF      INODE  NAME\n";
-	$fhdr = 1;
+        print "      FD   TYPE      DEVICE   SIZE/OFF      INODE  NAME\n";
+        $fhdr = 1;
     }
     printf "    %4s%1.1s%1.1s %4.4s", $fd, $access, $lock, $type;
-    $tmp = $devn; if ($devch ne "") { $tmp = $devch }
+    $tmp = $devn;
+    if ($devch ne "") {$tmp = $devch}
     printf "  %10.10s", $tmp;
-    $tmp = $size; if ($offset ne "") { $tmp = $offset }
+    $tmp = $size;
+    if ($offset ne "") {$tmp = $offset}
     printf " %10.10s", $tmp;
-    $tmp = $inode; if ($proto ne "") { $tmp = $proto }
+    $tmp = $inode;
+    if ($proto ne "") {$tmp = $proto}
     printf " %10.10s", $tmp;
-    $tmp = $stream; if ($name ne "") { $tmp = $name }
+    $tmp = $stream;
+    if ($name ne "") {$tmp = $name}
     print "  ", $tmp;
-    if ($state ne "") { printf " %s)\n", $state; } else { print "\n"; }
+    if ($state ne "") {printf " %s)\n", $state;}
+    else {print "\n";}
 
-# Clear variables.
+    # Clear variables.
 
     $access = $devch = $devn = $fd = $inode = $lock = $name = "";
     $offset = $proto = $size = $state = $stream = $type = "";
@@ -146,10 +202,11 @@ sub list_fd {
 
 sub list_proc {
     print "COMMAND       PID    PGRP    PPID  USER\n";
-    $tmp = $uid; if ($login ne "") {$tmp = $login }
+    $tmp = $uid;
+    if ($login ne "") {$tmp = $login}
     printf "%-9.9s  %6d  %6d  %6d  %s\n", $cmd, $pid, $pgrp, $ppid, $tmp;
 
-# Clear variables.
+    # Clear variables.
 
     $cmd = $login = $pgrp = $pid = $uid = "";
     $fhdr = $pidst = 0;

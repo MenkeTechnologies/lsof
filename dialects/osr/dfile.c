@@ -31,7 +31,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1995 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1995 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dfile.c,v 1.11 2000/12/04 14:32:49 abe Exp abe $";
 #endif
 
@@ -43,24 +43,23 @@ static char *rcsid = "$Id: dfile.c,v 1.11 2000/12/04 14:32:49 abe Exp abe $";
  */
 
 int
-get_max_fd()
-{
+get_max_fd() {
 
-#if	defined(F_GETHFDO) || defined(_SC_OPEN_MAX)
-	int nd;
-#endif	/* defined(F_GETHFDO) || defined(_SC_OPEN_MAX) */
+#if    defined(F_GETHFDO) || defined(_SC_OPEN_MAX)
+    int nd;
+#endif    /* defined(F_GETHFDO) || defined(_SC_OPEN_MAX) */
 
-#if	defined(F_GETHFDO)
-	if ((nd = fcntl(-1, F_GETHFDO, 0)) >= 0)
-	    return(nd);
-#endif	/* defined(F_GETHFDO) */
+#if    defined(F_GETHFDO)
+    if ((nd = fcntl(-1, F_GETHFDO, 0)) >= 0)
+        return(nd);
+#endif    /* defined(F_GETHFDO) */
 
-#if	defined(_SC_OPEN_MAX)
-	if ((nd = sysconf(_SC_OPEN_MAX)) >= 0)
-	    return(nd);
-#endif	/* defined(_SC_OPEN_MAX) */
+#if    defined(_SC_OPEN_MAX)
+    if ((nd = sysconf(_SC_OPEN_MAX)) >= 0)
+        return(nd);
+#endif    /* defined(_SC_OPEN_MAX) */
 
-	return(getdtablesize());
+    return (getdtablesize());
 }
 
 
@@ -70,15 +69,15 @@ get_max_fd()
 
 char *
 print_dev(lf, dev)
-	struct lfile *lf;		/* file whose device is to be printed */
-	dev_t *dev;			/* device to be printed */
+        struct lfile *lf;        /* file whose device is to be printed */
+        dev_t *dev;            /* device to be printed */
 {
-	static char buf[128];
+    static char buf[128];
 
-	(void) snpf(buf, sizeof(buf), "%d,%d",
-	    lf->is_nfs ? ((~(*dev >> 8)) & 0xff) : emajor(*dev),
-	    eminor(*dev));
-	return(buf);
+    (void) snpf(buf, sizeof(buf), "%d,%d",
+                lf->is_nfs ? ((~(*dev >> 8)) & 0xff) : emajor(*dev),
+                eminor(*dev));
+    return (buf);
 }
 
 
@@ -88,13 +87,13 @@ print_dev(lf, dev)
 
 char *
 print_ino(lf)
-	struct lfile *lf;		/* file whose device is to be printed */
+        struct lfile *lf;        /* file whose device is to be printed */
 {
-	static char buf[128];
+    static char buf[128];
 
-	(void) snpf(buf, sizeof(buf), (lf->inode & 0x80000000) ? "%#x" : "%lu",
-	    lf->inode);
-	return(buf);
+    (void) snpf(buf, sizeof(buf), (lf->inode & 0x80000000) ? "%#x" : "%lu",
+                lf->inode);
+    return (buf);
 }
 
 
@@ -104,58 +103,58 @@ print_ino(lf)
 
 void
 process_file(fp)
-	KA_T fp;		/* kernel file structure address */
+        KA_T fp;        /* kernel file structure address */
 {
-	struct file f;
-	int flag;
+    struct file f;
+    int flag;
 
-	if (kread(fp, (char *)&f, sizeof(f))) {
-	    (void) snpf(Namech, Namechl, "can't read file struct from %s",
-		print_kptr(fp, (char *)NULL, 0));
-	    enter_nm(Namech);
-	    return;
-	}
-	Lf->off = (SZOFFTYPE)f.f_offset;
+    if (kread(fp, (char *) &f, sizeof(f))) {
+        (void) snpf(Namech, Namechl, "can't read file struct from %s",
+                    print_kptr(fp, (char *) NULL, 0));
+        enter_nm(Namech);
+        return;
+    }
+    Lf->off = (SZOFFTYPE) f.f_offset;
 
-	if (f.f_count) {
+    if (f.f_count) {
 
-	/*
-	 * Construct access code.
-	 */
-	    if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
-		Lf->access = 'r';
-	    else if (flag == FWRITE)
-		Lf->access = 'w';
-	    else if (flag == (FREAD | FWRITE))
-		Lf->access = 'u';
-	/*
-	 * Process structure.
-	 */
+        /*
+         * Construct access code.
+         */
+        if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
+            Lf->access = 'r';
+        else if (flag == FWRITE)
+            Lf->access = 'w';
+        else if (flag == (FREAD | FWRITE))
+            Lf->access = 'u';
+        /*
+         * Process structure.
+         */
 
-#if	defined(HASFSTRUCT)
-	/*
-	 * Save file structure values.
-	 */
-	    if (Fsv & FSV_CT) {
-		Lf->fct = (long)f.f_count;
-		Lf->fsv |= FSV_CT;
-	    }
-	    if (Fsv & FSV_FA) {
-		Lf->fsa = fp;
-		Lf->fsv |= FSV_FA;
-	    }
-	    if (Fsv & FSV_FG) {
-		Lf->ffg = (long)f.f_flag;
-		Lf->fsv |= FSV_FG;
-	    }
-	    if (Fsv & FSV_NI) {
-		Lf->fna = (KA_T)f.f_inode;
-		Lf->fsv |= FSV_NI;
-	    }
-#endif	/* defined(HASFSTRUCT) */
+#if    defined(HASFSTRUCT)
+        /*
+         * Save file structure values.
+         */
+            if (Fsv & FSV_CT) {
+            Lf->fct = (long)f.f_count;
+            Lf->fsv |= FSV_CT;
+            }
+            if (Fsv & FSV_FA) {
+            Lf->fsa = fp;
+            Lf->fsv |= FSV_FA;
+            }
+            if (Fsv & FSV_FG) {
+            Lf->ffg = (long)f.f_flag;
+            Lf->fsv |= FSV_FG;
+            }
+            if (Fsv & FSV_NI) {
+            Lf->fna = (KA_T)f.f_inode;
+            Lf->fsv |= FSV_NI;
+            }
+#endif    /* defined(HASFSTRUCT) */
 
-	    process_node((KA_T)f.f_inode);
-	    return;
-	}
-	enter_nm("no more information");
+        process_node((KA_T) f.f_inode);
+        return;
+    }
+    enter_nm("no more information");
 }

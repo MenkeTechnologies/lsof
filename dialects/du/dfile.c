@@ -32,7 +32,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dfile.c,v 1.12 2001/08/14 12:40:12 abe Exp $";
 #endif
 
@@ -40,7 +40,7 @@ static char *rcsid = "$Id: dfile.c,v 1.12 2001/08/14 12:40:12 abe Exp $";
 #include "lsof.h"
 
 
-#if	defined(HASIPv6)
+#if    defined(HASIPv6)
 /*
  * gethostbyname2() -- an RFC2133-compatible get-host-by-name-two function
  *		       to get AF_INET and AF_INET6 addresses from host names,
@@ -49,21 +49,21 @@ static char *rcsid = "$Id: dfile.c,v 1.12 2001/08/14 12:40:12 abe Exp $";
 
 extern struct hostent *
 gethostbyname2(nm, prot)
-	char *nm;			/* host name */
-	int prot;			/* protocol -- AF_INET or AF_INET6 */
+    char *nm;			/* host name */
+    int prot;			/* protocol -- AF_INET or AF_INET6 */
 {
-	int err;
-	static struct hostent *hep = (struct hostent *)NULL;
+    int err;
+    static struct hostent *hep = (struct hostent *)NULL;
 
-	if (hep)
-	    (void) freehostent(hep);
-	hep = getipnodebyname(nm, prot, 0, &err);
-	return(hep);
+    if (hep)
+        (void) freehostent(hep);
+    hep = getipnodebyname(nm, prot, 0, &err);
+    return(hep);
 }
-#endif	/* defined(HASIPv6) */
+#endif    /* defined(HASIPv6) */
 
 
-#if	defined(HASPRIVNMCACHE)
+#if    defined(HASPRIVNMCACHE)
 /*
  * print_advfs_path() - print an ADVFS file path
  *
@@ -76,25 +76,25 @@ gethostbyname2(nm, prot)
 
 int
 print_advfs_path(lf)
-	struct lfile *lf;		/* file whose name is to be printed */
+    struct lfile *lf;		/* file whose name is to be printed */
 {
-	char buf[MAXPATHLEN+1];
-	mlBfTagT t2pb;
+    char buf[MAXPATHLEN+1];
+    mlBfTagT t2pb;
 /*
  * Print any non-NULL path returned by tag_to_path() for ADVFS files that
  * have sequence and inode numbers.
  */
-	if (!lf->advfs_seq_stat || lf->inp_ty != 1 || !lf->fsdir || !*lf->fsdir)
-	    return(0);
-	t2pb.ml_ino = (int)lf->inode;
-	t2pb.ml_seq = lf->advfs_seq;
-	if (tag_to_path(lf->fsdir, t2pb, MAXPATHLEN, buf) || !*buf)
-	    return(0);
-	buf[MAXPATHLEN] = '\0';
-	safestrprt((buf[0] == '/' && buf[1] == '/') ? &buf[1] : buf, stdout, 0);
-	return(1);
+    if (!lf->advfs_seq_stat || lf->inp_ty != 1 || !lf->fsdir || !*lf->fsdir)
+        return(0);
+    t2pb.ml_ino = (int)lf->inode;
+    t2pb.ml_seq = lf->advfs_seq;
+    if (tag_to_path(lf->fsdir, t2pb, MAXPATHLEN, buf) || !*buf)
+        return(0);
+    buf[MAXPATHLEN] = '\0';
+    safestrprt((buf[0] == '/' && buf[1] == '/') ? &buf[1] : buf, stdout, 0);
+    return(1);
 }
-#endif	/* defined(HASPRIVNMCACHE) */
+#endif    /* defined(HASPRIVNMCACHE) */
 
 
 /*
@@ -103,16 +103,16 @@ print_advfs_path(lf)
 
 char *
 print_dev(lf, dev)
-	struct lfile *lf;		/* file whose device is to be printed */
-	dev_t *dev;			/* device to be printed */
+        struct lfile *lf;        /* file whose device is to be printed */
+        dev_t *dev;            /* device to be printed */
 {
-	static char buf[128];
+    static char buf[128];
 
-	if (GET_MIN_DEV(*dev) > 9999999)
-	    (void) snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev),
-			GET_MIN_DEV(*dev));
-	else
-	    (void) snpf(buf, sizeof(buf), "%d,%d", GET_MAJ_DEV(*dev),
-			GET_MIN_DEV(*dev));
-	return(buf);
+    if (GET_MIN_DEV(*dev) > 9999999)
+        (void) snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev),
+                    GET_MIN_DEV(*dev));
+    else
+        (void) snpf(buf, sizeof(buf), "%d,%d", GET_MAJ_DEV(*dev),
+                    GET_MIN_DEV(*dev));
+    return (buf);
 }

@@ -37,11 +37,13 @@
  */
 
 
-#if	STEPV>=31
+#if    STEPV >= 31
 _PROTOTYPE(extern void clr_svnc,(void));
-#endif	/* STEPV>=31 */
+#endif    /* STEPV>=31 */
 
-_PROTOTYPE(extern int is_file_named,(char *p, int cd));
+_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+
+);
 
 #if     defined(HAS_AFS)
 _PROTOTYPE(extern struct vnode *alloc_vcache,(void));

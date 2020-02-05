@@ -35,21 +35,22 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
 #include <sys/types.h>
 
-#define	_KERNEL	1
+#define    _KERNEL    1
+
 #include <sys/signal.h>
 
-#if	DUV>=50000
+#if    DUV >= 50000
 #include <sys/resource.h>
 #include <sys/time.h>
-#endif	/* DUV>=50000 */
+#endif    /* DUV>=50000 */
 
-#undef	_KERNEL
+#undef    _KERNEL
 
 #include <sys/param.h>
 
@@ -59,9 +60,9 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#if	DUV>=40000
+#if    DUV >= 40000
 #define	CAN_USE_CLNT_CREATE	1
-#endif	/* DUV>=40000 */
+#endif    /* DUV>=40000 */
 
 
 /*
@@ -69,7 +70,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -97,11 +98,11 @@
  * and above.
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
-#if	DUV>=50000
+#if    DUV >= 50000
 #define	NOWARNBLKDEV	1
-#endif	/* DUV>=50000 */
+#endif    /* DUV>=50000 */
 
 
 /*
@@ -129,10 +130,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -155,7 +156,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -171,7 +172,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -198,7 +199,7 @@
  * use readinode() from node.c.
  */
 
-#define	HASINODE	1
+#define    HASINODE    1
 
 
 /*
@@ -214,7 +215,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -222,7 +223,7 @@
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -243,11 +244,11 @@
  * private lfile elements are used.
  */
 
-#if	defined(HASTAGTOPATH)
+#if    defined(HASTAGTOPATH)
 #define HASLFILEADD int advfs_seq; unsigned char advfs_seq_stat;
 /* #define CLRLFILEADD(lf)	(lf)->... = (type)NULL;	*/
 #define SETLFILEADD Lf->advfs_seq_stat = 0;
-#endif	/* defined(HASTAGTOPATH) */
+#endif    /* defined(HASTAGTOPATH) */
 
 
 /*
@@ -271,7 +272,7 @@
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -284,7 +285,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -294,7 +295,7 @@
    kernel symbols.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -328,7 +329,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -338,7 +339,7 @@
  * called from print_file().
  */
 
-#define	HASPRINTDEV	print_dev
+#define    HASPRINTDEV    print_dev
 /* #define	HASPRINTINO	print_ino?	*/
 /* #define	HASPRINTNM	print_nm?	*/
 /* #define	HASPRINTOFF	print_off?	*/
@@ -368,9 +369,9 @@
  * returns non-zero if it prints a name to stdout.
  */
 
-#if	defined(HASTAGTOPATH)
+#if    defined(HASTAGTOPATH)
 #define	HASPRIVNMCACHE	print_advfs_path
-#endif	/* defined(HASTAGTOPATH) */
+#endif    /* defined(HASTAGTOPATH) */
 
 
 /*
@@ -406,9 +407,9 @@
  * by inode number.
  */
 
-#define	HASPROCFS	"proc"
+#define    HASPROCFS    "proc"
 /* #define	HASFSTYPE	1 */
-#define	HASPINODEN	1
+#define    HASPINODEN    1
 
 
 /*
@@ -447,11 +448,11 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	DUV>=40000
+# if    DUV >= 40000
 #define	HASWIDECHAR	1
-# endif	/* DUV>=40000 */
+# endif    /* DUV>=40000 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -476,9 +477,9 @@
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -511,7 +512,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -561,7 +562,7 @@
  */
 
 /* #define	INODETYPE	unsigned long long */
-					/* inode number internal storage type */
+/* inode number internal storage type */
 /* #define	INODEPSPEC	"ll"	 * INODETYPE printf specification
 					 * modifier */
 
@@ -571,7 +572,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	uid_t
+#define    UID_ARG    uid_t
 
 
 /*
@@ -583,33 +584,33 @@
  * header files.
  */
 
-#define	USE_LIB_CKKV				1	/* ckkv.c */
+#define    USE_LIB_CKKV                1    /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
 /* #define	USE_LIB_PRINTDEVNAME		1	   pdvn.c */
-#define	USE_LIB_PROCESS_FILE			1	/* prfp.c */
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
+#define    USE_LIB_PROCESS_FILE            1    /* prfp.c */
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
 /* #define	USE_LIB_READDEV			1	   rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 
-# if	DUV<50100
-#define	USE_LIB_RNAM				1	/* rnam.c */
+# if    DUV < 50100
+#define    USE_LIB_RNAM                1    /* rnam.c */
 # else	/* DUV>=50100 */
 /* Tru64 UNIX 5.1 and above have private name cache functions -- see
  * ./dproc.c */
-# endif	/* DUV<50100 */
+# endif    /* DUV<50100 */
 
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 
-# if	DUV<50000
-#define	USE_LIB_SNPF				1	/* snpf.c */
+# if    DUV < 50000
+#define    USE_LIB_SNPF                1    /* snpf.c */
 # else	/* DUV>=50000 */
 #define	snpf	snprintf	   /* use the system's snprintf() */
-# endif	/* DUV<50000 */
+# endif    /* DUV<50000 */
 
 
 /*
@@ -618,7 +619,7 @@
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define	WARNDEVACCESS	1
+#define    WARNDEVACCESS    1
 
 
 /*
@@ -635,13 +636,13 @@
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)	bzero(a, l)
+#define    zeromem(a, l)    bzero(a, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

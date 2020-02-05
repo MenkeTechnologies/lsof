@@ -34,13 +34,13 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dnode1.c,v 1.3 2005/11/01 20:24:51 abe Exp $";
 #endif
 
 #include "lsof.h"
 
-#if	defined(HAS9660FS)
+#if    defined(HAS9660FS)
 
 /*
  * Do a little preparation for #include'ing cd9660_node.h, then #include it.
@@ -82,26 +82,26 @@ struct vop_unlock_args	 { int dummy; };
 
 int
 read_iso_node(v, d, dd, ino, nl, sz)
-	struct vnode *v;		/* containing vnode */
-	dev_t *d;			/* returned device number */
-	int *dd;			/* returned device-defined flag */
-	INODETYPE *ino;			/* returned inode number */
-	long *nl;			/* returned number of links */
-	SZOFFTYPE *sz;			/* returned size */
+    struct vnode *v;		/* containing vnode */
+    dev_t *d;			/* returned device number */
+    int *dd;			/* returned device-defined flag */
+    INODETYPE *ino;			/* returned inode number */
+    long *nl;			/* returned number of links */
+    SZOFFTYPE *sz;			/* returned size */
 {
 
-	struct iso_node i;
+    struct iso_node i;
 
-	if (!v->v_data
-	||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-	    return(1);
+    if (!v->v_data
+    ||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return(1);
 
-	*d = i.i_dev;
-	*dd = 1;
-	*ino = (INODETYPE)i.i_number;
-	*nl = (long)i.inode.iso_links;
-	*sz = (SZOFFTYPE)i.i_size;
+    *d = i.i_dev;
+    *dd = 1;
+    *ino = (INODETYPE)i.i_number;
+    *nl = (long)i.inode.iso_links;
+    *sz = (SZOFFTYPE)i.i_size;
 
-	return(0);
+    return(0);
 }
-#endif	/* defined(HAS9660FS) */
+#endif    /* defined(HAS9660FS) */

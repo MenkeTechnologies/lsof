@@ -35,8 +35,8 @@
  */
 
 
-#if	!defined(LSOF_TEST_H)
-#define	LSOF_TEST_H	1
+#if    !defined(LSOF_TEST_H)
+#define    LSOF_TEST_H    1
 
 
 /*
@@ -46,8 +46,8 @@
  * (With thanks to Andy Tanenbaum)
  */
 
-# if	defined(__STDC__)
-#define	_PROTOTYPE(function, params)	function params
+# if    defined(__STDC__)
+#define    _PROTOTYPE(function, params)    function params
 # else	/* !defined(__STDC__) */
 #define	_PROTOTYPE(function, params)	function()
 # endif /* defined(__STDC__) */
@@ -60,11 +60,11 @@
  * Paul Eggert <eggert@twinsun.com> supplied it.
  */
 
-# if	defined(__GNUC__) && !(__GNUC__<2 || (__GNUC__==2 && __GNUC_MINOR__<7))
-#define	exiting	__attribute__((__noreturn__))
+# if    defined(__GNUC__) && !(__GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 7))
+#define    exiting    __attribute__((__noreturn__))
 # else	/* !gcc || gcc<2.7 */
 #define	exiting
-# endif	/* gcc && gcc>=2.7 */
+# endif    /* gcc && gcc>=2.7 */
 
 
 /*
@@ -85,13 +85,13 @@
  * Definitions that may be revoked by a particular dialect.
  */
 
-#define	USE_GETCWD			/* use the POSIX getcwd() function in
+#define    USE_GETCWD            /* use the POSIX getcwd() function in
 					 * place of getwd() */
-#define	USE_LSOF_C_OPT			/* use lsof's -C option */
-#undef	USE_LSOF_X_OPT			/* don't use lsof's -X option */
+#define    USE_LSOF_C_OPT            /* use lsof's -C option */
+#undef    USE_LSOF_X_OPT            /* don't use lsof's -X option */
 
 
-# if	defined(LT_DIAL_aix)
+# if    defined(LT_DIAL_aix)
 /*
  * AIX-specific items
  */
@@ -103,10 +103,10 @@
 #include <sys/access.h>
 #undef	USE_LSOF_C_OPT
 #define	USE_LSOF_X_OPT
-# endif	/* defined(LT_DIAL_aix) */
+# endif    /* defined(LT_DIAL_aix) */
 
 
-# if	defined(LT_DIAL_bsdi)
+# if    defined(LT_DIAL_bsdi)
 /*
  * OpenBSD-specific items
  */
@@ -116,10 +116,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-# endif	/* defined(LT_DIAL_bsdi) */
+# endif    /* defined(LT_DIAL_bsdi) */
 
 
-# if	defined(LT_DIAL_darwin)
+# if    defined(LT_DIAL_darwin)
 /*
  * Darwin-specific items
  */
@@ -130,10 +130,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #undef	USE_LSOF_C_OPT
-# endif	/* defined(LT_DIAL_darwin) */
+# endif    /* defined(LT_DIAL_darwin) */
 
 
-# if	defined(LT_DIAL_du)
+# if    defined(LT_DIAL_du)
 /*
  * DEC_OSF/1|Digital_UNIX|Tru64_UNIX-specific items
  */
@@ -146,10 +146,10 @@
 # if	LT_VERS<50000
 #define	snprintf	snpf		/* use lsof's snpf() */
 # endif	/* LT_VERS<50000 */
-# endif	/* defined(LT_DIAL_du) */
+# endif    /* defined(LT_DIAL_du) */
 
 
-# if	defined(LT_DIAL_freebsd)
+# if    defined(LT_DIAL_freebsd)
 /*
  * FreeBSD-specific items
  */
@@ -159,10 +159,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-# endif	/* defined(LT_DIAL_freebsd) */
+# endif    /* defined(LT_DIAL_freebsd) */
 
 
-# if	defined(LT_DIAL_linux)
+# if    defined(LT_DIAL_linux)
 /*
  * Linux-specific items
  */
@@ -173,10 +173,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #undef	USE_LSOF_C_OPT
-# endif	/* defined(LT_DIAL_linux) */
+# endif    /* defined(LT_DIAL_linux) */
 
 
-# if	defined(LT_DIAL_hpux)
+# if    defined(LT_DIAL_hpux)
 /*
  * HP-UX-specific items
  */
@@ -186,10 +186,10 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-# endif	/* defined(LT_DIAL_hpux) */
+# endif    /* defined(LT_DIAL_hpux) */
 
 
-# if	defined(LT_DIAL_netbsd)
+# if    defined(LT_DIAL_netbsd)
 /*
  * NetBSD-specific items
  */
@@ -199,10 +199,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-# endif	/* defined(LT_DIAL_netbsd) */
+# endif    /* defined(LT_DIAL_netbsd) */
 
 
-# if	defined(LT_DIAL_openbsd)
+# if    defined(LT_DIAL_openbsd)
 /*
  * OpenBSD-specific items
  */
@@ -212,10 +212,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-# endif	/* defined(LT_DIAL_openbsd) */
+# endif    /* defined(LT_DIAL_openbsd) */
 
 
-# if	defined(LT_DIAL_ou)
+# if    defined(LT_DIAL_ou)
 /*
  * OpenUNIX-specific items
  */
@@ -224,10 +224,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-# endif	/* defined(LT_DIAL_ou) */
+# endif    /* defined(LT_DIAL_ou) */
 
 
-# if	defined(LT_DIAL_osr)
+# if    defined(LT_DIAL_osr)
 /*
  * OSR-specific items
  */
@@ -236,10 +236,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-# endif	/* defined(LT_DIAL_osr) */
+# endif    /* defined(LT_DIAL_osr) */
 
 
-# if	defined(LT_DIAL_ns)
+# if    defined(LT_DIAL_ns)
 /*
  * NEXTSTEP-specific items
  */
@@ -253,10 +253,10 @@ typedef int		pid_t;
 #define	snprintf	snpf
 
 #undef	USE_GETCWD
-# endif	/* defined(LT_DIAL_ns) */
+# endif    /* defined(LT_DIAL_ns) */
 
 
-# if	defined(LT_DIAL_solaris)
+# if    defined(LT_DIAL_solaris)
 /*
  * Solaris-specific items
  */
@@ -270,10 +270,10 @@ typedef int		pid_t;
 # if	defined(LT_VPATH)
 #undef	USE_LSOF_C_OPT
 #endif	/* defined(LT_VPATH) */
-# endif	/* defined(LT_DIAL_solaris) */
+# endif    /* defined(LT_DIAL_solaris) */
 
 
-# if	defined(LT_DIAL_uw)
+# if    defined(LT_DIAL_uw)
 /*
  * UnixWare-specific items
  */
@@ -282,7 +282,7 @@ typedef int		pid_t;
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-# endif	/* defined(LT_DIAL_uw) */
+# endif    /* defined(LT_DIAL_uw) */
 
 
 /*
@@ -290,30 +290,30 @@ typedef int		pid_t;
  * dialect-specific header files
  */
 
-#define	LT_DONT_DO_TEST		"this test does not run on this dialect."
-#define	LT_DEF_LSOF_PATH	"../lsof"
+#define    LT_DONT_DO_TEST        "this test does not run on this dialect."
+#define    LT_DEF_LSOF_PATH    "../lsof"
 
-# if	!defined(MAXPATHLEN)
-#define	MAXPATHLEN	1024
-# endif	/* !defined(MAXPATHLEN) */
+# if    !defined(MAXPATHLEN)
+#define    MAXPATHLEN    1024
+# endif    /* !defined(MAXPATHLEN) */
 
 
 /*
  * Local structure definitions
  */
 
-typedef struct LTdev {			/* local device parameters */
-    unsigned int maj;			/* major device number */
-    unsigned int min;			/* minor device number */
-    unsigned int unit;			/* unit number (where applicable) */
+typedef struct LTdev {            /* local device parameters */
+    unsigned int maj;            /* major device number */
+    unsigned int min;            /* minor device number */
+    unsigned int unit;            /* unit number (where applicable) */
 } LTdev_t;
 
-typedef struct LTfldo {			/* lsof field output information */
-    char ft;				/* field identifier (see the LSOF_FID_*
+typedef struct LTfldo {            /* lsof field output information */
+    char ft;                /* field identifier (see the LSOF_FID_*
 					 * definitions in ../lsof_fields.h) */
-    char *v;				/* field value character string */
+    char *v;                /* field value character string */
 } LTfldo_t;
-#define	LT_FLDO_ALLOC		16	/* LTfldo_t allocation increment */
+#define    LT_FLDO_ALLOC        16    /* LTfldo_t allocation increment */
 
 
 /*
@@ -322,20 +322,20 @@ typedef struct LTfldo {			/* lsof field output information */
  *	these global variables may be found in LTlib.c.
  */
 
-extern int LsofFd;			/* lsof pipe FD */
-extern FILE *LsofFs;			/* stream for lsof pipe FD */
-extern char *LsofPath;			/* path to lsof executable */
-extern pid_t LsofPid;			/* PID of lsof child process */
-extern int LTopt_h;			/* "-h" option's switch value */
-extern char *LTopt_p;			/* "-p path" option's path value */
-extern int MsgStat;			/* message status */
+extern int LsofFd;            /* lsof pipe FD */
+extern FILE *LsofFs;            /* stream for lsof pipe FD */
+extern char *LsofPath;            /* path to lsof executable */
+extern pid_t LsofPid;            /* PID of lsof child process */
+extern int LTopt_h;            /* "-h" option's switch value */
+extern char *LTopt_p;            /* "-p path" option's path value */
+extern int MsgStat;            /* message status */
 
 
 /*
  * External declarations
  */
 
-extern int errno;			/* error number */
+extern int errno;            /* error number */
 
 
 /*
@@ -344,17 +344,28 @@ extern int errno;			/* error number */
  *	these functions may be found in LTlib.c.
  */
 
-_PROTOTYPE(extern char *CanRdKmem,(void));
-_PROTOTYPE(extern char *ConvStatDev,(dev_t *dev, LTdev_t *ldev));
-_PROTOTYPE(extern char *ConvLsofDev,(char *dev, LTdev_t *ldev));
-_PROTOTYPE(extern char *ExecLsof,(char **opt));
-_PROTOTYPE(extern char *IsLsofExec,(void));
-_PROTOTYPE(extern void LTlibClean,(void));
-_PROTOTYPE(extern char *MkStrCpy,(char *src, int *len));
-_PROTOTYPE(extern LTfldo_t *RdFrLsof,(int *nf, char **em));
-_PROTOTYPE(extern void PrtMsg,(char *mp, char *pn));
-_PROTOTYPE(extern void PrtMsgX,(char *mp, char *pn, void (*f)(), int xv));
-_PROTOTYPE(extern int ScanArg,(int ac, char *av[], char *opt, char *pn));
-_PROTOTYPE(extern void StopLsof,(void));
+_PROTOTYPE(extern char *CanRdKmem, (void));
 
-#endif	/* LSOF_TEST_H */
+_PROTOTYPE(extern char *ConvStatDev, (dev_t * dev, LTdev_t * ldev));
+
+_PROTOTYPE(extern char *ConvLsofDev, (char *dev, LTdev_t *ldev));
+
+_PROTOTYPE(extern char *ExecLsof, (char **opt));
+
+_PROTOTYPE(extern char *IsLsofExec, (void));
+
+_PROTOTYPE(extern void LTlibClean, (void));
+
+_PROTOTYPE(extern char *MkStrCpy, (char *src, int *len));
+
+_PROTOTYPE(extern LTfldo_t *RdFrLsof, (int *nf, char **em));
+
+_PROTOTYPE(extern void PrtMsg, (char *mp, char *pn));
+
+_PROTOTYPE(extern void PrtMsgX, (char *mp, char *pn, void (*f)(), int xv));
+
+_PROTOTYPE(extern int ScanArg, (int ac, char *av[], char *opt, char *pn));
+
+_PROTOTYPE(extern void StopLsof, (void));
+
+#endif    /* LSOF_TEST_H */

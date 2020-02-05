@@ -34,14 +34,14 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dnode1.c,v 1.8 2005/08/08 19:53:24 abe Exp $";
 #endif
 
 
 #include "lsof.h"
 
-#if	defined(HAS9660FS)
+#if    defined(HAS9660FS)
 /*
  * Undo some conflicting node header file definitions.
  */
@@ -75,21 +75,21 @@ static char *rcsid = "$Id: dnode1.c,v 1.8 2005/08/08 19:53:24 abe Exp $";
 
 int
 read_iso_node(v, d, ino, nl, sz)
-	struct vnode *v;		/* containing vnode */
-	dev_t *d;			/* returned device number */
-	INODETYPE *ino;			/* returned inode number */
-	long *nl;			/* returned link count */
-	SZOFFTYPE *sz;			/* returned size */
+    struct vnode *v;		/* containing vnode */
+    dev_t *d;			/* returned device number */
+    INODETYPE *ino;			/* returned inode number */
+    long *nl;			/* returned link count */
+    SZOFFTYPE *sz;			/* returned size */
 {
-	struct iso_node i;
+    struct iso_node i;
 
-	if (!v->v_data
-	||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-	    return(1);
-	*d = i.i_dev;
-	*ino = (INODETYPE)i.i_number;
-	*nl = i.inode.iso_links;
-	*sz = (SZOFFTYPE)i.i_size;
-	return(0);
+    if (!v->v_data
+    ||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return(1);
+    *d = i.i_dev;
+    *ino = (INODETYPE)i.i_number;
+    *nl = i.inode.iso_links;
+    *sz = (SZOFFTYPE)i.i_size;
+    return(0);
 }
-#endif	/* defined(HAS9660FS) */
+#endif    /* defined(HAS9660FS) */

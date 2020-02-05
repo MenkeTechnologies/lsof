@@ -35,8 +35,8 @@
  */
 
 
-#if	!defined(LSOF_NEXT_H)
-#define	LSOF_NEXT_H	1
+#if    !defined(LSOF_NEXT_H)
+#define    LSOF_NEXT_H    1
 
 #include <c.h>
 #include <stdlib.h>
@@ -46,8 +46,8 @@
 #include <signal.h>
 #include <setjmp.h>
 
-# if	!defined(NCPUS)
-#define NCPUS	1
+# if    !defined(NCPUS)
+#define NCPUS    1
 # endif
 
 #include <mach/mach.h>
@@ -62,12 +62,14 @@
 #include <sys/dir.h>
 #include <sys/domain.h>
 
-# if	!defined(KERNEL)
+# if    !defined(KERNEL)
 #define KERNEL
 # endif
 
 #include <sys/file.h>
+
 #undef  KERNEL
+
 #include <sys/mbuf.h>
 #include <ufs/mount.h>
 #include <sys/protosw.h>
@@ -87,7 +89,7 @@
 #include <sys/un.h>
 #include <sys/unpcb.h>
 
-# if	!defined(SHOW_UTT)
+# if    !defined(SHOW_UTT)
 #define SHOW_UTT
 # endif
 
@@ -95,19 +97,19 @@
  * Define simple_lock_t size.
  */
 
-# if	STEPV>=40 && defined(m68k)
+# if    STEPV >= 40 && defined(m68k)
 #define SIMPLE_LOCK_SIZE 0
-# elif	defined(hppa) /* && (STEPV<40 || !defined(m68k)) */
+# elif    defined(hppa) /* && (STEPV<40 || !defined(m68k)) */
 #define SIMPLE_LOCK_SIZE 4
 # else	/* (STEPV<40 || !defined(m68k)) && !defined(hppa) */
 #define SIMPLE_LOCK_SIZE 1
-# endif	/* STEPV>=40 && defined(m68k) */
+# endif    /* STEPV>=40 && defined(m68k) */
 
-# if	!defined(SIMPLE_LOCK_SIZE)
+# if    !defined(SIMPLE_LOCK_SIZE)
 #define	SIMPLE_LOCK_SIZE	1
-# endif	/* !defined(SIMPLE_LOCK_SIZE) */
+# endif    /* !defined(SIMPLE_LOCK_SIZE) */
 
-# if	STEPV>=40
+# if    STEPV >= 40
 /*
  * Define lock_data_t that was removed from OPENSTEP 4.x's <kernserv/lock.h>.
  */
@@ -122,22 +124,24 @@ typedef struct lock {
                         recursion_depth:12;
 
 #  if	SIMPLE_LOCK_SIZE>0
-	caddr_t		interlock[SIMPLE_LOCK_SIZE];
+    caddr_t		interlock[SIMPLE_LOCK_SIZE];
 #  endif	/* SIMPLE_LOCK_SIZE>0 */
 
 } lock_data_t;
-# endif	/* STEPV>=40 */
+# endif    /* STEPV>=40 */
 
 #include <sys/user.h>
-#define u_comm	uu_comm
-#define u_cdir	uu_cdir
-#define u_rdir	uu_rdir
-#undef	SHOW_UTT
+
+#define u_comm    uu_comm
+#define u_cdir    uu_cdir
+#define u_rdir    uu_rdir
+#undef    SHOW_UTT
+
 #include <sys/proc.h>
 #include <sys/vfs.h>
 #include <ufs/inode.h>
 
-typedef	int	pid_t;
+typedef int pid_t;
 
 
 /*
@@ -146,9 +150,9 @@ typedef	int	pid_t;
  */
 
 struct snode {
-	struct	snode *s_next;		/* must be first */
-	struct	vnode s_vnode;		/* vnode associated with this snode */
-	struct	vnode *s_realvp;	/* vnode for the fs entry (if any) */
+    struct snode *s_next;        /* must be first */
+    struct vnode s_vnode;        /* vnode associated with this snode */
+    struct vnode *s_realvp;    /* vnode for the fs entry (if any) */
 };
 
 
@@ -156,31 +160,31 @@ struct snode {
  * Miscellaneous definitions.
  */
 
-#define	COMP_P		const void
-#define DEVINCR		1024		/* device table malloc() increment */
-typedef	off_t		KA_T;
-#define	KMEM		"/dev/kmem"
-#define MALLOC_P	void
-#define FREE_P		MALLOC_P
-#define MALLOC_S	size_t
-#define	MAXSYSCMDL	MAXCOMLEN	/* max system command name length */
-#define	PROCDFLT	256	/* default size of local proc table */
-#define	PROCMIN		5	/* processes that make a "good" scan */
-#define PROCSIZE	sizeof(struct proc)
-#define	PROCTRYLM	5	/* times to try to read proc table */
-#define QSORT_P		void
-#define	READLEN_T	int
-#define STRNCPY_L	int
-#define U_SIZE		sizeof(struct user)
+#define    COMP_P        const void
+#define DEVINCR        1024        /* device table malloc() increment */
+typedef off_t KA_T;
+#define    KMEM        "/dev/kmem"
+#define MALLOC_P    void
+#define FREE_P        MALLOC_P
+#define MALLOC_S    size_t
+#define    MAXSYSCMDL    MAXCOMLEN    /* max system command name length */
+#define    PROCDFLT    256    /* default size of local proc table */
+#define    PROCMIN        5    /* processes that make a "good" scan */
+#define PROCSIZE    sizeof(struct proc)
+#define    PROCTRYLM    5    /* times to try to read proc table */
+#define QSORT_P        void
+#define    READLEN_T    int
+#define STRNCPY_L    int
+#define U_SIZE        sizeof(struct user)
 
-#  if	!defined(VMUNIX)
-#define VMUNIX		"/mach"
+#  if    !defined(VMUNIX)
+#define VMUNIX        "/mach"
 #  endif
 
-#define	N_UNIX		VMUNIX
+#define    N_UNIX        VMUNIX
 
 
-# if	defined(HAS_AFS)
+# if    defined(HAS_AFS)
 /*
  * AFS definitions
  */
@@ -194,7 +198,7 @@ extern char *AFSApath;			/* alternate AFS name list path
 #  endif	/* defined(HASAOPT) */
 
 extern struct vfs *AFSVfsp;		/* AFS struct vfs kernel pointer */
-# endif	/* defined(HAS_AFS) */
+# endif    /* defined(HAS_AFS) */
 
 
 /*
@@ -202,17 +206,17 @@ extern struct vfs *AFSVfsp;		/* AFS struct vfs kernel pointer */
  */
 
 struct mounts {
-	char *dir;              	/* directory (mounted on) */
-	char *fsname;           	/* file system
+    char *dir;                /* directory (mounted on) */
+    char *fsname;            /* file system
 					 * (symbolic links unresolved) */
-	char *fsnmres;           	/* file system
+    char *fsnmres;            /* file system
 					 * (symbolic links resolved) */
-	dev_t dev;              	/* directory st_dev */
-	dev_t rdev;			/* directory st_rdev */
-	INODETYPE inode;		/* directory inode number */
-	u_short mode;			/* directory st_mode */
-	u_short fs_mode;		/* file system st_mode */
-	struct mounts *next;    	/* forward link */
+    dev_t dev;                /* directory st_dev */
+    dev_t rdev;            /* directory st_rdev */
+    INODETYPE inode;        /* directory inode number */
+    u_short mode;            /* directory st_mode */
+    u_short fs_mode;        /* file system st_mode */
+    struct mounts *next;        /* forward link */
 };
 
 
@@ -220,26 +224,26 @@ struct mounts {
  * Defines for kernel name list
  */
 
-#define	NL_NAME		n_un.n_name
+#define    NL_NAME        n_un.n_name
 
 
 /*
  * For kernel name cache processing
  */
 
-# if	defined(HASNCACHE)
+# if    defined(HASNCACHE)
 #include <sys/dnlc.h>
 #define	X_NCACHE	"nch"
 #define	X_NCSIZE	"ncsz"
-# endif	/* defined(HASNCACHE) */
+# endif    /* defined(HASNCACHE) */
 
 
 /*
  * Defines for library readdev() function
  */
 
-#define	DIRTYPE		direct
-#define	HASDNAMLEN	1
+#define    DIRTYPE        direct
+#define    HASDNAMLEN    1
 
 
 /*
@@ -247,17 +251,17 @@ struct mounts {
  */
 
 struct sfile {
-	char *aname;			/* file name argument */
-	char *name;			/* file name (after readlink()) */
-	char *devnm;			/* device name (optional) */
-	dev_t dev;			/* device */
-	dev_t rdev;			/* raw device */
-	u_short mode;			/* S_IFMT mode bits from stat() */
-	int type;			/* file type: 0 = file system
+    char *aname;            /* file name argument */
+    char *name;            /* file name (after readlink()) */
+    char *devnm;            /* device name (optional) */
+    dev_t dev;            /* device */
+    dev_t rdev;            /* raw device */
+    u_short mode;            /* S_IFMT mode bits from stat() */
+    int type;            /* file type: 0 = file system
 				 	 *	      1 = regular file */
-	INODETYPE i;			/* inode number */
-	int f;				/* file found flag */
-	struct sfile *next;		/* forward link */
+    INODETYPE i;            /* inode number */
+    int f;                /* file found flag */
+    struct sfile *next;        /* forward link */
 };
 
 
@@ -266,7 +270,7 @@ struct sfile {
  */
 
 extern struct file *Fileptr;
-#define	FILEPTR	Fileptr			/* for process_file() in lib/prfp.c */
+#define    FILEPTR    Fileptr            /* for process_file() in lib/prfp.c */
 extern int Kd;
 
-#endif	/* LSOF_NEXT_H */
+#endif    /* LSOF_NEXT_H */

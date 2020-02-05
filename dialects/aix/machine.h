@@ -35,23 +35,25 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
-# if	AIXV<=3250
+# if    AIXV <= 3250
 /*
  * The AIX 3.2.5 and below <netdb.h> requires that _SUN be defined to
  * be able to get the rpcent structure definition.
  */
 
-#define	_SUN
+#define    _SUN
+
 #include <netdb.h>
-#undef	_SUN
-# endif	/* AIXV<=3250 */
+
+#undef    _SUN
+# endif    /* AIXV<=3250 */
 
 
-# if	AIXV>=4200
+# if    AIXV >= 4200
 /*
  * AIX 4.2 requires that <sys/mstsave.h> be #include'd early.  It needs
  * <sys/types.h> and _KERNEL.
@@ -86,7 +88,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 
 #include <sys/mstsave.h>
 #undef	_KERNEL
-# endif	/* AIXV>=4200 */
+# endif    /* AIXV>=4200 */
 
 
 /*
@@ -94,9 +96,9 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-# if	AIXV>=4200
+# if    AIXV >= 4200
 #define	CAN_USE_CLNT_CREATE	1
-# endif	/* AIXV>=4200 */
+# endif    /* AIXV>=4200 */
 
 
 /*
@@ -104,7 +106,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -129,7 +131,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -157,10 +159,10 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -168,16 +170,16 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * HASCDRNODE is defined for those dialects that have CD-ROM nodes.
  */
 
-#define	HASCDRNODE	1
+#define    HASCDRNODE    1
 
 
 /*
  * HASFIFONODE is defined for those dialects that have FIFO nodes.
  */
 
-# if	AIXV>=3200
+# if    AIXV >= 3200
 #define	HASFIFONODE	1
-# endif	/* AIXV>=3200 */
+# endif    /* AIXV>=3200 */
 
 
 /*
@@ -201,7 +203,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -213,7 +215,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * HASGNODE is defined for those dialects that have gnodes.
  */
 
-#define	HASGNODE	1
+#define    HASGNODE    1
 
 
 /*
@@ -228,7 +230,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * use readinode() from node.c.
  */
 
-#define	HASINODE	1
+#define    HASINODE    1
 
 
 /*
@@ -244,7 +246,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -299,7 +301,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -356,7 +358,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -366,7 +368,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * called from print_file().
  */
 
-#define	HASPRINTDEV	print_dev
+#define    HASPRINTDEV    print_dev
 /* #define	HASPRINTINO	print_ino?	*/
 /* #define	HASPRINTNM	print_nm?	*/
 /* #define	HASPRINTOFF	print_off?	*/
@@ -383,10 +385,10 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * HASPRIVFILETYPE is the name of the processing function.
  */
 
-# if	AIXV>=4140
+# if    AIXV >= 4140
 #define	HASPRIVFILETYPE	process_shmt
 #define	PRIVFILETYPE	15
-# endif	/* AIXV>=4140 */
+# endif    /* AIXV>=4140 */
 
 
 /*
@@ -434,7 +436,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * by inode number.
  */
 
-# if	AIXA<1
+# if    AIXA < 1
 /* #define	HASPROCFS	"proc?" */
 /* #define	HASFSTYPE	1 */
 /* #define	HASPINODEN	1 */
@@ -442,7 +444,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 #define	HASPROCFS	"proc"
 #define	HASFSTYPE	2
 #define	HASPINODEN	1
-# endif	/* AIXA<1 */
+# endif    /* AIXA<1 */
 
 
 /*
@@ -484,11 +486,11 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	AIXV>=4320
+# if    AIXV >= 4320
 #define	HASWIDECHAR	1
-# endif	/* AIXV>=4320 */
+# endif    /* AIXV>=4320 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -513,9 +515,9 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -548,7 +550,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -565,7 +567,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * speed improvements.
  */
 
-#define	HASTCPUDPSTATE	1
+#define    HASTCPUDPSTATE    1
 
 
 /*
@@ -581,7 +583,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * prior to R4 usually don't.
  */
 
-#define	HASVNODE	1
+#define    HASVNODE    1
 
 
 /*
@@ -600,9 +602,9 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * processes whose real UID is root.
  */
 
-#define	HASXOPT		"use readx() *RISKY*"
+#define    HASXOPT        "use readx() *RISKY*"
 /* #define	HASXOPT_ROOT	1 */
-#define	HASXOPT_VALUE	0
+#define    HASXOPT_VALUE    0
 
 
 /*
@@ -613,12 +615,12 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * These are defined here, because they must be used in dlsof.h.
  */
 
-# if	AIXV>=4200
+# if    AIXV >= 4200
 #define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
+/* inode number internal storage type */
 #define	INODEPSPEC	"ll"		/* INODETYPE printf specification
-					 * modifier */
-# endif	/* AIXV>=4200 */
+ * modifier */
+# endif    /* AIXV>=4200 */
 
 
 /*
@@ -626,7 +628,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * as a function argument.
  */
 
-#define	UID_ARG	uid_t
+#define    UID_ARG    uid_t
 
 
 /*
@@ -640,12 +642,12 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 
 /* #define	USE_LIB_CKKV			1	   ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
 /* #define	USE_LIB_IS_FILE_NAMED		1	   isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
 /* #define	USE_LIB_PRINTDEVNAME		1	   pdvn.c */
-#define	USE_LIB_PROCESS_FILE			1	/* prfp.c */
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
+#define    USE_LIB_PROCESS_FILE            1    /* prfp.c */
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
 /* #define	USE_LIB_READDEV			1	   rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
@@ -653,7 +655,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define	snpf	snprintf	   /* use the system's snprintf() */
+#define    snpf    snprintf       /* use the system's snprintf() */
 
 
 /*
@@ -662,7 +664,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define	WARNDEVACCESS	1
+#define    WARNDEVACCESS    1
 
 
 /*
@@ -679,13 +681,13 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)		bzero(a, l)
+#define    zeromem(a, l)        bzero(a, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

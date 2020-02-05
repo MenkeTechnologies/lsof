@@ -35,23 +35,23 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
-#define	_KMEMUSER			/* to get _KMEMUSER-influenced types */
+#define    _KMEMUSER            /* to get _KMEMUSER-influenced types */
 
-# if	UNIXWAREV>=70103
+# if    UNIXWAREV >= 70103
 #define	_KERNEL	1			/* for rnode.h */
 #define	_FSKI	2			/* for rnode.h */
-#endif	/* UNIXWAREV>=70103 */
+#endif    /* UNIXWAREV>=70103 */
 
 #include <sys/types.h>
 
-# if	UNIXWAREV>=70103
+# if    UNIXWAREV >= 70103
 #undef	_KERNEL
 #undef	_FSKI
-#endif	/* UNIXWAREV>=70103 */
+#endif    /* UNIXWAREV>=70103 */
 
 #include <sys/param.h>
 
@@ -61,9 +61,9 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#if	UNIXWAREV>=20103
+#if    UNIXWAREV >= 20103
 #define	CAN_USE_CLNT_CREATE	1
-#endif	/* UNIXWAREV>=20103 */
+#endif    /* UNIXWAREV>=20103 */
 
 
 /*
@@ -71,7 +71,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -79,7 +79,7 @@
  * getdtablesize() to obtain the maximum file descriptor number plus one.
  */
 
-#define	GET_MAX_FD	get_max_fd
+#define    GET_MAX_FD    get_max_fd
 
 
 /*
@@ -96,7 +96,7 @@
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -131,10 +131,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -142,7 +142,7 @@
  * HASFIFONODE is defined for those dialects that have FIFO nodes.
  */
 
-#define	HASFIFONODE	1
+#define    HASFIFONODE    1
 
 
 /*
@@ -150,7 +150,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -166,7 +166,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -211,7 +211,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -219,7 +219,7 @@
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -266,7 +266,7 @@
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -279,7 +279,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -289,7 +289,7 @@
  * kernel symbols.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -323,7 +323,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -399,19 +399,19 @@
  * by inode number.
  */
 
-#define		HASPROCFS	"proc"
-#define		HASFSTYPE	1
+#define        HASPROCFS    "proc"
+#define        HASFSTYPE    1
 
-# if	UNIXWAREV>=20102
+# if    UNIXWAREV >= 20102
 #define	HASPINODEN	1
-# endif	/* UNIXWAREV>=20102 */
+# endif    /* UNIXWAREV>=20102 */
 
 
 /*
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
-#define	HASRNODE	1
+#define    HASRNODE    1
 
 
 /*
@@ -443,11 +443,11 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	UNIXWAREV>=70104
+# if    UNIXWAREV >= 70104
 #define	HASWIDECHAR	1
-# endif	/* UNIXWAREV>=70104 */
+# endif    /* UNIXWAREV>=70104 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -456,7 +456,7 @@
  * HASSNODE is defined for those dialects that have snodes.
  */
 
-#define	HASSNODE	1
+#define    HASSNODE    1
 
 
 /*
@@ -472,9 +472,9 @@
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -499,7 +499,7 @@
  * HASSTREAMS is defined for those systems that support streams.
  */
 
-#define	HASSTREAMS	1
+#define    HASSTREAMS    1
 
 
 /*
@@ -507,7 +507,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -531,7 +531,7 @@
  * prior to R4 usually don't.
  */
 
-#define	HASVNODE	1
+#define    HASVNODE    1
 
 
 /*
@@ -552,12 +552,12 @@
  * These are defined here, because they must be used in dlsof.h.
  */
 
-# if	UNIXWAREV>=70000
+# if    UNIXWAREV >= 70000
 #define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
+/* inode number internal storage type */
 #define	INODEPSPEC	"ll"	 	/* INODETYPE printf specification
-					 * modifier */
-# endif	/* UNIXWAREV>=70000 */
+ * modifier */
+# endif    /* UNIXWAREV>=70000 */
 
 
 /*
@@ -565,7 +565,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	long
+#define    UID_ARG    long
 
 
 /*
@@ -577,22 +577,22 @@
  * header files.
  */
 
-#define	USE_LIB_CKKV				1	/* ckkv.c */
+#define    USE_LIB_CKKV                1    /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
 /* #define	USE_LIB_PRINT_TCPTPI		1	   ptti.c */
-#define	USE_LIB_READDEV				1	/* rdev.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
-#define	USE_LIB_RNCH				1	/* rnch.c */
+#define    USE_LIB_RNCH                1    /* rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define	snpf	snprintf	   /* use the system's snprintf() */
+#define    snpf    snprintf       /* use the system's snprintf() */
 
 
 /*
@@ -601,7 +601,7 @@
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define	WARNDEVACCESS	1
+#define    WARNDEVACCESS    1
 
 
 /*
@@ -618,13 +618,13 @@
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)	memset(a, 0, l)
+#define    zeromem(a, l)    memset(a, 0, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

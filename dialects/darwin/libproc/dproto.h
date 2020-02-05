@@ -40,16 +40,51 @@
  * $Id: dproto.h,v 1.5 2006/03/27 23:23:13 abe Exp $
  */
 
-_PROTOTYPE(extern void enter_file_info,(struct proc_fileinfo *pfi));
-_PROTOTYPE(extern void enter_vnode_info,(struct vnode_info_path *vip));
-_PROTOTYPE(extern void err2nm,(char *pfx));
-_PROTOTYPE(extern int is_file_named,(char *p, int cd));
-_PROTOTYPE(extern void process_atalk,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_fsevents,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_kqueue,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_pipe,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_psem,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_pshm,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_socket,(int pid, int32_t fd));
-_PROTOTYPE(extern void process_vnode,(int pid, int32_t fd));
+_PROTOTYPE(extern void enter_file_info,(struct proc_fileinfo *pfi)
+
+);
+
+_PROTOTYPE(extern void enter_vnode_info,(struct vnode_info_path *vip)
+
+);
+
+_PROTOTYPE(extern void err2nm,(char *pfx)
+
+);
+
+_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+
+);
+
+_PROTOTYPE(extern void process_atalk,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_fsevents,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_kqueue,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_pipe,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_psem,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_pshm,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_socket,(int pid, int32_t fd)
+
+);
+
+_PROTOTYPE(extern void process_vnode,(int pid, int32_t fd)
+
+);
 

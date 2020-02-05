@@ -31,14 +31,14 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dstore.c,v 1.5 2005/11/01 20:24:51 abe Exp $";
 #endif
 
 
 #include "lsof.h"
 
-struct file *Cfp;			/* curent file's file struct pointer */
+struct file *Cfp;            /* curent file's file struct pointer */
 
 
 /*
@@ -48,41 +48,41 @@ struct file *Cfp;			/* curent file's file struct pointer */
 
 struct drive_Nl Drive_Nl[] = {
 
-	{ "aproc",	"_allproc"	},
-	{ "nproc",	"_nprocs"	},
-	{ X_NCACHE,	"_nchashtbl"	},
-	{ X_NCSIZE,	"_nchash"	},
-	{ "",		""		},
-	{ NULL,		NULL		}
+        {"aproc",  "_allproc"},
+        {"nproc",  "_nprocs"},
+        {X_NCACHE, "_nchashtbl"},
+        {X_NCSIZE, "_nchash"},
+        {"",       ""},
+        {NULL,     NULL}
 };
 
-int Kd = -1;				/* KMEM descriptor */
-KA_T Kpa;				/* kernel proc struct address */
-struct l_vfs *Lvfs = NULL;		/* local vfs structure table */
+int Kd = -1;                /* KMEM descriptor */
+KA_T Kpa;                /* kernel proc struct address */
+struct l_vfs *Lvfs = NULL;        /* local vfs structure table */
 
-int Np = 0;				/* number of kernel processes */
+int Np = 0;                /* number of kernel processes */
 
-struct kinfo_proc *P = NULL;		/* local process table copy */
+struct kinfo_proc *P = NULL;        /* local process table copy */
 
-#if	defined(HASFSTRUCT)
+#if    defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-	{ (long)FREAD,		FF_READ		},
-	{ (long)FWRITE,		FF_WRITE	},
-	{ (long)FNONBLOCK,	FF_NBLOCK	},
-	{ (long)FNDELAY,	FF_NDELAY	},
-	{ (long)FAPPEND,	FF_APPEND	},
-	{ (long)FASYNC,		FF_ASYNC	},
-	{ (long)FFSYNC,		FF_FSYNC	},
-	{ (long)FMARK,		FF_MARK		},
-	{ (long)FDEFER,		FF_DEFER	},
-	{ (long)FHASLOCK,	FF_HASLOCK	},
-	{ (long)O_NOCTTY,	FF_NOCTTY	},
-	{ (long)O_EVTONLY,	FF_EVTONLY	},
-	{ (long)0,		NULL 		}
+    { (long)FREAD,		FF_READ		},
+    { (long)FWRITE,		FF_WRITE	},
+    { (long)FNONBLOCK,	FF_NBLOCK	},
+    { (long)FNDELAY,	FF_NDELAY	},
+    { (long)FAPPEND,	FF_APPEND	},
+    { (long)FASYNC,		FF_ASYNC	},
+    { (long)FFSYNC,		FF_FSYNC	},
+    { (long)FMARK,		FF_MARK		},
+    { (long)FDEFER,		FF_DEFER	},
+    { (long)FHASLOCK,	FF_HASLOCK	},
+    { (long)O_NOCTTY,	FF_NOCTTY	},
+    { (long)O_EVTONLY,	FF_EVTONLY	},
+    { (long)0,		NULL 		}
 };
 
 
@@ -93,13 +93,13 @@ struct pff_tab Pff_tab[] = {
 struct pff_tab Pof_tab[] = {
 
 # if	defined(UF_EXCLOSE)
-	{ (long)UF_EXCLOSE,	POF_CLOEXEC	},
+    { (long)UF_EXCLOSE,	POF_CLOEXEC	},
 # endif	/* defined(UF_EXCLOSE) */
 
 # if	defined(UF_MAPPED)
-	{ (long)UF_MAPPED,	POF_MAPPED	},
+    { (long)UF_MAPPED,	POF_MAPPED	},
 # endif	/* defined(UF_MAPPED) */
 
-	{ (long)0,		NULL		}
+    { (long)0,		NULL		}
 };
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */

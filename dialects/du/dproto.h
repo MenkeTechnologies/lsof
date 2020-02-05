@@ -37,25 +37,36 @@
  */
 
 
-_PROTOTYPE(extern void clr_flinfo,(void));
-_PROTOTYPE(extern char *get_nlist_path,(int ap));
-_PROTOTYPE(extern int is_file_named,(char *p, int cd));
-_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm));
+_PROTOTYPE(extern void clr_flinfo,(void)
+
+);
+
+_PROTOTYPE(extern char *get_nlist_path,(int ap)
+
+);
+
+_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+
+);
+
+_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm)
+
+);
 
 #if     defined(HASDCACHE)
 _PROTOTYPE(extern void clr_sect,(void));
 #endif  /* defined(HASDCACHE) */
 
-#if	defined(HASIPv6)
+#if    defined(HASIPv6)
 _PROTOTYPE(extern struct hostent *gethostbyname2,(char *nm, int prot));
-#endif	/* defined(HASIPv6) */
+#endif    /* defined(HASIPv6) */
 
-#if	defined(HASPRIVNMCACHE)
+#if    defined(HASPRIVNMCACHE)
 _PROTOTYPE(extern int tag_to_path,(char *fs, mlBfTagT t2pb, int nl, char *nlb));
-#endif	/* defined(HASPRIVNMCACHE) */
+#endif    /* defined(HASPRIVNMCACHE) */
 
-#if	defined(USELOCALREADDIR)
+#if    defined(USELOCALREADDIR)
 _PROTOTYPE(extern int CloseDir,(DIR *dirp));
 _PROTOTYPE(extern DIR *OpenDir,(char *dir));
 _PROTOTYPE(extern struct DIRTYPE *ReadDir,(DIR *dirp));
-#endif	/* defined(USELOCALREADDIR) */
+#endif    /* defined(USELOCALREADDIR) */

@@ -35,8 +35,8 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define	CAN_USE_CLNT_CREATE	1
+#define    CAN_USE_CLNT_CREATE    1
 
 
 /*
@@ -56,7 +56,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -144,7 +144,7 @@
  * HASEOPT is defined for dialects that support the -e option
  */
 
-#define	HASEOPT	1
+#define    HASEOPT    1
 
 
 /*
@@ -168,12 +168,12 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
-#define	HASNOFSADDR	1	/* has no file structure address */
+#define    HASNOFSADDR    1    /* has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
-#define	HASNOFSCOUNT	1	/* has no file structure count */
-#define	HASNOFSNADDR	1	/* has no file structure node address */
+#define    HASNOFSCOUNT    1    /* has no file structure count */
+#define    HASNOFSNADDR    1    /* has no file structure node address */
 
 
 /*
@@ -249,7 +249,7 @@
  * HASLWP is defined for dialects that have LWP support inside processes.
  */
 
-#define	HASLWP	1
+#define    HASLWP    1
 
 
 /*
@@ -265,7 +265,7 @@
  * option.
  */
 
-#define	HASMNTSUP	1
+#define    HASMNTSUP    1
 
 
 /*
@@ -330,7 +330,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -447,9 +447,9 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
-#define	HASWIDECHAR	1
-#define	WIDECHARINCL	<wctype.h>
+#define    HASSETLOCALE    1
+#define    HASWIDECHAR    1
+#define    WIDECHARINCL    <wctype.h>
 
 
 /*
@@ -499,7 +499,7 @@
  * HASTASKS is defined for those dialects that have task reporting support.
  */
 
-#define	HASTASKS	1
+#define    HASTASKS    1
 
 
 /*
@@ -507,7 +507,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -524,7 +524,7 @@
  * speed improvements.
  */
 
-#define	HASTCPUDPSTATE	1
+#define    HASTCPUDPSTATE    1
 
 
 /*
@@ -550,8 +550,8 @@
  * option's default binary value -- 0 or 1.
  */
 
-#define	HASXOPT		"skip TCP&UDP* files"
-#define	HASXOPT_VALUE	0
+#define    HASXOPT        "skip TCP&UDP* files"
+#define    HASXOPT_VALUE    0
 
 
 /*
@@ -562,9 +562,9 @@
  * These are defined here, because they must be used in dlsof.h.
  */
 
-#define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
-#define	INODEPSPEC	"ll"	 	/* INODETYPE printf specification
+#define    INODETYPE    unsigned long long
+/* inode number internal storage type */
+#define    INODEPSPEC    "ll"        /* INODETYPE printf specification
 					 * modifier */
 
 
@@ -573,7 +573,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	u_int
+#define    UID_ARG    u_int
 
 
 /*
@@ -588,7 +588,7 @@
 /* #define	USE_LIB_CKKV			1	   ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
 /* #define	USE_LIB_FIND_CH_INO		1	   fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
 /* #define	USE_LIB_LKUPDEV			1	   lkud.c */
 /* #define	USE_LIB_PRINTDEVNAME		1	   pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
@@ -600,7 +600,7 @@
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define	snpf	snprintf	   /* use the system's snprintf() */
+#define    snpf    snprintf       /* use the system's snprintf() */
 
 
 /*
@@ -639,6 +639,6 @@
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)	bzero(a, l)
+#define    zeromem(a, l)    bzero(a, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

@@ -36,27 +36,34 @@
  * $Id: dproto.h,v 1.4 2005/11/01 20:24:51 abe Exp $
  */
 
-_PROTOTYPE(extern int is_file_named,(char *p, int cd));
-_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm));
+_PROTOTYPE(extern int is_file_named,(char *p, int cd)
 
-#if	defined(HASKQUEUE)
+);
+
+_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm)
+
+);
+
+#if    defined(HASKQUEUE)
 _PROTOTYPE(extern void process_kqueue,(KA_T ka));
-#endif	/* defined(HASKQUEUE) */
+#endif    /* defined(HASKQUEUE) */
 
-#if	defined(HASPIPEFN)
+#if    defined(HASPIPEFN)
 _PROTOTYPE(extern void process_pipe,(KA_T pa));
-#endif	/* defined(HASPIPEFN) */
+#endif    /* defined(HASPIPEFN) */
 
-#if	defined(HASPSXSEM)
+#if    defined(HASPSXSEM)
 _PROTOTYPE(extern void process_psxsem,(KA_T pa));
-#endif	/* defined(HASPSXSEM) */
+#endif    /* defined(HASPSXSEM) */
 
-#if	defined(HASPSXSHM)
+#if    defined(HASPSXSHM)
 _PROTOTYPE(extern void process_psxshm,(KA_T pa));
-#endif	/* defined(HASPSXSHM) */
+#endif    /* defined(HASPSXSHM) */
 
-#if	defined(HAS9660FS)
+#if    defined(HAS9660FS)
 _PROTOTYPE(extern int read_iso_node,(struct vnode *v, dev_t *d, int *dd, INODETYPE *ino, long *nl, SZOFFTYPE *sz));
-#endif	/* defined(HAS9660FS) */
+#endif    /* defined(HAS9660FS) */
 
-_PROTOTYPE(extern void process_socket,(KA_T sa));
+_PROTOTYPE(extern void process_socket,(KA_T sa)
+
+);

@@ -31,23 +31,24 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dnode.c,v 1.58 2011/08/07 22:53:42 abe Exp $";
 #endif
 
 
 #include "lsof.h"
 
-#if	solaris>=110000
+#if    solaris >= 110000
 #include <sys/fs/sdev_impl.h>
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-#undef	fs_bsize
+#undef    fs_bsize
+
 #include <sys/fs/ufs_inode.h>
 
 
-#if	solaris>=110000 && defined(HAS_LIBCTF)
-/*
+#if    solaris >= 110000 && defined(HAS_LIBCTF)
+                                                                                                                        /*
  * Sockfs support for Solaris 11 via libctf
  */
 
@@ -159,11 +160,11 @@ static	CTF_request_t Sockfs_requests[] = {
  */
 
 _PROTOTYPE(static int read_nsti,(struct sonode *so, sotpi_info_t *stpi));
-#endif	/* solaris>=110000 && defined(HAS_LIBCTF) */
+#endif    /* solaris>=110000 && defined(HAS_LIBCTF) */
 
 
-#if	defined(HAS_ZFS) && defined(HAS_LIBCTF)
-/*
+#if    defined(HAS_ZFS) && defined(HAS_LIBCTF)
+                                                                                                                        /*
  * ZFS support via libctf
  */
 
@@ -299,7 +300,7 @@ static CTF_exception_t CTF_exceptions[] = {
     { ZNODE_TYPE_NAME,		"z_size"  },
     { NULL,			NULL	  }
 };
-    
+
 
 /*
  * ZFS function prototypes
@@ -308,130 +309,131 @@ static CTF_exception_t CTF_exceptions[] = {
 _PROTOTYPE(static int read_nzn,(KA_T na, KA_T nza, znode_t *z));
 _PROTOTYPE(static int read_nznp,(KA_T nza, KA_T nzpa, znode_phys_t *zp));
 _PROTOTYPE(static int read_nzvfs,(KA_T nza, KA_T nzva, zfsvfs_t *zv));
-#endif	/* defined(HAS_ZFS) && defined(HAS_LIBCTF) */
+#endif    /* defined(HAS_ZFS) && defined(HAS_LIBCTF) */
 
 
-_PROTOTYPE(static struct l_dev *finddev,(dev_t *dev, dev_t *rdev, int flags));
+_PROTOTYPE(static struct l_dev *finddev, (dev_t * dev, dev_t * rdev,
+        int flags));
 
 
 /*
  * Finddev() "look-in " flags
  */
 
-#define	LOOKDEV_TAB	0x01		/* look in device table */
-#define	LOOKDEV_CLONE	0x02		/* look in Clone table */
-#define	LOOKDEV_PSEUDO	0x04		/* look in Pseudo table */
-#define	LOOKDEV_ALL	(LOOKDEV_TAB | LOOKDEV_CLONE | LOOKDEV_PSEUDO)
-					/* look all places */
+#define    LOOKDEV_TAB    0x01        /* look in device table */
+#define    LOOKDEV_CLONE    0x02        /* look in Clone table */
+#define    LOOKDEV_PSEUDO    0x04        /* look in Pseudo table */
+#define    LOOKDEV_ALL    (LOOKDEV_TAB | LOOKDEV_CLONE | LOOKDEV_PSEUDO)
+/* look all places */
 
 
 /*
  * SAM-FS definitions
  */
 
-#define	SAMFS_NMA_MSG	"(limited SAM-FS info)"
+#define    SAMFS_NMA_MSG    "(limited SAM-FS info)"
 
 
 /*
  * Voptab definitions
  */
 
-typedef struct build_v_optab  {
-	char *dnm;			/* drive_NL name */
-	char *fsys;			/* file system type name */
-	int nty;			/* node type index (i.e., N_*) */
+typedef struct build_v_optab {
+    char *dnm;            /* drive_NL name */
+    char *fsys;            /* file system type name */
+    int nty;            /* node type index (i.e., N_*) */
 } build_v_optab_t;
 
 static build_v_optab_t Build_v_optab[] = {
-	{ "auvops",	 "autofs",	N_AUTO		},
-	{ "avops",	 "afs",		N_AFS		},
-	{ "afsops",	 "afs",		N_AFS		},
-	{ "ctfsadir",	 NULL,		N_CTFSADIR	},
-	{ "ctfsbund",	 NULL,		N_CTFSBUND	},
-	{ "ctfscdir",	 NULL,		N_CTFSCDIR	},
-	{ "ctfsctl",	 NULL,		N_CTFSCTL	},
-	{ "ctfsevt",	 NULL,		N_CTFSEVT	},
-	{ "ctfslate",	 NULL,		N_CTFSLATE	},
-	{ "ctfsroot",	 NULL,		N_CTFSROOT	},
-	{ "ctfsstat",	 NULL,		N_CTFSSTAT	},
-	{ "ctfssym",	 NULL,		N_CTFSSYM	},
-	{ "ctfstdir",	 NULL,		N_CTFSTDIR	},
-	{ "ctfstmpl",	 NULL,		N_CTFSTMPL	},
-	{ "cvops",	 NULL,		N_CACHE		},
-	{ "devops",	 "devfs",	N_DEV		},
-	{ "doorops",	 NULL,		N_DOOR		},
-	{ "fdops",	 "fd",		N_FD		},
-	{ "fd_ops",	 "fd",		N_FD		},
-	{ "fvops",	 "fifofs",	N_FIFO		},
-	{ "hvops",	 "hsfs",	N_HSFS		},
-	{ "lvops",	 "lofs",	N_LOFS		},
-	{ "mntops",	 "mntfs",	N_MNT		},
-	{ "mvops",	 "mvfs",	N_MVFS		},
-	{ "n3vops",	 NULL,		N_NFS		},
+        {"auvops", "autofs", N_AUTO},
+        {"avops", "afs", N_AFS},
+        {"afsops", "afs", N_AFS},
+        {"ctfsadir", NULL, N_CTFSADIR},
+        {"ctfsbund", NULL, N_CTFSBUND},
+        {"ctfscdir", NULL, N_CTFSCDIR},
+        {"ctfsctl", NULL, N_CTFSCTL},
+        {"ctfsevt", NULL, N_CTFSEVT},
+        {"ctfslate", NULL, N_CTFSLATE},
+        {"ctfsroot", NULL, N_CTFSROOT},
+        {"ctfsstat", NULL, N_CTFSSTAT},
+        {"ctfssym", NULL, N_CTFSSYM},
+        {"ctfstdir", NULL, N_CTFSTDIR},
+        {"ctfstmpl", NULL, N_CTFSTMPL},
+        {"cvops", NULL, N_CACHE},
+        {"devops", "devfs", N_DEV},
+        {"doorops", NULL, N_DOOR},
+        {"fdops", "fd", N_FD},
+        {"fd_ops", "fd", N_FD},
+        {"fvops", "fifofs", N_FIFO},
+        {"hvops", "hsfs", N_HSFS},
+        {"lvops", "lofs", N_LOFS},
+        {"mntops", "mntfs", N_MNT},
+        {"mvops", "mvfs", N_MVFS},
+        {"n3vops", NULL, N_NFS},
 
-#if	solaris>=100000
-	{ "n4vops",	 NULL,		N_NFS4		},
+#if    solaris >= 100000
+        { "n4vops",	 NULL,		N_NFS4		},
 #else	/* solaris<100000 */
-	{ "n4vops",	 NULL,		N_NFS		},
-#endif	/* solaris>=100000 */
+        {"n4vops", NULL, N_NFS},
+#endif    /* solaris>=100000 */
 
-	{ "nmvops",	 "namefs",	N_NM		},
-	{ "nvops",	 NULL,		N_NFS		},
-	{ "pdvops",	 "pcfs",	N_PCFS		},
-	{ "pfvops",	 "pcfs",	N_PCFS		},
-	{ "portvops",	 NULL,		N_PORT		},
-	{ "prvops",	 "proc",	N_PROC		},
-	{ "sam1vops",	 NULL,		N_SAMFS		},
-	{ "sam2vops",	 NULL,		N_SAMFS		},
-	{ "sam3vops",	 NULL,		N_SAMFS		},
-	{ "sam4vops",	 NULL,		N_SAMFS		},
-	{ "sckvops",	 "sockfs",	N_SOCK		},
-	{ "devipnetops", "sdevfs",	N_SDEV		},
-	{ "devnetops",	 "sdevfs",	N_SDEV		},
-	{ "devptsops",	 "sdevfs",	N_SDEV		},
-	{ "devvtops",	 "sdevfs",	N_SDEV		},
-	{ "socketvops",	 "sockfs",	N_SOCK		},
-	{ "sdevops",	 "sdevfs",	N_SDEV		},
-	{ "shvops",	 "sharedfs",	N_SHARED	},
-	{ "sncavops",	 "sockfs",	N_SOCK		},
-	{ "stpivops",	 "sockfs",	N_SOCK		},
-	{ "spvops",	 "specfs",	N_REGLR		},
-	{ "tvops",	 "tmpfs",	N_TMP		},
-	{ "uvops",	 "ufs",		N_REGLR		},
-	{ "vvfclops",	 "vxfs",	N_VXFS		},
-	{ "vvfops",	 "vxfs",	N_VXFS		},
-	{ "vvfcops",	 "vxfs",	N_VXFS		},
-	{ "vvops",	 "vxfs",	N_VXFS		},
-	{ "vvops_p",	 "vxfs",	N_VXFS		},
-	{ "zfsdops",	 "zfs",		N_ZFS		},
-	{ "zfseops",	 "zfs",		N_ZFS		},
-	{ "zfsfops",	 "zfs",		N_ZFS		},
-	{ "zfsshops",	 "zfs",		N_ZFS		},
-	{ "zfssymops",	 "zfs",		N_ZFS		},
-	{ "zfsxdops",	 "zfs",		N_ZFS		},
-	{ NULL,		NULL,		0		}	/* table end */
+        {"nmvops", "namefs", N_NM},
+        {"nvops", NULL, N_NFS},
+        {"pdvops", "pcfs", N_PCFS},
+        {"pfvops", "pcfs", N_PCFS},
+        {"portvops", NULL, N_PORT},
+        {"prvops", "proc", N_PROC},
+        {"sam1vops", NULL, N_SAMFS},
+        {"sam2vops", NULL, N_SAMFS},
+        {"sam3vops", NULL, N_SAMFS},
+        {"sam4vops", NULL, N_SAMFS},
+        {"sckvops", "sockfs", N_SOCK},
+        {"devipnetops", "sdevfs", N_SDEV},
+        {"devnetops", "sdevfs", N_SDEV},
+        {"devptsops", "sdevfs", N_SDEV},
+        {"devvtops", "sdevfs", N_SDEV},
+        {"socketvops", "sockfs", N_SOCK},
+        {"sdevops", "sdevfs", N_SDEV},
+        {"shvops", "sharedfs", N_SHARED},
+        {"sncavops", "sockfs", N_SOCK},
+        {"stpivops", "sockfs", N_SOCK},
+        {"spvops", "specfs", N_REGLR},
+        {"tvops", "tmpfs", N_TMP},
+        {"uvops", "ufs", N_REGLR},
+        {"vvfclops", "vxfs", N_VXFS},
+        {"vvfops", "vxfs", N_VXFS},
+        {"vvfcops", "vxfs", N_VXFS},
+        {"vvops", "vxfs", N_VXFS},
+        {"vvops_p", "vxfs", N_VXFS},
+        {"zfsdops", "zfs", N_ZFS},
+        {"zfseops", "zfs", N_ZFS},
+        {"zfsfops", "zfs", N_ZFS},
+        {"zfsshops", "zfs", N_ZFS},
+        {"zfssymops", "zfs", N_ZFS},
+        {"zfsxdops", "zfs", N_ZFS},
+        {NULL, NULL, 0}    /* table end */
 };
 
-typedef	struct v_optab {
-	char *fsys;			/* file system type name */
-	int fx;				/* Fsinfo[] index (-1 if none) */
-	int nty;			/* node type index (i.e., N_*) */
-	KA_T v_op;			/* vnodeops address */
-	struct v_optab *next;		/* next entry */
+typedef struct v_optab {
+    char *fsys;            /* file system type name */
+    int fx;                /* Fsinfo[] index (-1 if none) */
+    int nty;            /* node type index (i.e., N_*) */
+    KA_T v_op;            /* vnodeops address */
+    struct v_optab *next;        /* next entry */
 } v_optab_t;
 
-static v_optab_t **FxToVoptab = (v_optab_t **)NULL;
-					/* table to convert file system index
+static v_optab_t **FxToVoptab = (v_optab_t **) NULL;
+/* table to convert file system index
 					 * to Voptab address[] -- built by
 					 * build_Voptab() */
-static v_optab_t **Voptab = (v_optab_t **)NULL;
-					/* table to convert vnode v_op
+static v_optab_t **Voptab = (v_optab_t **) NULL;
+/* table to convert vnode v_op
 					 * addresses to file system name and
 					 * node type -- built by build_Voptab()
 					 * and addressed through the HASHVOP()
 					 * macro */
 
-#define	VOPHASHBINS	256		/* number of Voptab[] hash bins --
+#define    VOPHASHBINS    256        /* number of Voptab[] hash bins --
 					 * MUST BE A POWER OF TWO! */
 
 
@@ -439,14 +441,24 @@ static v_optab_t **Voptab = (v_optab_t **)NULL;
  * Local function prototypes
  */
 
-_PROTOTYPE(static void build_Voptab,(void));
-_PROTOTYPE(static char isvlocked,(struct vnode *va));
-_PROTOTYPE(static int readinode,(KA_T ia, struct inode *i));
-_PROTOTYPE(static void read_mi,(KA_T s, dev_t *dev, caddr_t so, int *so_st, KA_T *so_ad, struct l_dev **sdp));
+_PROTOTYPE(static void build_Voptab, (void));
+
+_PROTOTYPE(static char isvlocked, (struct vnode *va));
+
+_PROTOTYPE(static int readinode, (KA_T
+        ia,
+        struct inode *i));
+
+_PROTOTYPE(static void read_mi, (KA_T
+        s, dev_t * dev, caddr_t
+        so,
+        int *so_st, KA_T
+        *so_ad,
+        struct l_dev **sdp));
 
 
-#if	solaris>=20500
-# if	solaris>=20600
+#if    solaris >= 20500
+                                                                                                                        # if	solaris>=20600
 _PROTOTYPE(static int read_nan,(KA_T na, KA_T aa, struct fnnode *rn));
 _PROTOTYPE(static int read_nson,(KA_T na, KA_T sa, struct sonode *sn));
 _PROTOTYPE(static int read_nusa,(struct soaddr *so, struct sockaddr_un *ua));
@@ -455,57 +467,109 @@ _PROTOTYPE(static int read_nan,(KA_T na, KA_T aa, struct autonode *a));
 # endif	/* solaris>=20600 */
 _PROTOTYPE(static int idoorkeep,(struct door_node *d));
 _PROTOTYPE(static int read_ndn,(KA_T na, KA_T da, struct door_node *d));
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-#if	solaris>=110000
+#if    solaris >= 110000
 _PROTOTYPE(static int read_nsdn,(KA_T na, KA_T sa, struct sdev_node *sdn, struct vattr *sdva));
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-_PROTOTYPE(static int read_nfn,(KA_T na, KA_T fa, struct fifonode *f));
-_PROTOTYPE(static int read_nhn,(KA_T na, KA_T ha, struct hsnode *h));
-_PROTOTYPE(static int read_nin,(KA_T na, KA_T ia, struct inode *i));
-_PROTOTYPE(static int read_nmn,(KA_T na, KA_T ia, struct mvfsnode *m));
-_PROTOTYPE(static int read_npn,(KA_T na, KA_T pa, struct pcnode *p));
-_PROTOTYPE(static int read_nrn,(KA_T na, KA_T ra, struct rnode *r));
+_PROTOTYPE(static int read_nfn, (KA_T
+        na, KA_T
+        fa,
+        struct fifonode *f));
 
-#if	solaris>=100000
-_PROTOTYPE(static int read_nctfsn,(int ty, KA_T na, KA_T ca, char *cn));
+_PROTOTYPE(static int read_nhn, (KA_T
+        na, KA_T
+        ha,
+        struct hsnode *h));
+
+_PROTOTYPE(static int read_nin, (KA_T
+        na, KA_T
+        ia,
+        struct inode *i));
+
+_PROTOTYPE(static int read_nmn, (KA_T
+        na, KA_T
+        ia,
+        struct mvfsnode *m));
+
+_PROTOTYPE(static int read_npn, (KA_T
+        na, KA_T
+        pa,
+        struct pcnode *p));
+
+_PROTOTYPE(static int read_nrn, (KA_T
+        na, KA_T
+        ra,
+        struct rnode *r));
+
+#if    solaris >= 100000
+                                                                                                                        _PROTOTYPE(static int read_nctfsn,(int ty, KA_T na, KA_T ca, char *cn));
 _PROTOTYPE(static int read_nprtn,(KA_T na, KA_T ra, port_t *p));
 _PROTOTYPE(static int read_nrn4,(KA_T na, KA_T ra, struct rnode4 *r));
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-_PROTOTYPE(static int read_nsn,(KA_T na, KA_T sa, struct snode *s));
-_PROTOTYPE(static int read_ntn,(KA_T na, KA_T ta, struct tmpnode *t));
-_PROTOTYPE(static int read_nvn,(KA_T na, KA_T va, struct vnode *v));
+_PROTOTYPE(static int read_nsn, (KA_T
+        na, KA_T
+        sa,
+        struct snode *s));
 
-#if	defined(HASPROCFS)
+_PROTOTYPE(static int read_ntn, (KA_T
+        na, KA_T
+        ta,
+        struct tmpnode *t));
+
+_PROTOTYPE(static int read_nvn, (KA_T
+        na, KA_T
+        va,
+        struct vnode *v));
+
+#if    defined(HASPROCFS)
 _PROTOTYPE(static int read_npi,(KA_T na, struct vnode *v, struct pid *pids));
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-_PROTOTYPE(static char *ent_fa,(KA_T *a1, KA_T *a2, char *d, int *len));
-_PROTOTYPE(static int is_socket,(struct vnode *v));
-_PROTOTYPE(static int read_cni,(struct snode *s, struct vnode *rv,
-	struct vnode *v, struct snode *rs, struct dev_info *di, char *din,
-	int dinl));
-_PROTOTYPE(static int read_ncn,(KA_T na, KA_T ca, struct cnode *cn));
-_PROTOTYPE(static int read_nln,(KA_T na, KA_T la, struct lnode *ln));
-_PROTOTYPE(static int read_nnn,(KA_T na, KA_T nna, struct namenode *n));
+_PROTOTYPE(static char *ent_fa, (KA_T * a1, KA_T * a2,
+        char *d,
+        int *len));
 
-#if	solaris<100000
-_PROTOTYPE(static void savesockmod,(struct so_so *so, struct so_so *sop, int *so_st));
+_PROTOTYPE(static int is_socket, (struct vnode *v));
+
+_PROTOTYPE(static int read_cni, (struct snode *s, struct vnode *rv,
+        struct vnode *v, struct snode *rs, struct dev_info *di, char *din,
+        int dinl));
+
+_PROTOTYPE(static int read_ncn, (KA_T
+        na, KA_T
+        ca,
+        struct cnode *cn));
+
+_PROTOTYPE(static int read_nln, (KA_T
+        na, KA_T
+        la,
+        struct lnode *ln));
+
+_PROTOTYPE(static int read_nnn, (KA_T
+        na, KA_T
+        nna,
+        struct namenode *n));
+
+#if    solaris < 100000
+
+_PROTOTYPE(static void savesockmod, (struct so_so *so, struct so_so *sop, int *so_st));
+
 #else	/* solaris>=100000 */
-_PROTOTYPE(static int read_ndvn,(KA_T na, KA_T da, struct dv_node *dv,
+                                                                                                                        _PROTOTYPE(static int read_ndvn,(KA_T na, KA_T da, struct dv_node *dv,
 				 dev_t *dev, unsigned char *devs));
-#endif	/* solaris<100000 */
+#endif    /* solaris<100000 */
 
 
 /*
  * Local static values
  */
 
-static KA_T Spvops = (KA_T)0;	/* specfs vnodeops address -- saved
+static KA_T Spvops = (KA_T) 0;    /* specfs vnodeops address -- saved
 				 * by build_Voptab() */
-static KA_T Vvops[VXVOP_NUM];	/* addresses of:
+static KA_T Vvops[VXVOP_NUM];    /* addresses of:
 				 *   vx_fcl_dnodeops_p (VXVOP_FCL)
 				 *   fdd_vnops (VXVOP_FDD)
 				 *   fdd_chain_vnops (VXVOP_FDDCH),
@@ -521,20 +585,20 @@ static KA_T Vvops[VXVOP_NUM];	/* addresses of:
  * HASHVOP() -- hash the vnode's v_op address
  */
 
-#if	defined(VOPNAME_OPEN) && solaris>=100000
-#define	GETVOPS(name, nl, ops) \
+#if    defined(VOPNAME_OPEN) && solaris >= 100000
+                                                                                                                        #define	GETVOPS(name, nl, ops) \
     if (get_Nl_value(name, nl, &ops) < 0) \
 	ops = (KA_T)0; \
     else if (kread(ops, (char *)&ops, sizeof(ops))) \
 	ops = (KA_T)0
 #else	/* !defined(VOPNAME_OPEN) || solaris<100000 */
-#define	GETVOPS(name, nl, ops) \
+#define    GETVOPS(name, nl, ops) \
     if (get_Nl_value(name, nl, &ops) < 0) \
-	ops = (KA_T)0
-#endif	/* defined(VOPNAME_OPEN) && solaris>=100000 */
+    ops = (KA_T)0
+#endif    /* defined(VOPNAME_OPEN) && solaris>=100000 */
 
-#define	HASHVOP(ka)	((int)((((ka &0x1fffffff) * 31415) >> 3) & \
-			       (VOPHASHBINS - 1)))
+#define    HASHVOP(ka)    ((int)((((ka &0x1fffffff) * 31415) >> 3) & \
+                   (VOPHASHBINS - 1)))
 
 
 /*
@@ -542,170 +606,169 @@ static KA_T Vvops[VXVOP_NUM];	/* addresses of:
  */
 
 static void
-build_Voptab()
-{
-	build_v_optab_t *bp;		/* Build_v_optab[] pointer */
-	int fx;				/* temporary file system type index */
-	int h;				/* hash index */
-	int i, j;			/* temporary indexes */
-	KA_T ka;			/* temporary kernel address */
-	v_optab_t *nv, *vp, *vpp;	/* Voptab[] working pointers */
-	int vv = 0;			/* number of Vvops[] addresses that
+build_Voptab() {
+    build_v_optab_t *bp;        /* Build_v_optab[] pointer */
+    int fx;                /* temporary file system type index */
+    int h;                /* hash index */
+    int i, j;            /* temporary indexes */
+    KA_T ka;            /* temporary kernel address */
+    v_optab_t *nv, *vp, *vpp;    /* Voptab[] working pointers */
+    int vv = 0;            /* number of Vvops[] addresses that
 					 * have been located */
 /*
  * If Voptab[] is allocated, return; otherwise allocate space for Voptab[]
  * and FxToVoptab[] amd fill them.
  */
-	if (Voptab)
-	    return;
+    if (Voptab)
+        return;
 /*
  * During first call, allocate space for Voptab[] and FxToVoptab[].
  */
 
-	if (!(Voptab = (v_optab_t **)calloc((MALLOC_S)VOPHASHBINS,
-					    sizeof(v_optab_t)))
-	) {
-	    (void) fprintf(stderr, "%s: no space for Voptab\n", Pn);
-	    Exit(1);
-	}
-	if (!(FxToVoptab = (v_optab_t **)calloc((MALLOC_S)Fsinfomax,
-						sizeof(v_optab_t *)))
-	) {
-	    (void) fprintf(stderr, "%s: no space for FxToVoptab\n", Pn);
-	    Exit(1);
-	}
-	for (i = 0; i < VXVOP_NUM; i++) {
-	    Vvops[i] = (KA_T)NULL;
-	}
+    if (!(Voptab = (v_optab_t **) calloc((MALLOC_S) VOPHASHBINS,
+                                         sizeof(v_optab_t)))
+            ) {
+        (void) fprintf(stderr, "%s: no space for Voptab\n", Pn);
+        Exit(1);
+    }
+    if (!(FxToVoptab = (v_optab_t **) calloc((MALLOC_S) Fsinfomax,
+                                             sizeof(v_optab_t *)))
+            ) {
+        (void) fprintf(stderr, "%s: no space for FxToVoptab\n", Pn);
+        Exit(1);
+    }
+    for (i = 0; i < VXVOP_NUM; i++) {
+        Vvops[i] = (KA_T) NULL;
+    }
 /*
  * Use Build_v_optab[] to build Voptab[].
  */
-	for (bp = Build_v_optab; bp->dnm; bp++) {
+    for (bp = Build_v_optab; bp->dnm; bp++) {
 
-	/*
+        /*
 	 * Get the kernel address for the symbol.  Do nothing if it can't
 	 * be determined.
 	 */
-	    GETVOPS(bp->dnm, Drive_Nl, ka);
-	    if (!ka)
-		continue;
-	/*
+        GETVOPS(bp->dnm, Drive_Nl, ka);
+        if (!ka)
+            continue;
+        /*
 	 * Check the Voptab[] for the address.
 	 */
-	    h = HASHVOP(ka);
-	    for (vp = Voptab[h], vpp = (v_optab_t *)NULL; vp; vp = vp->next) {
-		if (vp->v_op == ka)
-		    break;
-		vpp = vp;
-	    }
-	    if (vp) {
+        h = HASHVOP(ka);
+        for (vp = Voptab[h], vpp = (v_optab_t *) NULL; vp; vp = vp->next) {
+            if (vp->v_op == ka)
+                break;
+            vpp = vp;
+        }
+        if (vp) {
 
-	    /*
+            /*
 	     * Ignore duplicates.
 	     */
-		continue;
-	    }
-	/*
+            continue;
+        }
+        /*
 	 * No Voptab[] entry was found, so allocate space for a new
 	 * v_optab_t structure, determine its file system type index,
 	 * fill it and link it to the Voptab[].
 	 */
-	    if (!(nv = (v_optab_t *)malloc((MALLOC_S)sizeof(v_optab_t)))) {
-		(void) fprintf(stderr, "%s: out of Voptab space at: %s\n",
-			Pn, bp->dnm);
-		Exit(1);
-	    }
-	    nv->fsys = bp->fsys;
-	    nv->fx = -1;
-	    nv->nty = bp->nty;
-	    nv->next = (v_optab_t *)NULL;
-	    nv->v_op = ka;
-	    if (bp->fsys) {
-		for (i = 0; i < Fsinfomax; i++) {
-		    if (!strcmp(bp->fsys, Fsinfo[i])) {
-			nv->fx = i;
-			break;
-		    }
-		}
-	    }
-	    if (!Voptab[h])
-		Voptab[h] = nv;
-	    else
-		vpp->next = nv;
-	/*
+        if (!(nv = (v_optab_t *) malloc((MALLOC_S)sizeof(v_optab_t)))) {
+            (void) fprintf(stderr, "%s: out of Voptab space at: %s\n",
+                           Pn, bp->dnm);
+            Exit(1);
+        }
+        nv->fsys = bp->fsys;
+        nv->fx = -1;
+        nv->nty = bp->nty;
+        nv->next = (v_optab_t *) NULL;
+        nv->v_op = ka;
+        if (bp->fsys) {
+            for (i = 0; i < Fsinfomax; i++) {
+                if (!strcmp(bp->fsys, Fsinfo[i])) {
+                    nv->fx = i;
+                    break;
+                }
+            }
+        }
+        if (!Voptab[h])
+            Voptab[h] = nv;
+        else
+            vpp->next = nv;
+        /*
 	 * Handle special v_op addresses:
 	 *
 	 *   special vnode ops;
 	 *   VxFS ops.
 	 */
-	    if (!Spvops) {
-		if (!strcmp(bp->dnm, "spvops"))
-		    Spvops = ka;
-	    }
-	    for (i = 0; (i < VXVOP_NUM) && (vv < VXVOP_NUM); i++) {
-		if (Vvops[i])
-		    continue;
-		switch (i) {
-		case VXVOP_FCL:
-		    if (!strcmp(bp->dnm, "vvfclops")) {
-			Vvops[i] = ka;
-			vv++;
-		    }
-		    break;
-		case VXVOP_FDD:
-		    if (!strcmp(bp->dnm, "vvfops")) {
-			Vvops[i] = ka;
-			vv++;
-		    }
-		    break;
-		case VXVOP_FDDCH:
-		    if (!strcmp(bp->dnm, "vvfcops")) {
-			Vvops[i] = ka;
-			vv++;
-		    }
-		    break;
-		case VXVOP_REG:
-		    if (!strcmp(bp->dnm, "vvops")) {
-			Vvops[i] = ka;
-			vv++;
-		    }
-		    break;
-		case VXVOP_REG_P:
-		    if (!strcmp(bp->dnm, "vvops_p")) {
-			Vvops[i] = ka;
-			vv++;
-		    }
-		    break;
-		}
-	    }
-	}
+        if (!Spvops) {
+            if (!strcmp(bp->dnm, "spvops"))
+                Spvops = ka;
+        }
+        for (i = 0; (i < VXVOP_NUM) && (vv < VXVOP_NUM); i++) {
+            if (Vvops[i])
+                continue;
+            switch (i) {
+                case VXVOP_FCL:
+                    if (!strcmp(bp->dnm, "vvfclops")) {
+                        Vvops[i] = ka;
+                        vv++;
+                    }
+                    break;
+                case VXVOP_FDD:
+                    if (!strcmp(bp->dnm, "vvfops")) {
+                        Vvops[i] = ka;
+                        vv++;
+                    }
+                    break;
+                case VXVOP_FDDCH:
+                    if (!strcmp(bp->dnm, "vvfcops")) {
+                        Vvops[i] = ka;
+                        vv++;
+                    }
+                    break;
+                case VXVOP_REG:
+                    if (!strcmp(bp->dnm, "vvops")) {
+                        Vvops[i] = ka;
+                        vv++;
+                    }
+                    break;
+                case VXVOP_REG_P:
+                    if (!strcmp(bp->dnm, "vvops_p")) {
+                        Vvops[i] = ka;
+                        vv++;
+                    }
+                    break;
+            }
+        }
+    }
 /*
  * Link Voptab[] entries to FxToVoptab[] entries.
  */
-	for (h = 0; h < VOPHASHBINS; h++) {
-	    for (vp = Voptab[h]; vp; vp = vp->next) {
-		if (!vp->fsys)
-		    continue;
-		if (((fx = vp->fx) >= 0) && (fx < Fsinfomax)) {
-		    if (!FxToVoptab[fx])
-			FxToVoptab[fx] = vp;
-		    continue;
-		}
-		for (i = 0; i < Fsinfomax; i++) {
-		    if (!strcmp(Fsinfo[i], vp->fsys)) {
-			vp->fx = i;
-			if (!FxToVoptab[i])
-			    FxToVoptab[i] = vp;
-			break;
-		    }
-		}
-	    }
-	}
+    for (h = 0; h < VOPHASHBINS; h++) {
+        for (vp = Voptab[h]; vp; vp = vp->next) {
+            if (!vp->fsys)
+                continue;
+            if (((fx = vp->fx) >= 0) && (fx < Fsinfomax)) {
+                if (!FxToVoptab[fx])
+                    FxToVoptab[fx] = vp;
+                continue;
+            }
+            for (i = 0; i < Fsinfomax; i++) {
+                if (!strcmp(Fsinfo[i], vp->fsys)) {
+                    vp->fx = i;
+                    if (!FxToVoptab[i])
+                        FxToVoptab[i] = vp;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 
-#if	defined(HAS_LIBCTF)
-/*
+#if    defined(HAS_LIBCTF)
+                                                                                                                        /*
  * CTF_getmem() -- get CTF members
  */
 
@@ -900,7 +963,7 @@ CTF_memCB(name, id, offset, arg)
     }
     return(0);
 }
-#endif	/* defined(HAS_LIBCTF) */
+#endif    /* defined(HAS_LIBCTF) */
 
 
 /*
@@ -909,10 +972,10 @@ CTF_memCB(name, id, offset, arg)
 
 static char *
 ent_fa(a1, a2, d, len)
-    KA_T *a1;				/* first fattach address (NULL OK) */
-    KA_T *a2;				/* second fattach address */
-    char *d;				/* direction ("->" or "<-") */
-    int *len;				/* returned description length */
+        KA_T *a1;                /* first fattach address (NULL OK) */
+        KA_T *a2;                /* second fattach address */
+        char *d;                /* direction ("->" or "<-") */
+        int *len;                /* returned description length */
 {
     static char buf[1024];
     size_t bufl = sizeof(buf);
@@ -922,28 +985,28 @@ ent_fa(a1, a2, d, len)
  */
     if (!a1)
 
-#if	solaris<20600
+#if    solaris < 20600
         (void) snpf(buf, bufl, "(FA:%s%s)", d,
-	    print_kptr(*a2, (char *)NULL, 0));
+                    print_kptr(*a2, (char *) NULL, 0));
 #else	/* solaris>=20600 */
-	(void) snpf(buf, bufl, "(FA:%s%s)", d,
+                                                                                                                                (void) snpf(buf, bufl, "(FA:%s%s)", d,
 	    print_kptr(*a2, (char *)NULL, 0));
-#endif	/* solaris<20600 */
+#endif    /* solaris<20600 */
 
     else
 
-#if	solaris<20600
-	(void) snpf(buf, bufl, "(FA:%s%s%s)",
-	    print_kptr(*a1, tbuf, sizeof(tbuf)), d,
-	    print_kptr(*a2, (char *)NULL, 0));
+#if    solaris < 20600
+        (void) snpf(buf, bufl, "(FA:%s%s%s)",
+                    print_kptr(*a1, tbuf, sizeof(tbuf)), d,
+                    print_kptr(*a2, (char *) NULL, 0));
 #else	/* solaris>=20600 */
-	(void) snpf(buf, bufl, "(FA:%s%s%s)",
+                                                                                                                            (void) snpf(buf, bufl, "(FA:%s%s%s)",
 	    print_kptr(*a1, tbuf, sizeof(tbuf)), d,
 	    print_kptr(*a2, (char *)NULL, 0));
-#endif	/* solaris<20600 */
+#endif    /* solaris<20600 */
 
-    *len = (int)strlen(buf);
-    return(buf);
+    *len = (int) strlen(buf);
+    return (buf);
 }
 
 
@@ -953,33 +1016,33 @@ ent_fa(a1, a2, d, len)
 
 static int
 is_socket(v)
-    struct vnode *v;			/* vnode pointer */
+        struct vnode *v;            /* vnode pointer */
 {
     char *cp, *ep, *pf;
     int i, j, len, n, pfl;
     major_t maj;
     minor_t min;
     static struct tcpudp {
-	int ds;
-	major_t maj;
-	minor_t min;
-	char *proto;
+        int ds;
+        major_t maj;
+        minor_t min;
+        char *proto;
     } tcpudp[] = {
-	{ 0, 0, 0, "tcp" },
-	{ 0, 0, 0, "udp" },
+            {0, 0, 0, "tcp"},
+            {0, 0, 0, "udp"},
 
-#if	defined(HASIPv6)
-	{ 0, 0, 0, "tcp6" },
+#if    defined(HASIPv6)
+                                                                                                                            { 0, 0, 0, "tcp6" },
 	{ 0, 0, 0, "udp6" },
-#endif	/* defined(HASIPv6) */
+#endif    /* defined(HASIPv6) */
 
     };
-#define	NTCPUDP	(sizeof(tcpudp) / sizeof(struct tcpudp))
+#define    NTCPUDP    (sizeof(tcpudp) / sizeof(struct tcpudp))
 
     static int tcpudps = 0;
 
     if (!v->v_stream)
-	return(0);
+        return (0);
     maj = (major_t) GET_MAJ_DEV(v->v_rdev);
     min = (minor_t) GET_MIN_DEV(v->v_rdev);
 /*
@@ -987,57 +1050,56 @@ is_socket(v)
  */
     if (!tcpudps) {
 
-#if	solaris<80000
-	pf = "/devices/pseudo/clone";
+#if    solaris < 80000
+        pf = "/devices/pseudo/clone";
 #else	/* solaris>=80000 */
-	pf = "/devices/pseudo/";
-#endif	/* solaris<80000 */
+        pf = "/devices/pseudo/";
+#endif    /* solaris<80000 */
 
-	for (i = n = 0, pfl = (int)strlen(pf); (i < Ndev) && (n < NTCPUDP); i++)
-	{
-	    if (strncmp(Devtp[i].name, pf, pfl)
-	    ||  !(ep = strrchr((cp = &Devtp[i].name[pfl]), ':'))
-	    ||  (strncmp(++ep, "tcp", 3) && strncmp(ep, "udp", 3)))
-		continue;
+        for (i = n = 0, pfl = (int) strlen(pf); (i < Ndev) && (n < NTCPUDP); i++) {
+            if (strncmp(Devtp[i].name, pf, pfl)
+                || !(ep = strrchr((cp = &Devtp[i].name[pfl]), ':'))
+                || (strncmp(++ep, "tcp", 3) && strncmp(ep, "udp", 3)))
+                continue;
 
-#if	solaris<80000
-	    if (*(ep + 3))
+#if    solaris < 80000
+            if (*(ep + 3))
 #else	/* solaris>=80000 */
-	    len = (*(ep + 3) == '6') ? 4 : 3;
+                                                                                                                                        len = (*(ep + 3) == '6') ? 4 : 3;
 	    if (*(ep + len) || ((cp + len) >= ep) || strncmp(cp, ep, len))
-#endif	/* solaris<80000 */
+#endif    /* solaris<80000 */
 
-		continue;
-	    for (j = 0; j < NTCPUDP; j++) {
-		if (!tcpudp[j].ds && !strcmp(ep, tcpudp[j].proto)) {
-		    tcpudp[j].ds = 1;
-		    tcpudp[j].maj = (major_t) GET_MAJ_DEV(Devtp[i].rdev);
-		    tcpudp[j].min = (minor_t) GET_MIN_DEV(Devtp[i].rdev);
-		    n++;
-		    break;
-		}
-	    }
-	}
-	tcpudps = n ? 1 : -1;
+                continue;
+            for (j = 0; j < NTCPUDP; j++) {
+                if (!tcpudp[j].ds && !strcmp(ep, tcpudp[j].proto)) {
+                    tcpudp[j].ds = 1;
+                    tcpudp[j].maj = (major_t) GET_MAJ_DEV(Devtp[i].rdev);
+                    tcpudp[j].min = (minor_t) GET_MIN_DEV(Devtp[i].rdev);
+                    n++;
+                    break;
+                }
+            }
+        }
+        tcpudps = n ? 1 : -1;
     }
 /*
  * Check for known IPv[46] TCP or UDP device.
  */
     for (i = 0; (i < NTCPUDP) && (tcpudps > 0); i++) {
-	if (tcpudp[i].ds
+        if (tcpudp[i].ds
 
-#if	solaris<80000
-	&&  (maj == tcpudp[i].min)
+            #if    solaris < 80000
+            && (maj == tcpudp[i].min)
 #else	/* solaris>=80000 */
-	&&  (maj == tcpudp[i].maj)
-#endif	/* solaris<80000 */
+            &&  (maj == tcpudp[i].maj)
+#endif    /* solaris<80000 */
 
-	) {
-	    process_socket((KA_T)v->v_stream, tcpudp[i].proto);
-	    return(1);
-	}
-     }
-     return(0);
+                ) {
+            process_socket((KA_T) v->v_stream, tcpudp[i].proto);
+            return (1);
+        }
+    }
+    return (0);
 }
 
 
@@ -1047,19 +1109,19 @@ is_socket(v)
 
 static char
 isvlocked(va)
-    struct vnode *va;		/* local vnode address */
+        struct vnode *va;        /* local vnode address */
 {
 
-#if	solaris<20500
+#if    solaris < 20500
     struct filock f;
     KA_T ff;
     KA_T fp;
-#endif	/* solaris<20500 */
+#endif    /* solaris<20500 */
 
     int i, l;
 
-#if	solaris>=20300
-    struct lock_descriptor ld;
+#if    solaris >= 20300
+                                                                                                                            struct lock_descriptor ld;
     KA_T lf;
     KA_T lp;
 # if	solaris<20500
@@ -1077,46 +1139,46 @@ isvlocked(va)
 #define	LOCK_START	ld.l_start
 #define	LOCK_TYPE	ld.l_type
 # endif	/* solaris<20500 */
-#endif	/* solaris>=20300 */
+#endif    /* solaris>=20300 */
 
     if (va->v_filocks == NULL)
-	return(' ');
+        return (' ');
 
-#if	solaris<20500
-# if	solaris>20300 || (solaris==20300 && defined(P101318) && P101318>=45)
+#if    solaris < 20500
+# if    solaris > 20300 || (solaris == 20300 && defined(P101318) && P101318 >= 45)
     if (Ntype == N_NFS)
-# endif	/* solaris>20300 || (solaris==20300 && defined(P101318) && P101318>=45) */
+# endif    /* solaris>20300 || (solaris==20300 && defined(P101318) && P101318>=45) */
 
     {
-	ff = fp = (KA_T)va->v_filocks;
-	i = 0;
-	do {
-	    if (kread(fp, (char *)&f, sizeof(f)))
-		return(' ');
-	    i++;
-	    if (f.set.l_pid != (pid_t)Lp->pid)
-		continue;
-	    if (f.set.l_whence == 0 && f.set.l_start == 0
-	    &&  f.set.l_len == MAXEND)
-		l = 1;
-	    else
-		l = 0;
-	    switch (f.set.l_type & (F_RDLCK | F_WRLCK)) {
-	    case F_RDLCK:
-		return(l ? 'R' : 'r');
-	    case F_WRLCK:
-		return(l ? 'W' : 'w');
-	    case F_RDLCK|F_WRLCK:
-		return('u');
-	    default:
-		return('N');
-	    }
-	} while ((fp = (KA_T)f.next) && (fp != ff) && (i < 10000));
+        ff = fp = (KA_T) va->v_filocks;
+        i = 0;
+        do {
+            if (kread(fp, (char *) &f, sizeof(f)))
+                return (' ');
+            i++;
+            if (f.set.l_pid != (pid_t) Lp->pid)
+                continue;
+            if (f.set.l_whence == 0 && f.set.l_start == 0
+                && f.set.l_len == MAXEND)
+                l = 1;
+            else
+                l = 0;
+            switch (f.set.l_type & (F_RDLCK | F_WRLCK)) {
+                case F_RDLCK:
+                    return (l ? 'R' : 'r');
+                case F_WRLCK:
+                    return (l ? 'W' : 'w');
+                case F_RDLCK | F_WRLCK:
+                    return ('u');
+                default:
+                    return ('N');
+            }
+        } while ((fp = (KA_T) f.next) && (fp != ff) && (i < 10000));
     }
-#endif	/* solaris<20500 */
+#endif    /* solaris<20500 */
 
-#if	solaris>=20300
-    lf = lp = (KA_T)va->v_filocks;
+#if    solaris >= 20300
+                                                                                                                            lf = lp = (KA_T)va->v_filocks;
     i = 0;
     do {
 	if (kread(lp, (char *)&ld, sizeof(ld)))
@@ -1149,7 +1211,7 @@ isvlocked(va)
 	}
     } while ((lp = (KA_T)LOCK_NEXT) && (lp != lf) && (i < 10000));
     return(' ');
-#endif	/* solaris>=20300 */
+#endif    /* solaris>=20300 */
 
 }
 
@@ -1160,69 +1222,69 @@ isvlocked(va)
 
 static struct l_dev *
 finddev(dev, rdev, flags)
-	dev_t *dev;			/* device */
-	dev_t *rdev;			/* raw device */
-	int flags;			/* look flags -- see LOOKDEV_* symbol
+        dev_t *dev;            /* device */
+        dev_t *rdev;            /* raw device */
+        int flags;            /* look flags -- see LOOKDEV_* symbol
 					 * definitions */
 {
-	struct clone *c;
-	struct l_dev *dp;
-	struct pseudo *p;
+    struct clone *c;
+    struct l_dev *dp;
+    struct pseudo *p;
 
-	if (!Sdev)
-	    readdev(0);
+    if (!Sdev)
+        readdev(0);
 /*
  * Search device table for match.
  */
 
-#if	defined(HASDCACHE)
+#if    defined(HASDCACHE)
 
-finddev_again:
+    finddev_again:
 
-#endif	/* defined(HASDCACHE) */
+#endif    /* defined(HASDCACHE) */
 
-	if (flags & LOOKDEV_TAB) {
-	    if ((dp = lkupdev(dev, rdev, 0, 0)))
-		return(dp);
-	}
+    if (flags & LOOKDEV_TAB) {
+        if ((dp = lkupdev(dev, rdev, 0, 0)))
+            return (dp);
+    }
 /*
  * Search for clone.
  */
-	if ((flags & LOOKDEV_CLONE) && Clone) {
-	    for (c = Clone; c; c = c->next) {
-		if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(c->cd.rdev)) {
+    if ((flags & LOOKDEV_CLONE) && Clone) {
+        for (c = Clone; c; c = c->next) {
+            if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(c->cd.rdev)) {
 
-#if	defined(HASDCACHE)
-		    if (DCunsafe && !c->cd.v && !vfy_dev(&c->cd))
+#if    defined(HASDCACHE)
+                                                                                                                                        if (DCunsafe && !c->cd.v && !vfy_dev(&c->cd))
 			goto finddev_again;
-#endif	/* defined(HASDCACHE) */
+#endif    /* defined(HASDCACHE) */
 
-		    return(&c->cd);
-		}
-	    }
-	}
+                return (&c->cd);
+            }
+        }
+    }
 /*
  * Search for pseudo device match on major device only.
  */
-	if ((flags & LOOKDEV_PSEUDO) && Pseudo) {
-	    for (p = Pseudo; p; p = p->next) {
-		if (GET_MAJ_DEV(*rdev) == GET_MAJ_DEV(p->pd.rdev)) {
+    if ((flags & LOOKDEV_PSEUDO) && Pseudo) {
+        for (p = Pseudo; p; p = p->next) {
+            if (GET_MAJ_DEV(*rdev) == GET_MAJ_DEV(p->pd.rdev)) {
 
-#if	defined(HASDCACHE)
-		    if (DCunsafe && !p->pd.v && !vfy_dev(&p->pd))
+#if    defined(HASDCACHE)
+                                                                                                                                        if (DCunsafe && !p->pd.v && !vfy_dev(&p->pd))
 			goto finddev_again;
-#endif	/* defined(HASDCACHE) */
+#endif    /* defined(HASDCACHE) */
 
-		    return(&p->pd);
-		}
-	    }
-	}
-	return((struct l_dev *)NULL);
+                return (&p->pd);
+            }
+        }
+    }
+    return ((struct l_dev *) NULL);
 }
 
 
-#if	solaris>=20500
-/*
+#if    solaris >= 20500
+                                                                                                                        /*
  * idoorkeep() -- identify door keeper process
  */
 
@@ -1258,7 +1320,7 @@ idoorkeep(d)
 	(void) add_nma(buf, (int)strlen(buf));
 	return(1);
 }
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
 
 /*
@@ -1267,72 +1329,72 @@ idoorkeep(d)
 
 void
 process_node(va)
-	KA_T va;			/* vnode kernel space address */
+        KA_T va;            /* vnode kernel space address */
 {
-	struct cnode cn;
-	dev_t dev, rdev, trdev;
-	unsigned char devs = 0;
-	unsigned char fxs = 0;
-	unsigned char ins = 0;
-	unsigned char kvs = 0;
-	unsigned char nns = 0;
-	unsigned char pnl = 0;
-	unsigned char rdevs = 0;
-	unsigned char rvs = 0;
-	unsigned char rfxs = 0;
-	unsigned char sdns = 0;
-	unsigned char tdef;
-	unsigned char trdevs = 0;
-	unsigned char unix_sock = 0;
-	struct dev_info di;
-	char din[DINAMEL];
-	char *ep;
-	struct fifonode f;
-	char *fa = (char *)NULL;
-	int fal;
-	static int ft = 1;
-	struct vnode fv, rv;
-	int fx, rfx;
-	struct hsnode h;
-	struct inode i;
-	int j;
-	KA_T ka, vka;
-	struct lnode lo;
-	struct vfs kv, rkv;
-	int len, llc, nl, snl, sepl;
-	struct mvfsnode m;
-	struct namenode nn;
-	struct l_vfs *nvfs, *vfs;
-	struct pcnode pc;
-	struct pcfs pcfs;
-	struct rnode r;
-	KA_T realvp = (KA_T)NULL;
-	struct snode rs;
-	struct snode s;
+    struct cnode cn;
+    dev_t dev, rdev, trdev;
+    unsigned char devs = 0;
+    unsigned char fxs = 0;
+    unsigned char ins = 0;
+    unsigned char kvs = 0;
+    unsigned char nns = 0;
+    unsigned char pnl = 0;
+    unsigned char rdevs = 0;
+    unsigned char rvs = 0;
+    unsigned char rfxs = 0;
+    unsigned char sdns = 0;
+    unsigned char tdef;
+    unsigned char trdevs = 0;
+    unsigned char unix_sock = 0;
+    struct dev_info di;
+    char din[DINAMEL];
+    char *ep;
+    struct fifonode f;
+    char *fa = (char *) NULL;
+    int fal;
+    static int ft = 1;
+    struct vnode fv, rv;
+    int fx, rfx;
+    struct hsnode h;
+    struct inode i;
+    int j;
+    KA_T ka, vka;
+    struct lnode lo;
+    struct vfs kv, rkv;
+    int len, llc, nl, snl, sepl;
+    struct mvfsnode m;
+    struct namenode nn;
+    struct l_vfs *nvfs, *vfs;
+    struct pcnode pc;
+    struct pcfs pcfs;
+    struct rnode r;
+    KA_T realvp = (KA_T) NULL;
+    struct snode rs;
+    struct snode s;
 
-#if	solaris>=110000
-	char *nm, *sep;
+#if    solaris >= 110000
+                                                                                                                            char *nm, *sep;
 	size_t nmrl, tl;
 	struct sdev_node sdn;
 	struct vattr sdva;
 	sotpi_info_t sti;
 	int stis = 0;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	struct l_dev *sdp = (struct l_dev *)NULL;
-	size_t sz;
-	struct tmpnode t;
-	char tbuf[128], *ty, ubuf[128];
-	int tbufx;
-	enum vtype type;
-	struct sockaddr_un ua;
-	static struct vnode *v = (struct vnode *)NULL;
-	KA_T vs;
-	int vty = 0;
-	int  vty_tmp;
+    struct l_dev *sdp = (struct l_dev *) NULL;
+    size_t sz;
+    struct tmpnode t;
+    char tbuf[128], *ty, ubuf[128];
+    int tbufx;
+    enum vtype type;
+    struct sockaddr_un ua;
+    static struct vnode *v = (struct vnode *) NULL;
+    KA_T vs;
+    int vty = 0;
+    int vty_tmp;
 
-#if	solaris>=20500
-# if	solaris>=20600
+#if    solaris >= 20500
+                                                                                                                            # if	solaris>=20600
 	struct fnnode fnn;
 	struct pairaddr {
 	    short f;
@@ -1347,14 +1409,14 @@ process_node(va)
 
 	struct door_node dn;
 	int dns = 0;
-#endif	/* solaris >=20500 */
+#endif    /* solaris >=20500 */
 
-#if	solaris<100000
-	KA_T so_ad[2];
-	struct so_so soso;
-	int so_st = 0;
+#if    solaris < 100000
+    KA_T so_ad[2];
+    struct so_so soso;
+    int so_st = 0;
 #else	/* solaris>=100000 */
-	union {
+                                                                                                                            union {
 	    ctfs_adirnode_t adir;
 	    ctfs_bunode_t bun;
 	    ctfs_cdirnode_t cdir;
@@ -1372,162 +1434,162 @@ process_node(va)
 	unsigned char dvs = 0;
 	port_t pn;
 	struct rnode4 r4;
-#endif	/* solaris<100000 */
+#endif    /* solaris<100000 */
 
 
-#if	defined(HASPROCFS)
-	struct procfsid *pfi;
+#if    defined(HASPROCFS)
+                                                                                                                            struct procfsid *pfi;
 	struct pid pids;
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-#if	defined(HAS_AFS)
-	struct afsnode an;
-#endif	/* defined(HAS_AFS) */
+#if    defined(HAS_AFS)
+    struct afsnode an;
+#endif    /* defined(HAS_AFS) */
 
-#if	defined(HASVXFS)
-	struct l_ino vx;
-#endif	/* defined(HASVXFS) */
+#if    defined(HASVXFS)
+    struct l_ino vx;
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	vfs_t zgvfs;
+#if    defined(HAS_ZFS)
+                                                                                                                            vfs_t zgvfs;
 	unsigned char zns = 0;
 	znode_t zn;
 	zfsvfs_t zvfs;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
 /*
  * Do first-time only operations.
  */
 
-#if	solaris<100000
-	so_ad[0] = so_ad[1] = (KA_T)0;
-#endif	/* solaris<100000 */
+#if    solaris < 100000
+    so_ad[0] = so_ad[1] = (KA_T) 0;
+#endif    /* solaris<100000 */
 
-	if (ft) {
-	    (void) build_Voptab();
-	    ft = 0;
-	}
+    if (ft) {
+        (void) build_Voptab();
+        ft = 0;
+    }
 /*
  * Read the vnode.
  */
-	if (!va) {
-	    enter_nm("no vnode address");
-	    return;
-	}
-	if (!v) {
+    if (!va) {
+        enter_nm("no vnode address");
+        return;
+    }
+    if (!v) {
 
-	/*
+        /*
 	 * Allocate space for the vnode or AFS vcache structure.
 	 */
 
-#if	defined(HAS_AFS)
-	    v = alloc_vcache();
+#if    defined(HAS_AFS)
+        v = alloc_vcache();
 #else	/* !defined(HAS_AFS) */
-	    v = (struct vnode *) malloc(sizeof(struct vnode));
-#endif	/* defined(HAS_AFS) */
+        v = (struct vnode *) malloc(sizeof(struct vnode));
+#endif    /* defined(HAS_AFS) */
 
-	    if (!v) {
-		(void) fprintf(stderr, "%s: can't allocate %s space\n", Pn,
+        if (!v) {
+            (void) fprintf(stderr, "%s: can't allocate %s space\n", Pn,
 
-#if	defined(HAS_AFS)
-			       "vcache"
+#if    defined(HAS_AFS)
+                    "vcache"
 #else	/* !defined(HAS_AFS) */
-			       "vnode"
-#endif	/* defined(HAS_AFS) */
+                           "vnode"
+#endif    /* defined(HAS_AFS) */
 
-			      );
-		Exit(1);
-	    }
-	}
-	if (readvnode(va, v)) {
-	    enter_nm(Namech);
-	    return;
-	}
+            );
+            Exit(1);
+        }
+    }
+    if (readvnode(va, v)) {
+        enter_nm(Namech);
+        return;
+    }
 
-#if	defined(HASNCACHE)
-	Lf->na = va;
-#endif	/* defined(HASNCACHE) */
+#if    defined(HASNCACHE)
+    Lf->na = va;
+#endif    /* defined(HASNCACHE) */
 
-#if	defined(HASFSTRUCT)
-	Lf->fna = va;
+#if    defined(HASFSTRUCT)
+                                                                                                                            Lf->fna = va;
 	Lf->fsv |= FSV_NI;
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */
 
-#if	defined(HASLFILEADD) && defined(HAS_V_PATH)
-	Lf->V_path = (KA_T)v->v_path;
-#endif	/* defined(HASLFILEADD) && defined(HAS_V_PATH) */
+#if    defined(HASLFILEADD) && defined(HAS_V_PATH)
+    Lf->V_path = (KA_T)v->v_path;
+#endif    /* defined(HASLFILEADD) && defined(HAS_V_PATH) */
 
-	vs = (KA_T)v->v_stream;
+    vs = (KA_T) v->v_stream;
 /*
  * Check for a Solaris socket.
  */
-	if (is_socket(v))
-	    return;
+    if (is_socket(v))
+        return;
 /*
  * Obtain the Solaris virtual file system structure.
  */
-	if ((ka = (KA_T)v->v_vfsp)) {
-	    if (kread(ka, (char *)&kv, sizeof(kv))) {
-		vka = va;
+    if ((ka = (KA_T) v->v_vfsp)) {
+        if (kread(ka, (char *) &kv, sizeof(kv))) {
+            vka = va;
 
-vfs_read_error:
+            vfs_read_error:
 
-		(void) snpf(Namech, Namechl - 1,
-		    "vnode at %s: can't read vfs: %s",
-		    print_kptr(vka, tbuf, sizeof(tbuf)),
-		    print_kptr(ka, (char *)NULL, 0));
-		Namech[Namechl - 1] = '\0';
-		enter_nm(Namech);
-		return;
-	    }
-	    kvs = 1;
-	} else
-	    kvs = 0;
+            (void) snpf(Namech, Namechl - 1,
+                        "vnode at %s: can't read vfs: %s",
+                        print_kptr(vka, tbuf, sizeof(tbuf)),
+                        print_kptr(ka, (char *) NULL, 0));
+            Namech[Namechl - 1] = '\0';
+            enter_nm(Namech);
+            return;
+        }
+        kvs = 1;
+    } else
+        kvs = 0;
 /*
  * Derive the virtual file system structure's device number from
  * its file system ID for NFS and High Sierra file systems.
  */
-	if (kvs && ((fx = kv.vfs_fstype - 1) >= 0) && (fx < Fsinfomax)) {
-	    fxs = 1;
-	    if (strcmp(Fsinfo[fx], "nfs") == 0
-	    ||  strcmp(Fsinfo[fx], "nfs3") == 0
-	    ||  strcmp(Fsinfo[fx], "hsfs") == 0)
-		kv.vfs_dev = (dev_t)kv.vfs_fsid.val[0];
-	} else {
-	    fx = -1;
-	    fxs = 0;
-	}
+    if (kvs && ((fx = kv.vfs_fstype - 1) >= 0) && (fx < Fsinfomax)) {
+        fxs = 1;
+        if (strcmp(Fsinfo[fx], "nfs") == 0
+            || strcmp(Fsinfo[fx], "nfs3") == 0
+            || strcmp(Fsinfo[fx], "hsfs") == 0)
+            kv.vfs_dev = (dev_t) kv.vfs_fsid.val[0];
+    } else {
+        fx = -1;
+        fxs = 0;
+    }
 /*
  * Determine the Solaris vnode type.
  */
-	if ((Ntype = vop2ty(v, fx)) < 0) {
-	    if (v->v_type == VFIFO) {
-		vty = N_REGLR;
-		Ntype = N_FIFO;
-	    } else if (vs) {
-		Ntype = vty = N_STREAM;
-		Lf->is_stream = 1;
-	    }
-	    if (Ntype < 0) {
-		(void) snpf(Namech, Namechl - 1,
-		    "unknown file system type%s%s%s, v_op: %s",
-		    fxs ? " (" : "",
-		    fxs ? Fsinfo[fx] : "",
-		    fxs ? ")" : "",
-		    print_kptr((KA_T)v->v_op, (char *)NULL, 0));
-		Namech[Namechl - 1] = '\0';
-		enter_nm(Namech);
-		return;
-	    }
-	} else {
-	    vty = Ntype;
-	    if (v->v_type == VFIFO)
-		Ntype = N_FIFO;
-	    else if (vs && Ntype != N_SOCK) {
-		Ntype = vty = N_STREAM;
-		Lf->is_stream = 1;
-	    }
-	}
+    if ((Ntype = vop2ty(v, fx)) < 0) {
+        if (v->v_type == VFIFO) {
+            vty = N_REGLR;
+            Ntype = N_FIFO;
+        } else if (vs) {
+            Ntype = vty = N_STREAM;
+            Lf->is_stream = 1;
+        }
+        if (Ntype < 0) {
+            (void) snpf(Namech, Namechl - 1,
+                        "unknown file system type%s%s%s, v_op: %s",
+                        fxs ? " (" : "",
+                        fxs ? Fsinfo[fx] : "",
+                        fxs ? ")" : "",
+                        print_kptr((KA_T) v->v_op, (char *) NULL, 0));
+            Namech[Namechl - 1] = '\0';
+            enter_nm(Namech);
+            return;
+        }
+    } else {
+        vty = Ntype;
+        if (v->v_type == VFIFO)
+            Ntype = N_FIFO;
+        else if (vs && Ntype != N_SOCK) {
+            Ntype = vty = N_STREAM;
+            Lf->is_stream = 1;
+        }
+    }
 /*
  * See if this Solaris node has been fattach'ed to another node.
  * If it has, read the namenode, and enter the node addresses in
@@ -1535,124 +1597,124 @@ vfs_read_error:
  *
  * See if it's covering a socket as well and process accordingly.
  */
-	if (vty == N_NM) {
-	    if (read_nnn(va, (KA_T)v->v_data, &nn))
-		return;
-	    nns = 1;
-	    if (nn.nm_mountpt)
+    if (vty == N_NM) {
+        if (read_nnn(va, (KA_T) v->v_data, &nn))
+            return;
+        nns = 1;
+        if (nn.nm_mountpt)
 
-#if	solaris>=20500
-		fa = ent_fa((KA_T *)((Ntype == N_FIFO || v->v_type == VDOOR)
+#if    solaris >= 20500
+                                                                                                                                    fa = ent_fa((KA_T *)((Ntype == N_FIFO || v->v_type == VDOOR)
 			    ? NULL : &va),
 			    (KA_T *)&nn.nm_mountpt, "->", &fal);
 #else	/* solaris<20500 */
-		fa = ent_fa((KA_T *)((Ntype == N_FIFO)
-			    ? NULL : &va),
-			    (KA_T *)&nn.nm_mountpt, "->", &fal);
-#endif	/* solaris>=20500 */
+            fa = ent_fa((KA_T * )((Ntype == N_FIFO)
+                                  ? NULL : &va),
+                        (KA_T * ) & nn.nm_mountpt, "->", &fal);
+#endif    /* solaris>=20500 */
 
-	    if (Ntype != N_FIFO
-	    &&  nn.nm_filevp
-	    &&  !kread((KA_T)nn.nm_filevp, (char *)&rv, sizeof(rv))) {
-		rvs = 1;
-		if ((ka = (KA_T)rv.v_vfsp)
-		&&  !kread(ka, (char *)&rkv, sizeof(rkv))
-		&&  ((rfx = rkv.vfs_fstype - 1) >= 0)
-		&&  (rfx < Fsinfomax)
-		) {
-		    rfxs = 1;
-		} else {
-		    rfx = fx;
-		    rfxs = fxs;
-		}
+        if (Ntype != N_FIFO
+            && nn.nm_filevp
+            && !kread((KA_T) nn.nm_filevp, (char *) &rv, sizeof(rv))) {
+            rvs = 1;
+            if ((ka = (KA_T) rv.v_vfsp)
+                && !kread(ka, (char *) &rkv, sizeof(rkv))
+                && ((rfx = rkv.vfs_fstype - 1) >= 0)
+                && (rfx < Fsinfomax)
+                    ) {
+                rfxs = 1;
+            } else {
+                rfx = fx;
+                rfxs = fxs;
+            }
 
-#if	defined(HASNCACHE)
-		Lf->na = (KA_T)nn.nm_filevp;
-#endif	/* defined(HASNCACHE) */
+#if    defined(HASNCACHE)
+            Lf->na = (KA_T)nn.nm_filevp;
+#endif    /* defined(HASNCACHE) */
 
-		if (is_socket(&rv))
-		    return;
-	    }
-	}
-	if (Selinet && Ntype != N_SOCK)
-	    return;
+            if (is_socket(&rv))
+                return;
+        }
+    }
+    if (Selinet && Ntype != N_SOCK)
+        return;
 /*
  * See if this Solaris node is served by spec_vnodeops.
  */
-	if (Spvops && Spvops == (KA_T)v->v_op) 
-	    Ntype = N_SPEC;
+    if (Spvops && Spvops == (KA_T) v->v_op)
+        Ntype = N_SPEC;
 /*
  * Determine the Solaris lock state.
  */
-	Lf->lock = isvlocked(v);
+    Lf->lock = isvlocked(v);
 /*
  * Establish the Solaris local virtual file system structure.
  */
-	if (!(ka = (KA_T)v->v_vfsp) || !kvs)
-	    vfs = (struct l_vfs *)NULL;
-	else if (!(vfs = readvfs(ka, &kv, v))) {
-	    vka = va;
-	    goto vfs_read_error;
-	}
+    if (!(ka = (KA_T) v->v_vfsp) || !kvs)
+        vfs = (struct l_vfs *) NULL;
+    else if (!(vfs = readvfs(ka, &kv, v))) {
+        vka = va;
+        goto vfs_read_error;
+    }
 /*
  * Read the afsnode, autonode, cnode, door_node, fifonode, fnnode, lnode,
  * inode, pcnode, rnode, snode, tmpnode, znode, etc.
  */
-	switch (Ntype) {
-	case N_SPEC:
-	
-	/*
+    switch (Ntype) {
+        case N_SPEC:
+
+            /*
 	 * A N_SPEC node is a node that resides in in an underlying file system
 	 * type -- e.g. NFS, HSFS.  Its vnode points to an snode.  Subsequent
 	 * node structures are implied by the underlying node type.
 	 */
-	    if (read_nsn(va, (KA_T)v->v_data, &s))
-		return;
-	    realvp = (KA_T)s.s_realvp;
-	    if (!realvp && s.s_commonvp) {
-		if (read_cni(&s, &rv, v, &rs, &di, din, sizeof(din)) == 1)
-		    return;
-		if (!rv.v_stream) {
-		    if (din[0]) {
-			(void) snpf(Namech, Namechl, "COMMON: %s", din);
-			Namech[Namechl - 1] = '\0';
-			Lf->is_com = 1;
-		    }
-		    break;
-		}
-	    }
-	    if (!realvp) {
+            if (read_nsn(va, (KA_T) v->v_data, &s))
+                return;
+            realvp = (KA_T) s.s_realvp;
+            if (!realvp && s.s_commonvp) {
+                if (read_cni(&s, &rv, v, &rs, &di, din, sizeof(din)) == 1)
+                    return;
+                if (!rv.v_stream) {
+                    if (din[0]) {
+                        (void) snpf(Namech, Namechl, "COMMON: %s", din);
+                        Namech[Namechl - 1] = '\0';
+                        Lf->is_com = 1;
+                    }
+                    break;
+                }
+            }
+            if (!realvp) {
 
-	    /*
+                /*
 	     * If the snode lacks a real vnode (and also lacks a common vnode),
 	     * it's original type is N_STREAM or N_REGLR, and it has a stream
 	     * pointer, get the module names.
 	     */
-		if ((vty == N_STREAM || vty == N_REGLR) && vs) {
-		    Lf->is_stream = 1;
-		    vty = N_STREAM;
+                if ((vty == N_STREAM || vty == N_REGLR) && vs) {
+                    Lf->is_stream = 1;
+                    vty = N_STREAM;
 
-#if	solaris<100000
-		    read_mi(vs, (dev_t *)&s.s_dev, (caddr_t)&soso, &so_st,
-			    so_ad, &sdp);
+#if    solaris < 100000
+                    read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st,
+                            so_ad, &sdp);
 #else	/* solaris>=100000 */
-		    read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
-#endif	/* solaris<100000 */
+                    read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
+#endif    /* solaris<100000 */
 
-		    vs = (KA_T)NULL;
-		}
-	    }
-	    break;
+                    vs = (KA_T) NULL;
+                }
+            }
+            break;
 
-#if	defined(HAS_AFS)
-	case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                case N_AFS:
 	    if (readafsnode(va, v, &an))
 		return;
 	    break;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-#if	solaris>=20500
-	case N_AUTO:
+#if    solaris >= 20500
+                                                                                                                                case N_AUTO:
 
 # if	solaris<20600
 	    if (read_nan(va, (KA_T)v->v_data, &au))
@@ -1676,15 +1738,15 @@ vfs_read_error:
 		return;
 	    dns = 1;
 	    break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	case N_CACHE:
-	    if (read_ncn(va, (KA_T)v->v_data, &cn))
-		return;
-	    break;
+        case N_CACHE:
+            if (read_ncn(va, (KA_T) v->v_data, &cn))
+                return;
+            break;
 
-#if	solaris>=100000
-	case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                case N_CTFSADIR:
 	case N_CTFSBUND:
 	case N_CTFSCDIR:
 	case N_CTFSCTL:
@@ -1698,78 +1760,78 @@ vfs_read_error:
 	    if (read_nctfsn(Ntype, va, (KA_T)v->v_data, (char *)&ctfs))
 		return;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-#if	solaris>=20600
-	case N_SOCK:
+#if    solaris >= 20600
+                                                                                                                                case N_SOCK:
 	    sona = (KA_T)v->v_data;
 	    if (read_nson(va, sona, &so))
 		return;
 	    break;
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-	case N_MNT:
-	    /* Information comes from the l_vfs structure. */
-	    break;
-	case N_MVFS:
-	    if (read_nmn(va, (KA_T)v->v_data, &m))
-		return;
-	    break;
-	case N_NFS:
-	    if (read_nrn(va, (KA_T)v->v_data, &r))
-		return;
-	    break;
+        case N_MNT:
+            /* Information comes from the l_vfs structure. */
+            break;
+        case N_MVFS:
+            if (read_nmn(va, (KA_T) v->v_data, &m))
+                return;
+            break;
+        case N_NFS:
+            if (read_nrn(va, (KA_T) v->v_data, &r))
+                return;
+            break;
 
-#if	solaris>=100000
-	case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                case N_NFS4:
 	    if (read_nrn4(va, (KA_T)v->v_data, &r4))
 		return;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	case N_NM:
-	    if (nns)
-		realvp = (KA_T)nn.nm_filevp;
+        case N_NM:
+            if (nns)
+                realvp = (KA_T) nn.nm_filevp;
 
-#if	defined(HASNCACHE)
-		Lf->na = (KA_T)nn.nm_filevp;
-#endif	/* defined(HASNCACHE) */
+#if    defined(HASNCACHE)
+            Lf->na = (KA_T)nn.nm_filevp;
+#endif    /* defined(HASNCACHE) */
 
-	    break;
-	case N_FD:
-	    break;	/* no successor node */
-	case N_FIFO:
+            break;
+        case N_FD:
+            break;    /* no successor node */
+        case N_FIFO:
 
-	/*
+            /*
 	 * Solaris FIFO vnodes are usually linked to a fifonode.  One
 	 * exception is a FIFO vnode served by nm_vnodeops; it is linked
 	 * to a namenode, and the namenode points to the fifonode.
 	 *
 	 * Non-pipe fifonodes are linked to a vnode thorough fn_realvp.
 	 */
-	    if (vty == N_NM && nns) {
-		if (nn.nm_filevp) {
-		    if (read_nfn(va, (KA_T)nn.nm_filevp, &f))
-			return;
-		    realvp = (KA_T)NULL;
-		    vty = N_FIFO;
-		} else {
-		    (void) snpf(Namech, Namechl - 1,
-			"FIFO namenode at %s: no fifonode pointer",
-			print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-		    Namech[Namechl - 1] = '\0';
-		    return;
-		}
-	    } else {
-		if (read_nfn(va, (KA_T)v->v_data, &f))
-		    return;
-		realvp = (KA_T)f.fn_realvp;
-	    }
-	    if (!realvp) {
-		Lf->inode = (INODETYPE)(nns ? nn.nm_vattr.va_nodeid : f.fn_ino);
+            if (vty == N_NM && nns) {
+                if (nn.nm_filevp) {
+                    if (read_nfn(va, (KA_T) nn.nm_filevp, &f))
+                        return;
+                    realvp = (KA_T) NULL;
+                    vty = N_FIFO;
+                } else {
+                    (void) snpf(Namech, Namechl - 1,
+                                "FIFO namenode at %s: no fifonode pointer",
+                                print_kptr((KA_T) v->v_data, (char *) NULL, 0));
+                    Namech[Namechl - 1] = '\0';
+                    return;
+                }
+            } else {
+                if (read_nfn(va, (KA_T) v->v_data, &f))
+                    return;
+                realvp = (KA_T) f.fn_realvp;
+            }
+            if (!realvp) {
+                Lf->inode = (INODETYPE) (nns ? nn.nm_vattr.va_nodeid : f.fn_ino);
 
-#if	solaris>=80000	/* Solaris 8 and above hack! */
-# if	defined(_LP64)
+#if    solaris >= 80000    /* Solaris 8 and above hack! */
+                                                                                                                                        # if	defined(_LP64)
 		if (Lf->inode >= (unsigned long)0xbaddcafebaddcafe)
 # else	/* !defined(_LP64) */
 		if (Lf->inode >= (unsigned long)0xbaddcafe)
@@ -1777,242 +1839,239 @@ vfs_read_error:
 
 		    Lf->inp_ty = 0;
 		else
-#endif	/* solaris>=80000 Solaris 8 and above hack! */
+#endif    /* solaris>=80000 Solaris 8 and above hack! */
 
-		    Lf->inp_ty = 1;
-		enter_dev_ch(print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-		if (f.fn_flag & ISPIPE) {
-		    (void) snpf(tbuf, sizeof(tbuf), "PIPE");
-		    tbufx = (int)strlen(tbuf);
-		} else
-		    tbufx = 0;
+                Lf->inp_ty = 1;
+                enter_dev_ch(print_kptr((KA_T) v->v_data, (char *) NULL, 0));
+                if (f.fn_flag & ISPIPE) {
+                    (void) snpf(tbuf, sizeof(tbuf), "PIPE");
+                    tbufx = (int) strlen(tbuf);
+                } else
+                    tbufx = 0;
 
-#if	solaris<20500
-		if (f.fn_mate) {
-		    (void) snpf(&tbuf[tbufx], sizeof(tbuf) - tbufx, "->%s",
-			print_kptr((KA_T)f.fn_mate, (char *)NULL, 0));
-		    tbufx = (int)strlen(tbuf);
-		}
+#if    solaris < 20500
+                if (f.fn_mate) {
+                    (void) snpf(&tbuf[tbufx], sizeof(tbuf) - tbufx, "->%s",
+                                print_kptr((KA_T) f.fn_mate, (char *) NULL, 0));
+                    tbufx = (int) strlen(tbuf);
+                }
 #else	/* solaris>=20500 */
-		if (f.fn_dest) {
+                                                                                                                                        if (f.fn_dest) {
 		    (void) snpf(&tbuf[tbufx], sizeof(tbuf) - tbufx, "->%s",
 			print_kptr((KA_T)f.fn_dest, (char *)NULL, 0));
 		    tbufx = (int)strlen(tbuf);
 		}
-#endif	/* solaris<20500 */
+#endif    /* solaris<20500 */
 
-		if (tbufx)
-		    (void) add_nma(tbuf, tbufx);
-		break;
-	    }
-	    break;
+                if (tbufx)
+                    (void) add_nma(tbuf, tbufx);
+                break;
+            }
+            break;
 
-	case N_HSFS:
-	    if (read_nhn(va, (KA_T)v->v_data, &h))
-		return;
-	    break;
-	case N_LOFS:
-	    llc = 0;
-	    do {
-		rvs = 0;
-		if (read_nln(va,
-			     llc ? (KA_T)rv.v_data : (KA_T)v->v_data,
-			     &lo))
-		{
-		    return;
-		}
-		if (!(realvp = (KA_T)lo.lo_vp)) {
-		    (void) snpf(Namech, Namechl - 1,
-			"lnode at %s: no real vnode",
-			print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-		    Namech[Namechl - 1] = '\0';
-		    enter_nm(Namech);
-		    return;
-		}
-		if (read_nvn((KA_T)v->v_data, (KA_T)realvp, &rv))
-		    return;
-		rvs = 1;
-		llc++;
-		if ((ka = (KA_T)rv.v_vfsp)
-		&&  !kread(ka, (char *)&rkv, sizeof(rkv))
-		&&  ((rfx = rkv.vfs_fstype - 1) >= 0)
-		&&  (rfx < Fsinfomax)
-		) {
-		    rfxs = 1;
-		} else {
-		    rfx = fx;
-		    rfxs = fxs;
-		}
-		if (((vty_tmp = vop2ty(&rv, rfx)) == N_LOFS) && (llc > 1000)) {
-		    (void) snpf(Namech, Namechl - 1,
-			"lnode at %s: loop > 1000",
-			print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-		    Namech[Namechl - 1] = '\0';
-		    enter_nm(Namech);
-		    return;
-		}
-	    } while (vty_tmp == N_LOFS);
-	    break;
-	case N_PCFS:
-	    if (read_npn(va, (KA_T)v->v_data, &pc))
-		return;
-	    break;
+        case N_HSFS:
+            if (read_nhn(va, (KA_T) v->v_data, &h))
+                return;
+            break;
+        case N_LOFS:
+            llc = 0;
+            do {
+                rvs = 0;
+                if (read_nln(va,
+                             llc ? (KA_T) rv.v_data : (KA_T) v->v_data,
+                             &lo)) {
+                    return;
+                }
+                if (!(realvp = (KA_T) lo.lo_vp)) {
+                    (void) snpf(Namech, Namechl - 1,
+                                "lnode at %s: no real vnode",
+                                print_kptr((KA_T) v->v_data, (char *) NULL, 0));
+                    Namech[Namechl - 1] = '\0';
+                    enter_nm(Namech);
+                    return;
+                }
+                if (read_nvn((KA_T) v->v_data, (KA_T) realvp, &rv))
+                    return;
+                rvs = 1;
+                llc++;
+                if ((ka = (KA_T) rv.v_vfsp)
+                    && !kread(ka, (char *) &rkv, sizeof(rkv))
+                    && ((rfx = rkv.vfs_fstype - 1) >= 0)
+                    && (rfx < Fsinfomax)
+                        ) {
+                    rfxs = 1;
+                } else {
+                    rfx = fx;
+                    rfxs = fxs;
+                }
+                if (((vty_tmp = vop2ty(&rv, rfx)) == N_LOFS) && (llc > 1000)) {
+                    (void) snpf(Namech, Namechl - 1,
+                                "lnode at %s: loop > 1000",
+                                print_kptr((KA_T) v->v_data, (char *) NULL, 0));
+                    Namech[Namechl - 1] = '\0';
+                    enter_nm(Namech);
+                    return;
+                }
+            } while (vty_tmp == N_LOFS);
+            break;
+        case N_PCFS:
+            if (read_npn(va, (KA_T) v->v_data, &pc))
+                return;
+            break;
 
-#if	solaris>=100000
-	case N_PORT:
+#if    solaris >= 100000
+                                                                                                                                case N_PORT:
 	    if (read_nprtn(va, (KA_T)v->v_data, &pn))
 		return;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-#if	defined(HASPROCFS)
-	case N_PROC:
+#if    defined(HASPROCFS)
+                                                                                                                                case N_PROC:
 	    if (read_npi(va, v, &pids))
 		return;
 	    break;
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-#if	solaris>=110000
-	case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                case N_SDEV:
 	    if (read_nsdn(va, (KA_T)v->v_data, &sdn, &sdva))
 		return;
 	    sdns = 1;
 	    break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	case N_SAMFS:
-	    (void) add_nma(SAMFS_NMA_MSG, (int)strlen(SAMFS_NMA_MSG));
-	    break;
-	case N_SHARED:
-	    break;		/* No more sharedfs information is available. */
-	case N_STREAM:
-	    if (read_nsn(va, (KA_T)v->v_data, &s))
-		return;
-	    if (vs) {
-		Lf->is_stream = 1;
+        case N_SAMFS:
+            (void) add_nma(SAMFS_NMA_MSG, (int) strlen(SAMFS_NMA_MSG));
+            break;
+        case N_SHARED:
+            break;        /* No more sharedfs information is available. */
+        case N_STREAM:
+            if (read_nsn(va, (KA_T) v->v_data, &s))
+                return;
+            if (vs) {
+                Lf->is_stream = 1;
 
-#if	solaris<100000
-		read_mi(vs, (dev_t *)&s.s_dev, (caddr_t)&soso, &so_st, so_ad,
-		    &sdp);
+#if    solaris < 100000
+                read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
+                        &sdp);
 #else	/* solaris>=100000 */
-		read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
-#endif	/* solaris<100000 */
+                read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
+#endif    /* solaris<100000 */
 
-		vs = (KA_T)NULL;
-	    }
-	    break;
-	case N_TMP:
-	    if (read_ntn(va, (KA_T)v->v_data, &t))
-		return;
-	    break;
+                vs = (KA_T) NULL;
+            }
+            break;
+        case N_TMP:
+            if (read_ntn(va, (KA_T) v->v_data, &t))
+                return;
+            break;
 
-#if	defined(HASVXFS)
-	case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                case N_VXFS:
 	    if (read_vxnode(va, v, vfs, fx, &vx, Vvops))
 		return;
 	    break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                case N_ZFS:
 	    if (read_nzn(va, (KA_T)v->v_data, &zn))
 		return;
 	    zns = 1;
 	    break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	case N_REGLR:
-	default:
-	    if (read_nin(va, (KA_T)v->v_data, &i))
-		return;
-	    ins = 1;
-	}
+        case N_REGLR:
+        default:
+            if (read_nin(va, (KA_T) v->v_data, &i))
+                return;
+            ins = 1;
+    }
 /*
  * If the node has a real vnode pointer, follow it.
  */
-	if (realvp) {
-	    if (rvs) {
-		*v = rv;
-		fx = rfx;
-		fxs = rfxs;
-	    }
-	    else {
-		if (read_nvn((KA_T)v->v_data, (KA_T)realvp, v))
-		    return;
-		else {
+    if (realvp) {
+        if (rvs) {
+            *v = rv;
+            fx = rfx;
+            fxs = rfxs;
+        } else {
+            if (read_nvn((KA_T) v->v_data, (KA_T) realvp, v))
+                return;
+            else {
 
-#if	defined(HASNCACHE)
-		    Lf->na = (KA_T)realvp;
-#endif	/* defined(HASNCACHE) */
+#if    defined(HASNCACHE)
+                Lf->na = (KA_T)realvp;
+#endif    /* defined(HASNCACHE) */
 
-		    if ((ka = (KA_T)v->v_vfsp)
-	            &&  !kread(ka, (char *)&kv, sizeof(kv)))
-		    {
-			kvs = 1;
-		    }
-		    if (kvs
-		    &&  ((fx = kv.vfs_fstype - 1) >= 0)
-		    &&  (fx < Fsinfomax)
-		    ) {
-			fxs = 1;
-		    }
-		}
-	    }
-	/*
+                if ((ka = (KA_T) v->v_vfsp)
+                    && !kread(ka, (char *) &kv, sizeof(kv))) {
+                    kvs = 1;
+                }
+                if (kvs
+                    && ((fx = kv.vfs_fstype - 1) >= 0)
+                    && (fx < Fsinfomax)
+                        ) {
+                    fxs = 1;
+                }
+            }
+        }
+        /*
 	 * If the original vnode type is N_STREAM, if there is a stream
 	 * pointer and if there is no sdev_node, get the module names.
 	 */
-	    if (vty == N_STREAM && vs && !sdns) {
-		Lf->is_stream = 1;
+        if (vty == N_STREAM && vs && !sdns) {
+            Lf->is_stream = 1;
 
-#if	solaris<100000
-		read_mi(vs, (dev_t *)&s.s_dev, (caddr_t)&soso, &so_st, so_ad,
-		    &sdp);
+#if    solaris < 100000
+            read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
+                    &sdp);
 #else	/* solaris>=100000 */
-		read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
-#endif	/* solaris<100000 */
+            read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
+#endif    /* solaris<100000 */
 
-		vs = (KA_T)NULL;
-	    }
-	/*
+            vs = (KA_T) NULL;
+        }
+        /*
 	 * Get the real vnode's type.
 	 */
-	    if ((vty = vop2ty(v, fx)) < 0) {
-		if (Ntype != N_FIFO && vs)
-		    vty = N_STREAM;
-		else {
+        if ((vty = vop2ty(v, fx)) < 0) {
+            if (Ntype != N_FIFO && vs)
+                vty = N_STREAM;
+            else {
 
-#if	solaris<100000
-		    (void) snpf(Namech, Namechl - 1,
-			"unknown file system type, v_op: %s",
-			print_kptr((KA_T)v->v_op, (char *)NULL, 0));
+#if    solaris < 100000
+                (void) snpf(Namech, Namechl - 1,
+                            "unknown file system type, v_op: %s",
+                            print_kptr((KA_T) v->v_op, (char *) NULL, 0));
 #else	/* solaris>=100000 */
-		    (void) snpf(Namech, Namechl - 1,
+                                                                                                                                        (void) snpf(Namech, Namechl - 1,
 			"unknown file system type (%s), v_op: %s",
 			fxs ? Fsinfo[fx] : "unknown",
 			print_kptr((KA_T)v->v_op, (char *)NULL, 0));
-#endif	/* solaris<100000 */
+#endif    /* solaris<100000 */
 
-		    Namech[Namechl - 1] = '\0';
-		}
-	    }
-	    if (Ntype == N_NM || Ntype == N_AFS)
-		Ntype = vty;
-	/*
+                Namech[Namechl - 1] = '\0';
+            }
+        }
+        if (Ntype == N_NM || Ntype == N_AFS)
+            Ntype = vty;
+        /*
 	 * Base further processing on the "real" vnode.
 	 */
-	    Lf->lock = isvlocked(v);
-	    switch (vty) {
+        Lf->lock = isvlocked(v);
+        switch (vty) {
 
-#if	defined(HAS_AFS)
-	    case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                    case N_AFS:
 		if (readafsnode(va, v, &an))
 		    return;
 		break;
-#endif	/* defined(HAS_AFS) */
-	
-#if	solaris>=20500
-	    case N_AUTO:
+#endif    /* defined(HAS_AFS) */
+
+#if    solaris >= 20500
+                                                                                                                                    case N_AUTO:
 
 # if	solaris<20600
 		if (read_nan(va, (KA_T)v->v_data, &au))
@@ -2042,15 +2101,15 @@ vfs_read_error:
 		    return;
 		dns = 1;
 		break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	    case N_CACHE:
-		if (read_ncn(va, (KA_T)v->v_data, &cn))
-		    return;
-		break;
+            case N_CACHE:
+                if (read_ncn(va, (KA_T) v->v_data, &cn))
+                    return;
+                break;
 
-#if	solaris>=100000
-	    case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                    case N_CTFSADIR:
 	    case N_CTFSBUND:
 	    case N_CTFSCDIR:
 	    case N_CTFSCTL:
@@ -2064,53 +2123,53 @@ vfs_read_error:
 		if (read_nctfsn(vty, va, (KA_T)v->v_data, (char *)&ctfs))
 		    return;
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_HSFS:
-		if (read_nhn(va, (KA_T)v->v_data, &h))
-		    return;
-		break;
-	    case N_MNT:
-		/* Information comes from the l_vfs structure. */
-		break;
-	    case N_MVFS:
-		if (read_nmn(va, (KA_T)v->v_data, &m))
-		    return;
-		break;
-	    case N_NFS:
-		if (read_nrn(va, (KA_T)v->v_data, &r))
-		    return;
-		break;
+            case N_HSFS:
+                if (read_nhn(va, (KA_T) v->v_data, &h))
+                    return;
+                break;
+            case N_MNT:
+                /* Information comes from the l_vfs structure. */
+                break;
+            case N_MVFS:
+                if (read_nmn(va, (KA_T) v->v_data, &m))
+                    return;
+                break;
+            case N_NFS:
+                if (read_nrn(va, (KA_T) v->v_data, &r))
+                    return;
+                break;
 
-#if	solaris>=100000
-	    case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                    case N_NFS4:
 		if (read_nrn4(va, (KA_T)v->v_data, &r4))
 		    return;
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_NM:
-		if (read_nnn(va, (KA_T)v->v_data, &nn))
-		    return;
-		nns = 1;
-		break;
+            case N_NM:
+                if (read_nnn(va, (KA_T) v->v_data, &nn))
+                    return;
+                nns = 1;
+                break;
 
-#if	solaris>=100000
-	    case N_PORT:
+#if    solaris >= 100000
+                                                                                                                                    case N_PORT:
 		if (read_nprtn(va, (KA_T)v->v_data, &pn))
 		    return;
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_PCFS:
-		if (read_npn(va, (KA_T)v->v_data, &pc))
-		    return;
-		break;
-	    case N_SAMFS:
-		(void) add_nma(SAMFS_NMA_MSG, (int)strlen(SAMFS_NMA_MSG));
+            case N_PCFS:
+                if (read_npn(va, (KA_T) v->v_data, &pc))
+                    return;
+                break;
+            case N_SAMFS:
+                (void) add_nma(SAMFS_NMA_MSG, (int) strlen(SAMFS_NMA_MSG));
 
-#if	solaris>=110000
-	    case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                    case N_SDEV:
 		if (read_nsdn(va, (KA_T)v->v_data, &sdn, &sdva))
 		    return;
 		if (Lf->is_stream) {
@@ -2124,78 +2183,78 @@ vfs_read_error:
 		}
 		sdns = 1;
 		break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-		break;
+                break;
 
-#if	solaris>=20600
-	    case N_SOCK:
+#if    solaris >= 20600
+                                                                                                                                    case N_SOCK:
 		sona = (KA_T)v->v_data;
 		if (read_nson(va, sona, &so))
 		    return;
 		break;
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-	    case N_STREAM:
-		if (vs) {
-		    Lf->is_stream = 1;
+            case N_STREAM:
+                if (vs) {
+                    Lf->is_stream = 1;
 
-#if	solaris<100000
-		read_mi(vs, (dev_t *)&s.s_dev, (caddr_t)&soso, &so_st, so_ad,
-		    &sdp);
+#if    solaris < 100000
+                    read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
+                            &sdp);
 #else	/* solaris>=100000 */
-		read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
-#endif	/* solaris<100000 */
+                    read_mi(vs, (dev_t *)&s.s_dev, NULL, NULL, NULL, &sdp);
+#endif    /* solaris<100000 */
 
-		    vs = (KA_T)NULL;
-		}
-		break;
-	    case N_TMP:
-		if (read_ntn(va, (KA_T)v->v_data, &t))
-		    return;
-		break;
+                    vs = (KA_T) NULL;
+                }
+                break;
+            case N_TMP:
+                if (read_ntn(va, (KA_T) v->v_data, &t))
+                    return;
+                break;
 
-#if	defined(HASVXFS)
-	    case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                    case N_VXFS:
 		if (read_vxnode(va, v, vfs, fx, &vx, Vvops))
 		    return;
 		break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	    case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                    case N_ZFS:
 		if (read_nzn(va, (KA_T)v->v_data, &zn))
 		    return;
 		zns = 1;
 		break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	    case N_REGLR:
-	    default:
-		if (read_nin(va, (KA_T)v->v_data, &i))
-		    return;
-		ins = 1;
-	    }
-	/*
+            case N_REGLR:
+            default:
+                if (read_nin(va, (KA_T) v->v_data, &i))
+                    return;
+                ins = 1;
+        }
+        /*
 	 * If this is a Solaris loopback node, use the "real" node type.
 	 */
-	    if (Ntype == N_LOFS)
-		Ntype = vty;
-	}
+        if (Ntype == N_LOFS)
+            Ntype = vty;
+    }
 /*
  * Get device and type for printing.
  */
-	switch (((Ntype == N_FIFO) || (vty == N_SDEV)) ? vty : Ntype) {
+    switch (((Ntype == N_FIFO) || (vty == N_SDEV)) ? vty : Ntype) {
 
-#if	defined(HAS_AFS)
-	case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                case N_AFS:
 	    dev = an.dev;
 	    devs = 1;
 	    break;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-#if	solaris>=20500
-	case N_AUTO:
+#if    solaris >= 20500
+                                                                                                                                case N_AUTO:
 	    if (kvs) {
 		dev = (dev_t)kv.vfs_fsid.val[0];
 		devs = 1;
@@ -2234,19 +2293,19 @@ vfs_read_error:
 # endif	/* solaris<20600 */
 
 	    break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	case N_CACHE:
-	case N_HSFS:
-	case N_PCFS:
-	    if (kvs) {
-		dev = kv.vfs_dev;
-		devs = 1;
-	    }
-	    break;
+        case N_CACHE:
+        case N_HSFS:
+        case N_PCFS:
+            if (kvs) {
+                dev = kv.vfs_dev;
+                devs = 1;
+            }
+            break;
 
-#if	solaris>=100000
-	case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                case N_CTFSADIR:
 	case N_CTFSBUND:
 	case N_CTFSCDIR:
 	case N_CTFSCTL:
@@ -2262,108 +2321,108 @@ vfs_read_error:
 		devs = 1;
 	    }
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
-	case N_FD:
-	    if (kvs) {
-		dev = kv.vfs_dev;
-		devs = 1;
-	    }
-	    if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
-		rdev = v->v_rdev;
-		rdevs = 1;
-	    }
-	    break;
+        case N_FD:
+            if (kvs) {
+                dev = kv.vfs_dev;
+                devs = 1;
+            }
+            if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
+                rdev = v->v_rdev;
+                rdevs = 1;
+            }
+            break;
 
-	case N_MNT:
+        case N_MNT:
 
-#if	defined(CVFS_DEVSAVE)
-	    if (vfs) {
+#if    defined(CVFS_DEVSAVE)
+                                                                                                                                    if (vfs) {
 		dev = vfs->dev;
 		devs = 1;
 	    }
-#endif	/* defined(CVFS_DEVSAVE) */
+#endif    /* defined(CVFS_DEVSAVE) */
 
-	    break;
-	case N_MVFS:
+            break;
+        case N_MVFS:
 
-#if	defined(CVFS_DEVSAVE)
-	    if (vfs) {
+#if    defined(CVFS_DEVSAVE)
+                                                                                                                                    if (vfs) {
 		dev = vfs->dev;
 		devs = 1;
 	    }
-#endif	/* defined(CVFS_DEVSAVE) */
+#endif    /* defined(CVFS_DEVSAVE) */
 
-	    break;
-	case N_NFS:
-	    dev = r.r_attr.va_fsid;
-	    devs = 1;
-	    break;
+            break;
+        case N_NFS:
+            dev = r.r_attr.va_fsid;
+            devs = 1;
+            break;
 
-#if	solaris>=100000
-	case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                case N_NFS4:
 	    dev = r4.r_attr.va_fsid;
 	    devs = 1;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	case N_NM:
-	    if (nns) {
-		dev = (dev_t)nn.nm_vattr.va_fsid;
-		devs = 1;
-	    } else
-		enter_dev_ch("    NMFS");
-	    break;
+        case N_NM:
+            if (nns) {
+                dev = (dev_t) nn.nm_vattr.va_fsid;
+                devs = 1;
+            } else
+                enter_dev_ch("    NMFS");
+            break;
 
-#if	solaris>=100000
-	case N_PORT:
+#if    solaris >= 100000
+                                                                                                                                case N_PORT:
 	    if (kvs) {
 		dev = kv.vfs_dev;
 		devs = 1;
 	    }
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
-#if	defined(HASPROCFS)
-	case N_PROC:
+#if    defined(HASPROCFS)
+                                                                                                                                case N_PROC:
 	    if (kvs) {
 		dev = kv.vfs_dev;
 		devs = 1;
 	    }
 	    break;
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-	case N_SAMFS:
-	    if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
-		rdev = v->v_rdev;
-		rdevs = 1;
-	    } else if (vfs) {
-		dev = vfs->dev;
-		devs = 1;
-	    }
-	    break;
+        case N_SAMFS:
+            if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
+                rdev = v->v_rdev;
+                rdevs = 1;
+            } else if (vfs) {
+                dev = vfs->dev;
+                devs = 1;
+            }
+            break;
 
-#if	solaris>=110000
-	case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                case N_SDEV:
 	    if (sdns) {
 		dev = sdva.va_fsid;
 		rdev = sdva.va_rdev;
 		devs = rdevs = 1;
 	    }
 	    break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	case N_SHARED:
-	    if (vfs) {
-		dev = vfs->dev;
-		devs = 1;
-	    }
-	    break;
+        case N_SHARED:
+            if (vfs) {
+                dev = vfs->dev;
+                devs = 1;
+            }
+            break;
 
-#if	solaris>=20600
-	case N_SOCK:
+#if    solaris >= 20600
+                                                                                                                                case N_SOCK:
 	    if (so.so_family == AF_UNIX)
 
 	    /*
@@ -2669,111 +2728,110 @@ vfs_read_error:
 
 	    break;
 
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-	case N_SPEC:
+        case N_SPEC:
 
-#if	solaris<100000
-	    if (((Ntype = vty) == N_STREAM) && so_st) {
-		if (Funix)
-		    Lf->sf |= SELUNX;
-		unix_sock = 1;
-		if (so_ad[0]) {
-		    if (sdp) {
-			if (vfs) {
-			    dev = vfs->dev;
-			    devs = 1;
-			}
-			rdev = sdp->rdev;
-			rdevs = 1;
-			Lf->inode = (INODETYPE)sdp->inode;
-			Lf->inp_ty = 1;
-			(void) snpf(ubuf, sizeof(ubuf), "(%s%s%s)",
-			    print_kptr(so_ad[0], (char *)NULL, 0),
-			    so_ad[1] ? "->" : "",
-			    so_ad[1] ? print_kptr(so_ad[1], tbuf, sizeof(tbuf))
-				     : "");
-		    } else {
-			enter_dev_ch(print_kptr(so_ad[0], (char *)NULL, 0));
-			if (so_ad[1])
-			    (void) snpf(ubuf, sizeof(ubuf), "(->%s)",
-				print_kptr(so_ad[1], (char *)NULL, 0));
-		    }
-		    if (!Lf->nma && (Lf->nma = (char *)
-					       malloc((int)strlen(ubuf) + 1)))
-		    {
-			(void) snpf(Lf->nma, (int)strlen(ubuf) + 1, "%s", ubuf);
-		    }
-		} else if (soso.lux_dev.addr.tu_addr.ino) {
-		    if (vfs) {
-			dev = vfs->dev;
-			devs = 1;
-		    }
-		    rdev = soso.lux_dev.addr.tu_addr.dev;
-		    rdevs = 1;
-		} else {
-		    int dc, dl, dr;
+#if    solaris < 100000
+            if (((Ntype = vty) == N_STREAM) && so_st) {
+                if (Funix)
+                    Lf->sf |= SELUNX;
+                unix_sock = 1;
+                if (so_ad[0]) {
+                    if (sdp) {
+                        if (vfs) {
+                            dev = vfs->dev;
+                            devs = 1;
+                        }
+                        rdev = sdp->rdev;
+                        rdevs = 1;
+                        Lf->inode = (INODETYPE) sdp->inode;
+                        Lf->inp_ty = 1;
+                        (void) snpf(ubuf, sizeof(ubuf), "(%s%s%s)",
+                                    print_kptr(so_ad[0], (char *) NULL, 0),
+                                    so_ad[1] ? "->" : "",
+                                    so_ad[1] ? print_kptr(so_ad[1], tbuf, sizeof(tbuf))
+                                             : "");
+                    } else {
+                        enter_dev_ch(print_kptr(so_ad[0], (char *) NULL, 0));
+                        if (so_ad[1])
+                            (void) snpf(ubuf, sizeof(ubuf), "(->%s)",
+                                        print_kptr(so_ad[1], (char *) NULL, 0));
+                    }
+                    if (!Lf->nma && (Lf->nma = (char *)
+                            malloc((int) strlen(ubuf) + 1))) {
+                        (void) snpf(Lf->nma, (int) strlen(ubuf) + 1, "%s", ubuf);
+                    }
+                } else if (soso.lux_dev.addr.tu_addr.ino) {
+                    if (vfs) {
+                        dev = vfs->dev;
+                        devs = 1;
+                    }
+                    rdev = soso.lux_dev.addr.tu_addr.dev;
+                    rdevs = 1;
+                } else {
+                    int dc, dl, dr;
 
-#if	solaris<20400
-		    dl = (soso.lux_dev.addr.tu_addr.dev >> 16) & 0xffff;
-		    dr = (soso.rux_dev.addr.tu_addr.dev >> 16) & 0xffff;
+#if    solaris < 20400
+                    dl = (soso.lux_dev.addr.tu_addr.dev >> 16) & 0xffff;
+                    dr = (soso.rux_dev.addr.tu_addr.dev >> 16) & 0xffff;
 #else	/* solaris>=20400 */
-		    dl = soso.lux_dev.addr.tu_addr.dev & 0xffff;
+                                                                                                                                            dl = soso.lux_dev.addr.tu_addr.dev & 0xffff;
 		    dr = soso.rux_dev.addr.tu_addr.dev & 0xffff;
-#endif	/* solaris<20400 */
+#endif    /* solaris<20400 */
 
-		    dc = (dl << 16) | dr;
-		    enter_dev_ch(print_kptr((KA_T)dc, (char *)NULL, 0));
-		    devs = 0;
-		}
-		if (soso.laddr.buf && soso.laddr.len == sizeof(ua)) {
-		    if (kread((KA_T)soso.laddr.buf, (char *)&ua, sizeof(ua))
-		    == 0) {
-			ua.sun_path[sizeof(ua.sun_path) - 1] = '\0';
-			if (ua.sun_path[0]) {
-			    if (Sfile
-			    &&  is_file_named(ua.sun_path, Ntype, type, 0))
-				Lf->sf |= SELNM;
-			    len = (int)strlen(ua.sun_path);
-			    nl = (int)strlen(Namech);
-			    sepl = Namech[0] ? 2 : 0;
-			    if (len > (Namechl - nl - sepl - 1))
-				len = Namechl - nl - sepl - 1;
-			    if (len > 0) {
-				ua.sun_path[len] = '\0';
-				(void) snpf(&Namech[nl], Namechl - nl, "%s%s",
-				    sepl ? "->" : "", ua.sun_path);
-			    }
-			}
-		    }
-		}
-	    } else
-#endif	/* solaris<100000 */
+                    dc = (dl << 16) | dr;
+                    enter_dev_ch(print_kptr((KA_T) dc, (char *) NULL, 0));
+                    devs = 0;
+                }
+                if (soso.laddr.buf && soso.laddr.len == sizeof(ua)) {
+                    if (kread((KA_T) soso.laddr.buf, (char *) &ua, sizeof(ua))
+                        == 0) {
+                        ua.sun_path[sizeof(ua.sun_path) - 1] = '\0';
+                        if (ua.sun_path[0]) {
+                            if (Sfile
+                                && is_file_named(ua.sun_path, Ntype, type, 0))
+                                Lf->sf |= SELNM;
+                            len = (int) strlen(ua.sun_path);
+                            nl = (int) strlen(Namech);
+                            sepl = Namech[0] ? 2 : 0;
+                            if (len > (Namechl - nl - sepl - 1))
+                                len = Namechl - nl - sepl - 1;
+                            if (len > 0) {
+                                ua.sun_path[len] = '\0';
+                                (void) snpf(&Namech[nl], Namechl - nl, "%s%s",
+                                            sepl ? "->" : "", ua.sun_path);
+                            }
+                        }
+                    }
+                }
+            } else
+#endif    /* solaris<100000 */
 
-	    {
-		if (vfs) {
-		    dev = vfs->dev;
-		    devs = 1;
-		}
-		rdev = s.s_dev;
-		rdevs = 1;
-	    }
-	    break;
-	case N_STREAM:
-	    if (vfs) {
-		dev = vfs->dev;
-		devs = 1;
-	    }
-	    rdev = s.s_dev;
-	    rdevs = 1;
-	    break;
-	case N_TMP:
-	    dev = t.tn_attr.va_fsid;
-	    devs = 1;
-	    break;
+            {
+                if (vfs) {
+                    dev = vfs->dev;
+                    devs = 1;
+                }
+                rdev = s.s_dev;
+                rdevs = 1;
+            }
+            break;
+        case N_STREAM:
+            if (vfs) {
+                dev = vfs->dev;
+                devs = 1;
+            }
+            rdev = s.s_dev;
+            rdevs = 1;
+            break;
+        case N_TMP:
+            dev = t.tn_attr.va_fsid;
+            devs = 1;
+            break;
 
-#if	defined(HASVXFS)
-	case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                case N_VXFS:
 	    dev = vx.dev;
 	    devs = vx.dev_def;
 	    if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
@@ -2781,10 +2839,10 @@ vfs_read_error:
 		rdevs = vx.rdev_def;
 	    }
 	    break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                case N_ZFS:
 	    if (zns) {
 		if (!read_nzvfs((KA_T)v->v_data, (KA_T)zn.z_zfsvfs, &zvfs)
 		&&  zvfs.z_vfs
@@ -2799,50 +2857,50 @@ vfs_read_error:
 		rdevs = 1;
 	    }
 	    break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	default:
-	    if (ins) {
-		dev = i.i_dev;
-		devs = 1;
-	    } else if (nns) {
-		dev = nn.nm_vattr.va_fsid;
-		devs = 1;
-	    } else if (vfs) {
-		dev = vfs->dev;
-		devs = 1;
-	    }
-	    if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
-		rdev = v->v_rdev;
-		rdevs = 1;
-	    }
-	}
-	type = v->v_type;
-	if (devs && vfs && !vfs->dir) {
-	    (void) completevfs(vfs, &dev);
+        default:
+            if (ins) {
+                dev = i.i_dev;
+                devs = 1;
+            } else if (nns) {
+                dev = nn.nm_vattr.va_fsid;
+                devs = 1;
+            } else if (vfs) {
+                dev = vfs->dev;
+                devs = 1;
+            }
+            if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
+                rdev = v->v_rdev;
+                rdevs = 1;
+            }
+    }
+    type = v->v_type;
+    if (devs && vfs && !vfs->dir) {
+        (void) completevfs(vfs, &dev);
 
-#if	defined(HAS_AFS)
-	    if (vfs->dir && (Ntype == N_AFS || vty == N_AFS) && !AFSVfsp)
+#if    defined(HAS_AFS)
+                                                                                                                                if (vfs->dir && (Ntype == N_AFS || vty == N_AFS) && !AFSVfsp)
 		AFSVfsp = (KA_T)v->v_vfsp;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-	}
+    }
 /*
  * Obtain the inode number.
  */
-	switch (vty) {
+    switch (vty) {
 
-#if	defined(HAS_AFS)
-	case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                case N_AFS:
 	    if (an.ino_st) {
 		Lf->inode = (INODETYPE)an.inode;
 		Lf->inp_ty = 1;
 	    }
 	    break;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-#if	solaris>=20500
-	case N_AUTO:
+#if    solaris >= 20500
+                                                                                                                                case N_AUTO:
 
 # if	solaris<20600
 	    Lf->inode = (INODETYPE)au.an_nodeid;
@@ -2868,19 +2926,19 @@ vfs_read_error:
 		break;
 	    }
 	    if (dns) {
-		if ((Lf->inode = (INODETYPE)dn.door_index)) 
+		if ((Lf->inode = (INODETYPE)dn.door_index))
 		    Lf->inp_ty = 1;
 	    }
 	    break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	case N_CACHE:
-	    Lf->inode = (INODETYPE)cn.c_fileno;
-	    Lf->inp_ty = 1;
-	    break;
+        case N_CACHE:
+            Lf->inode = (INODETYPE) cn.c_fileno;
+            Lf->inp_ty = 1;
+            break;
 
-#if	solaris>=100000
-	case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                case N_CTFSADIR:
 	case N_CTFSBUND:
 	case N_CTFSCDIR:
 	case N_CTFSCTL:
@@ -2893,67 +2951,67 @@ vfs_read_error:
 	case N_CTFSTMPL:
 	    /* Method of computing CTFS inode not known. */
 	    break;
-#endif	/* solaris>=10000 */
+#endif    /* solaris>=10000 */
 
-	case N_FD:
-	    if (v->v_type == VDIR)
-		Lf->inode = (INODETYPE)2;
-	    else
-		Lf->inode = (INODETYPE)(GET_MIN_DEV(v->v_rdev) * 100);
-	    Lf->inp_ty = 1;
-	    break;
-	case N_HSFS:
-	    Lf->inode = (INODETYPE)h.hs_nodeid;
-	    Lf->inp_ty = 1;
-	    break;
+        case N_FD:
+            if (v->v_type == VDIR)
+                Lf->inode = (INODETYPE) 2;
+            else
+                Lf->inode = (INODETYPE) (GET_MIN_DEV(v->v_rdev) * 100);
+            Lf->inp_ty = 1;
+            break;
+        case N_HSFS:
+            Lf->inode = (INODETYPE) h.hs_nodeid;
+            Lf->inp_ty = 1;
+            break;
 
-	case N_MNT:
+        case N_MNT:
 
-#if	defined(HASFSINO)
-	    if (vfs) {
+#if    defined(HASFSINO)
+                                                                                                                                    if (vfs) {
 		Lf->inode = vfs->fs_ino;
 		Lf->inp_ty = 1;
 	    }
-#endif	/* defined(HASFSINO) */
+#endif    /* defined(HASFSINO) */
 
-	    break;
-	case N_MVFS:
-	    Lf->inode = (INODETYPE)m.m_ino;
-	    Lf->inp_ty = 1;
-	    break;
-	case N_NFS:
-	    Lf->inode = (INODETYPE)r.r_attr.va_nodeid;
-	    Lf->inp_ty = 1;
-	    break;
+            break;
+        case N_MVFS:
+            Lf->inode = (INODETYPE) m.m_ino;
+            Lf->inp_ty = 1;
+            break;
+        case N_NFS:
+            Lf->inode = (INODETYPE) r.r_attr.va_nodeid;
+            Lf->inp_ty = 1;
+            break;
 
-#if	solaris>=100000
-	case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                case N_NFS4:
 	    Lf->inode = (INODETYPE)r4.r_attr.va_nodeid;
 	    Lf->inp_ty = 1;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	case N_NM:
-	    Lf->inode = (INODETYPE)nn.nm_vattr.va_nodeid;
-	    Lf->inp_ty = 1;
-	    break;
+        case N_NM:
+            Lf->inode = (INODETYPE) nn.nm_vattr.va_nodeid;
+            Lf->inp_ty = 1;
+            break;
 
-#if	defined(HASPROCFS)
-	case N_PROC:
+#if    defined(HASPROCFS)
+                                                                                                                                case N_PROC:
 
 	/*
 	 * The proc file system inode number is defined when the
 	 * prnode is read.
 	 */
 	    break;
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-	case N_PCFS:
-	    if (kvs && kv.vfs_data
-	    && !kread((KA_T)kv.vfs_data, (char *)&pcfs, sizeof(pcfs))) {
+        case N_PCFS:
+            if (kvs && kv.vfs_data
+                && !kread((KA_T) kv.vfs_data, (char *) &pcfs, sizeof(pcfs))) {
 
-#if	solaris>=70000
-# if	defined(HAS_PC_DIRENTPERSEC)
+#if    solaris >= 70000
+                                                                                                                                        # if	defined(HAS_PC_DIRENTPERSEC)
 		Lf->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
 			    pc.pc_eoffset,
 			    pc.pc_entry.pcd_attr,
@@ -2973,107 +3031,107 @@ vfs_read_error:
 			    pcfs.pcfs_entps);
 # endif	/* defined(HAS_PC_DIRENTPERSEC) */
 #else	/* solaris<70000 */
-		Lf->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
-			    pc.pc_eoffset,
-			    &pc.pc_entry,
-			    pcfs.pcfs_entps);
-#endif	/* solaris>=70000 */
+                Lf->inode = (INODETYPE) pc_makenodeid(pc.pc_eblkno,
+                                                      pc.pc_eoffset,
+                                                      &pc.pc_entry,
+                                                      pcfs.pcfs_entps);
+#endif    /* solaris>=70000 */
 
-		Lf->inp_ty = 1;
-	    }
-	    break;
+                Lf->inp_ty = 1;
+            }
+            break;
 
-	case N_REGLR:
-	    if (nns) {
-		if ((Lf->inode = (INODETYPE)nn.nm_vattr.va_nodeid))
-		    Lf->inp_ty = 1;
-	    } else if (ins) {
-		if ((Lf->inode = (INODETYPE)i.i_number))
-		    Lf->inp_ty = 1;
-	    }
-	    break;
-	case N_SAMFS:
-	    break;		/* No more SAM-FS information is available. */
+        case N_REGLR:
+            if (nns) {
+                if ((Lf->inode = (INODETYPE) nn.nm_vattr.va_nodeid))
+                    Lf->inp_ty = 1;
+            } else if (ins) {
+                if ((Lf->inode = (INODETYPE) i.i_number))
+                    Lf->inp_ty = 1;
+            }
+            break;
+        case N_SAMFS:
+            break;        /* No more SAM-FS information is available. */
 
-#if	solaris>=110000
-	case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                case N_SDEV:
 	    if (sdns) {
 		Lf->inode = (INODETYPE)sdva.va_nodeid;
 		Lf->inp_ty = 1;
 	    }
 	    break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	case N_SHARED:
-	    (void) snpf(Lf->iproto, sizeof(Lf->iproto), "SHARED");
-	    Lf->inp_ty = 2;
-	    break;
-	case N_STREAM:
+        case N_SHARED:
+            (void) snpf(Lf->iproto, sizeof(Lf->iproto), "SHARED");
+            Lf->inp_ty = 2;
+            break;
+        case N_STREAM:
 
-#if	solaris<100000
-	    if (so_st && soso.lux_dev.addr.tu_addr.ino) {
-		if (Lf->inp_ty) {
-		    nl = Lf->nma ? (int)strlen(Lf->nma) : 0;
-		    (void) snpf(ubuf, sizeof(ubuf),
-			"%s(Inode=%lu)", nl ? " " : "",
-			(unsigned long)soso.lux_dev.addr.tu_addr.ino);
-		    len = nl + (int)strlen(ubuf) + 1;
-		    if (Lf->nma)
-			Lf->nma = (char *) realloc(Lf->nma, len);
-		    else
-			Lf->nma = (char *) malloc(len);
-		    if (Lf->nma)
-			(void) snpf(&Lf->nma[nl], len - nl, "%s", ubuf);
-		} else {
-		    Lf->inode = (INODETYPE)soso.lux_dev.addr.tu_addr.ino;
-		    Lf->inp_ty = 1;
-		}
-	    }
-#endif	/* solaris<100000 */
+#if    solaris < 100000
+            if (so_st && soso.lux_dev.addr.tu_addr.ino) {
+                if (Lf->inp_ty) {
+                    nl = Lf->nma ? (int) strlen(Lf->nma) : 0;
+                    (void) snpf(ubuf, sizeof(ubuf),
+                                "%s(Inode=%lu)", nl ? " " : "",
+                                (unsigned long) soso.lux_dev.addr.tu_addr.ino);
+                    len = nl + (int) strlen(ubuf) + 1;
+                    if (Lf->nma)
+                        Lf->nma = (char *) realloc(Lf->nma, len);
+                    else
+                        Lf->nma = (char *) malloc(len);
+                    if (Lf->nma)
+                        (void) snpf(&Lf->nma[nl], len - nl, "%s", ubuf);
+                } else {
+                    Lf->inode = (INODETYPE) soso.lux_dev.addr.tu_addr.ino;
+                    Lf->inp_ty = 1;
+                }
+            }
+#endif    /* solaris<100000 */
 
-	    break;
-	case N_TMP:
-	    Lf->inode = (INODETYPE)t.tn_attr.va_nodeid;
-	    Lf->inp_ty = 1;
-	    break;
+            break;
+        case N_TMP:
+            Lf->inode = (INODETYPE) t.tn_attr.va_nodeid;
+            Lf->inp_ty = 1;
+            break;
 
-#if	defined(HASVXFS)
-	case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                case N_VXFS:
 	    if (vx.ino_def) {
 		Lf->inode = (INODETYPE)vx.ino;
 		Lf->inp_ty = 1;
 	    } else if (type == VCHR)
 		pnl = 1;
 	    break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                case N_ZFS:
 	    if (zns) {
 		Lf->inode = (INODETYPE)zn.z_id;
 		Lf->inp_ty = 1;
 	    }
 	    break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	}
+    }
 /*
  * Obtain the file size.
  */
-	if (Foffset)
-	    Lf->off_def = 1;
-	else {
-	    switch (Ntype) {
+    if (Foffset)
+        Lf->off_def = 1;
+    else {
+        switch (Ntype) {
 
-#if	defined(HAS_AFS)
-	    case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                    case N_AFS:
 		Lf->sz = (SZOFFTYPE)an.size;
 		Lf->sz_def = 1;
 		break;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-#if	solaris>=20500
-	    case N_AUTO:
+#if    solaris >= 20500
+                                                                                                                                    case N_AUTO:
 
 # if	solaris<20600
 		Lf->sz = (SZOFFTYPE)au.an_size;
@@ -3083,15 +3141,15 @@ vfs_read_error:
 
 		Lf->sz_def = 1;
 		break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	    case N_CACHE:
-		Lf->sz = (SZOFFTYPE)cn.c_size;
-		Lf->sz_def = 1;
-		break;
+            case N_CACHE:
+                Lf->sz = (SZOFFTYPE) cn.c_size;
+                Lf->sz_def = 1;
+                break;
 
-#if	solaris>=100000
-	    case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                    case N_CTFSADIR:
 	    case N_CTFSBUND:
 	    case N_CTFSCDIR:
 	    case N_CTFSCTL:
@@ -3104,68 +3162,68 @@ vfs_read_error:
 	    case N_CTFSTMPL:
 		/* Method of computing CTFS size not known. */
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_FD:
-		if (v->v_type == VDIR)
-		    Lf->sz = (Unof + 2) * 16;
-		else
-		    Lf->sz = (unsigned long)0;
-		Lf->sz_def = 1;
-		break;
+            case N_FD:
+                if (v->v_type == VDIR)
+                    Lf->sz = (Unof + 2) * 16;
+                else
+                    Lf->sz = (unsigned long) 0;
+                Lf->sz_def = 1;
+                break;
 
-#if	solaris>=20600
-	    case N_SOCK:
+#if    solaris >= 20600
+                                                                                                                                    case N_SOCK:
 		Lf->off_def = 1;
 		break;
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-	    case N_HSFS:
-		Lf->sz = (SZOFFTYPE)h.hs_dirent.ext_size;
-		Lf->sz_def = 1;
-		break;
-	    case N_NM:
-		Lf->sz = (SZOFFTYPE)nn.nm_vattr.va_size;
-		Lf->sz_def = 1;
-		break;
+            case N_HSFS:
+                Lf->sz = (SZOFFTYPE) h.hs_dirent.ext_size;
+                Lf->sz_def = 1;
+                break;
+            case N_NM:
+                Lf->sz = (SZOFFTYPE) nn.nm_vattr.va_size;
+                Lf->sz_def = 1;
+                break;
 
-# if	solaris>=100000
-	     case N_DEV:
+# if    solaris >= 100000
+                                                                                                                                    case N_DEV:
 		if (!Fsize)
 		    Lf->off_def = 1;
 		break;
-# endif	/* solaris>=100000 */
+# endif    /* solaris>=100000 */
 
-	    case N_DOOR:
-	    case N_FIFO:
-		if (!Fsize)
-		    Lf->off_def = 1;
-		break;
-	    case N_MNT:
+            case N_DOOR:
+            case N_FIFO:
+                if (!Fsize)
+                    Lf->off_def = 1;
+                break;
+            case N_MNT:
 
-#if	defined(CVFS_SZSAVE)
-		if (vfs) {
+#if    defined(CVFS_SZSAVE)
+                                                                                                                                        if (vfs) {
 		    Lf->sz = (SZOFFTYPE)vfs->size;
 		    Lf->sz_def = 1;
 		} else
-#endif	/* defined(CVFS_SZSAVE) */
+#endif    /* defined(CVFS_SZSAVE) */
 
-		    Lf->off_def = 1;
-		break;
-	    case N_MVFS:
-		/* The location of file size isn't known. */
-		break;
-	    case N_NFS:
-		if ((type == VCHR || type == VBLK) && !Fsize)
-		    Lf->off_def = 1;
-		else {
-		    Lf->sz = (SZOFFTYPE)r.r_size;
-		    Lf->sz_def = 1;
-		}
-		break;
+                Lf->off_def = 1;
+                break;
+            case N_MVFS:
+                /* The location of file size isn't known. */
+                break;
+            case N_NFS:
+                if ((type == VCHR || type == VBLK) && !Fsize)
+                    Lf->off_def = 1;
+                else {
+                    Lf->sz = (SZOFFTYPE) r.r_size;
+                    Lf->sz_def = 1;
+                }
+                break;
 
-#if	solaris>=100000
-	    case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                    case N_NFS4:
 		if ((type == VCHR || type == VBLK) && !Fsize)
 		    Lf->off_def = 1;
 		else {
@@ -3173,44 +3231,44 @@ vfs_read_error:
 		    Lf->sz_def = 1;
 		}
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_PCFS:
-		Lf->sz = (SZOFFTYPE)pc.pc_size;
-		Lf->sz_def = 1;
-		break;
+            case N_PCFS:
+                Lf->sz = (SZOFFTYPE) pc.pc_size;
+                Lf->sz_def = 1;
+                break;
 
-#if	solaris>=100000
-	    case N_PORT:
+#if    solaris >= 100000
+                                                                                                                                    case N_PORT:
 		Lf->sz = (SZOFFTYPE)pn.port_curr;
 		Lf->sz_def = 1;
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
-#if	defined(HASPROCFS)
-	    case N_PROC:
+#if    defined(HASPROCFS)
+                                                                                                                                    case N_PROC:
 
 	    /*
 	     * The proc file system size is defined when the
 	     * prnode is read.
 	     */
 		break;
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-	    case N_REGLR:
-		if (type == VREG || type == VDIR) {
-		    if (ins | nns) {
-			Lf->sz = (SZOFFTYPE)(nns ? nn.nm_vattr.va_size
-						 : i.i_size);
-			Lf->sz_def = 1;
-		    }
-		} else if ((type == VCHR || type == VBLK) && !Fsize)
-		    Lf->off_def = 1;
-		break;
+            case N_REGLR:
+                if (type == VREG || type == VDIR) {
+                    if (ins | nns) {
+                        Lf->sz = (SZOFFTYPE) (nns ? nn.nm_vattr.va_size
+                                                  : i.i_size);
+                        Lf->sz_def = 1;
+                    }
+                } else if ((type == VCHR || type == VBLK) && !Fsize)
+                    Lf->off_def = 1;
+                break;
 
-#if	solaris>=110000
-	    case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                    case N_SDEV:
 		if (sdns) {
 		    if (type == VREG || type == VDIR) {
 			Lf->sz = (SZOFFTYPE)sdva.va_size;
@@ -3219,33 +3277,33 @@ vfs_read_error:
 			Lf->off_def = 1;
 		}
 		break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	    case N_SAMFS:
-		break;		/* No more SAM-FS information is available. */
-	    case N_SHARED:
-		break;		/* No more sharedfs information is available. */
-	    case N_STREAM:
-		if (!Fsize)
-		    Lf->off_def = 1;
-		break;
-	    case N_TMP:
-		Lf->sz = (SZOFFTYPE)t.tn_attr.va_size;
-		Lf->sz_def = 1;
-		break;
+            case N_SAMFS:
+                break;        /* No more SAM-FS information is available. */
+            case N_SHARED:
+                break;        /* No more sharedfs information is available. */
+            case N_STREAM:
+                if (!Fsize)
+                    Lf->off_def = 1;
+                break;
+            case N_TMP:
+                Lf->sz = (SZOFFTYPE) t.tn_attr.va_size;
+                Lf->sz_def = 1;
+                break;
 
-#if	defined(HASVXFS)
-	    case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                    case N_VXFS:
 		if (type == VREG || type == VDIR) {
 		    Lf->sz = (SZOFFTYPE)vx.sz;
 		    Lf->sz_def = vx.sz_def;
 		} else if ((type == VCHR || type == VBLK) && !Fsize)
 		    Lf->off_def = 1;
 		break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	    case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                    case N_ZFS:
 		if (zns) {
 		    if (type == VREG || type == VDIR) {
 			Lf->sz = (SZOFFTYPE)zn.z_size;
@@ -3254,39 +3312,39 @@ vfs_read_error:
 			Lf->off_def = 1;
 		}
 		break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	    }
-	}
+        }
+    }
 /*
  * Record link count.
  */
 
-#if	!defined(HASXOPT)
-	if (Fnlink)
-#endif	/* !defined(HASXOPT) */
+#if    !defined(HASXOPT)
+    if (Fnlink)
+#endif    /* !defined(HASXOPT) */
 
-	{
-	    switch (Ntype) {
+    {
+        switch (Ntype) {
 
-#if	defined(HAS_AFS)
-	    case N_AFS:
+#if    defined(HAS_AFS)
+                                                                                                                                    case N_AFS:
 		Lf->nlink = an.nlink;
 		Lf->nlink_def = an.nlink_st;
 		break;
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-#if	solaris>=20500
-	    case N_AUTO:
+#if    solaris >= 20500
+                                                                                                                                    case N_AUTO:
 		break;
 	    case N_CACHE:
 		Lf->nlink = (long)cn.c_attr.va_nlink;
 		Lf->nlink_def = 1;
 		break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-#if	solaris>=100000
-	    case N_CTFSADIR:
+#if    solaris >= 100000
+                                                                                                                                    case N_CTFSADIR:
 	    case N_CTFSBUND:
 	    case N_CTFSCDIR:
 	    case N_CTFSCTL:
@@ -3299,142 +3357,142 @@ vfs_read_error:
 	    case N_CTFSTMPL:
 		/* Method of computing CTFS link count not known. */
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	case N_FD:
-	    Lf->nlink = (v->v_type == VDIR) ? 2 : 1;
-	    Lf->nlink_def = 1;
-	    break;
+            case N_FD:
+                Lf->nlink = (v->v_type == VDIR) ? 2 : 1;
+                Lf->nlink_def = 1;
+                break;
 
-#if	solaris>=20600
-	    case N_SOCK:			/* no link count */
+#if    solaris >= 20600
+                                                                                                                                    case N_SOCK:			/* no link count */
 		break;
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-	    case N_HSFS:
-		Lf->nlink = (long)h.hs_dirent.nlink;
-		Lf->nlink_def = 1;
-		break;
-	    case N_NM:
-		Lf->nlink = (long)nn.nm_vattr.va_nlink;
-		Lf->nlink_def = 1;
-		break;
+            case N_HSFS:
+                Lf->nlink = (long) h.hs_dirent.nlink;
+                Lf->nlink_def = 1;
+                break;
+            case N_NM:
+                Lf->nlink = (long) nn.nm_vattr.va_nlink;
+                Lf->nlink_def = 1;
+                break;
 
-# if	solaris>=100000
-	    case N_DEV:
+# if    solaris >= 100000
+                                                                                                                                    case N_DEV:
 		if (dvs) {
 		    Lf->nlink = (long)dv.dv_nlink;
 		    Lf->nlink_def = 1;
 		}
 		break;
-# endif	/* solaris>=100000 */
+# endif    /* solaris>=100000 */
 
-	    case N_DOOR:
-		Lf->nlink = (long)v->v_count;
-		Lf->nlink_def = 1;
-		break;
-	    case N_FIFO:
-		break;
-	    case N_MNT:
+            case N_DOOR:
+                Lf->nlink = (long) v->v_count;
+                Lf->nlink_def = 1;
+                break;
+            case N_FIFO:
+                break;
+            case N_MNT:
 
-#if	defined(CVFS_NLKSAVE)
-		if (vfs) {
+#if    defined(CVFS_NLKSAVE)
+                                                                                                                                        if (vfs) {
 		    Lf->nlink = (long)vfs->nlink;
 		    Lf->nlink_def = 1;
 		}
-#endif	/* defined(CVFS_NLKSAVE) */
+#endif    /* defined(CVFS_NLKSAVE) */
 
-		break;
-	    case N_MVFS:			/* no link count */
-		break;
-	    case N_NFS:
-		Lf->nlink = (long)r.r_attr.va_nlink;
-		Lf->nlink_def = 1;
-		break;
+                break;
+            case N_MVFS:            /* no link count */
+                break;
+            case N_NFS:
+                Lf->nlink = (long) r.r_attr.va_nlink;
+                Lf->nlink_def = 1;
+                break;
 
-#if	solaris>=100000
-	    case N_NFS4:
+#if    solaris >= 100000
+                                                                                                                                    case N_NFS4:
 		Lf->nlink = (long)r4.r_attr.va_nlink;
 		Lf->nlink_def = 1;
 		break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-	    case N_PCFS:
+            case N_PCFS:
+                break;
+
+#if    defined(HASPROCFS)
+                                                                                                                                    case N_PROC:
 		break;
+#endif    /* defined(HASPROCFS) */
 
-#if	defined(HASPROCFS)
-	    case N_PROC:
-		break;
-#endif	/* defined(HASPROCFS) */
+            case N_REGLR:
+                if (ins) {
+                    Lf->nlink = (long) i.i_nlink;
+                    Lf->nlink_def = 1;
+                }
+                break;
+            case N_SAMFS:
+                break;        /* No more SAM-FS information is available. */
 
-	    case N_REGLR:
-		if (ins) {
-		    Lf->nlink = (long)i.i_nlink;
-		    Lf->nlink_def = 1;
-		}
-		break;
-	    case N_SAMFS:
-		break;		/* No more SAM-FS information is available. */
-
-#if	solaris>=110000
-	    case N_SDEV:
+#if    solaris >= 110000
+                                                                                                                                    case N_SDEV:
 		if (sdns) {
 		    Lf->nlink = (long)sdva.va_nlink;
 		    Lf->nlink_def = 1;
 		}
 		break;
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
-	    case N_SHARED:
-		break;		/* No more sharedfs information is available. */
-	    case N_STREAM:
-		break;
-	    case N_TMP:
-		Lf->nlink = (long)t.tn_attr.va_nlink;
-		Lf->nlink_def = 1;
-		break;
+            case N_SHARED:
+                break;        /* No more sharedfs information is available. */
+            case N_STREAM:
+                break;
+            case N_TMP:
+                Lf->nlink = (long) t.tn_attr.va_nlink;
+                Lf->nlink_def = 1;
+                break;
 
-#if	defined(HASVXFS)
-	    case N_VXFS:
+#if    defined(HASVXFS)
+                                                                                                                                    case N_VXFS:
 		Lf->nlink = vx.nl;
 		Lf->nlink_def = vx.nl_def;
 		break;
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
-#if	defined(HAS_ZFS)
-	    case N_ZFS:
+#if    defined(HAS_ZFS)
+                                                                                                                                    case N_ZFS:
 		if (zns) {
 		    Lf->nlink = (long)MIN(zn.z_links, UINT32_MAX);
 		    Lf->nlink_def = 1;
 		}
 		break;
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
-	    }
-	    if (Nlink && Lf->nlink_def && (Lf->nlink < Nlink))
-		Lf->sf |= SELNLINK;
-	}
+        }
+        if (Nlink && Lf->nlink_def && (Lf->nlink < Nlink))
+            Lf->sf |= SELNLINK;
+    }
 
-#if	defined(HASVXFS)
-/*
+#if    defined(HASVXFS)
+                                                                                                                            /*
  * Record a VxFS file.
  */
 
 # if	defined(HASVXFSDNLC)
 	Lf->is_vxfs = (Ntype == N_VXFS) ? 1 : 0;
 # endif	/* defined(HASVXFSDNLC) */
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */
 
 /*
  * Record an NFS selection.
  */
-	if (Fnfs) {
-	    if ((Ntype == N_NFS) || (Ntype == N_NFS4))
-		Lf->sf |= SELNFS;
-	}
+    if (Fnfs) {
+        if ((Ntype == N_NFS) || (Ntype == N_NFS4))
+            Lf->sf |= SELNFS;
+    }
 
-#if	solaris>=20500
-/*
+#if    solaris >= 20500
+                                                                                                                            /*
  * If this is a Solaris 2.5 and greater autofs entry, save the autonode name
  * (less than Solaris 2.6) or fnnode name (Solaris 2.6 and greater).
  */
@@ -3469,7 +3527,7 @@ vfs_read_error:
 	&&  nn.nm_mountpt)
 	{
 	    if (!readvnode((KA_T)nn.nm_mountpt, &fv) && fv.v_vfsp) {
-		if ((nvfs = readvfs((KA_T)fv.v_vfsp, (struct vfs *)NULL, 
+		if ((nvfs = readvfs((KA_T)fv.v_vfsp, (struct vfs *)NULL,
 				    nn.nm_filevp))
 		&&  !nvfs->dir)
 		{
@@ -3495,84 +3553,84 @@ vfs_read_error:
 	&&  (Lf->inode == (INODETYPE)nn.nm_vattr.va_nodeid))
 	    Lf->na = (KA_T)nn.nm_mountpt;
 # endif	/* defined(HASNCACHE) */
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
 /*
  * Save the file system names.
  */
-	if (vfs) {
-	    Lf->fsdir = vfs->dir;
-	    Lf->fsdev = vfs->fsname;
+    if (vfs) {
+        Lf->fsdir = vfs->dir;
+        Lf->fsdev = vfs->fsname;
 
-#if	defined(HASMNTSTAT)
-	    Lf->mnt_stat = vfs->mnt_stat;
-#endif	/* defined(HASMNTSTAT) */
+#if    defined(HASMNTSTAT)
+        Lf->mnt_stat = vfs->mnt_stat;
+#endif    /* defined(HASMNTSTAT) */
 
-	    if (!Lf->fsdir && !Lf->fsdev && kvs && fxs) {
+        if (!Lf->fsdir && !Lf->fsdev && kvs && fxs) {
 
-	    /*
+            /*
 	     * The file system names are unknown.
 	     *
 	     * Set the file system device to the file system type and clear
 	     * the doubtful device numbers.
 	     */
-		Lf->fsdev = Fsinfo[fx];
-		devs = 0;
-		rdevs = 0;
-	    }
+            Lf->fsdev = Fsinfo[fx];
+            devs = 0;
+            rdevs = 0;
+        }
 
-#if	defined(HASFSINO)
-	    else
+#if    defined(HASFSINO)
+                                                                                                                                else
 		Lf->fs_ino = vfs->fs_ino;
-#endif	/* defined(HASFSINO) */
+#endif    /* defined(HASFSINO) */
 
-	}
+    }
 /*
  * Save the device numbers, and their states.
  *
  * Format the vnode type, and possibly the device name.
  */
-	switch (type) {
+    switch (type) {
 
-	case VNON:
-	    ty ="VNON";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    break;
-	case VREG:
-	case VDIR:
-	    ty = (type == VREG) ? "VREG" : "VDIR";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    break;
-	case VBLK:
-	    ty = "VBLK";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    Ntype = N_BLK;
-	    break;
-	case VCHR:
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    if (unix_sock) {
-		ty = "unix";
-		break;
-	    }
-	    ty = "VCHR";
-	    if (Lf->is_stream == 0 && Lf->is_com == 0)
-		Ntype = N_CHR;
-	    break;
+        case VNON:
+            ty = "VNON";
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            break;
+        case VREG:
+        case VDIR:
+            ty = (type == VREG) ? "VREG" : "VDIR";
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            break;
+        case VBLK:
+            ty = "VBLK";
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            Ntype = N_BLK;
+            break;
+        case VCHR:
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            if (unix_sock) {
+                ty = "unix";
+                break;
+            }
+            ty = "VCHR";
+            if (Lf->is_stream == 0 && Lf->is_com == 0)
+                Ntype = N_CHR;
+            break;
 
-#if	solaris>=20500
-	case VDOOR:
+#if    solaris >= 20500
+                                                                                                                                case VDOOR:
 	    Lf->dev = dev;
 	    Lf->dev_def = devs;
 	    Lf->rdev = rdev;
@@ -3581,28 +3639,28 @@ vfs_read_error:
 	    if (dns)
 		(void) idoorkeep(&dn);
 	    break;
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
-	case VLNK:
-	    ty = "VLNK";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    break;
+        case VLNK:
+            ty = "VLNK";
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            break;
 
-#if	solaris>=100000
-	case VPORT:
+#if    solaris >= 100000
+                                                                                                                                case VPORT:
 	    ty = "PORT";
 	    Lf->dev = dev;
 	    Lf->dev_def = devs;
 	    Lf->rdev = rdev;
 	    Lf->rdev_def = rdevs;
 	    break;
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
-#if	solaris>=20600
-	case VPROC:
+#if    solaris >= 20600
+                                                                                                                                case VPROC:
 
 	/*
 	 * The proc file system type is defined when the prnode is read.
@@ -3613,10 +3671,10 @@ vfs_read_error:
 	    Lf->rdev_def = rdevs;
 	    ty = (char *)NULL;
 	    break;
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
-#if	defined(HAS_VSOCK)
-	case VSOCK:
+#if    defined(HAS_VSOCK)
+                                                                                                                                case VSOCK:
 
 # if	solaris>=20600
 	    if (so.so_family == AF_UNIX) {
@@ -3666,62 +3724,62 @@ vfs_read_error:
 	    Lf->rdev = rdev;
 	    Lf->rdev_def = rdevs;
 	    break;
-#endif	/* defined(HAS_VSOCK) */
+#endif    /* defined(HAS_VSOCK) */
 
-	case VBAD:
-	    ty = "VBAD";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    break;
-	case VFIFO:
-	    ty = "FIFO";
-	    if (!Lf->dev_ch || Lf->dev_ch[0] == '\0') {
-		Lf->dev = dev;
-		Lf->dev_def = devs;
-		Lf->rdev = rdev;
-		Lf->rdev_def = rdevs;
-	    }
-	    break;
-	default:
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
-	    (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
-	    ty = (char *)NULL;
-	}
-	if (ty)
-	    (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
-	Lf->ntype = Ntype;
+        case VBAD:
+            ty = "VBAD";
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            break;
+        case VFIFO:
+            ty = "FIFO";
+            if (!Lf->dev_ch || Lf->dev_ch[0] == '\0') {
+                Lf->dev = dev;
+                Lf->dev_def = devs;
+                Lf->rdev = rdev;
+                Lf->rdev_def = rdevs;
+            }
+            break;
+        default:
+            Lf->dev = dev;
+            Lf->dev_def = devs;
+            Lf->rdev = rdev;
+            Lf->rdev_def = rdevs;
+            (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
+            ty = (char *) NULL;
+    }
+    if (ty)
+        (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
+    Lf->ntype = Ntype;
 /*
  * If this a Solaris common vnode/snode void some information.
  */
-	if (Lf->is_com)
-	    Lf->sz_def = Lf->inp_ty = 0;
+    if (Lf->is_com)
+        Lf->sz_def = Lf->inp_ty = 0;
 /*
  * If a file attach description remains, put it in the NAME column addition.
  */
-	if (fa)
-	    (void) add_nma(fa, fal);
+    if (fa)
+        (void) add_nma(fa, fal);
 
-#if	defined(HASBLKDEV)
-/*
+#if    defined(HASBLKDEV)
+                                                                                                                            /*
  * If this is a VBLK file and it's missing an inode number, try to
  * supply one.
  */
 	if ((Lf->inp_ty == 0) && (type == VBLK))
 	    find_bl_ino();
-#endif	/* defined(HASBLKDEV) */
+#endif    /* defined(HASBLKDEV) */
 
 /*
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
-	if ((Lf->inp_ty == 0) && (type == VCHR)) {
-	    find_ch_ino();
-	/*
+    if ((Lf->inp_ty == 0) && (type == VCHR)) {
+        find_ch_ino();
+        /*
 	 * If the VCHR inode number still isn't known and this is a COMMON
 	 * vnode file or a stream, or if a pseudo node ID lookup has been
 	 * requested, see if an inode number can be derived from a pseudo
@@ -3730,85 +3788,84 @@ vfs_read_error:
 	 * If it can, save the pseudo or clone device for temporary
 	 * use when searching for a match with a named file argument.
 	 */
-	    if ((Lf->inp_ty == 0) && (Lf->is_com || Lf->is_stream || pnl)
-	    &&  (Clone || Pseudo))
-	    {
-		if (!sdp) {
-		    if (rdevs || devs) {
-			if (Lf->is_stream && !pnl)
-			    sdp = finddev(devs  ? &dev  : &DevDev,
-					  rdevs ? &rdev : &Lf->dev,
-					  LOOKDEV_CLONE);
-			else
-			    sdp = finddev(devs  ? &dev  : &DevDev,
-					  rdevs ? &rdev : &Lf->dev,
-					  LOOKDEV_PSEUDO);
-			if (!sdp)
-			    sdp = finddev(devs  ? &dev  : &DevDev,
-					  rdevs ? &rdev : &Lf->dev,
-					  LOOKDEV_ALL);
-			if (sdp) {
-			    if (!rdevs) {
-				Lf->rdev = Lf->dev;
-				Lf->rdev_def = rdevs = 1;
-			    }
-			    if (!devs) {
-				Lf->dev = DevDev;
-				devs = Lf->dev_def = 1;
-			    }
-			}
-		    }
-		} else {
+        if ((Lf->inp_ty == 0) && (Lf->is_com || Lf->is_stream || pnl)
+            && (Clone || Pseudo)) {
+            if (!sdp) {
+                if (rdevs || devs) {
+                    if (Lf->is_stream && !pnl)
+                        sdp = finddev(devs ? &dev : &DevDev,
+                                      rdevs ? &rdev : &Lf->dev,
+                                      LOOKDEV_CLONE);
+                    else
+                        sdp = finddev(devs ? &dev : &DevDev,
+                                      rdevs ? &rdev : &Lf->dev,
+                                      LOOKDEV_PSEUDO);
+                    if (!sdp)
+                        sdp = finddev(devs ? &dev : &DevDev,
+                                      rdevs ? &rdev : &Lf->dev,
+                                      LOOKDEV_ALL);
+                    if (sdp) {
+                        if (!rdevs) {
+                            Lf->rdev = Lf->dev;
+                            Lf->rdev_def = rdevs = 1;
+                        }
+                        if (!devs) {
+                            Lf->dev = DevDev;
+                            devs = Lf->dev_def = 1;
+                        }
+                    }
+                }
+            } else {
 
-		/*
+                /*
 		 * A local device structure has been located.  Make sure
 		 * that it's accompanied by device settings.
 		 */
-		    if (!devs && vfs) {
-			dev = Lf->dev = vfs->dev;
-			devs = Lf->dev_def = 1;
-		    }
-		    if (!rdevs) {
-			Lf->rdev = rdev = sdp->rdev;
-			Lf->rdev_def = rdevs = 1;
-		    }
-		}
-		if (sdp) {
+                if (!devs && vfs) {
+                    dev = Lf->dev = vfs->dev;
+                    devs = Lf->dev_def = 1;
+                }
+                if (!rdevs) {
+                    Lf->rdev = rdev = sdp->rdev;
+                    Lf->rdev_def = rdevs = 1;
+                }
+            }
+            if (sdp) {
 
-		/*
+                /*
 		 * Process the local device information.
 		 */
-		    trdev = sdp->rdev;
-		    Lf->inode = sdp->inode;
-		    Lf->inp_ty = trdevs = 1;
-		    if (!Namech[0] || Lf->is_com) {
-			(void) snpf(Namech, Namechl - 1, "%s", sdp->name);
-			Namech[Namechl - 1] = '\0';
-		    }
-		    if (Lf->is_com && !Lf->nma) {
-			len = (int)strlen("(COMMON)") + 1;
-			if (!(Lf->nma = (char *) malloc(len))) {
-			    (void) fprintf(stderr,
-				"%s: no space for (COMMON): PID %d; FD %s\n",
-				Pn, Lp->pid, Lf->fd);
-			    Exit(1);
-			}
-			(void) snpf(Lf->nma, len, "(COMMON)");
-		    }
-		}
-	    }
-	}
+                trdev = sdp->rdev;
+                Lf->inode = sdp->inode;
+                Lf->inp_ty = trdevs = 1;
+                if (!Namech[0] || Lf->is_com) {
+                    (void) snpf(Namech, Namechl - 1, "%s", sdp->name);
+                    Namech[Namechl - 1] = '\0';
+                }
+                if (Lf->is_com && !Lf->nma) {
+                    len = (int) strlen("(COMMON)") + 1;
+                    if (!(Lf->nma = (char *) malloc(len))) {
+                        (void) fprintf(stderr,
+                                       "%s: no space for (COMMON): PID %d; FD %s\n",
+                                       Pn, Lp->pid, Lf->fd);
+                        Exit(1);
+                    }
+                    (void) snpf(Lf->nma, len, "(COMMON)");
+                }
+            }
+        }
+    }
 /*
  * Record stream status.
  */
-	if (Lf->inp_ty == 0 && Lf->is_stream && strcmp(Lf->iproto, "STR") == 0)
-	    Lf->inp_ty = 2;
+    if (Lf->inp_ty == 0 && Lf->is_stream && strcmp(Lf->iproto, "STR") == 0)
+        Lf->inp_ty = 2;
 /*
  * Test for specified file.
  */
 
-#if	defined(HASPROCFS)
-	if (Ntype == N_PROC) {
+#if    defined(HASPROCFS)
+                                                                                                                            if (Ntype == N_PROC) {
 	    if (Procsrch) {
 		Procfind = 1;
 		Lf->sf |= SELNM;
@@ -3832,29 +3889,29 @@ vfs_read_error:
 		}
 	    }
 	} else
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
-	{
-	    if (Sfile) {
-		if (trdevs) {
-		    rdev = Lf->rdev;
-		    Lf->rdev = trdev;
-		    tdef = Lf->rdev_def;
-		    Lf->rdev_def = 1;
-		}
-		if (is_file_named(NULL, Ntype, type, 1))
-		    Lf->sf |= SELNM;
-		if (trdevs) {
-		    Lf->rdev = rdev;
-		    Lf->rdev_def = tdef;
-		}
-	    }
-	}
+    {
+        if (Sfile) {
+            if (trdevs) {
+                rdev = Lf->rdev;
+                Lf->rdev = trdev;
+                tdef = Lf->rdev_def;
+                Lf->rdev_def = 1;
+            }
+            if (is_file_named(NULL, Ntype, type, 1))
+                Lf->sf |= SELNM;
+            if (trdevs) {
+                Lf->rdev = rdev;
+                Lf->rdev_def = tdef;
+            }
+        }
+    }
 /*
  * Enter name characters.
  */
-	if (Namech[0])
-	    enter_nm(Namech);
+    if (Namech[0])
+        enter_nm(Namech);
 }
 
 
@@ -3864,36 +3921,36 @@ vfs_read_error:
 
 static int
 read_cni(s, rv, v, rs, di, din, dinl)
-	struct snode *s;		/* starting snode */
-	struct vnode *rv;		/* "real" vnode receiver */
-	struct vnode *v;		/* starting vnode */
-	struct snode *rs;		/* "real" snode receiver */
-	struct dev_info *di;		/* dev_info structure receiver */
-	char *din;			/* device info name receiver */
-	int dinl;			/* sizeof(*din) */
+        struct snode *s;        /* starting snode */
+        struct vnode *rv;        /* "real" vnode receiver */
+        struct vnode *v;        /* starting vnode */
+        struct snode *rs;        /* "real" snode receiver */
+        struct dev_info *di;        /* dev_info structure receiver */
+        char *din;            /* device info name receiver */
+        int dinl;            /* sizeof(*din) */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (read_nvn((KA_T)v->v_data, (KA_T)s->s_commonvp, rv))
-	    return(1);
-	if (read_nsn((KA_T)s->s_commonvp, (KA_T)rv->v_data, rs))
-	    return(1);
-	*din = '\0';
-	if (rs->s_dip) {
-	    if (kread((KA_T)rs->s_dip, (char *)di, sizeof(struct dev_info))) {
-		(void) snpf(Namech, Namechl - 1,
-		    "common snode at %s: no dev info: %s",
-		    print_kptr((KA_T)rv->v_data, tbuf, sizeof(tbuf)),
-		    print_kptr((KA_T)rs->s_dip, (char *)NULL, 0));
-		Namech[Namechl - 1] = '\0';
-		enter_nm(Namech);
-		return(1);
-	    }
-	    if (di->devi_name
-	    &&  kread((KA_T)di->devi_name, din, dinl-1) == 0)
-		din[dinl-1] = '\0';
-	}
-	return(0);
+    if (read_nvn((KA_T) v->v_data, (KA_T) s->s_commonvp, rv))
+        return (1);
+    if (read_nsn((KA_T) s->s_commonvp, (KA_T) rv->v_data, rs))
+        return (1);
+    *din = '\0';
+    if (rs->s_dip) {
+        if (kread((KA_T) rs->s_dip, (char *) di, sizeof(struct dev_info))) {
+            (void) snpf(Namech, Namechl - 1,
+                        "common snode at %s: no dev info: %s",
+                        print_kptr((KA_T) rv->v_data, tbuf, sizeof(tbuf)),
+                        print_kptr((KA_T) rs->s_dip, (char *) NULL, 0));
+            Namech[Namechl - 1] = '\0';
+            enter_nm(Namech);
+            return (1);
+        }
+        if (di->devi_name
+            && kread((KA_T) di->devi_name, din, dinl - 1) == 0)
+            din[dinl - 1] = '\0';
+    }
+    return (0);
 }
 
 
@@ -3903,22 +3960,22 @@ read_cni(s, rv, v, rs, di, din, dinl)
 
 static int
 readinode(ia, i)
-	KA_T ia;			/* inode kernel address */
-	struct inode *i;		/* inode buffer */
+        KA_T ia;            /* inode kernel address */
+        struct inode *i;        /* inode buffer */
 {
-	if (kread((KA_T)ia, (char *)i, sizeof(struct inode))) {
-	    (void) snpf(Namech, Namechl - 1, "can't read inode at %s",
-		print_kptr((KA_T)ia, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (kread((KA_T) ia, (char *) i, sizeof(struct inode))) {
+        (void) snpf(Namech, Namechl - 1, "can't read inode at %s",
+                    print_kptr((KA_T) ia, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=20500
-/*
+#if    solaris >= 20500
+                                                                                                                        /*
  * read_ndn() - read node's door node
  */
 
@@ -3941,8 +3998,7 @@ read_ndn(na, da, dn)
 	}
 	return(0);
 }
-#endif	/* solaris>=20500 */
-
+#endif    /* solaris>=20500 */
 
 
 /*
@@ -3951,35 +4007,35 @@ read_ndn(na, da, dn)
 
 static void
 read_mi(s, rdev, so, so_st, so_ad, sdp)
-	KA_T s;				/* kernel stream pointer address */
-	dev_t *rdev;			/* raw device pointer */
-	caddr_t so;			/* so_so return (Solaris) */
-	int *so_st;			/* so_so status */
-	KA_T *so_ad;			/* so_so addresses */
-	struct l_dev **sdp;		/* returned device pointer */
+        KA_T s;                /* kernel stream pointer address */
+        dev_t *rdev;            /* raw device pointer */
+        caddr_t so;            /* so_so return (Solaris) */
+        int *so_st;            /* so_so status */
+        KA_T *so_ad;            /* so_so addresses */
+        struct l_dev **sdp;        /* returned device pointer */
 {
-	struct l_dev *dp;
-	int i, j, k, nl;
-	KA_T ka;
-	struct module_info mi;
-	char mn[STRNML];
-	struct stdata sd;
-	struct queue q;
-	struct qinit qi;
-	KA_T qp;
+    struct l_dev *dp;
+    int i, j, k, nl;
+    KA_T ka;
+    struct module_info mi;
+    char mn[STRNML];
+    struct stdata sd;
+    struct queue q;
+    struct qinit qi;
+    KA_T qp;
 /*
  * If there is no stream pointer, or we can't read the stream head,
  * return.
  */
-	if (!s)
-	    return;
-	if (kread((KA_T)s, (char *)&sd, sizeof(sd))) {
-	    (void) snpf(Namech, Namechl - 1, "can't read stream head: %s",
-		print_kptr(s, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return;
-	}
+    if (!s)
+        return;
+    if (kread((KA_T) s, (char *) &sd, sizeof(sd))) {
+        (void) snpf(Namech, Namechl - 1, "can't read stream head: %s",
+                    print_kptr(s, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return;
+    }
 /*
  * Follow the stream head to each of its queue structures, retrieving the
  * module names from each queue's q_info->qi_minfo->mi_idname chain of
@@ -3990,75 +4046,75 @@ read_mi(s, rdev, so, so_st, so_ad, sdp)
  *
  * Ignore module names that end in "head".
  */
-	k = 0;
-	Namech[0] = '\0';
-	if (!(dp = finddev(&DevDev, rdev, LOOKDEV_CLONE)))
-	    dp = finddev(&DevDev, rdev, LOOKDEV_ALL);
-	if (dp) {
-	    (void) snpf(Namech, Namechl - 1, "%s", dp->name);
-	    Namech[Namechl - 1] = '\0';
-	    k = (int)strlen(Namech);
-	    *sdp = dp;
-	} else
-	    (void) snpf(Lf->iproto, sizeof(Lf->iproto), "STR");
-	nl = sizeof(mn) - 1;
-	mn[nl] = '\0';
-	qp = (KA_T)sd.sd_wrq;
-	for (i = 0; qp && i < 20; i++, qp = (KA_T)q.q_next) {
-	    if (!qp || kread(qp, (char *)&q, sizeof(q)))
-		break;
-	    if ((ka = (KA_T)q.q_qinfo) == (KA_T)NULL
-	    ||  kread(ka, (char *)&qi, sizeof(qi)))
-		continue;
-	    if ((ka = (KA_T)qi.qi_minfo) == (KA_T)NULL
-	    ||  kread(ka, (char *)&mi, sizeof(mi)))
-		continue;
-	    if ((ka = (KA_T)mi.mi_idname) == (KA_T)NULL
-	    ||  kread(ka, mn, nl))
-		continue;
-	    if ((j = (int)strlen(mn)) < 1)
-		continue;
-	    if (j >= 4 && strcmp(&mn[j - 4], "head") == 0)
-		continue;
+    k = 0;
+    Namech[0] = '\0';
+    if (!(dp = finddev(&DevDev, rdev, LOOKDEV_CLONE)))
+        dp = finddev(&DevDev, rdev, LOOKDEV_ALL);
+    if (dp) {
+        (void) snpf(Namech, Namechl - 1, "%s", dp->name);
+        Namech[Namechl - 1] = '\0';
+        k = (int) strlen(Namech);
+        *sdp = dp;
+    } else
+        (void) snpf(Lf->iproto, sizeof(Lf->iproto), "STR");
+    nl = sizeof(mn) - 1;
+    mn[nl] = '\0';
+    qp = (KA_T) sd.sd_wrq;
+    for (i = 0; qp && i < 20; i++, qp = (KA_T) q.q_next) {
+        if (!qp || kread(qp, (char *) &q, sizeof(q)))
+            break;
+        if ((ka = (KA_T) q.q_qinfo) == (KA_T) NULL
+            || kread(ka, (char *) &qi, sizeof(qi)))
+            continue;
+        if ((ka = (KA_T) qi.qi_minfo) == (KA_T) NULL
+            || kread(ka, (char *) &mi, sizeof(mi)))
+            continue;
+        if ((ka = (KA_T) mi.mi_idname) == (KA_T) NULL
+            || kread(ka, mn, nl))
+            continue;
+        if ((j = (int) strlen(mn)) < 1)
+            continue;
+        if (j >= 4 && strcmp(&mn[j - 4], "head") == 0)
+            continue;
 
-#if	solaris<100000
-	    if (strcmp(mn, "sockmod") == 0) {
+#if    solaris < 100000
+        if (strcmp(mn, "sockmod") == 0) {
 
-	    /*
+            /*
 	     * Save the Solaris sockmod device and inode numbers.
 	     */
-		if (so) {
+            if (so) {
 
-		    struct so_so s;
+                struct so_so s;
 
-		    if (!kread((KA_T)q.q_ptr, (char *)&s, sizeof(s))) {
-			if (!(*so_st))
-			    so_ad[0] = (KA_T)q.q_ptr;
-			else
-			    so_ad[1] = (KA_T)q.q_ptr;
-			(void) savesockmod(&s, (struct so_so *)so, so_st);
-		    }
-		}
-	    }
-#endif	/* solaris<100000 */
+                if (!kread((KA_T) q.q_ptr, (char *) &s, sizeof(s))) {
+                    if (!(*so_st))
+                        so_ad[0] = (KA_T) q.q_ptr;
+                    else
+                        so_ad[1] = (KA_T) q.q_ptr;
+                    (void) savesockmod(&s, (struct so_so *) so, so_st);
+                }
+            }
+        }
+#endif    /* solaris<100000 */
 
-	    if (k) {
-		if ((k + 2) > (Namechl - 1))
-		    break;
-		(void) snpf(&Namech[k], Namechl - k, "->");
-		k += 2;
-	    }
-	    if ((k + j) > (Namechl - 1))
-		break;
-	    (void) snpf(&Namech[k], Namechl - k, "%s", mn);
-	    k += j;
-	}
+        if (k) {
+            if ((k + 2) > (Namechl - 1))
+                break;
+            (void) snpf(&Namech[k], Namechl - k, "->");
+            k += 2;
+        }
+        if ((k + j) > (Namechl - 1))
+            break;
+        (void) snpf(&Namech[k], Namechl - k, "%s", mn);
+        k += j;
+    }
 }
 
 
-#if	solaris>=20500
+#if    solaris >= 20500
 
-/*
+                                                                                                                        /*
  * read_nan(na, ca, cn) - read node's autofs node
  */
 
@@ -4099,7 +4155,7 @@ read_nan(na, aa, rn)
 	}
 	return(0);
 }
-#endif	/* solaris>=20500 */
+#endif    /* solaris>=20500 */
 
 
 /*
@@ -4108,27 +4164,27 @@ read_nan(na, aa, rn)
 
 static int
 read_ncn(na, ca, cn)
-	KA_T na;			/* containing node's address */
-	KA_T ca;			/* cache node address */
-	struct cnode *cn;		/* cache node receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ca;            /* cache node address */
+        struct cnode *cn;        /* cache node receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ca || kread((KA_T)ca, (char *)cn, sizeof(struct cnode))) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read cnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ca, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ca || kread((KA_T) ca, (char *) cn, sizeof(struct cnode))) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read cnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ca, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=100000
-/*
+#if    solaris >= 100000
+                                                                                                                        /*
  * read_nctfsn(ty, na, ca, cn) - read node's cache node
  */
 
@@ -4205,7 +4261,7 @@ read_nctfsn(ty, na, ca, cn)
 	}
 	return(0);
 }
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
 /*
@@ -4214,22 +4270,22 @@ read_nctfsn(ty, na, ca, cn)
 
 static int
 read_nfn(na, fa, f)
-	KA_T na;			/* containing node's address */
-	KA_T fa;			/* fifonode address */
-	struct fifonode *f;		/* fifonode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T fa;            /* fifonode address */
+        struct fifonode *f;        /* fifonode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!fa || readfifonode(fa, f)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read fifonode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(fa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!fa || readfifonode(fa, f)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read fifonode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(fa, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
@@ -4239,22 +4295,22 @@ read_nfn(na, fa, f)
 
 static int
 read_nhn(na, ha, h)
-	KA_T na;			/* containing node's address */
-	KA_T ha;			/* hsnode address */
-	struct hsnode *h;		/* hsnode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ha;            /* hsnode address */
+        struct hsnode *h;        /* hsnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ha || readhsnode(ha, h)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read hsnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ha, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ha || readhsnode(ha, h)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read hsnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ha, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
@@ -4264,22 +4320,22 @@ read_nhn(na, ha, h)
 
 static int
 read_nin(na, ia, i)
-	KA_T na;			/* containing node's address */
-	KA_T ia;			/* kernel inode address */
-	struct inode *i;		/* inode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ia;            /* kernel inode address */
+        struct inode *i;        /* inode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ia || readinode(ia, i)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read inode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ia, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ia || readinode(ia, i)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read inode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ia, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
@@ -4289,22 +4345,22 @@ read_nin(na, ia, i)
 
 static int
 read_nln(na, la, ln)
-	KA_T na;			/* containing node's address */
-	KA_T la;			/* loopback node address */
-	struct lnode *ln;		/* loopback node receiver */
+        KA_T na;            /* containing node's address */
+        KA_T la;            /* loopback node address */
+        struct lnode *ln;        /* loopback node receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!la || kread((KA_T)la, (char *)ln, sizeof(struct lnode))) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read lnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(la, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!la || kread((KA_T) la, (char *) ln, sizeof(struct lnode))) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read lnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(la, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
@@ -4314,22 +4370,22 @@ read_nln(na, la, ln)
 
 static int
 read_nnn(na, nna, nn)
-	KA_T na;			/* containing node's address */
-	KA_T nna;			/* namenode address */
-	struct namenode *nn;		/* namenode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T nna;            /* namenode address */
+        struct namenode *nn;        /* namenode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!nna || kread((KA_T)nna, (char *)nn, sizeof(struct namenode))) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read namenode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(nna, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!nna || kread((KA_T) nna, (char *) nn, sizeof(struct namenode))) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read namenode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(nna, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
@@ -4339,27 +4395,27 @@ read_nnn(na, nna, nn)
 
 static int
 read_nmn(na, ma, m)
-	KA_T na;			/* containing node's address */
-	KA_T ma;			/* kernel mvfsnode address */
-	struct mvfsnode *m;		/* mvfsnode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ma;            /* kernel mvfsnode address */
+        struct mvfsnode *m;        /* mvfsnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ma || kread((KA_T)ma, (char *)m, sizeof(struct mvfsnode))) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read mvfsnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ma, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ma || kread((KA_T) ma, (char *) m, sizeof(struct mvfsnode))) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read mvfsnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ma, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	defined(HASPROCFS)
-/*
+#if    defined(HASPROCFS)
+                                                                                                                        /*
  * read_npi() - read node's /proc file system information
  */
 
@@ -4706,7 +4762,7 @@ read_npi(na, v, pids)
 	enter_nm(Namech);
 	return(0);
 }
-#endif	/* defined(HASPROCFS) */
+#endif    /* defined(HASPROCFS) */
 
 
 /*
@@ -4715,27 +4771,27 @@ read_npi(na, v, pids)
 
 static int
 read_npn(na, pa, p)
-	KA_T na;			/* containing node's address */
-	KA_T pa;			/* pcnode address */
-	struct pcnode *p;		/* pcnode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T pa;            /* pcnode address */
+        struct pcnode *p;        /* pcnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!pa || kread(pa, (char *)p, sizeof(struct pcnode))) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read pcnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(pa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!pa || kread(pa, (char *) p, sizeof(struct pcnode))) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read pcnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(pa, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=100000
-/*
+#if    solaris >= 100000
+                                                                                                                        /*
  * read_nprtn() - read node's port node
  */
 
@@ -4758,7 +4814,7 @@ read_nprtn(na, pa, p)
 	}
 	return(0);
 }
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
 /*
@@ -4767,26 +4823,26 @@ read_nprtn(na, pa, p)
 
 static int
 read_nrn(na, ra, r)
-	KA_T na;			/* containing node's address */
-	KA_T ra;			/* rnode address */
-	struct rnode *r;		/* rnode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ra;            /* rnode address */
+        struct rnode *r;        /* rnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ra || readrnode(ra, r)) {
-	    (void) snpf(Namech, Namechl - 1, "node at %s: can't read rnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ra, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ra || readrnode(ra, r)) {
+        (void) snpf(Namech, Namechl - 1, "node at %s: can't read rnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ra, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=100000
-/*
+#if    solaris >= 100000
+                                                                                                                        /*
  * read_nrn4() - read node's rnode4
  */
 
@@ -4811,11 +4867,11 @@ read_nrn4(na, ra, r)
 	}
 	return(0);
 }
-#endif	/* solaris>=100000 */
+#endif    /* solaris>=100000 */
 
 
-#if	solaris>=110000
-/*
+#if    solaris >= 110000
+                                                                                                                        /*
  * read_nsdn() - read node's sdev_node
  */
 
@@ -4852,11 +4908,11 @@ read_nsdn(na, sa, sdn, sdva)
 	}
 	return(0);
 }
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
 
-#if	solaris>=20600
-/*
+#if    solaris >= 20600
+                                                                                                                        /*
  * read_nson() - read node's sonode
  */
 
@@ -4880,7 +4936,7 @@ read_nson(na, sa, sn)
 	}
 	return(0);
 }
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
 
 /*
@@ -4889,27 +4945,27 @@ read_nson(na, sa, sn)
 
 static int
 read_nsn(na, sa, s)
-	KA_T na;			/* containing node's address */
-	KA_T sa;			/* snode address */
-	struct snode *s;		/* snode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T sa;            /* snode address */
+        struct snode *s;        /* snode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!sa || readsnode(sa, s)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read snode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(sa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!sa || readsnode(sa, s)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read snode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(sa, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=110000
-/*
+#if    solaris >= 110000
+                                                                                                                        /*
  * read_nsti() - read socket node's info
  */
 
@@ -4940,7 +4996,7 @@ read_nsti(so, stpi)
 	}
 	return(0);
 }
-#endif	/* solaris>=110000 */
+#endif    /* solaris>=110000 */
 
 
 /*
@@ -4949,27 +5005,27 @@ read_nsti(so, stpi)
 
 static int
 read_ntn(na, ta, t)
-	KA_T na;			/* containing node's address */
-	KA_T ta;			/* tmpnode address */
-	struct tmpnode *t;		/* tmpnode receiver */
+        KA_T na;            /* containing node's address */
+        KA_T ta;            /* tmpnode address */
+        struct tmpnode *t;        /* tmpnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (!ta || readtnode(ta, t)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read tnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(ta, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (!ta || readtnode(ta, t)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read tnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(ta, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	solaris>=20600
-/*
+#if    solaris >= 20600
+                                                                                                                        /*
  * read_nusa() - read sondode's UNIX socket address
  */
 
@@ -4996,7 +5052,7 @@ read_nusa(so, ua)
 	ua->sun_path[len] = '\0';
 	return((int)strlen(ua->sun_path));
 }
-#endif	/* solaris>=20600 */
+#endif    /* solaris>=20600 */
 
 
 /*
@@ -5005,27 +5061,27 @@ read_nusa(so, ua)
 
 static int
 read_nvn(na, va, v)
-	KA_T na;			/* node's address */
-	KA_T va;			/* vnode address */
-	struct vnode *v;		/* vnode receiver */
+        KA_T na;            /* node's address */
+        KA_T va;            /* vnode address */
+        struct vnode *v;        /* vnode receiver */
 {
-	char tbuf[32];
+    char tbuf[32];
 
-	if (readvnode(va, v)) {
-	    (void) snpf(Namech, Namechl - 1,
-		"node at %s: can't read real vnode: %s",
-		print_kptr(na, tbuf, sizeof(tbuf)),
-		print_kptr(va, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
-	    return(1);
-	}
-	return(0);
+    if (readvnode(va, v)) {
+        (void) snpf(Namech, Namechl - 1,
+                    "node at %s: can't read real vnode: %s",
+                    print_kptr(na, tbuf, sizeof(tbuf)),
+                    print_kptr(va, (char *) NULL, 0));
+        Namech[Namechl - 1] = '\0';
+        enter_nm(Namech);
+        return (1);
+    }
+    return (0);
 }
 
 
-#if	 defined(HAS_ZFS)
-/*
+#if     defined(HAS_ZFS)
+                                                                                                                        /*
  * read_nzn() - read node's ZFS node
  */
 
@@ -5068,7 +5124,7 @@ read_nzn(na, nza, zn)
 		zn->z_size = zp.zp_size;
 	    }
 	} else {
-	   
+
 	/*
 	 * Make sure z_link and z_size are defined when z_phys isn't.
 	 */
@@ -5150,76 +5206,76 @@ read_nzvfs(nza, nzva, zv)
 	}
 	return(0);
 }
-#endif	/* defined(HAS_ZFS) */
+#endif    /* defined(HAS_ZFS) */
 
 
-#if	solaris<100000
+#if    solaris < 100000
 /*
  * savesockmod() - save addresses from sockmod so_so structure
  */
 
 static void
 savesockmod(so, sop, so_st)
-	struct so_so *so;		/* new so_so structure pointer */
-	struct so_so *sop;		/* previous so_so structure pointer */
-	int *so_st;			/* status of *sop (0 if not loaded) */
+        struct so_so *so;        /* new so_so structure pointer */
+        struct so_so *sop;        /* previous so_so structure pointer */
+        int *so_st;            /* status of *sop (0 if not loaded) */
 {
 
-#if	solaris<20500
-	dev_t d1, d2, d3;
-#endif	/* solaris<20500 */
+#if    solaris < 20500
+    dev_t d1, d2, d3;
+#endif    /* solaris<20500 */
 
-#define	luxadr	lux_dev.addr.tu_addr
-#define	luxdev	lux_dev.addr.tu_addr.dev
-#define	luxino	lux_dev.addr.tu_addr.ino
-#define	ruxadr	rux_dev.addr.tu_addr
-#define	ruxdev	rux_dev.addr.tu_addr.dev
-#define	ruxino	rux_dev.addr.tu_addr.ino
+#define    luxadr    lux_dev.addr.tu_addr
+#define    luxdev    lux_dev.addr.tu_addr.dev
+#define    luxino    lux_dev.addr.tu_addr.ino
+#define    ruxadr    rux_dev.addr.tu_addr
+#define    ruxdev    rux_dev.addr.tu_addr.dev
+#define    ruxino    rux_dev.addr.tu_addr.ino
 
-#if	solaris<20500
+#if    solaris < 20500
 /*
  * If either address in the new structure is missing a device number, clear
  * its corresponding inode number.  Then sort the inode-less device numbers.
  */
-	if (!so->luxdev)
-	    so->luxino = (ino_t)0;
-	if (!so->ruxdev)
-	    so->ruxino = (ino_t)0;
-	if (!so->luxino && !so->ruxino) {
-	    if (so->luxdev > so->ruxdev) {
-		d2 = so->luxdev;
-		d1 = so->luxdev = so->ruxdev;
-		so->ruxdev = d2;
-	    } else {
-		d1 = so->luxdev;
-		d2 = so->ruxdev;
-	    }
-	} else
-	    d1 = d2 = (dev_t)0;
+    if (!so->luxdev)
+        so->luxino = (ino_t) 0;
+    if (!so->ruxdev)
+        so->ruxino = (ino_t) 0;
+    if (!so->luxino && !so->ruxino) {
+        if (so->luxdev > so->ruxdev) {
+            d2 = so->luxdev;
+            d1 = so->luxdev = so->ruxdev;
+            so->ruxdev = d2;
+        } else {
+            d1 = so->luxdev;
+            d2 = so->ruxdev;
+        }
+    } else
+        d1 = d2 = (dev_t) 0;
 /*
  * If the previous structure hasn't been loaded, save the new one in it with
  * adjusted or sorted addresses.
  */
-	if (!*so_st) {
-	    if (so->luxdev && so->luxino) {
-		*sop = *so;
-		sop->ruxdev = (dev_t)0;
-		sop->ruxino = (ino_t)0;
-		*so_st = 1;
-		return;
-	    }
-	    if (so->ruxdev && so->ruxino) {
-		*sop = *so;
-		sop->luxadr = sop->ruxadr;
-		sop->ruxdev = (dev_t)0;
-		sop->ruxino = (ino_t)0;
-		*so_st = 1;
-		return;
-	    }
-	    *sop = *so;
-	    *so_st = 1;
-	    return;
-	}
+    if (!*so_st) {
+        if (so->luxdev && so->luxino) {
+            *sop = *so;
+            sop->ruxdev = (dev_t) 0;
+            sop->ruxino = (ino_t) 0;
+            *so_st = 1;
+            return;
+        }
+        if (so->ruxdev && so->ruxino) {
+            *sop = *so;
+            sop->luxadr = sop->ruxadr;
+            sop->ruxdev = (dev_t) 0;
+            sop->ruxino = (ino_t) 0;
+            *so_st = 1;
+            return;
+        }
+        *sop = *so;
+        *so_st = 1;
+        return;
+    }
 /*
  * See if the new sockmod addresses need to be merged with the previous
  * ones:
@@ -5233,22 +5289,22 @@ savesockmod(so, sop, so_st)
  *	*  Don't merge if the both device numbers in the new structure are
  *	   zero.
  */
-	if (sop->luxdev && sop->luxino)
-	    return;
-	if (so->luxdev && so->luxino) {
-	    sop->luxadr = so->luxadr;
-	    sop->ruxdev = (dev_t)0;
-	    sop->ruxino = (ino_t)0;
-	    return;
-	}
-	if (so->ruxdev && so->ruxino) {
-	    sop->luxadr = so->ruxadr;
-	    sop->ruxdev = (dev_t)0;
-	    sop->ruxino = (ino_t)0;
-	    return;
-	}
-	if (!so->luxdev && !so->ruxdev)
-	    return;
+    if (sop->luxdev && sop->luxino)
+        return;
+    if (so->luxdev && so->luxino) {
+        sop->luxadr = so->luxadr;
+        sop->ruxdev = (dev_t) 0;
+        sop->ruxino = (ino_t) 0;
+        return;
+    }
+    if (so->ruxdev && so->ruxino) {
+        sop->luxadr = so->ruxadr;
+        sop->ruxdev = (dev_t) 0;
+        sop->ruxino = (ino_t) 0;
+        return;
+    }
+    if (!so->luxdev && !so->ruxdev)
+        return;
 /*
  * Check the previous structure's device numbers:
  *
@@ -5257,65 +5313,64 @@ savesockmod(so, sop, so_st)
  *	*  Choose the minimum and maximum non-zero device numbers contained in
  *	   either structure.
  */
-	if (!sop->luxdev && !sop->ruxdev) {
-	    *sop = *so;
-	    return;
-	}
-	if (!sop->luxdev && (d1 || d2)) {
-	    if (d1) {
-		sop->luxdev = d1;
-		d1 = (dev_t)0;
-	    } else {
-		sop->luxdev = d2;
-		d2 = (dev_t)0;
-	    }
-	    if (sop->luxdev > sop->ruxdev) {
-		d3 = sop->luxdev;
-		sop->luxdev = sop->ruxdev;
-		sop->ruxdev = d3;
-	    }
-	}
-	if (!sop->ruxdev && (d1 || d2)) {
-	    if (d1) {
-		sop->ruxdev = d1;
-		d1 = (dev_t)0;
-	    } else {
-		sop->ruxdev = d2;
-		d2 = (dev_t)0;
-	    }
-	    if (sop->luxdev > sop->ruxdev) {
-		d3 = sop->luxdev;
-		sop->luxdev = sop->ruxdev;
-		sop->ruxdev = d3;
-	    }
-	}
-	if (sop->luxdev && sop->ruxdev) {
-	    if (d1) {
-		if (d1 < sop->luxdev)
-		    sop->luxdev = d1;
-		else if (d1 > sop->ruxdev)
-		    sop->ruxdev = d1;
-	    }
-	    if (d2) {
-		if (d2 < sop->luxdev)
-		    sop->luxdev = d2;
-		else if (d2 > sop->ruxdev)
-		    sop->ruxdev = d2;
-	    }
-	}
+    if (!sop->luxdev && !sop->ruxdev) {
+        *sop = *so;
+        return;
+    }
+    if (!sop->luxdev && (d1 || d2)) {
+        if (d1) {
+            sop->luxdev = d1;
+            d1 = (dev_t) 0;
+        } else {
+            sop->luxdev = d2;
+            d2 = (dev_t) 0;
+        }
+        if (sop->luxdev > sop->ruxdev) {
+            d3 = sop->luxdev;
+            sop->luxdev = sop->ruxdev;
+            sop->ruxdev = d3;
+        }
+    }
+    if (!sop->ruxdev && (d1 || d2)) {
+        if (d1) {
+            sop->ruxdev = d1;
+            d1 = (dev_t) 0;
+        } else {
+            sop->ruxdev = d2;
+            d2 = (dev_t) 0;
+        }
+        if (sop->luxdev > sop->ruxdev) {
+            d3 = sop->luxdev;
+            sop->luxdev = sop->ruxdev;
+            sop->ruxdev = d3;
+        }
+    }
+    if (sop->luxdev && sop->ruxdev) {
+        if (d1) {
+            if (d1 < sop->luxdev)
+                sop->luxdev = d1;
+            else if (d1 > sop->ruxdev)
+                sop->ruxdev = d1;
+        }
+        if (d2) {
+            if (d2 < sop->luxdev)
+                sop->luxdev = d2;
+            else if (d2 > sop->ruxdev)
+                sop->ruxdev = d2;
+        }
+    }
 #else	/* solaris>=20500 */
-/*
+                                                                                                                            /*
  * Save the first sockmod structure.
  */
 	if (!*so_st) {
 	    *so_st = 1;
 	    *sop = *so;
 	}
-#endif	/* solaris<20500 */
+#endif    /* solaris<20500 */
 
 }
-#endif	/* solaris<100000 */
-
+#endif    /* solaris<100000 */
 
 
 /*
@@ -5324,60 +5379,60 @@ savesockmod(so, sop, so_st)
 
 int
 vop2ty(vp, fx)
-	struct vnode *vp;		/* local vnode pointer */
-	int fx;				/* file system index (-1 if none) */
+        struct vnode *vp;        /* local vnode pointer */
+        int fx;                /* file system index (-1 if none) */
 {
-	int h;
-	register int i;
-	KA_T ka;
-	int nty;
-	v_optab_t *nv, *v, *vt;
+    int h;
+    register int i;
+    KA_T ka;
+    int nty;
+    v_optab_t *nv, *v, *vt;
 
-#if	defined(HAS_AFS)
-	static int afs = 0;		/* afs test status: -1 = no AFS
+#if    defined(HAS_AFS)
+                                                                                                                            static int afs = 0;		/* afs test status: -1 = no AFS
 					 *		     0 = not tested
 					 *		     1 = AFS */
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
 /*
  * Locate the node type by hashing the vnode's v_op address into the Voptab[].
  */
-	if (!(ka = (KA_T)vp->v_op))
-	    return(-1);
-	h = HASHVOP(ka);
-	for (v = Voptab[h]; v; v = v->next) {
-	    if (ka == v->v_op)
-		break;
-	}
-	if (!v) {
+    if (!(ka = (KA_T) vp->v_op))
+        return (-1);
+    h = HASHVOP(ka);
+    for (v = Voptab[h]; v; v = v->next) {
+        if (ka == v->v_op)
+            break;
+    }
+    if (!v) {
 
-	/*
+        /*
 	 * If there's no entry in the Voptab[] for the v_op address, see if
 	 * an entry can be found via the file system type and FxToVoptab[].
 	 */
-	    if ((fx >= 0) && (fx < Fsinfomax) && (v = FxToVoptab[fx])) {
+        if ((fx >= 0) && (fx < Fsinfomax) && (v = FxToVoptab[fx])) {
 
-	    /*
+            /*
 	     * There's an FxToVoptab[] mapping, so add an entry to Voptab[]
 	     * for the v_op address.
 	     */
-		if (!(nv = (v_optab_t *)malloc((MALLOC_S)sizeof(v_optab_t)))) {
-		    (void) fprintf(stderr, "%s: can't add \"%s\" to Voptab\n",
-			Pn, Fsinfo[fx]);
-		    Exit(1);
-		}
-		*nv = *v;
-		nv->v_op = ka;
-		h = HASHVOP(ka);
-		nv->next = Voptab[h];
-		Voptab[h] = v = nv;
-	    }
-	}
-	if (!v)
-	    return(-1);
+            if (!(nv = (v_optab_t *) malloc((MALLOC_S)sizeof(v_optab_t)))) {
+                (void) fprintf(stderr, "%s: can't add \"%s\" to Voptab\n",
+                               Pn, Fsinfo[fx]);
+                Exit(1);
+            }
+            *nv = *v;
+            nv->v_op = ka;
+            h = HASHVOP(ka);
+            nv->next = Voptab[h];
+            Voptab[h] = v = nv;
+        }
+    }
+    if (!v)
+        return (-1);
 
-#if	defined(HAS_AFS)
-/*
+#if    defined(HAS_AFS)
+                                                                                                                            /*
  * Do special AFS checks.
  */
 	if (v->nty == N_AFS) {
@@ -5399,14 +5454,14 @@ vop2ty(vp, fx)
 	    }
 	    return(-1);
 	}
-#endif	/* defined(HAS_AFS) */
+#endif    /* defined(HAS_AFS) */
 
-	return(v->nty);
+    return (v->nty);
 }
 
 
-#if	solaris>=100000
-/*
+#if    solaris >= 100000
+                                                                                                                        /*
  * read_ndvn() -- read node's dv_node
  */
 
@@ -5470,4 +5525,4 @@ read_ndvn(na, da, dv, dev, devs)
 	}
 	return(0);
 }
-#endif	/* solaris<100000 */
+#endif    /* solaris<100000 */

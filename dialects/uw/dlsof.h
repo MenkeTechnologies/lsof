@@ -30,8 +30,8 @@
  */
 
 
-#if	!defined(UW_LSOF_H)
-#define	UW_LSOF_H	1
+#if    !defined(UW_LSOF_H)
+#define    UW_LSOF_H    1
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -52,7 +52,7 @@
 #include <sys/fstyp.h>
 #include <sys/fsid.h>
 
-# if	UNIXWAREV>=70103
+# if    UNIXWAREV >= 70103
 #include <sys/poll.h>
 #include <sys/fs/prdata.h>
 #define	PR_PIDDIR	PR_PIDCAT_DIR
@@ -68,37 +68,41 @@
 #define	PR_LWPCTL	PR_PIDCAT_LWP_CTL
 #define	PR_LWPSTATUS	PR_PIDCAT_LWP_STATUS
 #define	PR_LWPSINFO	PR_PIDCAT_LWP_SINFO
-# endif	/* UNIXWAREV>=70103 */
+# endif    /* UNIXWAREV>=70103 */
 
 #include <sys/vfs.h>
 #include <sys/vnode.h>
 #include <sys/fs/memfs_mnode.h>
 #include <sys/fs/namenode.h>
 
-# if	UNIXWAREV>=70000
+# if    UNIXWAREV >= 70000
 #undef	IREAD
 #undef	IWRITE
 #undef	IEXEC
-# endif	/* UNIXWAREV>=70000 */
+# endif    /* UNIXWAREV>=70000 */
 
 #include <sys/fs/snode.h>
 
-# if	UNIXWAREV<20102
+# if    UNIXWAREV < 20102
+
 #include <fs/proc/prdata.h>
+
 # else	/* UNIXWAREV>=20102 */
 #  if	UNIXWAREV<70103
 #include <fs/procfs/prdata.h>
 #  endif	/* UNIXWAREV<70103 */
-# endif	/* UNIXWAREV<20102 */
+# endif    /* UNIXWAREV<20102 */
 
 #include <sys/mount.h>
 #include <sys/stream.h>
 #include <sys/strsubr.h>
 #include <sys/sysmacros.h>
-#undef	major
-#undef	minor
-#define	major(d)	(((d) >> L_BITSMINOR) & L_MAXMAJ)
-#define	minor(d)	((d) & L_MAXMIN)
+
+#undef    major
+#undef    minor
+#define    major(d)    (((d) >> L_BITSMINOR) & L_MAXMAJ)
+#define    minor(d)    ((d) & L_MAXMIN)
+
 #include <sys/time.h>
 #include <sys/fs/s5dir.h>
 #include <signal.h>
@@ -113,24 +117,26 @@
 #include <rpc/types.h>
 #include <nfs/nfs.h>
 
-#define	_KERNEL
+#define    _KERNEL
+
 #include <sys/fs/fifonode.h>
 
-# if	UNIXWAREV>=70000
+# if    UNIXWAREV >= 70000
 #include <rpc/xdr.h>
-# endif	/* UNIXWAREV>=70000 */
+# endif    /* UNIXWAREV>=70000 */
 
 #include <nfs/rnode.h>
-#undef	_KERNEL
+
+#undef    _KERNEL
 
 #include <netinet/in.h>
 
-# if	defined(HASIPv6)
+# if    defined(HASIPv6)
 #include <netinet/in6.h>
 #  if	!defined(IN6_ARE_ADDR_EQUAL)
 #define	IN6_ARE_ADDR_EQUAL	IN6_ADDR_EQUAL	/* required by RFC2292 */
 #  endif	/* !defined(IN6_ARE_ADDR_EQUAL) */
-# endif	/* defined(HASIPv6) */
+# endif    /* defined(HASIPv6) */
 
 #include <rpc/rpc.h>
 #include <rpc/clnt_soc.h>
@@ -139,26 +145,28 @@
 #include <sys/socket.h>
 #include <net/route.h>
 
-# if	defined(HAS_INKERNEL)
+# if    defined(HAS_INKERNEL)
 #define	INKERNEL
-# endif	/* defined(HAS_INKERNEL) */
+# endif    /* defined(HAS_INKERNEL) */
 
 #include <netinet/in_pcb.h>
 
-# if	defined(HAS_INKERNEL)
+# if    defined(HAS_INKERNEL)
 #undef	INKERNEL
-# endif	/* defined(HAS_INKERNEL) */
+# endif    /* defined(HAS_INKERNEL) */
 
-# if	UNIXWAREV>=70000
+# if    UNIXWAREV >= 70000
 #undef	TCP_MAXSEG
 #undef	TCP_NODELAY
-# endif	/* UNIXWAREV>=70000 */
+# endif    /* UNIXWAREV>=70000 */
 
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 
-# if	UNIXWAREV<70000
+# if    UNIXWAREV < 70000
+
 #include <netinet/tcp_kern.h>
+
 # else	/* UNIXWAREV>=70000 */
 #include <netinet/tcp_timer.h>
 
@@ -171,98 +179,98 @@
 #  if	defined(HAS_INKERNEL)
 #undef	INKERNEL
 #  endif	/* defined(HAS_INKERNEL) */
-# endif	/* UNIXWAREV<70000 */
+# endif    /* UNIXWAREV<70000 */
 
 #include <sys/protosw.h>
 #include <sys/socketvar.h>
 #include <sys/sockmod.h>
 
-# if	UNIXWAREV>=70101
+# if    UNIXWAREV >= 70101
 #undef	SS_ISBOUND
 #undef	SS_ISCONNECTED
 #undef	SS_ISCONNECTING
 #undef	SS_CANTRCVMORE
 #undef	SS_CANTSENDMORE
 #include <sys/socksys.h>
-# endif	/* UNIXWAREV>=70101 */
+# endif    /* UNIXWAREV>=70101 */
 
 #include <sys/tiuser.h>
 #include <vm/hat.h>
 #include <vm/as.h>
 #include <vm/seg.h>
 
-# if	UNIXWAREV>=70000 && UNIXWAREV<70103
+# if    UNIXWAREV >= 70000 && UNIXWAREV < 70103
 typedef ulong_t channel_t;		/* also in types.h #if _KERNEL */
-# endif	/* UNIXWAREV>=70000 && UNIXWAREV<70103 */
+# endif    /* UNIXWAREV>=70000 && UNIXWAREV<70103 */
 
 #include <vm/seg_dev.h>
 #include <vm/seg_map.h>
 #include <vm/seg_vn.h>
 
-#define	COMP_P		const void
-#define DEVINCR		1024	/* device table malloc() increment */
-#define	DIRTYPE		dirent
-#define	FSNAMEL		4
-typedef	off_t		KA_T;
-#define	KMEM		"/dev/kmem"
+#define    COMP_P        const void
+#define DEVINCR        1024    /* device table malloc() increment */
+#define    DIRTYPE        dirent
+#define    FSNAMEL        4
+typedef off_t KA_T;
+#define    KMEM        "/dev/kmem"
 
-# if	defined(HAS_UW_NSC)
+# if    defined(HAS_UW_NSC)
 #define N_UNIX		"/unix"
 # else	/* !defined(HAS_UW_NSC) */
-#define N_UNIX		"/stand/unix"
-# endif	/* defined(HAS_UW_NSC) */
+#define N_UNIX        "/stand/unix"
+# endif    /* defined(HAS_UW_NSC) */
 
-# if	UNIXWAREV<70103
-#define MALLOC_P	char
-#define MALLOC_S	unsigned
+# if    UNIXWAREV < 70103
+#define MALLOC_P    char
+#define MALLOC_S    unsigned
 # else	/* UNIXWAREV>=70103 */
 #define MALLOC_P	void
 #define MALLOC_S	size_t
-# endif	/* UNIXWAREV<70103 */
+# endif    /* UNIXWAREV<70103 */
 
-#define FREE_P		MALLOC_P
-#define MAXSEGS		100	/* maximum text segments */
-#define	MAXSYSCMDL	(PSCOMSIZ - 1)	/* max system command name length */
-#define	PROCFS		"/proc"
-#define	PROCINCR	32	/* local proc table malloc increment */
-#define	PROCMIN		3	/* processes that make a "good" scan */
-#define	PROCSIZE	sizeof(struct proc)
-#define	PROCTRYLM	5	 /* times to try to read proc table */
-#define QSORT_P		char
+#define FREE_P        MALLOC_P
+#define MAXSEGS        100    /* maximum text segments */
+#define    MAXSYSCMDL    (PSCOMSIZ - 1)    /* max system command name length */
+#define    PROCFS        "/proc"
+#define    PROCINCR    32    /* local proc table malloc increment */
+#define    PROCMIN        3    /* processes that make a "good" scan */
+#define    PROCSIZE    sizeof(struct proc)
+#define    PROCTRYLM    5     /* times to try to read proc table */
+#define QSORT_P        char
 
-# if	UNIXWAREV<7000
-#define	READLEN_T	unsigned
+# if    UNIXWAREV < 7000
+#define    READLEN_T    unsigned
 # else	/* UNIXWAREV>=7000 */
 #define	READLEN_T	size_t
-# endif	/* UNIXWAREV<7000 */
+# endif    /* UNIXWAREV<7000 */
 
-# if	defined(HASPROCFS)
+# if    defined(HASPROCFS)
 #define	PNSIZ		5	/* size of /HASPROCFS names */
 #define	PR_INOBIAS	64L	/* /HASPROCFS PID to i_number bias */
 #define	PR_ROOTINO	2	/* /HASPROCFS root inode number */
 # endif
 
-#define STRNCPY_L	size_t
-#define	STRNML		32
+#define STRNCPY_L    size_t
+#define    STRNML        32
 
-# if	UNIXWAREV>=70000
+# if    UNIXWAREV >= 70000
 #define	SZOFFTYPE	unsigned long long
-					/* type for size and offset */
+/* type for size and offset */
 #define	SZOFFPSPEC	"ll"		/* SZOFFTYPE printf specification
-					 * modifier */
+ * modifier */
 /*
- * Use the 64 bit stat() functions, so that lsof can get parameters on
- * large and small files.
- */
+* Use the 64 bit stat() functions, so that lsof can get parameters on
+* large and small files.
+*/
 #define	fstat		fstat64
 #define	lstat		lstat64
 #define	stat		stat64
 # else	/* UNIXWAREV<70000 */
-#define	SZOFFTYPE	unsigned long	/* type for size and offset */
-#define	SZOFFPSPEC	"l"		/* SZOFFTYPE printf specification modifier */
-# endif	/* UNIXWAREV>=7000 */
+#define    SZOFFTYPE    unsigned long    /* type for size and offset */
+#define    SZOFFPSPEC    "l"        /* SZOFFTYPE printf specification modifier */
+# endif    /* UNIXWAREV>=7000 */
 
-#define U_SIZE		sizeof(struct user)
+#define U_SIZE        sizeof(struct user)
 
 
 /*
@@ -276,56 +284,56 @@ extern int HaveCloneMaj;
 extern int Kd;
 
 struct l_ino {
-	dev_t dev;			/* device */
-	long nlink;			/* link count */
-	char *nm;			/* name */
-	INODETYPE number;		/* inode number */
-	dev_t rdev;			/* raw device */
-	SZOFFTYPE size;			/* file size */
-	unsigned char dev_def;		/* dev is defined */
-	unsigned char nlink_def;	/* link count is defined */
-	unsigned char number_def;	/* number is defined */
-	unsigned char rdev_def;		/* rdev is defined */
-	unsigned char size_def;		/* size is defined */
+    dev_t dev;            /* device */
+    long nlink;            /* link count */
+    char *nm;            /* name */
+    INODETYPE number;        /* inode number */
+    dev_t rdev;            /* raw device */
+    SZOFFTYPE size;            /* file size */
+    unsigned char dev_def;        /* dev is defined */
+    unsigned char nlink_def;    /* link count is defined */
+    unsigned char number_def;    /* number is defined */
+    unsigned char rdev_def;        /* rdev is defined */
+    unsigned char size_def;        /* size is defined */
 };
 
 struct mounts {
-	char *dir;			/* directory (mounted on) */
-	char *fsname;           	/* file system
+    char *dir;            /* directory (mounted on) */
+    char *fsname;            /* file system
 					 * (symbolic links unresolved) */
-	char *fsnmres;           	/* file system
+    char *fsnmres;            /* file system
 					 * (symbolic links resolved) */
-	dev_t dev;			/* directory st_dev */
-	dev_t rdev;			/* directory st_rdev */
-	INODETYPE inode;		/* directory st_ino */
-	mode_t mode;			/* directory st_mode */
-	mode_t fs_mode;			/* file system st_mode */
-	struct mounts *next;    	/* forward link */
+    dev_t dev;            /* directory st_dev */
+    dev_t rdev;            /* directory st_rdev */
+    INODETYPE inode;        /* directory st_ino */
+    mode_t mode;            /* directory st_mode */
+    mode_t fs_mode;            /* file system st_mode */
+    struct mounts *next;        /* forward link */
 
-# if	defined(HASFSTYPE)
-	char *fstype;			/* st_fstype */
+# if    defined(HASFSTYPE)
+    char *fstype;			/* st_fstype */
 # endif
 
 };
 
 extern short Nfstyp;
 
-#define	X_NCACHE	"ncache"
-#define	X_NCSIZE	"ncsize"
-#define	NL_NAME		n_name
+#define    X_NCACHE    "ncache"
+#define    X_NCSIZE    "ncsize"
+#define    NL_NAME        n_name
 
 struct sfile {
-	char *aname;			/* argument file name */
-	char *name;			/* file name (after readlink()) */
-	char *devnm;			/* device name (optional) */
-	dev_t dev;			/* device */
-	dev_t rdev;			/* raw device */
-	u_short mode;			/* S_IFMT mode bits from stat() */
-	int type;			/* file type: 0 = file system
+    char *aname;            /* argument file name */
+    char *name;            /* file name (after readlink()) */
+    char *devnm;            /* device name (optional) */
+    dev_t dev;            /* device */
+    dev_t rdev;            /* raw device */
+    u_short mode;            /* S_IFMT mode bits from stat() */
+    int type;            /* file type: 0 = file system
 				 	 *	      1 = regular file */
-	INODETYPE i;			/* inode number */
-	int f;				/* file found flag */
-	struct sfile *next;		/* forward link */
+    INODETYPE i;            /* inode number */
+    int f;                /* file found flag */
+    struct sfile *next;        /* forward link */
 };
 
 #include <setjmp.h>
@@ -335,16 +343,16 @@ struct sfile {
  * Definition for ckfa.c
  */
 
-#define	CKFA_XDEVTST strcmp(sb.st_fstype,"cdfs")==0
+#define    CKFA_XDEVTST strcmp(sb.st_fstype,"cdfs")==0
 
 
 /*
  * Definition for dvch.c, isfn.c, and rdev.c
  */
 
-#define	CLONEMAJ	CloneMaj	/* clone major variable name */
-#define	HAS_STD_CLONE	1		/* has standard clone handling */
-#define	HAVECLONEMAJ	HaveCloneMaj	/* clone major status variable name */
+#define    CLONEMAJ    CloneMaj    /* clone major variable name */
+#define    HAS_STD_CLONE    1        /* has standard clone handling */
+#define    HAVECLONEMAJ    HaveCloneMaj    /* clone major status variable name */
 
 
 /*
@@ -355,4 +363,4 @@ struct sfile {
 #include <sys/dnlc.h>
 #endif  /* defined(HASNCACHE) */
 
-#endif	/* UW_LSOF_H */
+#endif    /* UW_LSOF_H */

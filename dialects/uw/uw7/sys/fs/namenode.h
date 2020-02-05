@@ -8,11 +8,11 @@
  *   publication of such source code.                                      
  */
 
-#ifndef _FS_NAMEFS_NAMENODE_H	/* wrapper symbol for kernel use */
-#define _FS_NAMEFS_NAMENODE_H	/* subject to change without notice */
+#ifndef _FS_NAMEFS_NAMENODE_H    /* wrapper symbol for kernel use */
+#define _FS_NAMEFS_NAMENODE_H    /* subject to change without notice */
 
-#ident	"@(#)kern:fs/namefs/namenode.h	1.13.2.1"
-#ident	"$Header: $"
+#ident    "@(#)kern:fs/namefs/namenode.h	1.13.2.1"
+#ident    "$Header: $"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -40,7 +40,7 @@ extern "C" {
  * be NAMEFS.
  */
 struct namefd {
-	int fd;
+    int fd;
 };
 
 #if defined(_KERNEL) || defined(_KMEMUSER)
@@ -49,16 +49,16 @@ struct namefd {
  * Each NAMEFS object is identified by a struct namenode/vnode pair.
  */
 struct namenode {
-	struct vnode    nm_vnode;	/* represents mounted file desc.*/
-	ushort		nm_flag;	/* flags defined below */
-	struct vattr    nm_vattr;	/* attributes of mounted file desc.*/
-	struct vnode	*nm_filevp;	/* file desc. prior to mounting */
-	struct file	*nm_filep;	/* file pointer of nm_filevp */
-	struct vnode	*nm_mountpt;	/* mount point prior to mounting */
-	struct namenode *nm_nextp;	/* next link in the linked list */
-	struct namenode *nm_backp;	/* back link in linked list */
-	struct acl	*nm_aclp;	/* ACL entries */
-	rwsleep_t	nm_lock;	/* protects namenode */
+    struct vnode    nm_vnode;	/* represents mounted file desc.*/
+    ushort		nm_flag;	/* flags defined below */
+    struct vattr    nm_vattr;	/* attributes of mounted file desc.*/
+    struct vnode	*nm_filevp;	/* file desc. prior to mounting */
+    struct file	*nm_filep;	/* file pointer of nm_filevp */
+    struct vnode	*nm_mountpt;	/* mount point prior to mounting */
+    struct namenode *nm_nextp;	/* next link in the linked list */
+    struct namenode *nm_backp;	/* back link in linked list */
+    struct acl	*nm_aclp;	/* ACL entries */
+    rwsleep_t	nm_lock;	/* protects namenode */
 };
 
 #endif /* _KERNEL || _KMEMUSER */
@@ -91,10 +91,10 @@ struct namenode {
 extern int nm_tflush;		/* the frequency of flush namefs */
 extern int namefs_fstype;	/* index into vfssw returned by vfs_attach */
 
-#endif	/* _KERNEL */
+#endif    /* _KERNEL */
 
 #if defined(__cplusplus)
-	}
+}
 #endif
 
-#endif	/* _FS_NAMEFS_NAMENODE_H */
+#endif    /* _FS_NAMEFS_NAMENODE_H */

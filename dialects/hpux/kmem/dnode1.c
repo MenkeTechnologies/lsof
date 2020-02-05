@@ -34,12 +34,12 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dnode1.c,v 1.11 2005/08/08 19:50:23 abe Exp $";
 #endif
 
 
-#if	defined(HASVXFS)
+#if    defined(HASVXFS)
 
 # if	defined(HPUXKERNBITS) && HPUXKERNBITS>=64
 #define _INO_T
@@ -106,52 +106,52 @@ typedef int time_t;
 
 int
 read_vxnode(v, vfs, dev, devs, rdev, rdevs)
-	struct vnode *v;		/* local containing vnode */
-	struct l_vfs *vfs;		/* local vfs structure */
-	dev_t *dev;			/* device number receiver */
-	int *devs;			/* device status receiver */
-	dev_t *rdev;			/* raw device number receiver */
-	int *rdevs;			/* raw device status receiver */
+    struct vnode *v;		/* local containing vnode */
+    struct l_vfs *vfs;		/* local vfs structure */
+    dev_t *dev;			/* device number receiver */
+    int *devs;			/* device status receiver */
+    dev_t *rdev;			/* raw device number receiver */
+    int *rdevs;			/* raw device status receiver */
 {
-	struct vx_inode i;
+    struct vx_inode i;
 
-	if (!v->v_data || kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-	    return(1);
+    if (!v->v_data || kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return(1);
 /*
  * Return device numbers.
  */
-	if (vfs && vfs->fsname)
-	    *dev = vfs->dev;
-	else
-	    *dev = i.i_dev;
-	*devs = 1;
-	if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
-	    *rdev = v->v_rdev;
-	    *rdevs = 1;
-	}
+    if (vfs && vfs->fsname)
+        *dev = vfs->dev;
+    else
+        *dev = i.i_dev;
+    *devs = 1;
+    if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
+        *rdev = v->v_rdev;
+        *rdevs = 1;
+    }
 /*
  * Record inode number.
  */
-	Lf->inode = (INODETYPE)i.i_number;
-	Lf->inp_ty = 1;
+    Lf->inode = (INODETYPE)i.i_number;
+    Lf->inp_ty = 1;
 /*
  * Record size.
  */
-	if (Foffset || ((v->v_type == VCHR || v->v_type == VBLK) && !Fsize))
-	    Lf->off_def = 1;
-	else {
-	    Lf->sz = (SZOFFTYPE)i.i_size;
-	    Lf->sz_def = 1;
-	}
+    if (Foffset || ((v->v_type == VCHR || v->v_type == VBLK) && !Fsize))
+        Lf->off_def = 1;
+    else {
+        Lf->sz = (SZOFFTYPE)i.i_size;
+        Lf->sz_def = 1;
+    }
 /*
  * Record link count.
  */
-	if (Fnlink) {
-	    Lf->nlink = (long)i.i_nlink;
-	    Lf->nlink_def = 1;
-	    if (Nlink && (Lf->nlink < Nlink))
-		Lf->sf |= SELNLINK;
-	}
-	return(0);
+    if (Fnlink) {
+        Lf->nlink = (long)i.i_nlink;
+        Lf->nlink_def = 1;
+        if (Nlink && (Lf->nlink < Nlink))
+        Lf->sf |= SELNLINK;
+    }
+    return(0);
 }
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */

@@ -35,22 +35,22 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
-# if	defined(__GNUC__)
+# if    defined(__GNUC__)
 /*
  * Do gcc preparation.
  */
 
-#  if	!defined( __STDC_EXT__)
-#define	__STDC_EXT__
-#  endif	/* !defined( __STDC_EXT__) */
+#  if    !defined( __STDC_EXT__)
+#define    __STDC_EXT__
+#  endif    /* !defined( __STDC_EXT__) */
 
 #include <sys/_inttypes.h>
 
-#  if	HPUXV>=1123
+#  if    HPUXV >= 1123
 #undef	LSOF_XOPEN_SOURCE_EXTENDED
 #   if	defined(_XOPEN_SOURCE_EXTENDED)
 #define	LSOF_XOPEN_SOURCE_EXTENDED _XOPEN_SOURCE_EXTENDED
@@ -61,18 +61,18 @@
 #define	_XOPEN_SOURCE_EXTENDED LSOF_XOPEN_SOURCE_EXTENDED
 #undef	LSOF_XOPEN_SOURCE_EXTENDED
 #   endif	/* defined(_XOPEN_SOURCE_EXTENDED) */
-#  endif	/* HPUXV>=1123 */
-# endif	/* defined(__GNUC__) */
+#  endif    /* HPUXV>=1123 */
+# endif    /* defined(__GNUC__) */
 
 
 /*
  * Make sure a 32 bit lsof for HP-UX<1123 uses [l]stat64()
  */
 
-#if	!defined(__LP64__) && HPUXV<1123
+#if    !defined(__LP64__) && HPUXV < 1123
 #define	lstat		lstat64
 #define	stat		stat64
-#endif	/* !defined(__LP64__) && HPUXV<1123 */
+#endif    /* !defined(__LP64__) && HPUXV<1123 */
 
 
 /*
@@ -80,7 +80,7 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define	CAN_USE_CLNT_CREATE	1
+#define    CAN_USE_CLNT_CREATE    1
 
 
 /*
@@ -88,7 +88,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -96,7 +96,7 @@
  * getdtablesize() to obtain the maximum file descriptor number plus one.
  */
 
-#define	GET_MAX_FD	get_max_fd
+#define    GET_MAX_FD    get_max_fd
 
 
 /*
@@ -113,7 +113,7 @@
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -148,10 +148,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -167,7 +167,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -183,7 +183,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -226,7 +226,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -256,10 +256,10 @@
  */
 
 #define HASLFILEADD struct pst_fid opfid; \
-		    struct psfileid psfid;
+            struct psfileid psfid;
 /* #define CLRLFILEADD(lf)	(lf)->... = (type)NULL;	*/
 #define SETLFILEADD memset((void *)&Lf->opfid, 0, sizeof(struct pst_fid)); \
-		    memset((void *)&Lf->psfid, 0, sizeof(struct psfileid));
+            memset((void *)&Lf->psfid, 0, sizeof(struct psfileid));
 
 
 /*
@@ -296,7 +296,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	2
+#define    HASNCACHE    2
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -340,7 +340,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -350,7 +350,7 @@
  * called from print_file().
  */
 
-#define	HASPRINTDEV	print_dev
+#define    HASPRINTDEV    print_dev
 /* #define	HASPRINTINO	print_ino?	*/
 /* #define	HASPRINTNM	print_nm?	*/
 /* #define	HASPRINTOFF	print_off?	*/
@@ -389,7 +389,7 @@
  * IP protocol name printing function defaults to printiprto().
  */
 
-#define	HASPRIVPRIPP	1
+#define    HASPRIVPRIPP    1
 
 
 /*
@@ -417,7 +417,7 @@
  */
 
 /* #define	HASPROCFS	"proc?" */
-#define	HASFSTYPE	2	/* see also dlsof.h */
+#define    HASFSTYPE    2    /* see also dlsof.h */
 /* #define	HASPINODEN	1 */
 
 
@@ -457,9 +457,9 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
-#define	HASWIDECHAR	1
-#define	WIDECHARINCL	<wctype.h>
+#define    HASSETLOCALE    1
+#define    HASWIDECHAR    1
+#define    WIDECHARINCL    <wctype.h>
 
 
 /*
@@ -482,8 +482,8 @@
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
 /* #define	HASTCPOPT	1	has TCP options or flags */
 
 
@@ -517,7 +517,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -525,7 +525,7 @@
  * TCP/TPI send and receive window sizes produced by netstat.
  */
 
-#define	HASTCPTPIW	1
+#define    HASTCPTPIW    1
 
 
 /*
@@ -534,7 +534,7 @@
  * speed improvements.
  */
 
-#define	HASTCPUDPSTATE	1
+#define    HASTCPUDPSTATE    1
 
 
 /*
@@ -571,9 +571,9 @@
  * These are defined here, because they must be used in dlsof.h.
  */
 
-#define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
-#define	INODEPSPEC	"ll"		/* INODETYPE printf specification
+#define    INODETYPE    unsigned long long
+/* inode number internal storage type */
+#define    INODEPSPEC    "ll"        /* INODETYPE printf specification
 					 * modifier */
 
 
@@ -582,7 +582,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	uid_t
+#define    UID_ARG    uid_t
 
 
 /*
@@ -594,23 +594,23 @@
  * header files.
  */
 
-#define	USE_LIB_CKKV				1	/* ckkv.c */
+#define    USE_LIB_CKKV                1    /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
 /* #define	USE_LIB_FIND_CH_INO		1	   fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
 /* #define	USE_LIB_PRINT_TCPTPI		1	   ptti.c */
 /* #define	USE_LIB_PRINT_TCPTPI		1	   ptti.c */
-#define	USE_LIB_READDEV				1	/* rdev.c */
-#define	USE_LIB_READMNT				1	/* rmnt.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
+#define    USE_LIB_READMNT                1    /* rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define	snpf	snprintf	   /* use the system's snprintf() */
+#define    snpf    snprintf       /* use the system's snprintf() */
 
 
 /*
@@ -643,6 +643,6 @@
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)		memset((void *)a, 0, l)
+#define    zeromem(a, l)        memset((void *)a, 0, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

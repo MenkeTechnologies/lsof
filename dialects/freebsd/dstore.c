@@ -31,14 +31,14 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dstore.c,v 1.8 2008/04/15 13:31:47 abe Exp $";
 #endif
 
 
 #include "lsof.h"
 
-struct file *Cfp;			/* curent file's file struct pointer */
+struct file *Cfp;            /* curent file's file struct pointer */
 
 
 /*
@@ -48,67 +48,67 @@ struct file *Cfp;			/* curent file's file struct pointer */
 
 struct drive_Nl Drive_Nl[] = {
 
-#if	FREEBSDV<2005
-	{ X_NCACHE,	"_nchhead"	},
+#if    FREEBSDV < 2005
+        {X_NCACHE, "_nchhead"},
 #else	/* FREEBSDV>=2005 */
 # if	FREEBSDV<2010
-	{ X_NCACHE,	"_nclruhead"	},
+{ X_NCACHE,	"_nclruhead"	},
 # else	/* FREEBSDV>=2010 */
-	{ X_NCACHE,	"_nchashtbl"	},
+{ X_NCACHE,	"_nchashtbl"	},
 # endif	/* FREEBSDV<2010 */
-#endif	/* FREEBSDV<2005 */
+#endif    /* FREEBSDV<2005 */
 
-#if	FREEBSDV<2010
-	{ X_NCSIZE,	"_numcache"	},
+#if    FREEBSDV < 2010
+        {X_NCSIZE, "_numcache"},
 #else	/* FREEBSDV>=2010 */
-	{ X_NCSIZE,	"_nchash"	},
-#endif	/* FREEBSDV<2010 */
+        { X_NCSIZE,	"_nchash"	},
+#endif    /* FREEBSDV<2010 */
 
-	{ "",		""		},
-	{ NULL,		NULL		}
+        {"", ""},
+        {NULL, NULL}
 };
 
-#if	FREEBSDV>=2000
+#if    FREEBSDV >= 2000
 kvm_t *Kd = NULL;			/* kvm descriptor */
-#endif	/* FREEBSDV>=2000 */
+#endif    /* FREEBSDV>=2000 */
 
-#if	defined(P_ADDR)
+#if    defined(P_ADDR)
 KA_T Kpa;				/* kernel proc struct address */
-#endif	/* defined(P_ADDR) */
+#endif    /* defined(P_ADDR) */
 
-struct l_vfs *Lvfs = NULL;		/* local vfs structure table */
+struct l_vfs *Lvfs = NULL;        /* local vfs structure table */
 
-int Np = 0;				/* number of kernel processes */
+int Np = 0;                /* number of kernel processes */
 
-#if	FREEBSDV>=2000
+#if    FREEBSDV >= 2000
 struct kinfo_proc *P = NULL;		/* local process table copy */
-#endif	/* FREEBSDV>=2000 */
+#endif    /* FREEBSDV>=2000 */
 
-#if	defined(HASFSTRUCT)
+#if    defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-	{ (long)FREAD,		FF_READ		},
-	{ (long)FWRITE,		FF_WRITE	},
-	{ (long)FNONBLOCK,	FF_NBLOCK	},
-	{ (long)FNDELAY,	FF_NDELAY	},
-	{ (long)FAPPEND,	FF_APPEND	},
-	{ (long)FASYNC,		FF_ASYNC	},
-	{ (long)FFSYNC,		FF_FSYNC	},
+    { (long)FREAD,		FF_READ		},
+    { (long)FWRITE,		FF_WRITE	},
+    { (long)FNONBLOCK,	FF_NBLOCK	},
+    { (long)FNDELAY,	FF_NDELAY	},
+    { (long)FAPPEND,	FF_APPEND	},
+    { (long)FASYNC,		FF_ASYNC	},
+    { (long)FFSYNC,		FF_FSYNC	},
 
 # if	defined(FMARK)
-	{ (long)FMARK,		FF_MARK		},
+    { (long)FMARK,		FF_MARK		},
 # endif	/* defined(FMARK) */
 
 # if	defined(FDEFER)
-	{ (long)FDEFER,		FF_DEFER	},
+    { (long)FDEFER,		FF_DEFER	},
 # endif	/* defined(FDEFER) */
 
-	{ (long)FHASLOCK,	FF_HASLOCK	},
-	{ (long)O_NOCTTY,	FF_NOCTTY	},
-	{ (long)0,		NULL 		}
+    { (long)FHASLOCK,	FF_HASLOCK	},
+    { (long)O_NOCTTY,	FF_NOCTTY	},
+    { (long)0,		NULL 		}
 };
 
 
@@ -119,13 +119,13 @@ struct pff_tab Pff_tab[] = {
 struct pff_tab Pof_tab[] = {
 
 # if	defined(UF_EXCLOSE)
-	{ (long)UF_EXCLOSE,	POF_CLOEXEC	},
+    { (long)UF_EXCLOSE,	POF_CLOEXEC	},
 # endif	/* defined(UF_EXCLOSE) */
 
 # if	defined(UF_MAPPED)
-	{ (long)UF_MAPPED,	POF_MAPPED	},
+    { (long)UF_MAPPED,	POF_MAPPED	},
 # endif	/* defined(UF_MAPPED) */
 
-	{ (long)0,		NULL		}
+    { (long)0,		NULL		}
 };
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */

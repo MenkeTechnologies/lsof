@@ -31,7 +31,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1997 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1997 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dfile.c,v 1.7 2002/02/26 15:20:15 abe Exp $";
 #endif
 
@@ -49,16 +49,16 @@ static char *rcsid = "$Id: dfile.c,v 1.7 2002/02/26 15:20:15 abe Exp $";
 
 int
 printdevname(dev, rdev, f, nty)
-	dev_t *dev;			/* device */
+        dev_t *dev;            /* device */
         dev_t *rdev;                    /* raw device */
         int f;                          /* 1 = follow with '\n' */
-	int nty;			/* node type: N_BLK or N_chr */
+        int nty;            /* node type: N_BLK or N_chr */
 {
-	char buf[128];
+    char buf[128];
 
-	(void) snpf(buf, sizeof(buf), "%s device: %d,%d",
-		    (nty == N_BLK) ? "BLK" : "CHR",
-		    (int)GET_MAJ_DEV(*rdev), (int)GET_MIN_DEV(*rdev));
-	safestrprt(buf, stdout, f);
-	return(1);
+    (void) snpf(buf, sizeof(buf), "%s device: %d,%d",
+                (nty == N_BLK) ? "BLK" : "CHR",
+                (int) GET_MAJ_DEV(*rdev), (int) GET_MIN_DEV(*rdev));
+    safestrprt(buf, stdout, f);
+    return (1);
 }

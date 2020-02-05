@@ -45,7 +45,7 @@
  */
 
 
-#ifdef	USE_LIB_REGEX
+#ifdef    USE_LIB_REGEX
 /*
  * This section comes from GLIBC 2.2.  It is used only when the dialect
  * has no POSIX-conformant regular expression function set.  When that is
@@ -377,15 +377,15 @@ typedef enum
 struct re_pattern_buffer
 {
 /* [[[begin pattern_buffer]]] */
-	/* Space that holds the compiled pattern.  It is declared as
+    /* Space that holds the compiled pattern.  It is declared as
           `unsigned char *' because its elements are
            sometimes used as array indexes.  */
   unsigned char *buffer;
 
-	/* Number of bytes to which `buffer' points.  */
+    /* Number of bytes to which `buffer' points.  */
   unsigned long int allocated;
 
-	/* Number of bytes actually used in `buffer'.  */
+    /* Number of bytes actually used in `buffer'.  */
   unsigned long int used;
 
         /* Syntax setting with which the pattern was compiled.  */
@@ -402,7 +402,7 @@ struct re_pattern_buffer
            when it is matched.  */
   RE_TRANSLATE_TYPE translate;
 
-	/* Number of subexpressions found by the compiler.  */
+    /* Number of subexpressions found by the compiler.  */
   size_t re_nsub;
 
         /* Zero if this pattern cannot match the empty string, one else.
@@ -585,16 +585,16 @@ extern int re_exec _RE_ARGS ((const char *));
 
 /* POSIX compatibility.  */
 extern int regcomp _RE_ARGS ((regex_t *__restrict __preg,
-			      const char *__restrict __pattern,
-			      int __cflags));
+                  const char *__restrict __pattern,
+                  int __cflags));
 
 extern int regexec _RE_ARGS ((const regex_t *__restrict __preg,
-			      const char *__restrict __string, size_t __nmatch,
-			      regmatch_t __pmatch[__restrict_arr],
-			      int __eflags));
+                  const char *__restrict __string, size_t __nmatch,
+                  regmatch_t __pmatch[__restrict_arr],
+                  int __eflags));
 
 extern size_t regerror _RE_ARGS ((int __errcode, const regex_t *__preg,
-				  char *__errbuf, size_t __errbuf_size));
+                  char *__errbuf, size_t __errbuf_size));
 
 extern void regfree _RE_ARGS ((regex_t *__preg));
 
@@ -613,5 +613,7 @@ End:
 */
 
 #else	/* !defined(USE_LIB_REGEX) */
+
 #include <regex.h>
-#endif	/* defined(USE_LIB_REGEX) */
+
+#endif    /* defined(USE_LIB_REGEX) */

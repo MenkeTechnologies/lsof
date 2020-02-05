@@ -32,7 +32,7 @@
 
 #include "../machine.h"
 
-#if	defined(HASNCACHE) && defined(USE_LIB_RNAM)
+#if    defined(HASNCACHE) && defined(USE_LIB_RNAM)
 
 # if	!defined(lint)
 static char copyright[] =
@@ -110,26 +110,26 @@ static NCACHE_SZ_CAST Nc = 0;		/* size of name cache */
 static int Nch = 0;			/* size of name cache hash pointer
 					 * table */
 struct l_nch {
-	KA_T na;			/* node address */
+    KA_T na;			/* node address */
 
 # if	defined(NCACHE_NODEID)
-	unsigned long id;		/* capability ID */
+    unsigned long id;		/* capability ID */
 # endif	/* defined(NCACHE_NODEID) */
 
 # if	defined(NCACHE_PARADDR) && defined(NCACHE_PARID)
-	KA_T pa;			/* parent node address */
-	struct l_nch *pla;		/* parent local node address */
-	unsigned long did;		/* parent capability ID */
+    KA_T pa;			/* parent node address */
+    struct l_nch *pla;		/* parent local node address */
+    unsigned long did;		/* parent capability ID */
 # endif	/* defined(NCACHE_PARADDR) && defined(NCACHE_PARID) */
 
-	char nm[NCHNAMLEN+1];		/* name */
-	int nl;				/* name length */
+    char nm[NCHNAMLEN+1];		/* name */
+    int nl;				/* name length */
 };
 
 static struct l_nch *Ncache = (struct l_nch*)NULL;
-					/* the local name cache */
+                    /* the local name cache */
 static struct l_nch **Nchash = (struct l_nch **)NULL;
-					/* Ncache hash pointers */
+                    /* Ncache hash pointers */
 static int Ncfirst = 1;			/* first-call status */
 
 # if	defined(NCACHE_NODEID)
@@ -156,32 +156,32 @@ static struct l_nch *
 
 # if	defined(NCACHE_NODEID)
 ncache_addr(i, na)
-	unsigned long i;		/* node's capability ID */
+    unsigned long i;		/* node's capability ID */
 # else	/* !defined(NCACHE_NODEID) */
 ncache_addr(na)
 # endif	/* defined(NCACHE_NODEID) */
 
-	KA_T na;			/* node's address */
+    KA_T na;			/* node's address */
 {
-	struct l_nch **hp;
+    struct l_nch **hp;
 
 # if	defined(NCACHE_NODEID)
-	for (hp = ncachehash(i, na); *hp; hp++)
+    for (hp = ncachehash(i, na); *hp; hp++)
 # else	/* !defined(NCACHE_NODEID) */
-	for (hp = ncachehash(na); *hp; hp++)
+    for (hp = ncachehash(na); *hp; hp++)
 # endif	/* defined(NCACHE_NODEID) */
 
-	{
+    {
 
 # if	defined(NCACHE_NODEID)
-	    if ((*hp)->id == i && (*hp)->na == na)
+        if ((*hp)->id == i && (*hp)->na == na)
 # else	/* !defined(NCACHE_NODEID) */
-	    if ((*hp)->na == na)
+        if ((*hp)->na == na)
 # endif	/* defined(NCACHE_NODEID) */
 
-		return(*hp);
-	}
-	return((struct l_nch *)NULL);
+        return(*hp);
+    }
+    return((struct l_nch *)NULL);
 }
 
 
@@ -192,28 +192,28 @@ ncache_addr(na)
 
 static int
 ncache_isroot(na, cp)
-	KA_T na;				/* kernel node address */
-	char *cp;				/* partial path */
+    KA_T na;				/* kernel node address */
+    char *cp;				/* partial path */
 {
-	char buf[MAXPATHLEN];
-	int i;
-	MALLOC_S len;
-	struct mounts *mtp;
-	static int nca = 0;
-	static int ncn = 0;
-	static KA_T *nc = (KA_T *)NULL;
-	struct stat sb;
-	struct vnode v;
+    char buf[MAXPATHLEN];
+    int i;
+    MALLOC_S len;
+    struct mounts *mtp;
+    static int nca = 0;
+    static int ncn = 0;
+    static KA_T *nc = (KA_T *)NULL;
+    struct stat sb;
+    struct vnode v;
 
-	if (!na)
-	    return(0);
+    if (!na)
+        return(0);
 /*
  * Search the root vnode cache.
  */
-	for (i = 0; i < ncn; i++) {
-	    if (na == nc[i])
-		return(1);
-	}
+    for (i = 0; i < ncn; i++) {
+        if (na == nc[i])
+        return(1);
+    }
 /*
  * Read the vnode and see if it's a VDIR node with the VROOT flag set.  If
  * it is, then the path is complete.
@@ -223,53 +223,53 @@ ncache_isroot(na, cp)
  * possible full path, safely stat() it, and see if it's inode number matches
  * the one we have for this file.  If it does, then the path is complete.
  */
-	if (kread((KA_T)na, (char *)&v, sizeof(v))
-	||  v.v_type != VDIR || !(v.v_flag & VROOT)) {
+    if (kread((KA_T)na, (char *)&v, sizeof(v))
+    ||  v.v_type != VDIR || !(v.v_flag & VROOT)) {
 
-	/*
-	 * The vnode tests failed.  Try the inode tests.
-	 */
-	    if (Lf->inp_ty != 1 || !Lf->inode
-	    ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
-		return(0);
-	    if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
-		return(0);
-	    for (mtp = readmnt(); mtp; mtp = mtp->next) {
-		if (!mtp->dir || !mtp->inode)
-		    continue;
-		if (strcmp(Lf->fsdir, mtp->dir) == 0)
-		    break;
-	    }
-	    if (!mtp)
-		return(0);
-	    (void) strcpy(buf, Lf->fsdir);
-	    if (buf[len - 1] != '/')
-		buf[len++] = '/';
-	    (void) strcpy(&buf[len], cp);
-	    if (statsafely(buf, &sb) != 0
-	    ||  (unsigned long)sb.st_ino != Lf->inode)
-		return(0);
-	}
+    /*
+     * The vnode tests failed.  Try the inode tests.
+     */
+        if (Lf->inp_ty != 1 || !Lf->inode
+        ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
+        return(0);
+        if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
+        return(0);
+        for (mtp = readmnt(); mtp; mtp = mtp->next) {
+        if (!mtp->dir || !mtp->inode)
+            continue;
+        if (strcmp(Lf->fsdir, mtp->dir) == 0)
+            break;
+        }
+        if (!mtp)
+        return(0);
+        (void) strcpy(buf, Lf->fsdir);
+        if (buf[len - 1] != '/')
+        buf[len++] = '/';
+        (void) strcpy(&buf[len], cp);
+        if (statsafely(buf, &sb) != 0
+        ||  (unsigned long)sb.st_ino != Lf->inode)
+        return(0);
+    }
 /*
  * Add the node address to the root node cache.
  */
-	if (ncn >= nca) {
-	    if (!nca) {
-		len = (MALLOC_S)(10 * sizeof(KA_T));
-		nc = (KA_T *)malloc(len);
-	    } else {
-		len = (MALLOC_S)((nca + 10) * sizeof(KA_T));
-		nc = (KA_T *)realloc(nc, len);
-	    }
-	    if (!nc) {
-		(void) fprintf(stderr, "%s: no space for root node table\n",
-		    Pn);
-		Exit(1);
-	    }
-	    nca += 10;
-	}
-	nc[ncn++] = na;
-	return(1);
+    if (ncn >= nca) {
+        if (!nca) {
+        len = (MALLOC_S)(10 * sizeof(KA_T));
+        nc = (KA_T *)malloc(len);
+        } else {
+        len = (MALLOC_S)((nca + 10) * sizeof(KA_T));
+        nc = (KA_T *)realloc(nc, len);
+        }
+        if (!nc) {
+        (void) fprintf(stderr, "%s: no space for root node table\n",
+            Pn);
+        Exit(1);
+        }
+        nca += 10;
+    }
+    nc[ncn++] = na;
+    return(1);
 }
 # endif	/* !defined(NCACHE_NO_ROOT) */
 
@@ -281,127 +281,127 @@ ncache_isroot(na, cp)
 void
 ncache_load()
 {
-	struct l_nch **hp, *lc;
-	int i, len, n;
-	static int iNc = 0;
-	struct NCACHE *kc;
-	static KA_T kp = (KA_T)NULL;
-	KA_T v;
+    struct l_nch **hp, *lc;
+    int i, len, n;
+    static int iNc = 0;
+    struct NCACHE *kc;
+    static KA_T kp = (KA_T)NULL;
+    KA_T v;
 
 # if	defined(NCACHE_NXT)
-	static KA_T kf;
-	struct NCACHE nc;
+    static KA_T kf;
+    struct NCACHE nc;
 # else	/* !defined NCACHE_NXT) */
-	static struct NCACHE *kca = (struct NCACHE *)NULL;
+    static struct NCACHE *kca = (struct NCACHE *)NULL;
 # endif	/* defined(NCACHE_NXT) */
 
-	if (!Fncache)
-	    return;
-	if (Ncfirst) {
+    if (!Fncache)
+        return;
+    if (Ncfirst) {
 
-	/*
-	 * Do startup (first-time) functions.
-	 */
-	    Ncfirst = 0;
-	/*
-	 * Establish kernel cache size.
-	 */
-	    v = (KA_T)0;
-	    if (get_Nl_value(X_NCSIZE, (struct drive_Nl *)NULL, &v) < 0
-	    ||  !v
-	    ||  kread((KA_T)v, (char *)&Nc, sizeof(Nc)))
-	    {
-		if (!Fwarn)
-		    (void) fprintf(stderr,
-			"%s: WARNING: can't read name cache size: %s\n",
-			Pn, print_kptr(v, (char *)NULL, 0));
-		iNc = Nc = 0;
-		return;
-	    }
-	    iNc = Nc;
-	    if (Nc < 1) {
-		if (!Fwarn) {
-		    (void) fprintf(stderr,
-			"%s: WARNING: kernel name cache size: %d\n", Pn, Nc);
-		    (void) fprintf(stderr,
-			"      Cache size assumed to be: %d\n", DEFNCACHESZ);
-		}
-		iNc = Nc = DEFNCACHESZ;
-	    }
-	/*
-	 * Establish kernel cache address.
-	 */
-	    v = (KA_T)0;
-	    if (get_Nl_value(X_NCACHE, (struct drive_Nl *)NULL, &v) < 0
-	    ||  !v
-	    ||  kread((KA_T)v, (char *)&kp, sizeof(kp))) {
-		if (!Fwarn)
-		    (void) fprintf(stderr,
-			"%s: WARNING: can't read name cache address: %s\n",
-			Pn, print_kptr(v, (char *)NULL, 0));
-		iNc = Nc = 0;
-		return;
-	    }
+    /*
+     * Do startup (first-time) functions.
+     */
+        Ncfirst = 0;
+    /*
+     * Establish kernel cache size.
+     */
+        v = (KA_T)0;
+        if (get_Nl_value(X_NCSIZE, (struct drive_Nl *)NULL, &v) < 0
+        ||  !v
+        ||  kread((KA_T)v, (char *)&Nc, sizeof(Nc)))
+        {
+        if (!Fwarn)
+            (void) fprintf(stderr,
+            "%s: WARNING: can't read name cache size: %s\n",
+            Pn, print_kptr(v, (char *)NULL, 0));
+        iNc = Nc = 0;
+        return;
+        }
+        iNc = Nc;
+        if (Nc < 1) {
+        if (!Fwarn) {
+            (void) fprintf(stderr,
+            "%s: WARNING: kernel name cache size: %d\n", Pn, Nc);
+            (void) fprintf(stderr,
+            "      Cache size assumed to be: %d\n", DEFNCACHESZ);
+        }
+        iNc = Nc = DEFNCACHESZ;
+        }
+    /*
+     * Establish kernel cache address.
+     */
+        v = (KA_T)0;
+        if (get_Nl_value(X_NCACHE, (struct drive_Nl *)NULL, &v) < 0
+        ||  !v
+        ||  kread((KA_T)v, (char *)&kp, sizeof(kp))) {
+        if (!Fwarn)
+            (void) fprintf(stderr,
+            "%s: WARNING: can't read name cache address: %s\n",
+            Pn, print_kptr(v, (char *)NULL, 0));
+        iNc = Nc = 0;
+        return;
+        }
 
 # if	defined(NCACHE_NXT)
-	    kf = kp;
+        kf = kp;
 
 # else	/* !defined(NCACHE_NXT) */
-	/*
-	 * Allocate space for a local copy of the kernel's cache.
-	 */
-	    len = Nc * sizeof(struct NCACHE);
-	    if (!(kca = (struct NCACHE *)malloc((MALLOC_S)len))) {
-		if (!Fwarn)
-		    (void) fprintf(stderr,
-			"%s: can't allocate name cache space: %d\n", Pn, len);
-		Exit(1);
-	    }
+    /*
+     * Allocate space for a local copy of the kernel's cache.
+     */
+        len = Nc * sizeof(struct NCACHE);
+        if (!(kca = (struct NCACHE *)malloc((MALLOC_S)len))) {
+        if (!Fwarn)
+            (void) fprintf(stderr,
+            "%s: can't allocate name cache space: %d\n", Pn, len);
+        Exit(1);
+        }
 # endif	/* defined(NCACHE_NXT) */
 
-	/*
-	 * Allocate space for the local cache.
-	 */
-	    len = Nc * sizeof(struct l_nch);
-	    if (!(Ncache = (struct l_nch *)malloc((MALLOC_S)len))) {
+    /*
+     * Allocate space for the local cache.
+     */
+        len = Nc * sizeof(struct l_nch);
+        if (!(Ncache = (struct l_nch *)malloc((MALLOC_S)len))) {
 
 no_local_space:
 
-		if (!Fwarn)
-		    (void) fprintf(stderr,
-			"%s: no space for %d byte local name cache\n", Pn, len);
-		Exit(1);
-	    }
-	} else {
+        if (!Fwarn)
+            (void) fprintf(stderr,
+            "%s: no space for %d byte local name cache\n", Pn, len);
+        Exit(1);
+        }
+    } else {
 
-	/*
-	 * Do setup for repeat calls.
-	 */
-	    if ((Nc = iNc) == 0)
-		return;
-	    if (Nchash) {
-		(void) free((FREE_P *)Nchash);
-		Nchash = (struct l_nch **)NULL;
-	    }
+    /*
+     * Do setup for repeat calls.
+     */
+        if ((Nc = iNc) == 0)
+        return;
+        if (Nchash) {
+        (void) free((FREE_P *)Nchash);
+        Nchash = (struct l_nch **)NULL;
+        }
 
 # if    defined(NCACHE_NXT)
-	    kp = kf;
+        kp = kf;
 # endif /* defined(NCACHE_NXT) */
 
-	}
+    }
 
 # if    !defined(NCACHE_NXT)
 
 /*
  * Read the kernel's name cache.
  */
-	if (kread(kp, (char *)kca, (Nc * sizeof(struct NCACHE)))) {
-	    if (!Fwarn)
-		(void) fprintf(stderr,
-		    "%s: WARNING: can't read kernel's name cache: %s\n",
-		    Pn, print_kptr(kp, (char *)NULL, 0));
-	    Nc = 0;
-	    return;
+    if (kread(kp, (char *)kca, (Nc * sizeof(struct NCACHE)))) {
+        if (!Fwarn)
+        (void) fprintf(stderr,
+            "%s: WARNING: can't read kernel's name cache: %s\n",
+            Pn, print_kptr(kp, (char *)NULL, 0));
+        Nc = 0;
+        return;
         }
 # endif /* !defined(NCACHE_NXT) */
 
@@ -410,159 +410,159 @@ no_local_space:
  */
 
 # if	defined(NCACHE_NXT)
-	for (i = iNc * 16, kc = &nc, lc = Ncache, n = 0; kp; )
+    for (i = iNc * 16, kc = &nc, lc = Ncache, n = 0; kp; )
 # else	/* !defined(NCACHE_NXT) */
-	for (i = n = 0, kc = kca, lc = Ncache; i < Nc; i++, kc++)
+    for (i = n = 0, kc = kca, lc = Ncache; i < Nc; i++, kc++)
 # endif	/* defined(NCACHE_NXT) */
 
-	{
+    {
 
 # if	defined(NCACHE_NXT)
-	    if (kread(kp, (char *)kc, sizeof(nc)))
-		break;
-	    if ((kp = (KA_T)kc->NCACHE_NXT) == kf)
-		kp = (KA_T)NULL;
+        if (kread(kp, (char *)kc, sizeof(nc)))
+        break;
+        if ((kp = (KA_T)kc->NCACHE_NXT) == kf)
+        kp = (KA_T)NULL;
 # endif	/* defined(NCACHE_NXT) */
 
-	    if (!kc->NCACHE_NODEADDR)
-		continue;
-	    if ((len = kc->NCACHE_NMLEN) < 1 || len > NCHNAMLEN)
-		continue;
-	    if (len < 3 && kc->NCACHE_NM[0] == '.') {
-		if (len == 1 || (len == 2 && kc->NCACHE_NM[1] == '.'))
-		    continue;
-	    }
+        if (!kc->NCACHE_NODEADDR)
+        continue;
+        if ((len = kc->NCACHE_NMLEN) < 1 || len > NCHNAMLEN)
+        continue;
+        if (len < 3 && kc->NCACHE_NM[0] == '.') {
+        if (len == 1 || (len == 2 && kc->NCACHE_NM[1] == '.'))
+            continue;
+        }
 
 # if	defined(NCACHE_NXT)
-	    if (n >= Nc) {
-		Nc += LNCHINCRSZ;
-		if (!(Ncache = (struct l_nch *)realloc(Ncache,
-		     (MALLOC_S)(Nc * sizeof(struct l_nch)))))
-		{
-		    (void) fprintf(stderr,
-			"%s: no more space for %d entry local name cache\n",
-			Pn, Nc);
-		    Exit(1);
-		}
-		lc = &Ncache[n];
-	    }
+        if (n >= Nc) {
+        Nc += LNCHINCRSZ;
+        if (!(Ncache = (struct l_nch *)realloc(Ncache,
+             (MALLOC_S)(Nc * sizeof(struct l_nch)))))
+        {
+            (void) fprintf(stderr,
+            "%s: no more space for %d entry local name cache\n",
+            Pn, Nc);
+            Exit(1);
+        }
+        lc = &Ncache[n];
+        }
 # endif	/* defined(NCACHE_NXT) */
 
 #  if	defined(NCACHE_NODEID)
-	    lc->na = (KA_T)kc->NCACHE_NODEADDR;
-	    lc->id = kc->NCACHE_NODEID;
+        lc->na = (KA_T)kc->NCACHE_NODEADDR;
+        lc->id = kc->NCACHE_NODEID;
 #  endif	/* defined(NCACHE_NODEID) */
 
 #  if	defined(NCACHE_PARADDR)
-	    lc->pa = (KA_T)kc->NCACHE_PARADDR;
-	    lc->pla = (struct l_nch *)NULL;
+        lc->pa = (KA_T)kc->NCACHE_PARADDR;
+        lc->pla = (struct l_nch *)NULL;
 #  endif	/* defined(NCACHE_PARADDR) */
 
 #  if	defined(NCACHE_PARID)
-	    lc->did = kc->NCACHE_PARID;
+        lc->did = kc->NCACHE_PARID;
 #  endif	/* defined(NCACHE_PARID) */
 
-	    (void) strncpy(lc->nm, kc->NCACHE_NM, len);
-	    lc->nm[len] = '\0';
-	    lc->nl = strlen(lc->nm);
-	    n++;
-	    lc++;
+        (void) strncpy(lc->nm, kc->NCACHE_NM, len);
+        lc->nm[len] = '\0';
+        lc->nl = strlen(lc->nm);
+        n++;
+        lc++;
 
 # if	defined(NCACHE_NXT)
-	    if (n >= i) {
-		if (!Fwarn)
-		    (void) fprintf(stderr,
-			"%s: WARNING: name cache truncated at %d entries\n",
-			Pn, n);
-		break;
-	    }
+        if (n >= i) {
+        if (!Fwarn)
+            (void) fprintf(stderr,
+            "%s: WARNING: name cache truncated at %d entries\n",
+            Pn, n);
+        break;
+        }
 # endif	/* defined(NCACHE_NXT) */
 
-	}
+    }
 /*
  * Reduce memory usage, as required.
  */
 
 # if	!defined(NCACHE_NXT)
-	if (!RptTm)
-	    (void) free((FREE_P *)kca);
+    if (!RptTm)
+        (void) free((FREE_P *)kca);
 # endif	/* !defined(NCACHE_NXT) */
 
-	if (n < 1) {
-	    Nc = 0;
-	    if (!RptTm) {
-		(void) free((FREE_P *)Ncache);
-		Ncache = (struct l_nch *)NULL;
-	    }
-	    if (!Fwarn)
-		(void) fprintf(stderr,
-		    "%s: WARNING: unusable name cache size: %d\n", Pn, n);
-	    return;
-	}
-	if (n < Nc) {
-	    Nc = n;
-	    if (!RptTm) {
-		len = Nc * sizeof(struct l_nch);
-		if (!(Ncache = (struct l_nch *)realloc(Ncache, len)))
-		    goto no_local_space;
-	    }
-	}
+    if (n < 1) {
+        Nc = 0;
+        if (!RptTm) {
+        (void) free((FREE_P *)Ncache);
+        Ncache = (struct l_nch *)NULL;
+        }
+        if (!Fwarn)
+        (void) fprintf(stderr,
+            "%s: WARNING: unusable name cache size: %d\n", Pn, n);
+        return;
+    }
+    if (n < Nc) {
+        Nc = n;
+        if (!RptTm) {
+        len = Nc * sizeof(struct l_nch);
+        if (!(Ncache = (struct l_nch *)realloc(Ncache, len)))
+            goto no_local_space;
+        }
+    }
 /*
  * Build a hash table to locate Ncache entries.
  */
-	for (Nch = 1; Nch < Nc; Nch <<= 1)
-	    ;
-	Nch <<= 1;
-	Mch = Nch - 1;
-	if (!(Nchash = (struct l_nch **)calloc(Nch+Nc, sizeof(struct l_nch *))))
-	{
-	    if (!Fwarn)
-		(void) fprintf(stderr,
-		    "%s: no space for %d name cache hash pointers\n",
-		    Pn, Nch + Nc);
-	    Exit(1);
-	}
-	for (i = 0, lc = Ncache; i < Nc; i++, lc++) {
+    for (Nch = 1; Nch < Nc; Nch <<= 1)
+        ;
+    Nch <<= 1;
+    Mch = Nch - 1;
+    if (!(Nchash = (struct l_nch **)calloc(Nch+Nc, sizeof(struct l_nch *))))
+    {
+        if (!Fwarn)
+        (void) fprintf(stderr,
+            "%s: no space for %d name cache hash pointers\n",
+            Pn, Nch + Nc);
+        Exit(1);
+    }
+    for (i = 0, lc = Ncache; i < Nc; i++, lc++) {
 
 # if	defined(NCACHE_NODEID)
-	    for (hp = ncachehash(lc->id, lc->na), n = 1; *hp; hp++)
+        for (hp = ncachehash(lc->id, lc->na), n = 1; *hp; hp++)
 # else	/* defined(NCACHE_NODEID) */
-	    for (hp = ncachehash(lc->na), n = 1; *hp; hp++)
+        for (hp = ncachehash(lc->na), n = 1; *hp; hp++)
 # endif	/* defined(NCACHE_NODEID) */
 
-	    {
+        {
 
 # if	defined(NCACHE_NODEID)
-		if ((*hp)->na == lc->na && (*hp)->id == lc->id
+        if ((*hp)->na == lc->na && (*hp)->id == lc->id
 # else	/* defined(NCACHE_NODEID) */
-		if ((*hp)->na == lc->na
+        if ((*hp)->na == lc->na
 # endif	/* defined(NCACHE_NODEID) */
 
-		&&  strcmp((*hp)->nm, lc->nm) == 0
+        &&  strcmp((*hp)->nm, lc->nm) == 0
 
 # if	defined(NCACHE_PARADDR) && defined(NCACHE_PARID)
-		&&  (*hp)->pa == lc->pa && (*hp)->did == lc->did
+        &&  (*hp)->pa == lc->pa && (*hp)->did == lc->did
 # endif	/* defined(NCACHE_PARADDR) && defined(NCACHE_PARID) */
 
-		) {
-		    n = 0;
-		    break;
-		}
-	    }
-	    if (n)
-		*hp = lc;
-	}
+        ) {
+            n = 0;
+            break;
+        }
+        }
+        if (n)
+        *hp = lc;
+    }
 
 # if	defined(NCACHE_PARADDR) && defined(NCACHE_PARID)
 /*
  * Make a final pass through the local cache and convert parent node
  * addresses to local name cache pointers.
  */
-	for (i = 0, lc = Ncache; i < Nc; i++, lc++) {
-	    if (!lc->pa)
-		continue;
-	    lc->pla = ncache_addr(lc->did, lc->pa);
-	}
+    for (i = 0, lc = Ncache; i < Nc; i++, lc++) {
+        if (!lc->pa)
+        continue;
+        lc->pla = ncache_addr(lc->did, lc->pa);
+    }
 # endif	/* defined(NCACHE_PARADDR) && defined(NCACHE_PARID) */
 }
 
@@ -573,17 +573,17 @@ no_local_space:
 
 char *
 ncache_lookup(buf, blen, fp)
-	char *buf;			/* receiving name buffer */
-	int blen;			/* receiving buffer length */
-	int *fp;			/* full path reply */
+    char *buf;			/* receiving name buffer */
+    int blen;			/* receiving buffer length */
+    int *fp;			/* full path reply */
 {
-	char *cp = buf;
-	struct l_nch *lc;
-	struct mounts *mtp;
-	int nl, rlen;
+    char *cp = buf;
+    struct l_nch *lc;
+    struct mounts *mtp;
+    int nl, rlen;
 
-	*cp = '\0';
-	*fp = 0;
+    *cp = '\0';
+    *fp = 0;
 
 # if	defined(HASFSINO)
 /*
@@ -591,8 +591,8 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-	if ((Lf->inp_ty == 1) && Lf->fs_ino && (Lf->inode == Lf->fs_ino))
-	    return(cp);
+    if ((Lf->inp_ty == 1) && Lf->fs_ino && (Lf->inode == Lf->fs_ino))
+        return(cp);
 # endif	/* defined(HASFSINO) */
 
 /*
@@ -600,38 +600,38 @@ ncache_lookup(buf, blen, fp)
  */
 
 # if	defined(NCACHE_NODEID)
-	if (Nc == 0 || !(lc = ncache_addr(Lf->id, Lf->na)))
+    if (Nc == 0 || !(lc = ncache_addr(Lf->id, Lf->na)))
 # else	/* defined(NCACHE_NODEID) */
-	if (Nc == 0 || !(lc = ncache_addr(Lf->na)))
+    if (Nc == 0 || !(lc = ncache_addr(Lf->na)))
 # endif	/* defined(NCACHE_NODEID) */
 
 
-	{
+    {
 
-	/*
-	 * If the node has no cache entry, see if it's the mount
-	 * point of a known file system.
-	 */
-	    if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
-		return((char *)NULL);
-	    for (mtp = readmnt(); mtp; mtp = mtp->next) {
-		if (!mtp->dir || !mtp->inode)
-		    continue;
-		if (Lf->dev == mtp->dev
-		&&  mtp->inode == Lf->inode
-		&&  strcmp(mtp->dir, Lf->fsdir) == 0)
-		    return(cp);
-	    }
-	    return((char *)NULL);
-	}
+    /*
+     * If the node has no cache entry, see if it's the mount
+     * point of a known file system.
+     */
+        if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
+        return((char *)NULL);
+        for (mtp = readmnt(); mtp; mtp = mtp->next) {
+        if (!mtp->dir || !mtp->inode)
+            continue;
+        if (Lf->dev == mtp->dev
+        &&  mtp->inode == Lf->inode
+        &&  strcmp(mtp->dir, Lf->fsdir) == 0)
+            return(cp);
+        }
+        return((char *)NULL);
+    }
 /*
  * Start the path assembly.
  */
-	if ((nl = lc->nl) > (blen - 1))
-	    return((char *)NULL);
-	cp = buf + blen - nl - 1;
-	rlen = blen - nl - 1;
-	(void) strcpy(cp, lc->nm);
+    if ((nl = lc->nl) > (blen - 1))
+        return((char *)NULL);
+    cp = buf + blen - nl - 1;
+    rlen = blen - nl - 1;
+    (void) strcpy(cp, lc->nm);
 
 # if	defined(NCACHE_PARADDR) && defined(NCACHE_PARID)
 /*
@@ -641,29 +641,30 @@ ncache_lookup(buf, blen, fp)
  *	there's no parent;
  *	the name length is too large to fit in the receiving buffer.
  */
-	for (;;) {
-	    if (!lc->pla) {
+    for (;;) {
+        if (!lc->pla) {
 
 #  if	!defined(NCACHE_NO_ROOT)
-		if (ncache_isroot(lc->pa, cp))
-		    *fp = 1;
+        if (ncache_isroot(lc->pa, cp))
+            *fp = 1;
 #  endif	/* !defined(NCACHE_NO_ROOT) */
 
-		break;
-	    }
-	    lc = lc->pla;
-	    if (((nl = lc->nl) + 1) > rlen)
-		break;
-	    *(cp - 1) = '/';
-	    cp--;
-	    rlen--;
-	    (void) strncpy((cp - nl), lc->nm, nl);
-	    cp -= nl;
-	    rlen -= nl;
-	}
+        break;
+        }
+        lc = lc->pla;
+        if (((nl = lc->nl) + 1) > rlen)
+        break;
+        *(cp - 1) = '/';
+        cp--;
+        rlen--;
+        (void) strncpy((cp - nl), lc->nm, nl);
+        cp -= nl;
+        rlen -= nl;
+    }
 # endif	/* defined(NCACHE_PARADDR) && defined(NCACHE_PARID) */
-	return(cp);
+    return(cp);
 }
 #else	/* !defined(HASNCACHE) || !defined(USE_LIB_RNAM) */
-char rnam_d1[] = "d"; char *rnam_d2 = rnam_d1;
-#endif	/* defined(HASNCACHE) && defined(USE_LIB_RNAM) */
+char rnam_d1[] = "d";
+char *rnam_d2 = rnam_d1;
+#endif    /* defined(HASNCACHE) && defined(USE_LIB_RNAM) */

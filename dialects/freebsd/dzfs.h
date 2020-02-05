@@ -35,9 +35,9 @@
  */
 
 
-#if	!defined(FREEBSD_ZFS_H)
-#define	FREEBSD_ZFS_H	1
-# if	defined(HAS_ZFS)
+#if    !defined(FREEBSD_ZFS_H)
+#define    FREEBSD_ZFS_H    1
+# if    defined(HAS_ZFS)
 
 
 /*
@@ -94,19 +94,19 @@ typedef	u_long		KA_T;
  */
 
 typedef struct zfs_info {
-	INODETYPE ino;			/* inode number */
-	KA_T lockf;			/* znode's z_lockf pointer */
-	long nl;			/* number of links */
-	dev_t rdev;			/* "raw" device number */
-	SZOFFTYPE sz;			/* size */
-	unsigned char ino_def;		/* ino defined status */
-	unsigned char nl_def;		/* nl defined status */
-	unsigned char rdev_def;		/* rdev defined status */
-	unsigned char sz_def;		/* sz defined status */
+    INODETYPE ino;			/* inode number */
+    KA_T lockf;			/* znode's z_lockf pointer */
+    long nl;			/* number of links */
+    dev_t rdev;			/* "raw" device number */
+    SZOFFTYPE sz;			/* size */
+    unsigned char ino_def;		/* ino defined status */
+    unsigned char nl_def;		/* nl defined status */
+    unsigned char rdev_def;		/* rdev defined status */
+    unsigned char sz_def;		/* sz defined status */
 } zfs_info_t;
 
 _PROTOTYPE(extern int kread,(KA_T addr, char *buf, READLEN_T len));
 _PROTOTYPE(extern char *readzfsnode,(KA_T va, zfs_info_t *zi, int vr));
 
-# endif	/* defined(HAS_ZFS) */
-#endif	/* defined(FREEBSD_DZFS_H) */
+# endif    /* defined(HAS_ZFS) */
+#endif    /* defined(FREEBSD_DZFS_H) */

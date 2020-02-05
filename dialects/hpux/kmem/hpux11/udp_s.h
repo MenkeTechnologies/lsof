@@ -12,19 +12,19 @@
  * February, 1998
  */
 
-#if	!defined(LSOF_UDP_S_H)
-#define	LSOF_UDP_S_H
+#if    !defined(LSOF_UDP_S_H)
+#define    LSOF_UDP_S_H
 
 #include "kernbits.h"
 
 typedef struct udp_s {
-	int udp_state;			/* connection state */
-	KA_T udp_hash_next;
-	KA_T udp_ptphn;
-	uint16_t udp_checksum;
-	uint16_t udp_port[2];		/* source and destination ports */
-	uint32_t udp_src;		/* source IP address */
-	uint32_t udp_dst;		/* destination IP address */
+    int udp_state;            /* connection state */
+    KA_T udp_hash_next;
+    KA_T udp_ptphn;
+    uint16_t udp_checksum;
+    uint16_t udp_port[2];        /* source and destination ports */
+    uint32_t udp_src;        /* source IP address */
+    uint32_t udp_dst;        /* destination IP address */
 
 /*
  * These q4 elements are ignored.
@@ -76,4 +76,4 @@ typedef struct udp_s {
 
 } udp_s_t;
 
-#endif	/* !defined(LSOF_UDP_S_H) */
+#endif    /* !defined(LSOF_UDP_S_H) */

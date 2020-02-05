@@ -31,7 +31,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dstore.c,v 1.10 2001/08/09 11:44:07 abe Exp $";
 #endif
 
@@ -43,7 +43,7 @@ static char *rcsid = "$Id: dstore.c,v 1.10 2001/08/09 11:44:07 abe Exp $";
  * Global storage definitions
  */
 
-#if	defined(HAS_AFS)
+#if    defined(HAS_AFS)
 
 # if    defined(HASAOPT)
 char *AFSApath = (char *)NULL;		/* alternate AFS name list path
@@ -51,8 +51,8 @@ char *AFSApath = (char *)NULL;		/* alternate AFS name list path
 # endif /* defined(HASAOPT) */
 
 struct vfs *AFSVfsp = (struct vfs *)NULL;
-					/* AFS vfs struct kernel address */
-#endif	/* defined(HAS_AFS) */
+                    /* AFS vfs struct kernel address */
+#endif    /* defined(HAS_AFS) */
 
 /*
  * Drive_Nl -- table to drive the building of Nl[] via build_Nl()
@@ -60,53 +60,53 @@ struct vfs *AFSVfsp = (struct vfs *)NULL;
  */
 
 struct drive_Nl Drive_Nl[] = {
-        { "arFid",	 "_afs_rootFid"		},
-        { "avops",	 "_afs_vnodeops"	},
-        { "avol",	 "_afs_volumes"		},
-        { "aproc",	 "_allproc"		},
-        { "fvops",	"_fifo_vnodeops"	},
-        { "lfsvh",	"_lf_svnode_hash"	},
-        { "mxproc",	 "_max_proc"		},
+        {"arFid", "_afs_rootFid"},
+        {"avops", "_afs_vnodeops"},
+        {"avol", "_afs_volumes"},
+        {"aproc", "_allproc"},
+        {"fvops", "_fifo_vnodeops"},
+        {"lfsvh", "_lf_svnode_hash"},
+        {"mxproc", "_max_proc"},
 
-#if	defined(X_NCACHE)
+#if    defined(X_NCACHE)
         { X_NCACHE,	 "_ncache"		},
-#endif	/* defined(X_NCACHE) */
+#endif    /* defined(X_NCACHE) */
 
-#if	defined(X_NCSIZE)
+#if    defined(X_NCSIZE)
         { X_NCSIZE,	 "_ncsize"		},
-#endif	/* defined(X_NCSIZE) */
+#endif    /* defined(X_NCSIZE) */
 
-        { "nvops",	 "_nfs_vnodeops"	},
-        { "svops",	 "_spec_vnodeops"	},
-        { "uvops",	 "_ufs_vnodeops"	},
-	{ "",		"",			},
-        { NULL,		NULL			},
+        {"nvops", "_nfs_vnodeops"},
+        {"svops", "_spec_vnodeops"},
+        {"uvops", "_ufs_vnodeops"},
+        {"", "",},
+        {NULL, NULL},
 };
 
-struct file *Fileptr;		/* for process_file() in lib/prfp.c */
-int Kd = -1;			/* /dev/kmem file descriptor */
+struct file *Fileptr;        /* for process_file() in lib/prfp.c */
+int Kd = -1;            /* /dev/kmem file descriptor */
 
-#if	defined(HASFSTRUCT)
+#if    defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-	{ (long)FREAD,		FF_READ		},
-	{ (long)FWRITE,		FF_WRITE	},
-	{ (long)FNDELAY,	FF_NDELAY	},
-	{ (long)FAPPEND,	FF_APPEND	},
-	{ (long)FASYNC,		FF_ASYNC	},
-	{ (long)FMARK,		FF_MARK		},
-	{ (long)FDEFER,		FF_DEFER	},
-	{ (long)FSHLOCK,	FF_SHLOCK	},
-	{ (long)FEXLOCK,	FF_EXLOCK	},
+    { (long)FREAD,		FF_READ		},
+    { (long)FWRITE,		FF_WRITE	},
+    { (long)FNDELAY,	FF_NDELAY	},
+    { (long)FAPPEND,	FF_APPEND	},
+    { (long)FASYNC,		FF_ASYNC	},
+    { (long)FMARK,		FF_MARK		},
+    { (long)FDEFER,		FF_DEFER	},
+    { (long)FSHLOCK,	FF_SHLOCK	},
+    { (long)FEXLOCK,	FF_EXLOCK	},
 
 #if	defined(POSIX_KERN)
-	{ (long)FPOSIX_PIPE,	FF_POSIX_PIPE	},
+    { (long)FPOSIX_PIPE,	FF_POSIX_PIPE	},
 #endif	/* defined(POSIX_KERN) */
 
-	{ (long)0,		NULL		}
+    { (long)0,		NULL		}
 };
 
 
@@ -117,17 +117,17 @@ struct pff_tab Pff_tab[] = {
 struct pff_tab Pof_tab[] = {
 
 # if	defined(UF_EXCLOSE)
-	{ (long)UF_EXCLOSE,	POF_CLOEXEC	},
+    { (long)UF_EXCLOSE,	POF_CLOEXEC	},
 # endif	/* defined(UF_EXCLOSE) */
 
 # if	defined(UF_MAPPED)
-	{ (long)UF_MAPPED,	POF_MAPPED	},
+    { (long)UF_MAPPED,	POF_MAPPED	},
 # endif	/* defined(UF_MAPPED) */
 
 # if	defined(UF_FDLOCK)
-	{ (long)UF_FDLOCK,	POF_FDLOCK	},
+    { (long)UF_FDLOCK,	POF_FDLOCK	},
 # endif	/* defined(UF_FDLOCK) */
 
-	{ (long)0,		NULL		}
+    { (long)0,		NULL		}
 };
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */

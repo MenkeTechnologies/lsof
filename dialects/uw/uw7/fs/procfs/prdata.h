@@ -17,7 +17,7 @@ extern "C" {
 #include <util/ksynch.h>        /* REQUIRED */
 #include <util/types.h>         /* REQUIRED */
 
-#elif defined(_KERNEL) 
+#elif defined(_KERNEL)
 
 #include <sys/vnode.h>          /* SVR4.2COMPAT */
 #include <sys/uio.h>            /* SVR4.0COMPAT */
@@ -222,7 +222,7 @@ sizeof(*(sp))/sizeof(ulong_t))
 #endif /* _KERNEL */
 
 #if defined(__cplusplus)
-        }
+}
 #endif
 
 #endif  /* _FS_PROCFS_PRDATA_H */

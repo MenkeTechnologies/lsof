@@ -31,7 +31,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: dstore.c,v 1.10 2000/08/09 20:06:50 abe Exp $";
 #endif
 
@@ -39,7 +39,7 @@ static char *rcsid = "$Id: dstore.c,v 1.10 2000/08/09 20:06:50 abe Exp $";
 #include "lsof.h"
 
 
-int CloneMaj;				/* clone major device number */
+int CloneMaj;                /* clone major device number */
 
 
 /*
@@ -48,88 +48,88 @@ int CloneMaj;				/* clone major device number */
  */
 
 struct drive_Nl Drive_Nl[] = {
-        { "cldev",	"clonedev"		},
-        { "fids",	"fids"			},
-	{ "msfsubc",	"msfs_ubcops"		},
+        {"cldev", "clonedev"},
+        {"fids", "fids"},
+        {"msfsubc", "msfs_ubcops"},
 
-#if	DUV>=50100
-	{ "advfsvfs",	"msfs_vfsops"		},
-	{ "cdfsvfs",	"cdfs_vfsops"		},
-	{ "dvdfsvfs",	"dvdfs_vfsops"		},
-	{ "fdfsvfs",	"fdfs_vfsops"		},
-	{ "fsfsrvp",	"fdfs_root_directory"	},
-	{ "nchsz",	"nchsz"			},
-	{ "ncpus",	"ncpus"			},
-	{ "nfsvfs",	"nfs_vfsops"		},
-	{ "nfs3vfs",	"nfs3_vfsops"		},
-	{ "procptr",	"processor_ptr"		},
-	{ "ufsvfs",	"ufs_vfsops"		},
+#if    DUV >= 50100
+{ "advfsvfs",	"msfs_vfsops"		},
+{ "cdfsvfs",	"cdfs_vfsops"		},
+{ "dvdfsvfs",	"dvdfs_vfsops"		},
+{ "fdfsvfs",	"fdfs_vfsops"		},
+{ "fsfsrvp",	"fdfs_root_directory"	},
+{ "nchsz",	"nchsz"			},
+{ "ncpus",	"ncpus"			},
+{ "nfsvfs",	"nfs_vfsops"		},
+{ "nfs3vfs",	"nfs3_vfsops"		},
+{ "procptr",	"processor_ptr"		},
+{ "ufsvfs",	"ufs_vfsops"		},
 #else	/* DUV<50100 */
-	{ X_NCACHE,	"namecache"		},
-	{ X_NCSIZE,	"nchsize"		},
-#endif	/* DUV>=50100 */
+        {X_NCACHE, "namecache"},
+        {X_NCSIZE, "nchsize"},
+#endif    /* DUV>=50100 */
 
-        { "vnmaxp",	"vn_maxprivate"		},
+        {"vnmaxp", "vn_maxprivate"},
 
-#if	DUV<30000
-        { "proc",	"proc"			},
-        { "nproc",	"nproc"			},
+#if    DUV < 30000
+        {"proc", "proc"},
+        {"nproc", "nproc"},
 #else	/* DUV>=30000 */
-        { "npid",	"npid"			},
-        { "pidt",	"pidtab"		},
-#endif	/* DUV<30000 */
+{ "npid",	"npid"			},
+{ "pidt",	"pidtab"		},
+#endif    /* DUV<30000 */
 
-	{ "",		"",			},
-	{ NULL,		NULL,			}
+        {"", "",},
+        {NULL, NULL,}
 };
 
-struct file *Fileptr;			/* for process_file() in lib/prfp.c */
-int HaveCloneMaj = 0;			/* status of CloneMaj */
+struct file *Fileptr;            /* for process_file() in lib/prfp.c */
+int HaveCloneMaj = 0;            /* status of CloneMaj */
 int Kd = -1;
 struct l_vfs *Lvfs = NULL;
 
-# if    DUV>=30000
+# if    DUV >= 30000
 KA_T *Pa = NULL;			/* kernel proc structure addresses */
 # endif /* DUV>=30000 */
 
-#if	defined(HASFSTRUCT)
+#if    defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-	{ (long)FREAD,		FF_READ		},
-	{ (long)FWRITE,		FF_WRITE	},
-	{ (long)FNONBLOCK,	FF_NBLOCK	},
-	{ (long)FNDELAY,	FF_NDELAY	},
-	{ (long)FAPPEND,	FF_APPEND	},
-	{ (long)FASYNC,		FF_ASYNC	},
-	{ (long)FMARK,		FF_MARK		},
-	{ (long)FDEFER,		FF_DEFER	},
-	{ (long)FSHLOCK,	FF_SHLOCK	},
-	{ (long)FEXLOCK,	FF_EXLOCK	},
+    { (long)FREAD,		FF_READ		},
+    { (long)FWRITE,		FF_WRITE	},
+    { (long)FNONBLOCK,	FF_NBLOCK	},
+    { (long)FNDELAY,	FF_NDELAY	},
+    { (long)FAPPEND,	FF_APPEND	},
+    { (long)FASYNC,		FF_ASYNC	},
+    { (long)FMARK,		FF_MARK		},
+    { (long)FDEFER,		FF_DEFER	},
+    { (long)FSHLOCK,	FF_SHLOCK	},
+    { (long)FEXLOCK,	FF_EXLOCK	},
 
 # if	defined(FKERNEL)
-	{ (long)FKERNEL,	FF_KERNEL	},
+    { (long)FKERNEL,	FF_KERNEL	},
 # endif	/* defined(FKERNEL) */
 
 # if	defined(FKERNEL)
-	{ (long)FVTEXT,		FF_VTEXT	},
+    { (long)FVTEXT,		FF_VTEXT	},
 # endif	/* defined(FVTEXT) */
 
 # if	defined(FSYNC)
-	{ (long)FSYNC,		FF_SYNC		},
+    { (long)FSYNC,		FF_SYNC		},
 # endif	/* defined(FSYNC) */
 
 # if	defined(FDSYNC)
-	{ (long)FDSYNC,		FF_DSYNC	},
+    { (long)FDSYNC,		FF_DSYNC	},
 # endif	/* defined(FDSYNC) */
 
 # if	defined(FRSYNC)
-	{ (long)FRSYNC,		FF_RSYNC	},
+    { (long)FRSYNC,		FF_RSYNC	},
 # endif	/* defined(FRSYNC) */
 
-	{ (long)0,		NULL		}
+    { (long)0,		NULL		}
 };
 
 
@@ -140,23 +140,23 @@ struct pff_tab Pff_tab[] = {
 struct pff_tab Pof_tab[] = {
 
 # if	defined(UF_EXCLOSE)
-	{ (long)UF_EXCLOSE,		POF_CLOEXEC	},
+    { (long)UF_EXCLOSE,		POF_CLOEXEC	},
 # else	/* !defined(UF_EXCLOSE) */
-	{ (long)1,			POF_CLOEXEC	},
+    { (long)1,			POF_CLOEXEC	},
 # endif	/* defined(UF_EXCLOSE) */
 
 # if	defined(UF_MAPPED)
-	{ (long)UF_MAPPED,		POF_MAPPED	},
+    { (long)UF_MAPPED,		POF_MAPPED	},
 # endif	/* defined(UF_MAPPED) */
 
 # if	defined(UF_RESERVED_WAIT)
-	{ (long)UF_RESERVED_WAIT,	POF_RSVWT	},
+    { (long)UF_RESERVED_WAIT,	POF_RSVWT	},
 # endif	/* defined(UF_RESERVED_WAIT) */
 
-	{ (long)0,			NULL		}
+    { (long)0,			NULL		}
 };
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */
 
-struct proc *Ps = NULL;			/* local proc structures */
-int Psn = 0;				/* entries in Paddr[] and Ps[] */
-int Vnmxp;				/* vnode's max private area length */
+struct proc *Ps = NULL;            /* local proc structures */
+int Psn = 0;                /* entries in Paddr[] and Ps[] */
+int Vnmxp;                /* vnode's max private area length */

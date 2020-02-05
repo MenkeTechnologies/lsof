@@ -35,24 +35,24 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
 /*
  * Do HP-UX 11 64 bit preparation.
  */
 
-#if	defined(HPUXKERNBITS) && HPUXKERNBITS>=64
+#if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define	NLIST_TYPE	nlist64
-#endif	/* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
+#endif    /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
 
 
-# if	HPUXV>=1030
+# if    HPUXV >= 1030
 #include <sys/types.h>
 #include "kernbits.h"
 # else	/* HPUXV<1030 */
-#  if	HPUXV>=1020
+#  if    HPUXV >= 1020
 /*
  * Since we need kernel structures from the HP-UX 10.20 <sys/vnode.h>, and
  * since defining _KERNEL before #include'ing it causes a conflict between
@@ -80,8 +80,8 @@
 #include <sys/vnode.h>
 #define	FILE	STDIO_FILE
 #undef	_KERNEL
-#  endif	/* HPUXV>=1020 */
-# endif	/* HPUXV>=1030 */
+#  endif    /* HPUXV>=1020 */
+# endif    /* HPUXV>=1030 */
 
 
 /*
@@ -89,9 +89,9 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#if	HPUXV>=1020
+#if    HPUXV >= 1020
 #define	CAN_USE_CLNT_CREATE	1
-#endif	/* HPUXV>=1020 */
+#endif    /* HPUXV>=1020 */
 
 
 /*
@@ -99,7 +99,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -107,7 +107,7 @@
  * getdtablesize() to obtain the maximum file descriptor number plus one.
  */
 
-#define	GET_MAX_FD	get_max_fd
+#define    GET_MAX_FD    get_max_fd
 
 
 /*
@@ -116,7 +116,7 @@
  * supplied with the -A <path> option.
  */
 
-#define	HASAOPT		1
+#define    HASAOPT        1
 
 
 /*
@@ -124,7 +124,7 @@
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -152,10 +152,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -178,7 +178,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -194,7 +194,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -237,7 +237,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -245,7 +245,7 @@
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -292,7 +292,7 @@
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -304,7 +304,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -315,7 +315,7 @@
  * cache value with the file system directory name; 2, avoid the prefix.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -349,7 +349,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -359,7 +359,7 @@
  * called from print_file().
  */
 
-#define	HASPRINTDEV	print_dev
+#define    HASPRINTDEV    print_dev
 /* #define	HASPRINTINO	print_ino?	*/
 /* #define	HASPRINTNM	print_nm?	*/
 /* #define	HASPRINTOFF	print_off?	*/
@@ -434,7 +434,7 @@
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
-#define	HASRNODE	1
+#define    HASRNODE    1
 
 
 /*
@@ -466,11 +466,11 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	HPUXV>=1100
+# if    HPUXV >= 1100
 #define	HASWIDECHAR	1
-#endif	/* HPUXV>=1100 */
+#endif    /* HPUXV>=1100 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -479,9 +479,9 @@
  * HASSNODE is defined for those dialects that have snodes.
  */
 
-# if	HPUXV>=900
+# if    HPUXV >= 900
 #define	HASSNODE	1
-# endif	/* HPUXV>=900 */
+# endif    /* HPUXV>=900 */
 
 
 /*
@@ -497,13 +497,13 @@
  * options.
  */
 
-#if	HPUXV>=1030
+#if    HPUXV >= 1030
 # if	HPUXV>=1100
 #define	HASSOOPT	1	 /* has socket option information */
 # endif	/* HPUXV>=1100 */
 /* #define	HASSOSTATE	1	has socket state information */
 #define	HASTCPOPT	1	/* has TCP options or flags */
-#endif	/* HPUXV>=1030 */
+#endif    /* HPUXV>=1030 */
 
 
 /*
@@ -536,7 +536,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -544,9 +544,9 @@
  * TCP/TPI send and receive window sizes produced by netstat.
  */
 
-# if	HPUXV>=1030
+# if    HPUXV >= 1030
 #define	HASTCPTPIW	1
-# endif	/* HPUXV>=1030 */
+# endif    /* HPUXV>=1030 */
 
 
 /*
@@ -562,7 +562,7 @@
  * R4 usually don't.
  */
 
-#define	HASVNODE	1
+#define    HASVNODE    1
 
 
 /*
@@ -583,12 +583,12 @@
  * These are defined here, because they must be used in dlsof.h.
  */
 
-# if	HPUXV>=1000
+# if    HPUXV >= 1000
 #define	INODETYPE	unsigned long long
-					/* inode number internal storage type */
+/* inode number internal storage type */
 #define	INODEPSPEC	"ll"		/* INODETYPE printf specification
-					 * modifier */
-# endif	/* HPUXV>=1000 */
+ * modifier */
+# endif    /* HPUXV>=1000 */
 
 
 /*
@@ -596,7 +596,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	uid_t
+#define    UID_ARG    uid_t
 
 
 /*
@@ -608,32 +608,32 @@
  * header files.
  */
 
-#define	USE_LIB_CKKV				1	/* ckkv.c */
+#define    USE_LIB_CKKV                1    /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
 
-# if	HPUXV<1030
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
+# if    HPUXV < 1030
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
 # else	/* HPUXV>=1030 */
 /* #define	USE_LIB_PRINT_TCPTPI		1	   ptti.c */
-# endif	/* HPUXV<1030 */
+# endif    /* HPUXV<1030 */
 
-#define	USE_LIB_READDEV				1	/* rdev.c */
-#define	USE_LIB_READMNT				1	/* rmnt.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
+#define    USE_LIB_READMNT                1    /* rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
-#define	USE_LIB_RNCH				1	/* rnch.c */
+#define    USE_LIB_RNCH                1    /* rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 
-# if	HPUXV<1030
-#define	USE_LIB_SNPF				1	/* snpf.c */
+# if    HPUXV < 1030
+#define    USE_LIB_SNPF                1    /* snpf.c */
 # else	/* HPUXV>=1030 */
 #define	snpf	snprintf	   /* use the system's snprintf() */
-# endif	/* HPUXV<1030 */
+# endif    /* HPUXV<1030 */
 
 
 /*
@@ -659,13 +659,13 @@
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)		bzero(a, l)
+#define    zeromem(a, l)        bzero(a, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

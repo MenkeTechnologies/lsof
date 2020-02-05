@@ -8,11 +8,11 @@
  *   publication of such source code.                                      
  */
 
-#ifndef _FS_FIFOFS_FIFONODE_H	/* wrapper symbol for kernel use */
-#define _FS_FIFOFS_FIFONODE_H	/* subject to change without notice */
+#ifndef _FS_FIFOFS_FIFONODE_H    /* wrapper symbol for kernel use */
+#define _FS_FIFOFS_FIFONODE_H    /* subject to change without notice */
 
-#ident	"@(#)kern:fs/fifofs/fifonode.h	1.14"
-#ident	"$Header: $"
+#ident    "@(#)kern:fs/fifofs/fifonode.h	1.14"
+#ident    "$Header: $"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -35,34 +35,34 @@ extern "C" {
 #if defined(_KERNEL) || defined(_KMEMUSER)
 
 struct nodelock {
-	lock_t	n_lock;
-	int	n_count;
+    lock_t	n_lock;
+    int	n_count;
 };
 
 /*
  * Each FIFOFS object is identified by a struct fifonode/vnode pair.
  */
 struct fifonode {
-	struct vnode	fn_vnode;	/* represents the fifo/pipe */
-	struct vnode	*fn_mate;	/* the other end of a pipe */
-	struct vnode	*fn_realvp;	/* node being shadowed by fifo */
-	sleep_t		fn_iolock;	/* fifonode iolock */
-	sv_t		fn_rwait;	/* wait for first reader */
-	sv_t		fn_wwait;	/* wait for first writer */
-	sv_t		fn_fdwait;	/* to synchronize fd passing */
-	sv_t		fn_openwait;	/* to serialize fifo_open */
-	ino_t		fn_ino;		/* node id for pipes */
-	short		fn_wcnt;	/* number of writers */
-	short		fn_rcnt;	/* number of readers */
-	short		fn_open;	/* open count of node*/
-	ushort		fn_flag;	/* flags as defined below */
-	struct vnode	*fn_unique;	/* new vnode created by CONNLD */
-	time_t		fn_atime;	/* creation times for pipe */
-	time_t		fn_mtime;
-	time_t		fn_ctime;
-	struct fifonode	*fn_nextp;	/* next link in the linked list */
-	struct fifonode	*fn_backp;	/* back link in linked list */
-	struct nodelock *fn_nodelp;	/* lock shared by both ends of a pipe */
+    struct vnode	fn_vnode;	/* represents the fifo/pipe */
+    struct vnode	*fn_mate;	/* the other end of a pipe */
+    struct vnode	*fn_realvp;	/* node being shadowed by fifo */
+    sleep_t		fn_iolock;	/* fifonode iolock */
+    sv_t		fn_rwait;	/* wait for first reader */
+    sv_t		fn_wwait;	/* wait for first writer */
+    sv_t		fn_fdwait;	/* to synchronize fd passing */
+    sv_t		fn_openwait;	/* to serialize fifo_open */
+    ino_t		fn_ino;		/* node id for pipes */
+    short		fn_wcnt;	/* number of writers */
+    short		fn_rcnt;	/* number of readers */
+    short		fn_open;	/* open count of node*/
+    ushort		fn_flag;	/* flags as defined below */
+    struct vnode	*fn_unique;	/* new vnode created by CONNLD */
+    time_t		fn_atime;	/* creation times for pipe */
+    time_t		fn_mtime;
+    time_t		fn_ctime;
+    struct fifonode	*fn_nextp;	/* next link in the linked list */
+    struct fifonode	*fn_backp;	/* back link in linked list */
+    struct nodelock *fn_nodelp;	/* lock shared by both ends of a pipe */
 };
 
 #endif /* _KERNEL || _KMEMUSER */
@@ -109,7 +109,7 @@ extern void fifo_rmpipe(vnode_t *, vnode_t *, cred_t *);
  * to avoid a race on the vnode.
  */
 #define FIFO_LOCK(fp, lockp) \
-	SLEEP_LOCK_RELLOCK(&(fp)->fn_iolock, PRIPIPE, lockp)
+    SLEEP_LOCK_RELLOCK(&(fp)->fn_iolock, PRIPIPE, lockp)
 #define FIFO_TRYLOCK(fp) SLEEP_TRYLOCK(&(fp)->fn_iolock)
 #define FIFO_LOCKBLKD(fp) SLEEP_LOCKBLKD(&(fp)->fn_iolock)
 #define FIFO_UNLOCK(fp) SLEEP_UNLOCK(&(fp)->fn_iolock)
@@ -125,7 +125,7 @@ extern void fifo_rmpipe(vnode_t *, vnode_t *, cred_t *);
  * While waiting on fn_fdwait, fn_nodelp->n_lock is dropped.
  */
 #define FIFO_FDWAIT(fp) \
-	SV_WAIT_SIG(&(fp)->fn_fdwait, PRIPIPE, &(fp)->fn_nodelp->n_lock)
+    SV_WAIT_SIG(&(fp)->fn_fdwait, PRIPIPE, &(fp)->fn_nodelp->n_lock)
 #define FIFO_FDWAKEUP(fp) SV_SIGNAL(&(fp)->fn_fdwait, 0)
 
 /*
@@ -134,10 +134,10 @@ extern void fifo_rmpipe(vnode_t *, vnode_t *, cred_t *);
 #define	STREAM_LOCK(stp) LOCK((stp)->sd_mutex, PLSTR);
 #define	STREAM_UNLOCK(stp, pl) UNLOCK((stp)->sd_mutex, pl);
 
-#endif	/* _KERNEL */
+#endif    /* _KERNEL */
 
 #if defined(__cplusplus)
-	}
+}
 #endif
 
-#endif	/* _FS_FIFOFS_FIFONODE_H */
+#endif    /* _FS_FIFOFS_FIFONODE_H */

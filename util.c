@@ -38,13 +38,13 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 2008 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 2008 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id: util.c,v 1.1 2008/04/01 11:56:53 abe Exp $";
 #endif
 
-#if	defined(HAS_STRFTIME)
+#if    defined(HAS_STRFTIME)
 #include <time.h>
-#endif	/* defined(HAS_STRFTIME) */
+#endif    /* defined(HAS_STRFTIME) */
 
 
 /*
@@ -54,20 +54,20 @@ static char *rcsid = "$Id: util.c,v 1.1 2008/04/01 11:56:53 abe Exp $";
 
 int
 util_strftime(fmtr, fmtl, fmt)
-	char *fmtr;			/* format output receiver */
-	int fmtl;			/* sizeof(*fmtr) */
-	char *fmt;			/* format */
+        char *fmtr;            /* format output receiver */
+        int fmtl;            /* sizeof(*fmtr) */
+        char *fmt;            /* format */
 {
 
-#if	defined(HAS_STRFTIME)
-	struct tm *lt;
-	time_t tm;
+#if    defined(HAS_STRFTIME)
+    struct tm *lt;
+    time_t tm;
 
-	tm = time((time_t *)NULL);
-	lt = localtime(&tm);
-	return(strftime(fmtr, fmtl, fmt, lt));
+    tm = time((time_t *)NULL);
+    lt = localtime(&tm);
+    return(strftime(fmtr, fmtl, fmt, lt));
 #else	/* !defined(HAS_STRFTIME) */
-	return(0);
-#endif	/* defined(HAS_STRFTIME) */
+    return (0);
+#endif    /* defined(HAS_STRFTIME) */
 
 }

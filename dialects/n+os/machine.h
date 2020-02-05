@@ -35,8 +35,8 @@
  */
 
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define	CAN_USE_CLNT_CREATE	1
+#define    CAN_USE_CLNT_CREATE    1
 
 
 /*
@@ -55,7 +55,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -72,7 +72,7 @@
  * supplied with the -A <path> option.
  */
 
-#define	HASAOPT		1
+#define    HASAOPT        1
 
 
 /*
@@ -80,7 +80,7 @@
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -108,10 +108,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -134,7 +134,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -150,7 +150,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -177,7 +177,7 @@
  * use readinode() from node.c.
  */
 
-#define	HASINODE	1
+#define    HASINODE    1
 
 
 /*
@@ -193,7 +193,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -201,7 +201,7 @@
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -248,7 +248,7 @@
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -261,7 +261,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -271,7 +271,7 @@
  * kernel symbols.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -305,7 +305,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -390,7 +390,7 @@
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
-#define	HASRNODE	1
+#define    HASRNODE    1
 
 
 /*
@@ -422,7 +422,7 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 /* #define	HASWIDECHAR	1	*/
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -431,7 +431,7 @@
  * HASSNODE is defined for those dialects that have snodes.
  */
 
-#define	HASSNODE	1
+#define    HASSNODE    1
 
 
 /*
@@ -447,9 +447,9 @@
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -482,7 +482,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -506,7 +506,7 @@
  * prior to R4 usually don't.
  */
 
-#define	HASVNODE	1
+#define    HASVNODE    1
 
 
 /*
@@ -528,19 +528,19 @@
  */
 
 /* #define	INODETYPE	unsigned long long */
-					/* inode number internal storage type */
+/* inode number internal storage type */
 /* #define	INODEPSPEC	"ll"	 * INODETYPE printf specification
 					 * modifier */
 
 
-# if	!defined(MACH)
+# if    !defined(MACH)
 /*
  * The definition of MACH for NEXTSTEP is required for proper header
  * file configuration -- i. e., some header files have ``#ifdef MACH''
  * statements that affect the size of kernel structures.
  */
 
-#define MACH	1
+#define MACH    1
 # endif
 
 
@@ -549,7 +549,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	int
+#define    UID_ARG    int
 
 
 /*
@@ -563,21 +563,21 @@
 
 /* #define	USE_LIB_CKKV			1	   ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
-#define	USE_LIB_PROCESS_FILE			1	/* prfp.c */
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
-#define	USE_LIB_READDEV				1	/* rdev.c */
-#define	USE_LIB_READMNT				1	/* rmnt.c */
-#define	USE_LIB_REGEX				1	/* regex.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
+#define    USE_LIB_PROCESS_FILE            1    /* prfp.c */
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
+#define    USE_LIB_READMNT                1    /* rmnt.c */
+#define    USE_LIB_REGEX                1    /* regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
-#define	USE_LIB_RNCH				1	/* rnch.c */
+#define    USE_LIB_RNCH                1    /* rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
-#define	HAS_NO_LONG_LONG			1	/* disable snpf()'s
+#define    HAS_NO_LONG_LONG            1    /* disable snpf()'s
 							 * long long support */
-#define	USE_LIB_SNPF				1	/* snpf.c */
+#define    USE_LIB_SNPF                1    /* snpf.c */
 
 
 /*
@@ -586,7 +586,7 @@
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define	WARNDEVACCESS	1
+#define    WARNDEVACCESS    1
 
 
 /*
@@ -603,13 +603,13 @@
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)		bzero(a, l)
+#define    zeromem(a, l)        bzero(a, l)
 
-#endif	/* !defined(LSOF_MACHINE_H) */
+#endif    /* !defined(LSOF_MACHINE_H) */

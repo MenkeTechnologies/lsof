@@ -34,8 +34,8 @@
  * $Id: machine.h,v 1.36 2010/07/29 16:02:57 abe Exp $
  */
 
-#if	!defined(LSOF_MACHINE_H)
-#define	LSOF_MACHINE_H	1
+#if    !defined(LSOF_MACHINE_H)
+#define    LSOF_MACHINE_H    1
 
 
 #include <sys/types.h>
@@ -47,9 +47,9 @@
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#if	OSRV>=42
+#if    OSRV >= 42
 #define	CAN_USE_CLNT_CREATE	1
-#endif	/* OSRV>=42 */
+#endif    /* OSRV>=42 */
 
 
 /*
@@ -57,7 +57,7 @@
  * nodes.
  */
 
-#define	DEVDEV_PATH	"/dev"
+#define    DEVDEV_PATH    "/dev"
 
 
 /*
@@ -65,7 +65,7 @@
  * getdtablesize() to obtain the maximum file descriptor number plus one.
  */
 
-#define	GET_MAX_FD	get_max_fd
+#define    GET_MAX_FD    get_max_fd
 
 
 /*
@@ -82,7 +82,7 @@
  * recorded in BDevtp[].
  */
 
-#define	HASBLKDEV	1
+#define    HASBLKDEV    1
 
 
 /*
@@ -110,10 +110,10 @@
  * information on device cache file path construction.
  */
 
-#define	HASDCACHE	1
-#define	HASENVDC	"LSOFDEVCACHE"
-#define	HASPERSDC	"%h/%p.lsof_%L"
-#define	HASPERSDCPATH	"LSOFPERSDCPATH"
+#define    HASDCACHE    1
+#define    HASENVDC    "LSOFDEVCACHE"
+#define    HASPERSDC    "%h/%p.lsof_%L"
+#define    HASPERSDCPATH    "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
 
@@ -136,7 +136,7 @@
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
-#define	HASFSINO	1
+#define    HASFSINO    1
 
 
 /*
@@ -152,7 +152,7 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define	HASFSTRUCT	1
+#define    HASFSTRUCT    1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
@@ -179,7 +179,7 @@
  * use readinode() from node.c.
  */
 
-#define	HASINODE	1
+#define    HASINODE    1
 
 
 /*
@@ -195,7 +195,7 @@
  * the build to running kernel identity.
  */
 
-#define	HASKERNIDCK	1
+#define    HASKERNIDCK    1
 
 
 /*
@@ -203,7 +203,7 @@
  * reading the kernel's name list from an optional file.
  */
 
-#define	HASKOPT	1
+#define    HASKOPT    1
 
 
 /*
@@ -250,7 +250,7 @@
  * kernel memory from an alternate file.
  */
 
-#define	HASMOPT	1
+#define    HASMOPT    1
 
 
 /*
@@ -263,7 +263,7 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define	HASNCACHE	1
+#define    HASNCACHE    1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
 
@@ -273,7 +273,7 @@
  * kernel symbols.
  */
 
-#define	HASNLIST	1
+#define    HASNLIST    1
 
 
 /*
@@ -307,7 +307,7 @@
  * the parent process IDentifier (PPID) of a process.
  */
 
-#define	HASPPID		1
+#define    HASPPID        1
 
 
 /*
@@ -317,8 +317,8 @@
  * called from print_file().
  */
 
-#define	HASPRINTDEV	print_dev
-#define	HASPRINTINO	print_ino
+#define    HASPRINTDEV    print_dev
+#define    HASPRINTINO    print_ino
 /* #define	HASPRINTNM	print_nm?	*/
 /* #define	HASPRINTOFF	print_off?	*/
 /* #define	HASPRINTSZ	print_sz?	*/
@@ -392,9 +392,9 @@
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
-# if	defined(HAS_NFS)
+# if    defined(HAS_NFS)
 #define	HASRNODE	1
-# endif	/* defined(HAS_NFS) */
+# endif    /* defined(HAS_NFS) */
 
 
 /*
@@ -426,11 +426,11 @@
  * mblen() and mbtowc() functions.
  */
 
-#define	HASSETLOCALE	1
+#define    HASSETLOCALE    1
 
-# if	OSRV>=506
+# if    OSRV >= 506
 #define	HASWIDECHAR	1
-# endif	/* OSRV>=506 */
+# endif    /* OSRV>=506 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
 
@@ -455,9 +455,9 @@
  * options.
  */
 
-#define	HASSOOPT	1	/* has socket option information */
-#define	HASSOSTATE	1	/* has socket state information */
-#define	HASTCPOPT	1	/* has TCP options or flags */
+#define    HASSOOPT    1    /* has socket option information */
+#define    HASSOSTATE    1    /* has socket state information */
+#define    HASTCPOPT    1    /* has TCP options or flags */
 
 
 /*
@@ -482,7 +482,7 @@
  * HASSTREAMS is defined for those systems that support streams.
  */
 
-#define	HASSTREAMS	1
+#define    HASSTREAMS    1
 
 
 /*
@@ -490,7 +490,7 @@
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define	HASTCPTPIQ	1
+#define    HASTCPTPIQ    1
 
 
 /*
@@ -536,7 +536,7 @@
  */
 
 /* #define	INODETYPE	unsigned long long */
-					/* inode number internal storage type */
+/* inode number internal storage type */
 /* #define	INODEPSPEC	"ll"	 * INODETYPE printf specification
 					 * modifier */
 
@@ -546,7 +546,7 @@
  * as a function argument.
  */
 
-#define	UID_ARG	int
+#define    UID_ARG    int
 
 
 /*
@@ -560,24 +560,24 @@
 
 /* #define	USE_LIB_CKKV			1	   ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define	USE_LIB_FIND_CH_INO			1	/* fino.c */
-#define	USE_LIB_IS_FILE_NAMED			1	/* isfn.c */
-#define	USE_LIB_LKUPDEV				1	/* lkud.c */
-#define	USE_LIB_PRINTDEVNAME			1	/* pdvn.c */
+#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
+#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
+#define    USE_LIB_LKUPDEV                1    /* lkud.c */
+#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
-#define	USE_LIB_PRINT_TCPTPI			1	/* ptti.c */
-#define	USE_LIB_READDEV				1	/* rdev.c */
+#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
+#define    USE_LIB_READDEV                1    /* rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
 
-# if	OSRV<500
-#define	USE_LIB_SNPF				1	/* snpf.c */
+# if    OSRV < 500
+#define    USE_LIB_SNPF                1    /* snpf.c */
 # else	/* OSRV>=500 */
 #define	snpf	snprintf	   /* use the system's snprintf() */
-# endif	/* OSRV<500 */
+# endif    /* OSRV<500 */
 
 
 /*
@@ -603,12 +603,12 @@
  * the dialect's initialize() function has been executed.
  */
 
-#define	WILLDROPGID	1
+#define    WILLDROPGID    1
 
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define	zeromem(a, l)	memset(a, 0, l)
-#endif	/* !defined(LSOF_MACHINE_H) */
+#define    zeromem(a, l)    memset(a, 0, l)
+#endif    /* !defined(LSOF_MACHINE_H) */

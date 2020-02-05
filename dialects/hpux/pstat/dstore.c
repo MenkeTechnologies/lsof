@@ -31,7 +31,7 @@
 
 #ifndef lint
 static char copyright[] =
-"@(#) Copyright 1999 Purdue Research Foundation.\nAll rights reserved.\n";
+        "@(#) Copyright 1999 Purdue Research Foundation.\nAll rights reserved.\n";
 static char *rcsid = "$Id";
 #endif
 
@@ -43,29 +43,29 @@ static char *rcsid = "$Id";
  * Global storage definitions
  */
 
-_T_LONG_T CloneMaj;			/* clone major device number */
-int HasNFS = -1;			/* NFS-mounted file system status:
+_T_LONG_T CloneMaj;            /* clone major device number */
+int HasNFS = -1;            /* NFS-mounted file system status:
 					 *    -1: not yet tested;
 					 *     0: tested and none mounted;
 					 *     1: tested and some mounted */
-int HaveCloneMaj = 0;			/* CloneMaj status */
+int HaveCloneMaj = 0;            /* CloneMaj status */
 
-#if	defined(HASFSTRUCT)
+#if    defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-	{ (long)PS_FRDONLY,	FF_READ		},
-	{ (long)PS_FWRONLY,	FF_WRITE	},
-	{ (long)PS_FAPPEND,	FF_APPEND	},
-	{ (long)PS_FNODELY,	FF_NDELAY	},
-	{ (long)PS_FNBLOCK,	FF_NBLOCK	},
-	{ (long)PS_FSYNC,	FF_SYNC		},
-	{ (long)PS_FDSYNC,	FF_DSYNC	},
-	{ (long)PS_FRSYNC,	FF_RSYNC	},
-	{ (long)PS_FLGFILE,	FF_LARGEFILE	},
-	{ (long)0,		NULL		}
+    { (long)PS_FRDONLY,	FF_READ		},
+    { (long)PS_FWRONLY,	FF_WRITE	},
+    { (long)PS_FAPPEND,	FF_APPEND	},
+    { (long)PS_FNODELY,	FF_NDELAY	},
+    { (long)PS_FNBLOCK,	FF_NBLOCK	},
+    { (long)PS_FSYNC,	FF_SYNC		},
+    { (long)PS_FDSYNC,	FF_DSYNC	},
+    { (long)PS_FRSYNC,	FF_RSYNC	},
+    { (long)PS_FLGFILE,	FF_LARGEFILE	},
+    { (long)0,		NULL		}
 };
 
 
@@ -74,7 +74,7 @@ struct pff_tab Pff_tab[] = {
  */
 
 struct pff_tab Pof_tab[] = {
-	{ (long)PS_FEXCLOS,	POF_CLOEXEC	},
-	{ (long)0,		NULL		}
+    { (long)PS_FEXCLOS,	POF_CLOEXEC	},
+    { (long)0,		NULL		}
 };
-#endif	/* defined(HASFSTRUCT) */
+#endif    /* defined(HASFSTRUCT) */

@@ -37,25 +37,35 @@
  */
 
 
-#if	HPUXV>=800
+#if    HPUXV >= 800
 _PROTOTYPE(extern void completevfs,(struct l_vfs *vfs, dev_t *dev, struct vfs *v));
 #else
-_PROTOTYPE(extern void completevfs,(struct l_vfs *vfs, dev_t *dev));
-#endif	/* HPUXV>=800 */
 
-_PROTOTYPE(extern int is_file_named,(char *p, int cd));
-_PROTOTYPE(extern int get_max_fd,(void));
+_PROTOTYPE(extern void completevfs,(struct l_vfs *vfs, dev_t *dev)
 
-#if	defined(DTYPE_LLA)
+);
+#endif    /* HPUXV>=800 */
+
+_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+
+);
+
+_PROTOTYPE(extern int get_max_fd,(void)
+
+);
+
+#if    defined(DTYPE_LLA)
 _PROTOTYPE(extern void process_lla,(KA_T la));
 #endif
 
-_PROTOTYPE(extern struct l_vfs *readvfs,(struct vnode *lv));
+_PROTOTYPE(extern struct l_vfs *readvfs,(struct vnode *lv)
 
-#if	HPUXV>=1030
+);
+
+#if    HPUXV >= 1030
 _PROTOTYPE(extern void process_stream_sock,(KA_T ip, KA_T pcb, char *pn, enum vtype vt));
 _PROTOTYPE(extern int read_mi,(KA_T sh, KA_T *ip, KA_T *pcb, char **pn));
-#endif	/* HPUXV>=1030 */
+#endif    /* HPUXV>=1030 */
 
 #if     defined(HAS_AFS)
 _PROTOTYPE(extern struct vnode *alloc_vcache,(void));
@@ -64,6 +74,6 @@ _PROTOTYPE(extern int hasAFS,(struct vnode *vp));
 _PROTOTYPE(extern int readafsnode,(KA_T va, struct vnode *v, struct afsnode *an));
 #endif  /* defined(HAS_AFS) */
 
-#if	defined(HASVXFS)
+#if    defined(HASVXFS)
 _PROTOTYPE(extern int read_vxnode,(struct vnode *v, struct l_vfs *vfs, dev_t *dev, int *devs, dev_t *rdev, int *rdevs));
-#endif	/* defined(HASVXFS) */
+#endif    /* defined(HASVXFS) */

@@ -9,36 +9,36 @@
  * February, 1998
  */
 
-#if	!defined(LSOF_STH_H)
-#define	LSOF_STH_H
+#if    !defined(LSOF_STH_H)
+#define    LSOF_STH_H
 
 #include "kernbits.h"
 #include <sys/types.h>
 
 typedef struct streams_queue {
-	KA_T q_qinfo;			/* queue info pointer */
-	KA_T q_first;
-	KA_T q_last;
-	KA_T q_next;
-	KA_T q_link;
-	KA_T q_ptr;			/* queue private data pointer */
-	ulong q_count;
-	ulong q_flag;
-	int q_minpsz;
-	int q_maxpsz;
-	ulong q_hiwat;
-	ulong q_lowat;
-	KA_T q_bandp;
-	u_char q_nband;
-	u_char q_pad1[3];
-	KA_T q_other;
-	KA_T queue_sth;
+    KA_T q_qinfo;            /* queue info pointer */
+    KA_T q_first;
+    KA_T q_last;
+    KA_T q_next;
+    KA_T q_link;
+    KA_T q_ptr;            /* queue private data pointer */
+    ulong q_count;
+    ulong q_flag;
+    int q_minpsz;
+    int q_maxpsz;
+    ulong q_hiwat;
+    ulong q_lowat;
+    KA_T q_bandp;
+    u_char q_nband;
+    u_char q_pad1[3];
+    KA_T q_other;
+    KA_T queue_sth;
 } streams_queue_t;
 
 typedef struct sth_s {
-	streams_queue_t *sth_rq;	/* pointer to stream's read queue
+    streams_queue_t *sth_rq;    /* pointer to stream's read queue
 					 * structure chain */
-	streams_queue_t *sth_wq;	/* pointer to stream's write queue
+    streams_queue_t *sth_wq;    /* pointer to stream's write queue
 					 * structure chain */
 /*
  * These q4 elements are ignored.
@@ -81,4 +81,4 @@ typedef struct sth_s {
 
 } sth_s_t;
 
-#endif	/* !defined(LSOF_STH_H) */
+#endif    /* !defined(LSOF_STH_H) */
