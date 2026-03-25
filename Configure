@@ -10,7 +10,7 @@
 # support and provided the Linux Configure stanza modifications.
 #
 # When configuring for a particular dialect, <target-dialect>, this script
-# requires that the subdirectory ./dialects/<target-dialect> contain a
+# requires that the subdirectory ./src/dialects/<target-dialect> contain a
 # shell script, named $LSOF_MK, that places its source modules in this
 # directory.
 #
@@ -23,7 +23,7 @@
 # LSOF_DISTRIBKVM may be introduced through the environment to specify the
 #	Sun4 kernel virtual memory type of distrib.cf
 
-LSOF_F="ddev.c dfile.c dlsof.h dmnt.c dnode*.c dproc.c dproto.h dsock.c dstore.c dzfs.h kernelbase.h machine.h machine.h.old new_machine.h __lseek.s"
+LSOF_F="ddev.c dfile.c dlsof.h dmnt.c dnode*.c dproc.c dproto.h dsock.c dstore.c dzfs.h kernelbase.h machine.h machine.h.old new_machine.h __lseek.s arg.c main.c misc.c node.c print.c proc.c store.c usage.c util.c lsof.h lsof_fields.h proto.h regex.h"
 LSOF_HLP_BASE=./cfghlp.
 LSOF_HLP=${LSOF_HLP_BASE}$$
 
@@ -55,7 +55,7 @@ then
   LSOF_MKFC=Makefile
 fi	# }
 
-LSOF_LIB=lib
+LSOF_LIB=src/lib
 LSOF_MKF=Makefile
 LSOF_LIBMKF=Makefile
 LSOF_LIBMKFSKEL=Makefile.skel
@@ -287,20 +287,22 @@ do
       echo rm -f $LSOF_F $LSOF_MKFC $LSOF_FBSD_ZFS_MKF ${LSOF_TMPC_BASE}*
       rm -rf AFSHeaders AFSVersion solaris11 version.h vnode_if.h
       echo "rm -rf AFSHeaders AFSVersion solaris11 version.h vnode_if.h"
+      rm -f src/dlsof.h src/dproto.h src/machine.h
+      echo "rm -f src/dlsof.h src/dproto.h src/machine.h"
       rm -f ${LSOF_HLP_BASE}* cd9660_node.h lockf_owner.h fbsd_minor.h
       echo "rm -f ${LSOF_HLP_BASE}* cd9660_node.h lockf_owner.h fbsd_minor.h"
-      rm -f dialects/aix/aix5/j2/j2_snapshot.h
-      echo "rm -f dialects/aix/aix5/j2/j2_snapshot.h"
-      rm -f dialects/sun/solaris10	# DEBUG -- for s10_44
-      echo "rm -f dialects/sun/solaris10"	# DEBUG -- for s10_44
-      rm -f dialects/du/du5_sys_malloc.h
-      echo "rm -f dialects/du/du5_sys_malloc.h"
-      rm -f dialects/hpux/kmem/hpux_mount.h
-      echo "rm -f dialects/hpux/kmem/hpux_mount.h"
-      rm -rf dialects/n+obsd/include
-      echo "rm -rf dialects/n+obsd/include"
-      rm -f dialects/uw/uw7/vm/swap.h
-      echo "rm -f dialects/uw/uw7/vm/swap.h"
+      rm -f src/dialects/aix/aix5/j2/j2_snapshot.h
+      echo "rm -f src/dialects/aix/aix5/j2/j2_snapshot.h"
+      rm -f src/dialects/sun/solaris10	# DEBUG -- for s10_44
+      echo "rm -f src/dialects/sun/solaris10"	# DEBUG -- for s10_44
+      rm -f src/dialects/du/du5_sys_malloc.h
+      echo "rm -f src/dialects/du/du5_sys_malloc.h"
+      rm -f src/dialects/hpux/kmem/hpux_mount.h
+      echo "rm -f src/dialects/hpux/kmem/hpux_mount.h"
+      rm -rf src/dialects/n+obsd/include
+      echo "rm -rf src/dialects/n+obsd/include"
+      rm -f src/dialects/uw/uw7/vm/swap.h
+      echo "rm -f src/dialects/uw/uw7/vm/swap.h"
       rm -f ${LSOF_LIB}/${LSOF_LIBMKF}
       echo "rm -f ${LSOF_LIB}/${LSOF_LIBMKF}"
       exit 0
@@ -580,10 +582,10 @@ case $LSOF_TGT in	# {
       # The AIX > 5.0 system has jfs2 support.  Make the necesssary definitions
       # and adjustments.
 
-	rm -f dialects/aix/aix5/j2/j2_snapshot.h
-	(cd dialects/aix/aix5/j2; ln -s private_j2_snapshot.h j2_snapshot.h)
+	rm -f src/dialects/aix/aix5/j2/j2_snapshot.h
+	(cd src/dialects/aix/aix5/j2; ln -s private_j2_snapshot.h j2_snapshot.h)
 	LSOF_CFGF="$LSOF_CFGF -DHAS_JFS2"
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/aix/aix5"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/aix/aix5"
 	if test $LSOF_VERS -ge 5200	# {
 	then
 	  if test -r ${LSOF_INCLUDE}/j2/j2_snapshot.h	# {
@@ -592,7 +594,7 @@ case $LSOF_TGT in	# {
 	  # The system has its own j2_snapshot.h, so make sure the
 	  # private lsof copy is discarded.
 
-	    rm -f dialects/aix/aix5/j2/j2_snapshot.h
+	    rm -f src/dialects/aix/aix5/j2/j2_snapshot.h
 	  fi	# }
 	  echo $LSOF_CC | grep gcc > /dev/null
 	  if test $? -eq 0	# {
@@ -793,11 +795,11 @@ case $LSOF_TGT in	# {
 	if test ${LSOF_TMP1} -eq 1	# {
 	then
 	  echo "Applying gcc AIX 4.1+ user struct alignment hack"
-	  rm -rf ./dialects/aix/aix$LSOF_VERS
-	  mkdir ./dialects/aix/aix$LSOF_VERS
-	  mkdir ./dialects/aix/aix${LSOF_VERS}/sys
-	    sed 's/U_irss\[/dummy_for_alignment, U_irss\[/' < ${LSOF_INCLUDE}/sys/user.h > ./dialects/aix/aix${LSOF_VERS}/sys/user.h
-	    LSOF_CFGF="$LSOF_CFGF -U_LONG_LONG -I`pwd`/dialects/aix/aix$LSOF_VERS"
+	  rm -rf ./src/dialects/aix/aix$LSOF_VERS
+	  mkdir ./src/dialects/aix/aix$LSOF_VERS
+	  mkdir ./src/dialects/aix/aix${LSOF_VERS}/sys
+	    sed 's/U_irss\[/dummy_for_alignment, U_irss\[/' < ${LSOF_INCLUDE}/sys/user.h > ./src/dialects/aix/aix${LSOF_VERS}/sys/user.h
+	    LSOF_CFGF="$LSOF_CFGF -U_LONG_LONG -I`pwd`/src/dialects/aix/aix$LSOF_VERS"
 	fi	# }
       fi	# }
     else
@@ -1058,7 +1060,7 @@ case $LSOF_TGT in	# {
       # If any Darwin XNU kernel header files are missing, call the
       # get-hdr-loc.sh script to find the path.
 
-	LSOF_TMP6=`pwd`/dialects/darwin/get-hdr-loc.sh
+	LSOF_TMP6=`pwd`/src/dialects/darwin/get-hdr-loc.sh
 	if test ! -x $LSOF_TMP6	# {
 	then
 	  echo "FATAL: can't execute: $LSOF_TMP6"
@@ -1349,7 +1351,7 @@ kernel generation process.
       LSOF_TMP1=${LSOF_INCLUDE}/sys/malloc.h
       if test -r $LSOF_TMP1	# {
       then
-	LSOF_TMP2=dialects/du/du5_sys_malloc.h
+	LSOF_TMP2=src/dialects/du/du5_sys_malloc.h
 	rm -f $LSOF_TMP2
 	echo "#if !defined(MANUFACTURED_DU5_SYS_MALLOC_H)" > $LSOF_TMP2
 	echo "/* By lsof Configure:" `date` " */" >> $LSOF_TMP2
@@ -1358,7 +1360,7 @@ kernel generation process.
 	echo "struct percpukmembuckets {" >> $LSOF_TMP2
 	sed '1,/^struct percpukmembuckets/d' $LSOF_TMP1 | sed -n '1,/^};/p' >> $LSOF_TMP2
 	echo "#endif" >> $LSOF_TMP2
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/du"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/du"
       fi	# }
 
     # Enable IPv6 for Tru64 UNIX 5.0 and above.
@@ -1655,7 +1657,7 @@ kernel generation process.
     1000)
       LSOF_CFGF="$LSOF_CFGF -DHASPROCFS"
       LSOF_CFGL="$LSOF_CFGL -lutil"
-      LSOF_DINC="$LSOF_DINC -I`pwd`/dialects/freebsd/include"
+      LSOF_DINC="$LSOF_DINC -I`pwd`/src/dialects/freebsd/include"
       if test "X$FREEBSD_KERNEL" = "X"	# {
       then
 	LSOF_N_UNIXV="/386bsd"
@@ -2389,7 +2391,7 @@ LOCKF_OWNER4
 	  then
 	    HPUX_KERNBITS=`getconf _SC_KERNEL_BITS`
 	  fi	# }
-	  LSOF_CFGF="$LSOF_CFGF -DHPUXKERNBITS=${HPUX_KERNBITS} -I`pwd`/dialects/hpux/kmem/hpux11"
+	  LSOF_CFGF="$LSOF_CFGF -DHPUXKERNBITS=${HPUX_KERNBITS} -I`pwd`/src/dialects/hpux/kmem/hpux11"
 	  if test $HPUX_KERNBITS -eq 64	# {
 	  then
 	    LSOF_TSTK64=1
@@ -2597,7 +2599,7 @@ LOCKF_OWNER4
 
 	if test -r ${LSOF_INCLUDE}/sys/mount.h	# {
 	then
-	  LSOF_TMP1="dialects/${LSOF_DIALECT_DIR}/hpux_mount.h"
+	  LSOF_TMP1="src/dialects/${LSOF_DIALECT_DIR}/hpux_mount.h"
 	  rm -f $LSOF_TMP1
 	  echo "#if !defined(MANUFACTURED_HPUX_SYS_MOUNT_H)" > $LSOF_TMP1
 	  echo "#define MANUFACTURED_HPUX_SYS_MOUNT_H" >> $LSOF_TMP1
@@ -2606,7 +2608,7 @@ LOCKF_OWNER4
 	  sed '1,/struct mount/d' ${LSOF_INCLUDE}/sys/mount.h | sed -n '1,/m_dev/p' >> $LSOF_TMP1
 	  echo "};" >> $LSOF_TMP1
 	  echo "#endif" >> $LSOF_TMP1
-	  LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/${LSOF_DIALECT_DIR}"
+	  LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/${LSOF_DIALECT_DIR}"
 	fi	# }
 
 	# Test for OnlineJFS.
@@ -3547,13 +3549,13 @@ return(0); }
 
   # Build special header files, as required.
 
-    rm -rf dialects/n+obsd/include
+    rm -rf src/dialects/n+obsd/include
     if test "X$NETBSD_UVM" = "XY" -o "X$NETBSD_UVM" = "Xy"	# {
     then
-      mkdir dialects/n+obsd/include
-      touch dialects/n+obsd/include/opt_uvmhist.h
-      touch dialects/n+obsd/include/opt_lockdebug.h
-      LSOF_CFGF="$LSOF_CFGF -DUVM -I`pwd`/dialects/n+obsd/include"
+      mkdir src/dialects/n+obsd/include
+      touch src/dialects/n+obsd/include/opt_uvmhist.h
+      touch src/dialects/n+obsd/include/opt_lockdebug.h
+      LSOF_CFGF="$LSOF_CFGF -DUVM -I`pwd`/src/dialects/n+obsd/include"
       if test -d ${LSOF_INCLUDE}/uvm	# {
       then
 	LSOF_CFGF="$LSOF_CFGF -DHAS_UVM_INCL"
@@ -3580,10 +3582,10 @@ return(0); }
       LSOF_TMP1=${LSOF_TMPC}.edscr
       LSOF_TMP2=${LSOF_TMPC}.netcred
       LSOF_TMP3=${LSOF_TMPC}.netexport
-      LSOF_TMP4=dialects/n+obsd/include/netexport.h
-      if test ! -d dialects/n+obsd/include	# {
+      LSOF_TMP4=src/dialects/n+obsd/include/netexport.h
+      if test ! -d src/dialects/n+obsd/include	# {
       then
-	mkdir dialects/n+obsd/include
+	mkdir src/dialects/n+obsd/include
       fi	# }
       rm -f $LSOF_TMP1 $LSOF_TMP2 $LSOF_TMP3 $LSOF_TMP4 
       echo "/^struct netcred" > $LSOF_TMP1
@@ -3619,10 +3621,10 @@ return(0); }
       fi	# }
       echo "#endif	/* !defined(NETEXPORT_H) */" >> $LSOF_TMP4
       rm -f $LSOF_TMP1 $LSOF_TMP2 $LSOF_TMP3
-      echo $LSOF_CFGF | grep /dialects/n+obsd/include > /dev/null 2>&1
+      echo $LSOF_CFGF | grep /src/dialects/n+obsd/include > /dev/null 2>&1
       if test $? -ne 0	# {
       then
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/n+obsd/include"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/n+obsd/include"
       fi	# }
     fi	# }
     if test $LSOF_NBSD_BUFQH -eq 1	# {
@@ -3630,19 +3632,19 @@ return(0); }
 
     # Make a local copy of $NETBSD_SYS/sys/bufq.h.
 
-      if test ! -d dialects/n+obsd/include	# {
+      if test ! -d src/dialects/n+obsd/include	# {
       then
-	mkdir dialects/n+obsd/include
+	mkdir src/dialects/n+obsd/include
       fi	# }
-      if test ! -d dialects/n+obsd/include/sys	# {
+      if test ! -d src/dialects/n+obsd/include/sys	# {
       then
-	mkdir dialects/n+obsd/include/sys
+	mkdir src/dialects/n+obsd/include/sys
       fi	# }
-      cp $NETBSD_SYS/sys/bufq.h dialects/n+obsd/include/sys
-      echo $LSOF_CFGF | grep /dialects/n+obsd/include > /dev/null 2>&1
+      cp $NETBSD_SYS/sys/bufq.h src/dialects/n+obsd/include/sys
+      echo $LSOF_CFGF | grep /src/dialects/n+obsd/include > /dev/null 2>&1
       if test $? -ne 0	# {
       then
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/n+obsd/include"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/n+obsd/include"
       fi	# }
     fi	# }
     if test $LSOF_NBSD_PTYFS -eq 1	# {
@@ -3650,21 +3652,21 @@ return(0); }
 
     # Make a local copy of $NETBSD_SYS/sys/fs/ptyfs/.
 
-      if test ! -d dialects/n+obsd/include	# {
+      if test ! -d src/dialects/n+obsd/include	# {
       then
-	mkdir dialects/n+obsd/include
+	mkdir src/dialects/n+obsd/include
       fi	# }
-      if test ! -d dialects/n+obsd/include/fs	# {
+      if test ! -d src/dialects/n+obsd/include/fs	# {
       then
-	mkdir dialects/n+obsd/include/fs
+	mkdir src/dialects/n+obsd/include/fs
       fi	# }
-      rm -rf dialects/n+obsd/include/fs/ptyfs
-      mkdir dialects/n+obsd/include/fs/ptyfs
-      cp $NETBSD_SYS/fs/ptyfs/*.h dialects/n+obsd/include/fs/ptyfs
-      echo $LSOF_CFGF | grep /dialects/n+obsd/include > /dev/null 2>&1
+      rm -rf src/dialects/n+obsd/include/fs/ptyfs
+      mkdir src/dialects/n+obsd/include/fs/ptyfs
+      cp $NETBSD_SYS/fs/ptyfs/*.h src/dialects/n+obsd/include/fs/ptyfs
+      echo $LSOF_CFGF | grep /src/dialects/n+obsd/include > /dev/null 2>&1
       if test $? -ne 0	# {
       then
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/n+obsd/include"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/n+obsd/include"
       fi	# }
     fi	# }
     LSOF_CFGL="$LSOF_CFGL -lkvm"
@@ -4032,10 +4034,10 @@ return(0); }
       LSOF_TMP1=${LSOF_TMPC}.edscr
       LSOF_TMP2=${LSOF_TMPC}.netcred
       LSOF_TMP3=${LSOF_TMPC}.netexport
-      LSOF_TMP4=dialects/n+obsd/include/netexport.h
-      if test ! -d dialects/n+obsd/include	# {
+      LSOF_TMP4=src/dialects/n+obsd/include/netexport.h
+      if test ! -d src/dialects/n+obsd/include	# {
       then
-	mkdir dialects/n+obsd/include
+	mkdir src/dialects/n+obsd/include
       fi	# }
       rm -f $LSOF_TMP1 $LSOF_TMP2 $LSOF_TMP3 $LSOF_TMP4 
       echo "/^struct netcred" > $LSOF_TMP1
@@ -4071,10 +4073,10 @@ return(0); }
       fi	# }
       echo "#endif	/* !defined(NETEXPORT_H) */" >> $LSOF_TMP4
       rm -f $LSOF_TMP1 $LSOF_TMP2 $LSOF_TMP3
-      echo $LSOF_CFGF | grep /dialects/n+obsd/include > /dev/null 2>&1
+      echo $LSOF_CFGF | grep /src/dialects/n+obsd/include > /dev/null 2>&1
       if test $? -ne 0	# {
       then
-	LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/n+obsd/include"
+	LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/n+obsd/include"
       fi	# }
     fi	# }
     if test -r ${LSOF_INCLUDE}/sys/lockf.h	# {
@@ -4260,7 +4262,7 @@ return(0); }
     fi	# }
     if test ! -r ${LSOF_INCLUDE}/netdb.h	# {
     then
-      LSOF_DINC="$LSOF_DINC -I`pwd`/dialects/osr/include"
+      LSOF_DINC="$LSOF_DINC -I`pwd`/src/dialects/osr/include"
     fi	# }
     LSOF_DIALECT_DIR=osr
     ;;
@@ -4709,11 +4711,11 @@ return(0); }
 	  grep "c2/audit.h" ${LSOF_INCLUDE}/sys/cred_impl.h > /dev/null
 	  if test $? -eq 0	# {
 	  then
-	    rm -rf `pwd`/dialects/sun/solaris10
-	    mkdir `pwd`/dialects/sun/solaris10
-	    mkdir `pwd`/dialects/sun/solaris10/c2
-	    touch `pwd`/dialects/sun/solaris10/c2/audit.h
-	    LSOF_CFGF="$LSOF_CFGF -I`pwd`/dialects/sun/solaris10"
+	    rm -rf `pwd`/src/dialects/sun/solaris10
+	    mkdir `pwd`/src/dialects/sun/solaris10
+	    mkdir `pwd`/src/dialects/sun/solaris10/c2
+	    touch `pwd`/src/dialects/sun/solaris10/c2/audit.h
+	    LSOF_CFGF="$LSOF_CFGF -I`pwd`/src/dialects/sun/solaris10"
 	  fi	# }
 
 	  # DEBUG -- End temporary hack for Solaris 10, build s10_44.
@@ -5073,7 +5075,7 @@ return(0); }
       LSOF_TSTLFLG="-lsocket -lnsl"
       if test $LSOF_VERS -lt 70103	# {
       then
-	LSOF_DINC="$LSOF_DINC -I`pwd`/dialects/uw/uw7"
+	LSOF_DINC="$LSOF_DINC -I`pwd`/src/dialects/uw/uw7"
       else	# $LSOF_VERS -ge 70103
 
       # Process 7.1.3 and above.
@@ -5112,7 +5114,7 @@ return(0); }
       fi	# }
       if test ! -r ${LSOF_INCLUDE}/vm/swap.h -a -r ${LSOF_INCLUDE}/sys/swap.h	# {
       then
-	(cd ./dialects/uw/uw7/vm; rm -f swap.h; ln -s ${LSOF_INCLUDE}/sys/swap.h swap.h)
+	(cd ./src/dialects/uw/uw7/vm; rm -f swap.h; ln -s ${LSOF_INCLUDE}/sys/swap.h swap.h)
       fi	# }
       if test -r ${LSOF_INCLUDE}/sys/fs/vx_gemini.h	# {
       then
@@ -5218,18 +5220,18 @@ fi	# }
 
 # Make sure target directory exists.
 
-if test ! -d ./dialects/$LSOF_DIALECT_DIR	# {
+if test ! -d ./src/dialects/$LSOF_DIALECT_DIR	# {
 then
-  echo "Can't configure for $LSOF_TGT -- ./dialects/$LSOF_DIALECT_DIR doesn't exist."
+  echo "Can't configure for $LSOF_TGT -- ./src/dialects/$LSOF_DIALECT_DIR doesn't exist."
   rm -f $LSOF_HLP
   exit 1
 fi	# }
 
 # Make sure $LSOF_MK exists in the target directory.
 
-if test ! -r ./dialects/$LSOF_DIALECT_DIR/$LSOF_MK	# {
+if test ! -r ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_MK	# {
 then
-  echo "Can't configure for $LSOF_TGT -- ./dialects/$LSOF_DIALECT_DIR/$LSOF_MK doesn't exist."
+  echo "Can't configure for $LSOF_TGT -- ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_MK doesn't exist."
   rm -f $LSOF_HLP
   exit 1
 fi	# }
@@ -5249,9 +5251,9 @@ then
 else
   LSOF_REST=$LSOF_TMP1
 fi	# }
-if test ! -r ./dialects/$LSOF_DIALECT_DIR/$LSOF_REST	# {
+if test ! -r ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_REST	# {
 then
-  echo "Can't configure for $LSOF_TGT -- ./dialects/$LSOF_DIALECT_DIR/$LSOF_REST doesn't exist."
+  echo "Can't configure for $LSOF_TGT -- ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_REST doesn't exist."
   rm -f $LSOF_HLP
   exit 1
 fi	# }
@@ -5260,9 +5262,9 @@ fi	# }
 
 if test $LSOF_FBSD_ZFS -eq 1	# {
 then
-  if test ! ./dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF	# {
+  if test ! ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF	# {
   then
-    echo "Can't configure for $LSOF_TGT -- ./dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF doesn't exist."
+    echo "Can't configure for $LSOF_TGT -- ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF doesn't exist."
     rm -f $LSOF_HLP
     exit 1
   fi	# }
@@ -5337,7 +5339,31 @@ if test "X$LSOF_MKC" = "X"	# {
 then
   LSOF_MKC="ln -s"
 fi	# }
-LSOF_MKC=$LSOF_MKC ./dialects/$LSOF_DIALECT_DIR/$LSOF_MK $LSOF_TGT $LSOF_VERS
+LSOF_MKC=$LSOF_MKC ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_MK $LSOF_TGT $LSOF_VERS
+
+# Create symlinks for core source files from src/ to the top level.
+
+LSOF_CORE="arg.c main.c misc.c node.c print.c proc.c store.c usage.c util.c lsof.h lsof_fields.h proto.h regex.h"
+for i in $LSOF_CORE
+do
+  if test ! -f $i	# {
+  then
+    $LSOF_MKC src/$i $i
+    echo "$LSOF_MKC src/$i $i"
+  fi	# }
+done
+
+# Create symlinks for dialect headers in src/ so that src/lib/ can find them via ../
+
+LSOF_DIALECT_HDR="dlsof.h dproto.h machine.h"
+for i in $LSOF_DIALECT_HDR
+do
+  if test -f $i -a ! -f src/$i	# {
+  then
+    $LSOF_MKC ../$i src/$i
+    echo "$LSOF_MKC ../$i src/$i"
+  fi	# }
+done
 
 # Make $LSOF_MKFC and ${LSOF_LIB}/$LSOF_LIBMKF.
 
@@ -5419,7 +5445,7 @@ if test "X$LSOF_LIB_NO" = "X"	# {
 then
   cp $LSOF_MKFC ${LSOF_LIB}/$LSOF_LIBMKF
 fi	# }
-cat ./dialects/$LSOF_DIALECT_DIR/$LSOF_REST >> $LSOF_MKFC
+cat ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_REST >> $LSOF_MKFC
 if test "X$LSOF_LIB_NO" = "X"	# {
 then
 
@@ -5479,7 +5505,7 @@ then
   echo "" >> $LSOF_FBSD_ZFS_MKF
   echo "OPENSOLARIS=	$LSOF_FBSD_ZFS_SYS" >> $LSOF_FBSD_ZFS_MKF
   echo "" >> $LSOF_FBSD_ZFS_MKF
-  cat ./dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF >> $LSOF_FBSD_ZFS_MKF
+  cat ./src/dialects/$LSOF_DIALECT_DIR/$LSOF_FBSD_ZFS_MKF >> $LSOF_FBSD_ZFS_MKF
   echo $LSOF_FBSD_ZFS_MKF created.
 fi	# }
 
