@@ -10,11 +10,13 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <signal.h>
 
 static const char *lsof_path = NULL;
 
@@ -42,27 +44,71 @@ static const char *find_lsof(void) {
     return NULL;
 }
 
+/*
+ * Run lsof via fork/exec (avoids shell/popen sandbox issues).
+ * args is a space-separated argument string that gets tokenized.
+ * Returns exit status, fills buf with stdout.
+ */
 static int run_lsof(const char *args, char *buf, size_t bufsz) {
     const char *lsof = find_lsof();
     if (!lsof) return -1;
 
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "%s %s 2>/dev/null", lsof, args ? args : "");
+    /* tokenize args into argv */
+    char argbuf[1024];
+    char *argv[64];
+    int argc = 0;
+    argv[argc++] = (char *)lsof;
+    if (args && *args) {
+        strncpy(argbuf, args, sizeof(argbuf) - 1);
+        argbuf[sizeof(argbuf) - 1] = '\0';
+        char *tok = strtok(argbuf, " ");
+        while (tok && argc < 63) {
+            argv[argc++] = tok;
+            tok = strtok(NULL, " ");
+        }
+    }
+    argv[argc] = NULL;
 
-    FILE *fp = popen(cmd, "r");
-    if (!fp) return -1;
+    /* pipe for stdout */
+    int pipefd[2];
+    if (pipe(pipefd) < 0) return -1;
 
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return -1;
+    }
+    if (pid == 0) {
+        /* child */
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+        /* suppress stderr */
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0) {
+            dup2(devnull, STDERR_FILENO);
+            close(devnull);
+        }
+        execv(lsof, argv);
+        _exit(127);
+    }
+
+    /* parent */
+    close(pipefd[1]);
     if (buf && bufsz > 0) {
         size_t total = 0;
         while (total < bufsz - 1) {
-            size_t n = fread(buf + total, 1, bufsz - 1 - total, fp);
-            if (n == 0) break;
-            total += n;
+            ssize_t n = read(pipefd[0], buf + total, bufsz - 1 - total);
+            if (n <= 0) break;
+            total += (size_t)n;
         }
         buf[total] = '\0';
     }
+    close(pipefd[0]);
 
-    int status = pclose(fp);
+    int status;
+    waitpid(pid, &status, 0);
     if (WIFEXITED(status))
         return WEXITSTATUS(status);
     return -1;
@@ -75,6 +121,20 @@ static int lsof_available(void) {
 
 TEST(lsof_exists) {
     ASSERT_TRUE(lsof_available());
+}
+
+TEST(lsof_diag) {
+    const char *p = find_lsof();
+    if (!p) { fprintf(stderr, "  DIAG: lsof not found\n"); return; }
+    fprintf(stderr, "  DIAG: lsof path = %s\n", p);
+    char buf[4096];
+    int rc = run_lsof("-v", buf, sizeof(buf));
+    fprintf(stderr, "  DIAG: -v rc = %d\n", rc);
+    fprintf(stderr, "  DIAG: -v buf[0..80] = %.80s\n", buf);
+    rc = run_lsof("-h", buf, sizeof(buf));
+    fprintf(stderr, "  DIAG: -h rc = %d\n", rc);
+    fprintf(stderr, "  DIAG: -h buf[0..80] = %.80s\n", buf);
+    ASSERT_TRUE(1);
 }
 
 TEST(lsof_help_flag) {
@@ -280,6 +340,7 @@ TEST(lsof_fd_selection) {
 
 static tf_test_entry all_tests[] = {
     REGISTER_TEST(lsof_exists),
+    REGISTER_TEST(lsof_diag),
     REGISTER_TEST(lsof_help_flag),
     REGISTER_TEST(lsof_version_flag),
     REGISTER_TEST(lsof_finds_own_pid),
