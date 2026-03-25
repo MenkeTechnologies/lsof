@@ -93,9 +93,9 @@ target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME check_integration COMMAND check_integration)
 
 # ===== Benchmark Suite =====
-add_executable(bench_core bench/bench_core.c)
-target_include_directories(bench_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
-target_compile_options(bench_core PRIVATE -Wall -Wextra -Wpedantic -O2)
+add_executable(benchmark_core bench/bench_core.c)
+target_include_directories(benchmark_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
+target_compile_options(benchmark_core PRIVATE -Wall -Wextra -Wpedantic -O2)
 
 # 'make check' runs all tests and writes output to check_* files
 set(CHECK_SCRIPT "${CMAKE_BINARY_DIR}/run_check.sh")
