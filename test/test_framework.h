@@ -115,6 +115,8 @@ typedef struct {
 
 #define RUN_TESTS_FROM(test_list) \
     int main(int argc, char **argv) { \
+        (void)tf_tests_run; (void)tf_tests_passed; (void)tf_tests_failed; \
+        (void)tf_current_failed; \
         (void)argc; (void)argv; \
         int count = (int)(sizeof(test_list) / sizeof(test_list[0])); \
         printf("Running %d tests...\n\n", count); \

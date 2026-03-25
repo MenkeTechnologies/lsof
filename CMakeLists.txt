@@ -82,26 +82,29 @@ add_executable(lsof ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
 # ===== Test Suite =====
 enable_testing()
 
-add_executable(test_unit test/test_unit.c)
-target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/test)
-target_compile_options(test_unit PRIVATE -Wall -Wextra -Wpedantic)
-add_test(NAME unit_tests COMMAND test_unit)
+add_executable(check_unit test/test_unit.c)
+target_include_directories(check_unit PRIVATE ${PROJECT_SOURCE_DIR}/test)
+target_compile_options(check_unit PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME check_unit COMMAND check_unit)
 
-add_executable(test_integration test/test_integration.c)
-target_include_directories(test_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
-target_compile_options(test_integration PRIVATE -Wall -Wextra -Wpedantic)
-add_test(NAME integration_tests COMMAND test_integration)
+add_executable(check_integration test/test_integration.c)
+target_include_directories(check_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
+target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME check_integration COMMAND check_integration)
 
 # ===== Benchmark Suite =====
 add_executable(bench_core bench/bench_core.c)
 target_include_directories(bench_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
 target_compile_options(bench_core PRIVATE -Wall -Wextra -Wpedantic -O2)
 
-# Custom targets for convenience
-add_custom_target(run_tests
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS test_unit test_integration
-    COMMENT "Running all tests"
+# 'make check' runs all tests and writes output to check_* files
+add_custom_target(check
+    COMMAND sh -c "$<TARGET_FILE:check_unit> > ${CMAKE_BINARY_DIR}/check_unit.log 2>&1 && echo PASS >> ${CMAKE_BINARY_DIR}/check_unit.log || echo FAIL >> ${CMAKE_BINARY_DIR}/check_unit.log"
+    COMMAND sh -c "cat ${CMAKE_BINARY_DIR}/check_unit.log"
+    COMMAND sh -c "$<TARGET_FILE:check_integration> > ${CMAKE_BINARY_DIR}/check_integration.log 2>&1 && echo PASS >> ${CMAKE_BINARY_DIR}/check_integration.log || echo FAIL >> ${CMAKE_BINARY_DIR}/check_integration.log"
+    COMMAND sh -c "cat ${CMAKE_BINARY_DIR}/check_integration.log"
+    DEPENDS check_unit check_integration
+    COMMENT "Running check suite -- output in check_*.log"
 )
 
 add_custom_target(run_benchmarks

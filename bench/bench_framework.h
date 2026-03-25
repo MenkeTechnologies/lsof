@@ -42,15 +42,15 @@ static void bf_print_time(double ns_per_op) {
         printf("%8.2f  s/op", ns_per_op / 1e9);
 }
 
-#define BENCH(name, iters) \
-    static void bench_impl_##name(int); \
-    __attribute__((constructor)) static void register_bench_##name(void) { \
-        bf_registry[bf_registry_count].name = #name; \
-        bf_registry[bf_registry_count].fn = bench_impl_##name; \
+#define BENCH(bench_name, iters) \
+    static void bench_impl_##bench_name(int); \
+    __attribute__((constructor)) static void register_bench_##bench_name(void) { \
+        bf_registry[bf_registry_count].name = #bench_name; \
+        bf_registry[bf_registry_count].fn = bench_impl_##bench_name; \
         bf_registry[bf_registry_count].iterations = (iters); \
         bf_registry_count++; \
     } \
-    static void bench_impl_##name(int bf_iters)
+    static void bench_impl_##bench_name(int bf_iters)
 
 /* volatile sink to prevent dead code elimination */
 static volatile int bf_sink_i;
