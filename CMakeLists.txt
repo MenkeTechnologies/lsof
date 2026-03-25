@@ -98,11 +98,27 @@ target_include_directories(bench_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
 target_compile_options(bench_core PRIVATE -Wall -Wextra -Wpedantic -O2)
 
 # 'make check' runs all tests and writes output to check_* files
+set(CHECK_SCRIPT "${CMAKE_BINARY_DIR}/run_check.sh")
+file(WRITE ${CHECK_SCRIPT}
+"#!/bin/sh
+set -e
+cd \"${CMAKE_BINARY_DIR}\"
+
+echo '=== check_unit ==='
+./check_unit > check_unit.log 2>&1 && echo PASS >> check_unit.log || echo FAIL >> check_unit.log
+cat check_unit.log
+
+echo ''
+echo '=== check_integration ==='
+./check_integration > check_integration.log 2>&1 && echo PASS >> check_integration.log || echo FAIL >> check_integration.log
+cat check_integration.log
+
+# Exit with failure if any test failed
+grep -q FAIL check_unit.log check_integration.log && exit 1 || exit 0
+")
+
 add_custom_target(check
-    COMMAND sh -c "$<TARGET_FILE:check_unit> > ${CMAKE_BINARY_DIR}/check_unit.log 2>&1 && echo PASS >> ${CMAKE_BINARY_DIR}/check_unit.log || echo FAIL >> ${CMAKE_BINARY_DIR}/check_unit.log"
-    COMMAND sh -c "cat ${CMAKE_BINARY_DIR}/check_unit.log"
-    COMMAND sh -c "$<TARGET_FILE:check_integration> > ${CMAKE_BINARY_DIR}/check_integration.log 2>&1 && echo PASS >> ${CMAKE_BINARY_DIR}/check_integration.log || echo FAIL >> ${CMAKE_BINARY_DIR}/check_integration.log"
-    COMMAND sh -c "cat ${CMAKE_BINARY_DIR}/check_integration.log"
+    COMMAND sh ${CHECK_SCRIPT}
     DEPENDS check_unit check_integration
     COMMENT "Running check suite -- output in check_*.log"
 )
