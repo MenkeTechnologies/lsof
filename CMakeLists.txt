@@ -123,8 +123,19 @@ add_custom_target(check
     COMMENT "Running check suite -- output in check_*.log"
 )
 
-add_custom_target(run_benchmarks
-    COMMAND bench_core
-    DEPENDS bench_core
-    COMMENT "Running benchmarks"
+# 'make bench' runs benchmarks and writes output to benchmark_* files
+set(BENCH_SCRIPT "${CMAKE_BINARY_DIR}/run_bench.sh")
+file(WRITE ${BENCH_SCRIPT}
+"#!/bin/sh
+cd \"${CMAKE_BINARY_DIR}\"
+
+echo '=== benchmark_core ==='
+./benchmark_core > benchmark_core.log 2>&1
+cat benchmark_core.log
+")
+
+add_custom_target(bench
+    COMMAND sh ${BENCH_SCRIPT}
+    DEPENDS benchmark_core
+    COMMENT "Running benchmarks -- output in benchmark_*.log"
 )
