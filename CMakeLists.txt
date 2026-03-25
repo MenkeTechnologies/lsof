@@ -90,6 +90,9 @@ add_test(NAME check_unit COMMAND check_unit)
 add_executable(check_integration test/test_integration.c)
 target_include_directories(check_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
 target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_definitions(check_integration PRIVATE
+    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof"
+)
 add_test(NAME check_integration COMMAND check_integration)
 
 # ===== Benchmark Suite =====
@@ -138,4 +141,9 @@ add_custom_target(bench
     COMMAND sh ${BENCH_SCRIPT}
     DEPENDS benchmark_core
     COMMENT "Running benchmarks -- output in benchmark_*.log"
+)
+
+# 'make clean' also removes the lsof binary from the source root if present
+set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
+    "${PROJECT_SOURCE_DIR}/lsof"
 )

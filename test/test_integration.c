@@ -22,6 +22,9 @@ static const char *find_lsof(void) {
     if (lsof_path)
         return lsof_path;
     const char *candidates[] = {
+#ifdef LSOF_BUILD_PATH
+        LSOF_BUILD_PATH,
+#endif
         "./lsof",
         "../lsof",
         "./build/lsof",

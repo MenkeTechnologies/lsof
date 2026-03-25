@@ -1339,7 +1339,9 @@ safepup(c, cl)
                 rp = "\\t";
                 break;
             default:
-                (void) snpf(up, sizeof(up), "^%c", c + 0x40);
+                up[0] = '^';
+                up[1] = (char)(c + 0x40);
+                up[2] = '\0';
                 rp = up;
         }
         len = 2;
@@ -1347,7 +1349,15 @@ safepup(c, cl)
         rp = "^?";
         len = 2;
     } else {
-        (void) snpf(up, sizeof(up), "\\x%02x", (int) (c & 0xff));
+        {
+            static const char hex[] = "0123456789abcdef";
+            unsigned int v = c & 0xff;
+            up[0] = '\\';
+            up[1] = 'x';
+            up[2] = hex[(v >> 4) & 0xf];
+            up[3] = hex[v & 0xf];
+            up[4] = '\0';
+        }
         rp = up;
         len = 4;
     }
@@ -1632,16 +1642,18 @@ x2dev(s, d)
 /*
  * Assemble the validated hex digits of the device number, starting at a point
  * in the string relevant to sizeof(dev_t).
+ *
+ * Use a lookup table to avoid per-character branching on isdigit/isupper.
  */
-    for (r = 0; s < cp; s++) {
-        r = r << 4;
-        if (isdigit((unsigned char) *s))
-            r |= (unsigned char) (*s - '0') & 0xf;
-        else {
-            if (isupper((unsigned char) *s))
-                r |= ((unsigned char) (*s - 'A') + 10) & 0xf;
-            else
-                r |= ((unsigned char) (*s - 'a') + 10) & 0xf;
+    {
+        static const signed char hv[256] = {
+            ['0']=0, ['1']=1, ['2']=2, ['3']=3, ['4']=4,
+            ['5']=5, ['6']=6, ['7']=7, ['8']=8, ['9']=9,
+            ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
+            ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
+        };
+        for (r = 0; s < cp; s++) {
+            r = (r << 4) | (hv[(unsigned char)*s] & 0xf);
         }
     }
     *d = r;

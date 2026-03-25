@@ -112,12 +112,9 @@ char *
 endnm(sz)
         size_t *sz;            /* returned remaining size */
 {
-    register char *s;
-    register size_t tsz;
-
-    for (s = Namech, tsz = Namechl; *s; s++, tsz--);
-    *sz = tsz;
-    return (s);
+    size_t len = strlen(Namech);
+    *sz = Namechl - len;
+    return (Namech + len);
 }
 
 

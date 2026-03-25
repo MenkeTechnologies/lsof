@@ -42,14 +42,16 @@ bench_x2dev(char *s, dev_t *d)
             cp1++;
         }
     }
-    for (r = 0; s < cp; s++) {
-        r = r << 4;
-        if (isdigit((unsigned char)*s))
-            r |= (unsigned char)(*s - '0') & 0xf;
-        else if (isupper((unsigned char)*s))
-            r |= ((unsigned char)(*s - 'A') + 10) & 0xf;
-        else
-            r |= ((unsigned char)(*s - 'a') + 10) & 0xf;
+    {
+        static const signed char hv[256] = {
+            ['0']=0, ['1']=1, ['2']=2, ['3']=3, ['4']=4,
+            ['5']=5, ['6']=6, ['7']=7, ['8']=8, ['9']=9,
+            ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
+            ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
+        };
+        for (r = 0; s < cp; s++) {
+            r = (r << 4) | (hv[(unsigned char)*s] & 0xf);
+        }
     }
     *d = r;
     return s;
@@ -233,7 +235,9 @@ bench_safepup(unsigned int c, int *cl)
         case '\r': rp = "\\r"; break;
         case '\t': rp = "\\t"; break;
         default:
-            snprintf(safepup_buf, sizeof(safepup_buf), "^%c", c + 0x40);
+            safepup_buf[0] = '^';
+            safepup_buf[1] = (char)(c + 0x40);
+            safepup_buf[2] = '\0';
             rp = safepup_buf;
         }
         len = 2;
@@ -241,7 +245,15 @@ bench_safepup(unsigned int c, int *cl)
         rp = "^?";
         len = 2;
     } else {
-        snprintf(safepup_buf, sizeof(safepup_buf), "\\x%02x", (int)(c & 0xff));
+        {
+            static const char hex[] = "0123456789abcdef";
+            unsigned int v = c & 0xff;
+            safepup_buf[0] = '\\';
+            safepup_buf[1] = 'x';
+            safepup_buf[2] = hex[(v >> 4) & 0xf];
+            safepup_buf[3] = hex[v & 0xf];
+            safepup_buf[4] = '\0';
+        }
         rp = safepup_buf;
         len = 4;
     }

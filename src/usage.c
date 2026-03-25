@@ -341,500 +341,251 @@ usage(xv, fh, version)
         int version;            /* ``-v'' status */
 {
     char buf[MAXPATHLEN + 1], *cp, *cp1, *cp2;
-    int col, i;
+    int i;
 
     if (Fhelp || xv) {
-        (void) fprintf(stderr, "%s %s\n latest revision: %s\n",
-                       Pn, LSOF_VERSION, LSOF_URL);
-        (void) fprintf(stderr, " latest FAQ: %sFAQ\n", LSOF_URL);
-        (void) fprintf(stderr, " latest man page: %slsof_man\n", LSOF_URL);
         (void) fprintf(stderr,
-                       " usage: [-?ab%sh%slnNoOP%s%stUvV%s]",
-
-#if    defined(HASNCACHE)
-                "C",
-#else	/* !defined(HASNCACHE) */
-                       "",
-#endif    /* defined(HASNCACHE) */
-
-#if    defined(HASTASKS)
-                "K",
-#else	/* !defined(HASTASKS) */
-                       "",
-#endif    /* defined(HASTASKS) */
-
-#if    defined(HASPPID)
-                "R",
-#else	/* !defined(HASPPID) */
-                       "",
-#endif    /* defined(HASPPID) */
-
-#if    defined(HASTCPUDPSTATE)
-                "",
-#else	/* !defined(HASTCPUDPSTATE) */
-                       "s",
-#endif    /* defined(HASTCPUDPSTATE) */
-
-#if    defined(HASXOPT)
-# if	defined(HASXOPT_ROOT)
-        (Myuid == 0) ? "X" : ""
-# else	/* !defined(HASXOPT_ROOT) */
-        "X"
-# endif	/* defined(HASXOPT_ROOT) */
-#else	/* !defined(HASXOPT) */
-                       ""
-#endif    /* defined(HASXOPT) */
-
-        );
-
-#if    defined(HAS_AFS) && defined(HASAOPT)
-        (void) fprintf(stderr, " [-A A]");
-#endif    /* defined(HAS_AFS) && defined(HASAOPT) */
-
-        (void) fprintf(stderr, " [+|-c c] [+|-d s] [+%sD D]",
-
-#if    defined(HASDCACHE)
-                "|-"
-#else	/* !defined(HASDCACHE) */
-                       ""
-#endif    /* defined(HASDCACHE) */
-
-        );
-
+            "Usage: %s [OPTION]... [FILE]...\n",
+            Pn);
         (void) fprintf(stderr,
-                       " [+|-f%s%s%s%s%s%s]%s\n [-F [f]] [-g [s]] [-i [i]]",
-
-#if    defined(HASFSTRUCT)
-        "[",
-
-# if	defined(HASNOFSCOUNT)
-        "",
-# else	/* !defined(HASNOFSCOUNT) */
-        "c",
-# endif	/* defined(HASNOFSCOUNT) */
-
-# if	defined(HASNOFSADDR)
-        "",
-# else	/* !defined(HASNOFSADDR) */
-        "f",
-# endif	/* defined(HASNOFSADDR) */
-
-# if	defined(HASNOFSFLAGS)
-        "",
-# else	/* !defined(HASNOFSFLAGS) */
-        "gG",
-# endif	/* defined(HASNOFSFLAGS) */
-
-# if	defined(HASNOFSNADDR)
-        "",
-# else	/* !defined(HASNOFSNADDR) */
-        "n",
-# endif	/* defined(HASNOFSNADDR) */
-
-        "]",
-#else	/* !defined(HASFSTRUCT) */
-                       "", "", "", "", "", "",
-#endif    /* defined(HASFSTRUCT) */
-
-#if    defined(HASEOPT)
-                " [+|-e s]"
-#else	/* !defined(HASEOPT) */
-                       ""
-#endif    /* defined(HASEOPT) */
-
-        );
-
-#if    defined(HASKOPT)
-        (void) fprintf(stderr, " [-k k]");
-#endif    /* defined(HASKOPT) */
-
-        (void) fprintf(stderr, " [+|-L [l]]");
-
-#if    defined(HASMOPT) || defined(HASMNTSUP)
-        (void) fprintf(stderr,
-# if	defined(HASMOPT)
-#  if	defined(HASMNTSUP)
-        " [+|-m [m]]"
-#  else	/* !defined(HASMNTSUP) */
-        " [-m m]"
-#  endif	/* defined(HASMNTSUP) */
-# else	/* !defined(HASMOPT) */
-        " [+m [m]]"
-# endif	/* defined(HASMOPT) */
-        );
-#endif    /* defined(HASMOPT) || defined(HASMNTSUP) */
-
-#if    !defined(HASNORPC_H)
-        (void) fprintf(stderr, " [+|-M]");
-#endif    /* !defined(HASNORPC_H) */
-
-        (void) fprintf(stderr,
-                       " [-o [o]] [-p s]\n[+|-r [t]]%s [-S [t]] [-T [t]]",
-
-#if    defined(HASTCPUDPSTATE)
-                " [-s [p:s]]"
-#else	/* !defined(HASTCPUDPSTATE) */
-                       ""
-#endif    /* defined(HASTCPUDPSTATE) */
-
-        );
-        (void) fprintf(stderr, " [-u s] [+|-w] [-x [fl]]");
-
-#if    defined(HASZONES)
-        (void) fprintf(stderr, " [-z [z]]");
-#else	/* !defined(HASZONES) */
-# if    defined(HASSELINUX)
-        if (CntxStatus)
-        (void) fprintf(stderr, " [-Z [Z]]");
-# endif    /* defined(HASSELINUX) */
-#endif    /* defined(HASZONES) */
-
-        (void) fprintf(stderr, " [--] [names]\n");
+            "List information about open files for running processes.\n");
     }
     if (xv && !Fhelp) {
         (void) fprintf(stderr,
-                       "Use the ``-h'' option to get more help information.\n");
+            "\nTry '%s -h' for more information.\n", Pn);
         if (!fh)
             Exit(xv);
     }
     if (Fhelp) {
         (void) fprintf(stderr,
-                       "Defaults in parentheses; comma-separated set (s) items;");
-        (void) fprintf(stderr, " dash-separated ranges.\n");
-        col = print_in_col(1, "-?|-h list help");
-        col = print_in_col(col, "-a AND selections (OR)");
-        col = print_in_col(col, "-b avoid kernel blocks");
-        col = print_in_col(col, "-c c  cmd c ^c /c/[bix]");
-        (void) snpf(buf, sizeof(buf), "+c w  COMMAND width (%d)", CMDL);
-        col = print_in_col(col, buf);
+            "\nOptions:\n");
+        (void) fprintf(stderr,
+            "  -?, -h              display this help and exit\n");
+        (void) fprintf(stderr,
+            "  -a                  AND selections (default: OR)\n");
+        (void) fprintf(stderr,
+            "  -b                  avoid kernel blocks\n");
+        (void) fprintf(stderr,
+            "  -c COMMAND          select by command name (prefix, ^exclude, /regex/)\n");
+        (void) snpf(buf, sizeof(buf),
+            "  +c WIDTH            set COMMAND column width (default: %d)\n", CMDL);
+        (void) fprintf(stderr, "%s", buf);
 
 #if    defined(HASNCACHE)
-        col = print_in_col(col, "-C no kernel name cache");
+        (void) fprintf(stderr,
+            "  -C                  disable kernel name cache\n");
 #endif    /* defined(HASNCACHE) */
 
-        col = print_in_col(col, "+d s  dir s files");
-        col = print_in_col(col, "-d s  select by FD set");
-        col = print_in_col(col, "+D D  dir D tree *SLOW?*");
+        (void) fprintf(stderr,
+            "  +d DIR              list open files in DIR\n");
+        (void) fprintf(stderr,
+            "  -d FD               select by file descriptor set\n");
+        (void) fprintf(stderr,
+            "  +D DIR              recursively list open files in DIR (slow)\n");
 
 #if    defined(HASDCACHE)
         if (Setuidroot)
-        cp = "?|i|r";
-
+            cp = "?|i|r";
 # if	!defined(WILLDROPGID)
         else if (Myuid)
-        cp = "?|i|r<path>";
+            cp = "?|i|r<path>";
 # endif	/* !defined(WILLDROPGID) */
-
         else
-        cp = "?|i|b|r|u[path]";
-        (void) snpf(buf, sizeof(buf), "-D D  %s", cp);
-#else	/* !defined(HASDCACHE) */
-        buf[0] = '\0';
+            cp = "?|i|b|r|u[path]";
+        (void) fprintf(stderr,
+            "  -D ACTION           device cache control (%s)\n", cp);
 #endif    /* defined(HASDCACHE) */
 
-        col = print_in_col(col, buf);
-
 #if    defined(HASEOPT)
-        col = print_in_col(col, "+|-e s  exempt s *RISKY*");
+        (void) fprintf(stderr,
+            "  +|-e PATH           exempt filesystem (risky)\n");
 #endif    /* defined(HASEOPT) */
 
-        (void) snpf(buf, sizeof(buf), "-i select IPv%s files",
+        (void) fprintf(stderr,
+            "  +|-f                +filesystem or -file names\n");
 
+#if    defined(HASFSTRUCT)
+        (void) fprintf(stderr,
+            "  +|-f [cfgGn]        file struct info: count, addr, flags, node\n");
+#endif    /* defined(HASFSTRUCT) */
+
+        (void) fprintf(stderr,
+            "  -F [FIELDS]         select output fields; -F ? for help\n");
+        (void) fprintf(stderr,
+            "  -g [PGID]           exclude(^) or select process group IDs\n");
+        (void) fprintf(stderr,
+            "  -i [ADDR]           select IPv%s files",
 #if    defined(HASIPv6)
-                "[46]"
+            "4/6"
 #else	/* !defined(HASIPv6) */
-                    "4"
+            "4"
 #endif    /* defined(HASIPv6) */
-
         );
-        col = print_in_col(col, buf);
+        (void) fprintf(stderr,
+            "\n                        [%s][proto][@host|addr][:svc|port]\n",
+#if    defined(HASIPv6)
+            "46"
+#else	/* !defined(HASIPv6) */
+            "4"
+#endif    /* defined(HASIPv6) */
+        );
+
+#if    defined(HASKOPT)
+        (void) fprintf(stderr,
+            "  -k FILE             kernel symbols file");
+        (void) fprintf(stderr, " (default: %s)\n",
+            Nmlst ? Nmlst
+# if	defined(N_UNIX)
+                  : N_UNIX
+# else	/* !defined(N_UNIX) */
+                  : (Nmlst = get_nlist_path(1)) ? Nmlst : "none found"
+# endif	/* defined(N_UNIX) */
+        );
+#endif    /* defined(HASKOPT) */
 
 #if    defined(HASTASKS)
-        col = print_in_col(col, "-K list tasKs");
+        (void) fprintf(stderr,
+            "  -K                  list tasks (threads)\n");
 #endif    /* defined(HASTASKS) */
 
-        col = print_in_col(col, "-l list UID numbers");
-        col = print_in_col(col, "-n no host names");
-        col = print_in_col(col, "-N select NFS files");
-        col = print_in_col(col, "-o list file offset");
-        col = print_in_col(col, "-O no overhead *RISKY*");
-        col = print_in_col(col, "-P no port names");
+        (void) fprintf(stderr,
+            "  -l                  display UID numbers instead of login names\n");
+        (void) fprintf(stderr,
+            "  +|-L [COUNT]        list (+) or suppress (-) link counts < COUNT\n");
+
+#if    defined(HASMOPT)
+        (void) fprintf(stderr,
+            "  -m FILE             kernel memory file (default: %s)\n", KMEM);
+#endif    /* defined(HASMOPT) */
+
+#if    defined(HASMNTSUP)
+        (void) fprintf(stderr,
+            "  +m [FILE]           use or create mount supplement\n");
+#endif    /* defined(HASMNTSUP) */
+
+#if    !defined(HASNORPC_H)
+        (void) fprintf(stderr,
+            "  +|-M                enable (+) or disable (-) portmap registration");
+        (void) fprintf(stderr, " (default: %s)\n",
+# if    defined(HASPMAPENABLED)
+            "+"
+# else	/* !defined(HASPMAPENABLED) */
+            "-"
+# endif    /* defined(HASPMAPENABLED) */
+        );
+#endif    /* !defined(HASNORPC_H) */
+
+        (void) fprintf(stderr,
+            "  -n                  inhibit host name resolution\n");
+        (void) fprintf(stderr,
+            "  -N                  select NFS files\n");
+        (void) fprintf(stderr,
+            "  -o [DIGITS]         display file offset (0t format, default: %d digits)\n",
+            OFFDECDIG);
+        (void) fprintf(stderr,
+            "  -O                  avoid overhead of extra processing (risky)\n");
+        (void) fprintf(stderr,
+            "  -p PID              select by PID (comma-separated, ^excludes)\n");
+        (void) fprintf(stderr,
+            "  -P                  inhibit port number to name conversion\n");
 
 #if    defined(HASPPID)
-        col = print_in_col(col, "-R list paRent PID");
+        (void) fprintf(stderr,
+            "  -R                  list parent PID\n");
 #endif    /* defined(HASPPID) */
 
-        col = print_in_col(col, "-s list file size");
-        col = print_in_col(col, "-t terse listing");
-        col = print_in_col(col, "-T disable TCP/TPI info");
-        col = print_in_col(col, "-U select Unix socket");
-        col = print_in_col(col, "-v list version info");
-        col = print_in_col(col, "-V verbose search");
-        (void) snpf(buf, sizeof(buf), "+|-w  Warnings (%s)",
+        (void) fprintf(stderr,
+            "  +|-r [SECONDS]      repeat mode: +until no files, -forever");
+        (void) fprintf(stderr, " (default: %d)\n", RPTTM);
 
+#if    defined(HAS_STRFTIME)
+        (void) fprintf(stderr,
+            "                        optional suffix: m<fmt> for strftime(3) markers\n");
+#endif    /* defined(HAS_STRFTIME) */
+
+        (void) fprintf(stderr,
+            "  -s [PROTO:STATE]    ");
+
+#if    defined(HASTCPUDPSTATE)
+        (void) fprintf(stderr,
+            "exclude(^) or select protocol states by name\n");
+#else	/* !defined(HASTCPUDPSTATE) */
+        (void) fprintf(stderr,
+            "display file size\n");
+#endif    /* defined(HASTCPUDPSTATE) */
+
+        (void) fprintf(stderr,
+            "  -S [SECONDS]        stat(2) timeout (default: %d)\n",
+            TMLIMIT);
+        (void) fprintf(stderr,
+            "  -t                  terse output (PID only)\n");
+        (void) fprintf(stderr,
+            "  -T [LEVEL]          disable or select TCP/TPI info\n");
+        (void) fprintf(stderr,
+            "  -u USER             select by login name or UID (comma-separated, ^excludes)\n");
+        (void) fprintf(stderr,
+            "  -U                  select UNIX domain socket files\n");
+        (void) fprintf(stderr,
+            "  -v                  display version information\n");
+        (void) fprintf(stderr,
+            "  -V                  verbose search\n");
+        (void) fprintf(stderr,
+            "  +|-w                enable (+) or suppress (-) warnings");
+        (void) fprintf(stderr, " (default: %s)\n",
 #if    defined(WARNINGSTATE)
-                "-");
+            "-"
 #else	/* !defined(WARNINGSTATE) */
-                    "+");
+            "+"
 #endif    /* defined(WARNINGSTATE) */
+        );
 
-        col = print_in_col(col, buf);
+        (void) fprintf(stderr,
+            "  -x [fl]             cross over +d|+D file systems (f) or symbolic links (l)\n");
 
 #if    defined(HASXOPT)
 # if	defined(HASXOPT_ROOT)
         if (Myuid == 0)
-        (void) snpf(buf, sizeof(buf), "-X %s", HASXOPT);
-        else
-        buf[0] = '\0';
-# else	/* !defined(HASXOPT_ROOT) */
-        (void) snpf(buf, sizeof(buf), "-X %s", HASXOPT);
 # endif	/* defined(HASXOPT_ROOT) */
-# else	/* !defined(HASXOPT) */
-        buf[0] = '\0';
+        (void) fprintf(stderr,
+            "  -X                  %s\n", HASXOPT);
 #endif    /* defined(HASXOPT) */
 
-        col = print_in_col(col, buf);
-
 #if    defined(HASZONES)
-        col = print_in_col(col, "-z z  zone [z]");
+        (void) fprintf(stderr,
+            "  -z [ZONE]           select by zone name\n");
 #endif    /* defined(HASZONES) */
 
 #if    defined(HASSELINUX)
-        col = print_in_col(col, "-Z Z  context [Z]");
+        if (CntxStatus)
+        (void) fprintf(stderr,
+            "  -Z [CONTEXT]        select by security context\n");
 #endif    /* defined(HASSELINUX) */
 
-        col = print_in_col(col, "-- end option scan");
-        if (col != 1)
-            (void) fprintf(stderr, "\n");
-        (void) fprintf(stderr, "  %-36.36s",
-                       "+f|-f  +filesystem or -file names");
-
-#if    defined(HASFSTRUCT)
         (void) fprintf(stderr,
-        "  +|-f[%s%s%s%s]%s%s%s%s %s%s%s%s%s%s%s\n",
-
-# if	defined(HASNOFSCOUNT)
-        "",
-# else	/* !defined(HASNOFSCOUNT) */
-        "c",
-# endif	/* defined(HASNOFSCOUNT) */
-
-# if	defined(HASNOFSADDR)
-        "",
-# else	/* !defined(HASNOFSADDR) */
-        "f",
-# endif	/* defined(HASNOFSADDR) */
-
-# if	defined(HASNOFSFLAGS)
-        "",
-# else	/* !defined(HASNOFSFLAGS) */
-        "gG",
-# endif	/* defined(HASNOFSFLAGS) */
-
-# if	defined(HASNOFSNADDR)
-        "",
-# else	/* !defined(HASNOFSNADDR) */
-        "n",
-# endif	/* defined(HASNOFSNADDR) */
-
-# if	defined(HASNOFSCOUNT)
-        "",
-# else	/* !defined(HASNOFSCOUNT) */
-        " Ct",
-# endif	/* defined(HASNOFSCOUNT) */
-
-# if	defined(HASNOFSADDR)
-        "",
-# else	/* !defined(HASNOFSADDR) */
-        " Fstr",
-# endif	/* defined(HASNOFSADDR) */
-
-# if	defined(HASNOFSFLAGS)
-        "",
-# else	/* !defined(HASNOFSFLAGS) */
-        " flaGs",
-# endif	/* defined(HASNOFSFLAGS) */
-
-# if	defined(HASNOFSNADDR)
-        "",
-# else	/* !defined(HASNOFSNADDR) */
-        " Node",
-# endif	/* defined(HASNOFSNADDR) */
-
-        Fsv ? "(" : "",
-        (Fsv & FSV_CT) ? "C" : "",
-        (Fsv & FSV_FA) ? "F" : "",
-        ((Fsv & FSV_FG) && FsvFlagX)  ? "g" : "",
-        ((Fsv & FSV_FG) && !FsvFlagX) ? "G" : "",
-        (Fsv & FSV_NI) ? "N" : "",
-        Fsv ? ")" : "");
-#else	/* !defined(HASFSTRUCT) */
-        putc('\n', stderr);
-#endif    /* defined(HASFSTRUCT) */
-
-        (void) fprintf(stderr, "  %-36.36s",
-                       "-F [f] select fields; -F? for help");
-
-#if    defined(HASKOPT)
-        (void) fprintf(stderr,
-        "  -k k   kernel symbols (%s)\n",
-        Nmlst ? Nmlst
-# if	defined(N_UNIX)
-              : N_UNIX
-# else	/* !defined(N_UNIX) */
-              : (Nmlst = get_nlist_path(1)) ? Nmlst
-                            : "none found"
-# endif	/* defined(N_UNIX) */
-
-        );
-#else	/* !defined(HASKOPT) */
-        putc('\n', stderr);
-#endif    /* defined(HASKOPT) */
-
-        (void) fprintf(stderr,
-                       "  +|-L [l] list (+) suppress (-) link counts < l (0 = all; default = 0)\n");
-
-#if    defined(HASMOPT) || defined(HASMNTSUP)
-# if	defined(HASMOPT)
-        (void) snpf(buf, sizeof(buf), "-m m   kernel memory (%s)", KMEM);
-# else	/* !defined(HASMOPT) */
-        buf[0] = '\0';
-# endif	/* defined(HASMOPT) */
-
-        (void) fprintf(stderr, "  %-36.36s", buf);
-
-# if	defined(HASMNTSUP)
-        (void) fprintf(stderr, "  +m [m] use|create mount supplement\n");
-# else	/* !defined(HASMNTSUP) */
-        (void) fprintf(stderr, "\n");
-# endif	/* defined(HASMNTSUP) */
-#endif    /* defined(HASMOPT) || defined(HASMNTSUP) */
-
-#if    !defined(HASNORPC_H)
-        (void) snpf(buf, sizeof(buf), "+|-M   portMap registration (%s)",
-
-# if    defined(HASPMAPENABLED)
-                "+"
-# else	/* !defined(HASPMAPENABLED) */
-                    "-"
-# endif    /* defined(HASPMAPENABLED) */
-
-        );
-#else	/* defined(HASNORPC_H) */
-        buf[0] = '\0';
-#endif    /* !defined(HASNORPC_H) */
-
-        (void) fprintf(stderr, "  %-36.36s", buf);
-        (void) snpf(buf, sizeof(buf), "-o o   o 0t offset digits (%d)",
-                    OFFDECDIG);
-        (void) fprintf(stderr, "  %s\n", buf);
-        (void) fprintf(stderr, "  %-36.36s",
-                       "-p s   exclude(^)|select PIDs");
-        (void) fprintf(stderr, "  -S [t] t second stat timeout (%d)\n",
-                       TMLIMIT);
-        (void) snpf(buf, sizeof(buf),
-                    "-T %s%ss%s TCP/TPI %s%sSt%s (s) info",
-
-#if    defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT)
-                "f",
-#else	/* !defined(HASSOOPT) && !defined(HASSOSTATE) && !defined(HASTCPOPT)*/
-                    "",
-#endif    /* defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT)*/
-
-#if    defined(HASTCPTPIQ)
-                "q",
-#else	/* !defined(HASTCPTPIQ) */
-                    " ",
-#endif    /* defined(HASTCPTPIQ) */
-
-#if    defined(HASTCPTPIW)
-                "w",
-#else	/* !defined(HASTCPTPIW) */
-                    "",
-#endif    /* defined(HASTCPTPIW) */
-
-#if    defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT)
-                "Fl,",
-#else	/* !defined(HASSOOPT) && !defined(HASSOSTATE) && !defined(HASTCPOPT)*/
-                    "",
-#endif    /* defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT)*/
-
-#if    defined(HASTCPTPIQ)
-                "Q,",
-#else	/* !defined(HASTCPTPIQ) */
-                    "",
-#endif    /* defined(HASTCPTPIQ) */
-
-#if    defined(HASTCPTPIW)
-                ",Win"
-#else	/* !defined(HASTCPTPIW) */
-                    ""
-#endif    /* defined(HASTCPTPIW) */
-
-        );
-        (void) fprintf(stderr, "  %s\n", buf);
+            "  --                  end option processing\n");
 
 #if    defined(HAS_AFS) && defined(HASAOPT)
         (void) fprintf(stderr,
-        "  -A A   AFS name list file (%s)\n", AFSAPATHDEF);
+            "  -A FILE             AFS name list file (default: %s)\n",
+            AFSAPATHDEF);
 #endif    /* defined(HAS_AFS) && defined(HASAOPT) */
 
         (void) fprintf(stderr,
-                       "  -g [s] exclude(^)|select and print process group IDs\n");
-        (void) fprintf(stderr, "  -i i   select by IPv%s address:",
-
-#if    defined(HASIPv6)
-                "[46]"
-#else	/* !defined(HASIPv6) */
-                       "4"
-#endif    /* defined(HASIPv6) */
-
-        );
+            "\nExamples:\n");
         (void) fprintf(stderr,
-                       " [%s][proto][@host|addr][:svc_list|port_list]\n",
-
-#if    defined(HASIPv6)
-                "46"
-#else	/* !defined(HASIPv6) */
-                       "4"
-#endif    /* defined(HASIPv6) */
-
-        );
-
+            "  %s -i :8080         list files using port 8080\n", Pn);
         (void) fprintf(stderr,
-                       "  +|-r [%s] repeat every t seconds (%d); %s",
-
-#if    defined(HAS_STRFTIME)
-                "t[m<fmt>]",
-#else	/* !defined(has_STRFTIME) */
-                       "t",
-#endif    /* defined(HAS_STRFTIME) */
-
-                       RPTTM,
-                       " + until no files, - forever.\n");
-
-#if    defined(HAS_STRFTIME)
+            "  %s -p 1234          list files opened by PID 1234\n", Pn);
         (void) fprintf(stderr,
-        "       An optional suffix to t is m<fmt>; m must separate %s",
-        "t from <fmt> and\n");
-        (void) fprintf(stderr, "      <fmt> is an strftime(3) format %s",
-        "for the marker line.\n");
-#endif    /* defined(HAS_STRFTIME) */
+            "  %s -u root          list files opened by root\n", Pn);
+        (void) fprintf(stderr,
+            "  %s /var/log/syslog  list processes using this file\n", Pn);
+        (void) fprintf(stderr,
+            "  %s -i TCP           list all TCP connections\n", Pn);
 
-#if    defined(HASTCPUDPSTATE)
-        (void) fprintf(stderr,
-        "  -s p:s  exclude(^)|select protocol (p = TCP|UDP) states");
-        (void) fprintf(stderr, " by name(s).\n");
-#endif    /* defined(HASTCPUDPSTATE) */
-
-        (void) fprintf(stderr,
-                       "  -u s   exclude(^)|select login|UID set s\n");
-        (void) fprintf(stderr,
-                       "  -x [fl] cross over +d|+D File systems or symbolic Links\n");
-        (void) fprintf(stderr,
-                       "  names  select named files or files on named file systems\n");
-        (void) report_SECURITY(NULL, "; ");
-        (void) report_WARNDEVACCESS(NULL, NULL, ";");
+        (void) fprintf(stderr, "\n");
+        (void) report_SECURITY("", "; ");
+        (void) report_WARNDEVACCESS("", NULL, ";");
         (void) report_HASKERNIDCK(" k", NULL);
         (void) report_HASDCACHE(0, NULL, NULL);
 
@@ -844,7 +595,8 @@ usage(xv, fh, version)
 
     }
     if (fh) {
-        (void) fprintf(stderr, "%s:\tID    field description\n", Pn);
+        (void) fprintf(stderr, "\n%s: output field IDs:\n", Pn);
+        (void) fprintf(stderr, "  ID    Description\n");
         for (i = 0; FieldSel[i].nm; i++) {
 
 #if    !defined(HASPPID)
@@ -893,7 +645,7 @@ usage(xv, fh, version)
                 continue;
 #endif    /* !defined(HASSELINUX) */
 
-            (void) fprintf(stderr, "\t %c    %s\n",
+            (void) fprintf(stderr, "   %c    %s\n",
                            FieldSel[i].id, FieldSel[i].nm);
         }
     }
@@ -904,25 +656,15 @@ usage(xv, fh, version)
 #endif    /* defined(HASDCACHE) */
 
     if (version) {
-
-        /*
-         * Display version information in reponse to ``-v''.
-         */
-        (void) fprintf(stderr, "%s version information:\n", Pn);
-        (void) fprintf(stderr, "    revision: %s\n", LSOF_VERSION);
-        (void) fprintf(stderr, "    latest revision: %s\n", LSOF_URL);
-        (void) fprintf(stderr, "    latest FAQ: %sFAQ\n",
-                       LSOF_URL);
-        (void) fprintf(stderr, "    latest man page: %slsof_man\n",
-                       LSOF_URL);
+        (void) fprintf(stderr, "\n%s %s\n", Pn, LSOF_VERSION);
 
 #if    defined(LSOF_CINFO)
         if ((cp = isnullstr(LSOF_CINFO)))
-        (void) fprintf(stderr, "    configuration info: %s\n", cp);
+            (void) fprintf(stderr, "Configuration: %s\n", cp);
 #endif    /* defined(LSOF_CINFO) */
 
         if ((cp = isnullstr(LSOF_CCDATE)))
-            (void) fprintf(stderr, "    constructed: %s\n", cp);
+            (void) fprintf(stderr, "Built: %s\n", cp);
         cp = isnullstr(LSOF_HOST);
         if (!(cp1 = isnullstr(LSOF_LOGNAME)))
             cp1 = isnullstr(LSOF_USER);
@@ -933,7 +675,7 @@ usage(xv, fh, version)
                 cp2 = "on";
             else
                 cp2 = "by";
-            (void) fprintf(stderr, "    constructed %s: %s%s%s\n",
+            (void) fprintf(stderr, "Built %s: %s%s%s\n",
                            cp2,
                            cp1 ? cp1 : "",
                            (cp && cp1) ? "@" : "",
@@ -943,28 +685,28 @@ usage(xv, fh, version)
 
 #if    defined(LSOF_BLDCMT)
         if ((cp = isnullstr(LSOF_BLDCMT)))
-        (void) fprintf(stderr, "    builder's comment: %s\n", cp);
+            (void) fprintf(stderr, "Comment: %s\n", cp);
 #endif    /* defined(LSOF_BLDCMT) */
 
         if ((cp = isnullstr(LSOF_CC)))
-            (void) fprintf(stderr, "    compiler: %s\n", cp);
+            (void) fprintf(stderr, "Compiler: %s\n", cp);
         if ((cp = isnullstr(LSOF_CCV)))
-            (void) fprintf(stderr, "    compiler version: %s\n", cp);
+            (void) fprintf(stderr, "Compiler version: %s\n", cp);
         if ((cp = isnullstr(LSOF_CCFLAGS)))
-            (void) fprintf(stderr, "    compiler flags: %s\n", cp);
+            (void) fprintf(stderr, "Compiler flags: %s\n", cp);
         if ((cp = isnullstr(LSOF_LDFLAGS)))
-            (void) fprintf(stderr, "    loader flags: %s\n", cp);
+            (void) fprintf(stderr, "Loader flags: %s\n", cp);
         if ((cp = isnullstr(LSOF_SYSINFO)))
-            (void) fprintf(stderr, "    system info: %s\n", cp);
-        (void) report_SECURITY("    ", ".\n");
-        (void) report_WARNDEVACCESS("    ", "are", ".\n");
-        (void) report_HASKERNIDCK("    K", "is");
+            (void) fprintf(stderr, "System info: %s\n", cp);
+        (void) report_SECURITY("", ".\n");
+        (void) report_WARNDEVACCESS("", "are", ".\n");
+        (void) report_HASKERNIDCK(" K", "is");
 
 #if    defined(DIALECT_WARNING)
-        (void) fprintf(stderr, "    WARNING: %s\n", DIALECT_WARNING);
+        (void) fprintf(stderr, "WARNING: %s\n", DIALECT_WARNING);
 #endif    /* defined(DIALECT_WARNING) */
 
-        (void) report_HASDCACHE(1, "    ", "\t");
+        (void) report_HASDCACHE(1, "", "  ");
     }
     Exit(xv);
 }
