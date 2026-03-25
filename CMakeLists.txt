@@ -147,3 +147,28 @@ add_custom_target(bench
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
     "${PROJECT_SOURCE_DIR}/lsof"
 )
+
+# ===== Linux Packaging (CPack) =====
+install(TARGETS lsof RUNTIME DESTINATION sbin)
+install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
+
+set(CPACK_PACKAGE_NAME "lsof")
+set(CPACK_PACKAGE_VERSION "4.85")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "List open files — diagnostic tool for UNIX systems")
+set(CPACK_PACKAGE_DESCRIPTION "lsof (List Open Files) maps the topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.")
+set(CPACK_PACKAGE_CONTACT "lsof-maintainers")
+set(CPACK_PACKAGE_VENDOR "lsof")
+set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/00MANIFEST")
+
+# DEB
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+
+# RPM
+set(CPACK_RPM_PACKAGE_LICENSE "Permissive")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/System")
+
+set(CPACK_GENERATOR "DEB;RPM;TGZ")
+
+include(CPack)

@@ -46,9 +46,13 @@ lsof interfaces directly with kernel data structures. Each target OS is a **dial
 | `darwin/libproc` | Apple macOS / Darwin |
 | `freebsd` | FreeBSD |
 | `n+obsd` | NetBSD / OpenBSD |
+| `n+os` | NEXTSTEP / OpenStep |
 | `sun` | Solaris / SunOS |
 | `aix` | IBM AIX |
+| `du` | DEC/Compaq/HP Tru64 UNIX (Digital UNIX) |
 | `hpux/pstat` | HP-UX |
+| `osr` | SCO OpenServer |
+| `uw` | SCO UnixWare |
 
 ---
 
@@ -88,9 +92,13 @@ src/
     ├── darwin/libproc/
     ├── freebsd/
     ├── n+obsd/
+    ├── n+os/
     ├── sun/
     ├── aix/
-    └── hpux/pstat/
+    ├── du/
+    ├── hpux/pstat/
+    ├── osr/
+    └── uw/
 test/                # Unit and integration test suites
 bench/               # Performance benchmarks
 ```
@@ -119,7 +127,7 @@ lsof ships with a unit test suite and an integration test suite. Run them with:
 make check
 ```
 
-This builds and executes `check_unit` (51 unit tests) and `check_integration` (12 integration tests), writing results to `check_unit.log` and `check_integration.log` in the build directory.
+This builds and executes `check_unit` (51 unit tests) and `check_integration` (13 integration tests), writing results to `check_unit.log` and `check_integration.log` in the build directory.
 
 ### Unit tests (`test/test_unit.c`)
 
