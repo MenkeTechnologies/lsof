@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 
-#include "/usr/include/string.h"
+#include <string.h>
 
 
 /*

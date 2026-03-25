@@ -1,9 +1,111 @@
 cmake_minimum_required(VERSION 3.15)
-project(3530bst)
+project(lsof C)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_C_STANDARD 11)
+
+# Detect dialect based on platform
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(LSOF_DIALECT_DIR "linux")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(LSOF_DIALECT_DIR "darwin/libproc")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    set(LSOF_DIALECT_DIR "freebsd")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "NetBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "OpenBSD")
+    set(LSOF_DIALECT_DIR "n+obsd")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "SunOS")
+    set(LSOF_DIALECT_DIR "sun")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "AIX")
+    set(LSOF_DIALECT_DIR "aix")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "HP-UX")
+    set(LSOF_DIALECT_DIR "hpux/pstat")
+else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+endif()
+
+message(STATUS "Using dialect: ${LSOF_DIALECT_DIR}")
+
+# Set dialect-specific compile definitions
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    # DARWINV is Darwin kernel major version * 100 (e.g., 2500 for macOS 25.x)
+    execute_process(
+        COMMAND uname -r
+        OUTPUT_VARIABLE DARWIN_RELEASE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    string(REGEX MATCH "^([0-9]+)" DARWIN_MAJOR "${DARWIN_RELEASE}")
+    math(EXPR DARWINV "${DARWIN_MAJOR} * 100")
+    add_compile_definitions(DARWINV=${DARWINV})
+    message(STATUS "DARWINV=${DARWINV}")
+endif()
+
+set(LSOF_DIALECT_PATH ${PROJECT_SOURCE_DIR}/src/dialects/${LSOF_DIALECT_DIR})
+
+# Create symlinks for dialect headers in src/ so relative includes work
+# (lib/*.c uses "../machine.h", "../lsof.h" etc.)
+set(LSOF_DIALECT_HEADERS machine.h dlsof.h dproto.h)
+foreach(HDR ${LSOF_DIALECT_HEADERS})
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/src/${HDR})
+        file(CREATE_LINK
+            ${LSOF_DIALECT_PATH}/${HDR}
+            ${PROJECT_SOURCE_DIR}/src/${HDR}
+            SYMBOLIC
+        )
+    endif()
+endforeach()
+
+# Generate version.h
+string(TIMESTAMP LSOF_CCDATE)
+file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h
+"#define LSOF_BLDCMT \"\"\n\
+#define LSOF_CC \"${CMAKE_C_COMPILER}\"\n\
+#define LSOF_CCV \"${CMAKE_C_COMPILER_VERSION}\"\n\
+#define LSOF_CCDATE \"${LSOF_CCDATE}\"\n\
+#define LSOF_CCFLAGS \"${CMAKE_C_FLAGS}\"\n\
+#define LSOF_CINFO \"\"\n\
+#define LSOF_HOST \"\"\n\
+#define LSOF_LDFLAGS \"\"\n\
+#define LSOF_LOGNAME \"\"\n\
+#define LSOF_SYSINFO \"\"\n\
+#define LSOF_USER \"\"\n\
+#define LSOF_VERSION \"4.85\"\n"
+)
+
+# Source files
+file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.c)
+file(GLOB DIALECT_FILES ${LSOF_DIALECT_PATH}/*.c)
+file(GLOB LIB_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.c)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
-file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.c)
 
-add_executable(lsof ${SRC_FILES})
+add_executable(lsof ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
+
+# ===== Test Suite =====
+enable_testing()
+
+add_executable(test_unit test/test_unit.c)
+target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/test)
+target_compile_options(test_unit PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME unit_tests COMMAND test_unit)
+
+add_executable(test_integration test/test_integration.c)
+target_include_directories(test_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
+target_compile_options(test_integration PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME integration_tests COMMAND test_integration)
+
+# ===== Benchmark Suite =====
+add_executable(bench_core bench/bench_core.c)
+target_include_directories(bench_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
+target_compile_options(bench_core PRIVATE -Wall -Wextra -Wpedantic -O2)
+
+# Custom targets for convenience
+add_custom_target(run_tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    DEPENDS test_unit test_integration
+    COMMENT "Running all tests"
+)
+
+add_custom_target(run_benchmarks
+    COMMAND bench_core
+    DEPENDS bench_core
+    COMMENT "Running benchmarks"
+)
