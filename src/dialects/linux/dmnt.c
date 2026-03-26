@@ -299,7 +299,7 @@ static int getmntdev(char *dn, struct stat *s, int *ss) {
                               ProgramName, ln, buf);
                 Exit(1);
             }
-            (void)strcpy(mpn->dn, path);
+            (void)memcpy(mpn->dn, path, sz + 1);
             mpn->dev = dev;
             mpn->ln = ln;
             mpn->next = MSHash[h];

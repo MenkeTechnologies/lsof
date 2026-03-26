@@ -385,7 +385,7 @@ int dcpath(int read_write, int npw) {
                 ierr = 2;
                 break;
             }
-            (void)strcpy(&buf[i], p->pw_dir);
+            (void)memcpy(&buf[i], p->pw_dir, l + 1);
             i += l;
             if (i > 0 && buf[i - 1] == '/' && *(cp1 + 1)) {
 
@@ -420,7 +420,7 @@ int dcpath(int read_write, int npw) {
                 *cp2 = '\0';
             j = strlen(hn);
             if ((j + i) < (int)sizeof(buf)) {
-                (void)strcpy(&buf[i], hn);
+                (void)memcpy(&buf[i], hn, j + 1);
                 i += j;
             } else
                 ierr = 2;
@@ -447,7 +447,7 @@ int dcpath(int read_write, int npw) {
                     l--;
                 }
                 if ((i + l) < ((int)sizeof(buf) - 1)) {
-                    (void)strcpy(&buf[i], cp2);
+                    (void)memcpy(&buf[i], cp2, l + 1);
                     i += l;
                     if (buf[i - 1] != '/') {
                         if (i < ((int)sizeof(buf) - 2)) {
@@ -495,7 +495,7 @@ int dcpath(int read_write, int npw) {
                 ierr = 2;
                 break;
             }
-            (void)strcpy(&buf[i], p->pw_name);
+            (void)memcpy(&buf[i], p->pw_name, l + 1);
             i += l;
             break;
 
@@ -508,7 +508,7 @@ int dcpath(int read_write, int npw) {
             if ((i + (l = strlen(hn))) >= (int)sizeof(buf))
                 ierr = 2;
             else {
-                (void)strcpy(&buf[i], hn);
+                (void)memcpy(&buf[i], hn, l + 1);
                 i += l;
             }
             break;

@@ -1340,7 +1340,7 @@ static int statEx(char *p, struct stat *s, int *ss) {
         }
         ca = sz + 1;
     }
-    (void)strcpy(cb, p);
+    (void)memcpy(cb, p, sz + 1);
     /*
  * Trim trailing leaves from the end of the path one at a time and do a safe
  * stat() on each trimmed result.  Stop when a safe stat() succeeds or doesn't

@@ -174,7 +174,7 @@ ncache_addr(KA_T node_addr) {
 static int ncache_isroot(KA_T na, char *cp) {
     char buf[MAXPATHLEN];
     int i;
-    MALLOC_S len;
+    MALLOC_S cplen, len;
     struct mounts *mtp;
     static int nca = 0;
     static int ncn = 0;
@@ -208,7 +208,8 @@ static int ncache_isroot(KA_T na, char *cp) {
         if (CurrentLocalFile->inp_ty != 1 || !CurrentLocalFile->inode || !CurrentLocalFile->fsdir ||
             (len = strlen(CurrentLocalFile->fsdir)) < 1)
             return (0);
-        if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
+        cplen = strlen(cp);
+        if ((len + 1 + cplen + 1) > sizeof(buf))
             return (0);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
             if (!mtp->dir || !mtp->inode)
@@ -218,10 +219,10 @@ static int ncache_isroot(KA_T na, char *cp) {
         }
         if (!mtp)
             return (0);
-        (void)strcpy(buf, CurrentLocalFile->fsdir);
+        (void)memcpy(buf, CurrentLocalFile->fsdir, len);
         if (buf[len - 1] != '/')
             buf[len++] = '/';
-        (void)strcpy(&buf[len], cp);
+        (void)memcpy(&buf[len], cp, cplen + 1);
         if (statsafely(buf, &sb) != 0 || (unsigned long)sb.st_ino != CurrentLocalFile->inode)
             return (0);
     }
@@ -580,7 +581,7 @@ char *ncache_lookup(char *buf, int blen, int *full_path) {
         return ((char *)NULL);
     cp = buf + blen - nl - 1;
     rlen = blen - nl - 1;
-    (void)strcpy(cp, lc->nm);
+    (void)memcpy(cp, lc->nm, nl + 1);
 
 #if defined(NCACHE_PARADDR) && defined(NCACHE_PARID)
     /*
