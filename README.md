@@ -91,6 +91,7 @@ lsof -u neo
 
 The core engine is tuned for speed where it matters:
 
+- **Fast text region enumeration**: uses `PROC_PIDREGIONPATHINFO2` (flavor 22) on Darwin, which returns only unique text file regions instead of every memory mapping — **330x fewer syscalls** than the legacy `PROC_PIDREGIONPATHINFO` API, dropping `process_text()` from ~22s to ~0.07s and matching Apple's system lsof
 - **Compiler optimization**: `-O2` on all targets
 - **Lookup tables**: character classification via precomputed `explen[]`, `printable[]`, `cls[]`, and `hv[]` tables — up to **97x** faster than per-character library calls
 - **Binary search**: PID and PGID selection lists are sorted at entry and searched via O(log n) binary search — **2.4x** faster at 100 entries, **10x** at 1000
@@ -237,6 +238,19 @@ The benchmark suite includes head-to-head comparisons that measure the impact of
 | Device hex: `snprintf("%x,%x")` vs manual hex table | snprintf | manual | manual wins |
 | Allocation: `calloc` vs `malloc`+`memset` | calloc | malloc+memset | ~equal |
 | Allocation: 256 individual `malloc` vs single batch | individual | batch | batch wins |
+
+### End-to-end: lsof v5.0 vs system lsof v4.91
+
+Wall-clock comparison using [hyperfine](https://github.com/sharkdp/hyperfine) (20 runs, 3 warmup) on Apple M-series, Darwin 25.4.0:
+
+| Workload | System lsof v4.91 | lsof v5.0 | Speedup |
+|---|---|---|---|
+| All open files (`lsof`) | 315.5 ms | 253.7 ms | **1.24x** |
+| Internet connections (`lsof -i`) | 359.8 ms | 180.4 ms | **1.99x** |
+| Specific file (`lsof /dev/null`) | 224.5 ms | 176.0 ms | **1.28x** |
+| No DNS resolution (`lsof -n -P`) | 193.5 ms | 295.9 ms | 0.65x |
+
+The optimized data structures (hash tables, lookup tables, binary search) pay off most when there is real work to do — DNS resolution, port lookups, large output formatting. When that work is bypassed entirely via `-n -P`, the setup overhead is not amortized.
 
 ---
 
