@@ -136,14 +136,23 @@ target_compile_definitions(check_integration PRIVATE
 )
 add_test(NAME check_integration COMMAND check_integration)
 
+add_executable(check_stress test/test_stress.c)
+target_include_directories(check_stress PRIVATE ${PROJECT_SOURCE_DIR}/test)
+target_compile_options(check_stress PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function)
+target_compile_definitions(check_stress PRIVATE
+    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
+)
+add_test(NAME check_stress COMMAND check_stress)
+
 # 'make leakcheck' runs unit tests under macOS leaks tool
 add_custom_target(leakcheck
-    DEPENDS check_unit check_integration
+    DEPENDS check_unit check_integration check_stress
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND ${CMAKE_COMMAND} -E echo "  Running memory leak analysis..."
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND leaks --atExit -q -- $<TARGET_FILE:check_unit>
     COMMAND leaks --atExit -q -- $<TARGET_FILE:check_integration>
+    COMMAND leaks --atExit -q -- $<TARGET_FILE:check_stress>
 )
 
 # ===== Benchmark Suite =====
@@ -156,11 +165,17 @@ endforeach()
 
 # 'make check' runs all tests
 add_custom_target(check
-    DEPENDS check_unit check_integration
-    COMMAND ${PROJECT_SOURCE_DIR}/test/banner.sh start
-    COMMAND $<TARGET_FILE:check_unit>
-    COMMAND $<TARGET_FILE:check_integration>
-    COMMAND ${PROJECT_SOURCE_DIR}/test/banner.sh end
+    DEPENDS check_unit check_integration check_stress
+    COMMAND ${PROJECT_SOURCE_DIR}/test/run_check.sh
+        $<TARGET_FILE:check_unit>
+        $<TARGET_FILE:check_integration>
+        $<TARGET_FILE:check_stress>
+)
+
+# 'make stress' runs only stress/regression tests
+add_custom_target(stress
+    DEPENDS check_stress
+    COMMAND $<TARGET_FILE:check_stress>
 )
 
 # 'make bench' runs all benchmarks
