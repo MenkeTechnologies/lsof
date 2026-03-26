@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lsof C)
 
-set(LSOF_VERSION "5.9")
+set(LSOF_VERSION "6.0")
 set(CMAKE_C_STANDARD 11)
 
 # Detect dialect based on platform
@@ -77,16 +77,16 @@ file(GLOB LIB_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.c)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-add_executable(lsof5 ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
-target_compile_options(lsof5 PRIVATE
+add_executable(lsofng ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
+target_compile_options(lsofng PRIVATE
     -O2
 )
 
 # --- Cyberpunk build banners ---
 add_custom_target(build-banner
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-start ${LSOF_VERSION})
-add_dependencies(lsof5 build-banner)
-add_custom_command(TARGET lsof5 POST_BUILD
+add_dependencies(lsofng build-banner)
+add_custom_command(TARGET lsofng POST_BUILD
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-end)
 
 add_custom_target(cyberpunk-clean
@@ -129,14 +129,14 @@ add_executable(check_integration test/test_integration.c)
 target_include_directories(check_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
 target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(check_integration PRIVATE
-    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
+    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsofng"
 )
 
 add_executable(check_stress test/test_stress.c)
 target_include_directories(check_stress PRIVATE ${PROJECT_SOURCE_DIR}/test)
 target_compile_options(check_stress PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function)
 target_compile_definitions(check_stress PRIVATE
-    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
+    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsofng"
 )
 
 # 'make leakcheck' runs unit tests under macOS leaks tool
@@ -196,13 +196,13 @@ endforeach()
 
 # 'make clean' also removes the lsof binary from the source root if present
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
-    "${PROJECT_SOURCE_DIR}/lsof5"
+    "${PROJECT_SOURCE_DIR}/lsofng"
     "${PROJECT_SOURCE_DIR}/benchmark_core"
 )
 
 # ===== Linux Packaging (CPack) =====
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-start ${LSOF_VERSION})")
-install(TARGETS lsof5 RUNTIME DESTINATION sbin)
+install(TARGETS lsofng RUNTIME DESTINATION sbin)
 install(FILES ${PROJECT_SOURCE_DIR}/lsof.1 DESTINATION share/man/man1)
 install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-end)")

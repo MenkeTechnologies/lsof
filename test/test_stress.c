@@ -49,7 +49,7 @@ static const char *find_lsof(void) {
 #ifdef LSOF_BUILD_PATH
         LSOF_BUILD_PATH,
 #endif
-        "./lsof5",        "../lsof5",       "./build/lsof5",  "../build/lsof5",
+        "./lsofng",       "../lsofng",      "./build/lsofng", "../build/lsofng",
         "./lsof",         "../lsof",        "./build/lsof",   "../build/lsof",
         "/usr/bin/lsof",  "/usr/sbin/lsof", NULL};
     for (int i = 0; candidates[i]; i++) {

@@ -12,7 +12,7 @@ Testing/
 
 # Binaries
 lsof
-lsof5
+lsofng
 check_*
 benchmark_*
 
