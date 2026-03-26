@@ -7,7 +7,6 @@
  * J. Menke
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -31,16 +30,9 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2008 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-#if    defined(HAS_STRFTIME)
+#if defined(HAS_STRFTIME)
 #include <time.h>
-#endif    /* defined(HAS_STRFTIME) */
-
+#endif
 
 /*
  * util_strftime() -- utility function to call strftime(3) without header
@@ -48,21 +40,18 @@ static char copyright[] =
  */
 
 int
-util_strftime(fmtr, fmtl, fmt)
-        char *fmtr;            /* format output receiver */
-        int fmtl;            /* sizeof(*fmtr) */
-        char *fmt;            /* format */
+util_strftime(char *fmtr, int fmtl, char *fmt)
 {
 
-#if    defined(HAS_STRFTIME)
+#if defined(HAS_STRFTIME)
     struct tm *lt;
     time_t tm;
 
-    tm = time((time_t *)NULL);
+    tm = time(NULL);
     lt = localtime(&tm);
     return(strftime(fmtr, fmtl, fmt, lt));
-#else	/* !defined(HAS_STRFTIME) */
+#else
     return (0);
-#endif    /* defined(HAS_STRFTIME) */
+#endif
 
 }

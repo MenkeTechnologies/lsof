@@ -3,7 +3,6 @@
  *		   (selected with -f or -F)
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -27,13 +26,7 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-/*
- * $Id: lsof_fields.h,v 1.12 2010/07/29 15:59:28 abe Exp $
- */
-
-
-#if    !defined(LSOF_FORMAT_H)
+#ifndef LSOF_FORMAT_H
 #define    LSOF_FORMAT_H    1
 
 /*
@@ -174,4 +167,4 @@
 #define    LSOF_FIX_TERM        29
 #define    LSOF_FNM_TERM        "(zero) use NUL field terminator instead of NL"
 
-#endif    /* !defined(LSOF_FORMAT_H) */
+#endif

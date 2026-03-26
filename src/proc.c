@@ -2,7 +2,6 @@
  * proc.c - common process and file structure functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,31 +25,21 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
-
 
 /*
  * Local function prototypes
  */
 
-_PROTOTYPE(static int is_file_sel, (struct lproc *lp, struct lfile *lf));
-_PROTOTYPE(static struct int_lst *find_int_lst, (struct int_lst *list, int num_entries, int val));
-
+static int is_file_sel(struct lproc *lp, struct lfile *lf);
+static struct int_lst *find_int_lst(struct int_lst *list, int num_entries, int val);
 
 /*
  * add_nma() - add to NAME column addition
  */
 
 void
-add_nma(str, len)
-        char *str;            /* string to add */
-        int len;            /* string length */
+add_nma(char *str, int len)
 {
     int name_len;
 
@@ -64,42 +53,37 @@ add_nma(str, len)
         if (tmp)
             CurrentLocalFile->name_append = tmp;
         else {
-            (void) free((FREE_P *) CurrentLocalFile->name_append);
-            CurrentLocalFile->name_append = (char *) NULL;
+            free((FREE_P *) CurrentLocalFile->name_append);
+            CurrentLocalFile->name_append = NULL;
         }
     } else {
         name_len = 0;
         CurrentLocalFile->name_append = (char *) malloc((MALLOC_S)(len + 1));
     }
     if (!CurrentLocalFile->name_append) {
-        (void) fprintf(stderr, "%s: no name addition space: PID %ld, FD %s",
+        fprintf(stderr, "%s: no name addition space: PID %ld, FD %s",
                        ProgramName, (long) CurrentLocalProc->pid, CurrentLocalFile->fd);
         Exit(1);
     }
     if (name_len) {
         CurrentLocalFile->name_append[name_len] = ' ';
-        (void) strncpy(&CurrentLocalFile->name_append[name_len + 1], str, len);
+        strncpy(&CurrentLocalFile->name_append[name_len + 1], str, len);
         CurrentLocalFile->name_append[name_len + 1 + len] = '\0';
     } else {
-        (void) strncpy(CurrentLocalFile->name_append, str, len);
+        strncpy(CurrentLocalFile->name_append, str, len);
         CurrentLocalFile->name_append[len] = '\0';
     }
 }
 
-
-#if    defined(HASFSTRUCT)
-_PROTOTYPE(static char *alloc_fflbuf,(char **buf_ptr, int *alloc_len, int len_required));
-
+#if defined(HASFSTRUCT)
+static char *alloc_fflbuf(char **buf_ptr, int *alloc_len, int len_required);
 
 /*
  * alloc_fflbuf() - allocate file flags print buffer
  */
 
 static char *
-alloc_fflbuf(buf_ptr, alloc_len, len_required)
-    char **buf_ptr;			/* current buffer pointer */
-    int *alloc_len;			/* current allocated length */
-    int len_required;			/* length required */
+alloc_fflbuf(char **buf_ptr, int *alloc_len, int len_required)
 {
     int alloc_size;
 
@@ -111,25 +95,21 @@ alloc_fflbuf(buf_ptr, alloc_len, len_required)
     else
         *buf_ptr = (char *)malloc((MALLOC_S)alloc_size);
     if (!*buf_ptr) {
-        (void) fprintf(stderr, "%s: no space (%d) for print flags\n",
+        fprintf(stderr, "%s: no space (%d) for print flags\n",
         ProgramName, alloc_size);
         Exit(1);
     }
     *alloc_len = alloc_size;
     return(*buf_ptr);
 }
-#endif    /* defined(HASFSTRUCT) */
-
+#endif
 
 /*
  * alloc_lfile() - allocate local file structure space
  */
 
 void
-alloc_lfile(name, num)
-        char *name;            /* file descriptor name (may be NULL) */
-        int num;            /* file descriptor number -- -1 if
-					 * none */
+alloc_lfile(char *name, int num)
 {
     int fds;
 
@@ -139,21 +119,21 @@ alloc_lfile(name, num)
  * space it was using.
  */
         if (CurrentLocalFile->dev_ch)
-            (void) free((FREE_P *) CurrentLocalFile->dev_ch);
+            free((FREE_P *) CurrentLocalFile->dev_ch);
         if (CurrentLocalFile->name)
-            (void) free((FREE_P *) CurrentLocalFile->name);
+            free((FREE_P *) CurrentLocalFile->name);
         if (CurrentLocalFile->name_append)
-            (void) free((FREE_P *) CurrentLocalFile->name_append);
+            free((FREE_P *) CurrentLocalFile->name_append);
 
-#if    defined(HASLFILEADD) && defined(CLRLFILEADD)
+#if defined(HASLFILEADD) && defined(CLRLFILEADD)
         CLRLFILEADD(CurrentLocalFile)
-#endif    /* defined(HASLFILEADD) && defined(CLRLFILEADD) */
+#endif
 
 /*
  * Othwerise, allocate a new structure.
  */
     } else if (!(CurrentLocalFile = (struct lfile *) malloc(sizeof(struct lfile)))) {
-        (void) fprintf(stderr, "%s: no local file space at PID %d\n",
+        fprintf(stderr, "%s: no local file space at PID %d\n",
                        ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
@@ -169,44 +149,44 @@ alloc_lfile(name, num)
     CurrentLocalFile->lts.type = -1;
     CurrentLocalFile->nlink = 0l;
 
-#if    defined(HASMNTSTAT)
+#if defined(HASMNTSTAT)
     CurrentLocalFile->mnt_stat = (unsigned char)0;
-#endif    /* defined(HASMNTSTAT) */
+#endif
 
-#if    defined(HASSOOPT)
+#if defined(HASSOOPT)
     CurrentLocalFile->lts.kai = CurrentLocalFile->lts.ltm = 0;
     CurrentLocalFile->lts.opt = CurrentLocalFile->lts.qlen = CurrentLocalFile->lts.qlim = CurrentLocalFile->lts.pqlen
             = (unsigned int)0;
     CurrentLocalFile->lts.rbsz = CurrentLocalFile->lts.sbsz = (unsigned long)0;
     CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims = CurrentLocalFile->lts.pqlens = CurrentLocalFile->lts.rbszs
               = CurrentLocalFile->lts.sbszs = (unsigned char)0;
-#endif    /* defined(HASSOOPT) */
+#endif
 
-#if    defined(HASSOSTATE)
+#if defined(HASSOSTATE)
     CurrentLocalFile->lts.sock_state = 0;
-#endif    /* defined(HASSOSTATE) */
+#endif
 
-#if    defined(HASTCPOPT)
+#if defined(HASTCPOPT)
     CurrentLocalFile->lts.mss = (unsigned long)0;
     CurrentLocalFile->lts.msss = (unsigned char)0;
     CurrentLocalFile->lts.topt = (unsigned int)0;
-#endif    /* defined(HASTCPOPT) */
+#endif
 
-#if    defined(HASTCPTPIQ)
+#if defined(HASTCPTPIQ)
     CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = (unsigned char)0;
-#endif    /* defined(HASTCPTPIQ) */
+#endif
 
-#if    defined(HASTCPTPIW)
+#if defined(HASTCPTPIW)
     CurrentLocalFile->lts.read_win_st = CurrentLocalFile->lts.write_win_st = (unsigned char)0;
-#endif    /* defined(HASTCPTPIW) */
+#endif
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
     CurrentLocalFile->fs_ino = 0;
-#endif    /* defined(HASFSINO) */
+#endif
 
-#if    defined(HASVXFS) && defined(HASVXFSDNLC)
+#if defined(HASVXFS) && defined(HASVXFSDNLC)
     CurrentLocalFile->is_vxfs = 0;
-#endif    /* defined(HASVXFS) && defined(HASVXFSDNLC) */
+#endif
 
     CurrentLocalFile->inode = (INODETYPE) 0;
     CurrentLocalFile->off = (SZOFFTYPE) 0;
@@ -216,38 +196,38 @@ alloc_lfile(name, num)
         CurrentLocalFile->sel_flags = 0;
     CurrentLocalFile->iproto[0] = CurrentLocalFile->type[0] = '\0';
     if (name) {
-        (void) strncpy(CurrentLocalFile->fd, name, FDLEN - 1);
+        strncpy(CurrentLocalFile->fd, name, FDLEN - 1);
         CurrentLocalFile->fd[FDLEN - 1] = '\0';
     } else if (num >= 0) {
         if (num < 10000)
-            (void) snpf(CurrentLocalFile->fd, sizeof(CurrentLocalFile->fd), "%4d", num);
+            snpf(CurrentLocalFile->fd, sizeof(CurrentLocalFile->fd), "%4d", num);
         else
-            (void) snpf(CurrentLocalFile->fd, sizeof(CurrentLocalFile->fd), "*%03d", num % 1000);
+            snpf(CurrentLocalFile->fd, sizeof(CurrentLocalFile->fd), "*%03d", num % 1000);
     } else
         CurrentLocalFile->fd[0] = '\0';
-    CurrentLocalFile->dev_ch = CurrentLocalFile->fsdir = CurrentLocalFile->fsdev = CurrentLocalFile->name = CurrentLocalFile->name_append = (char *) NULL;
+    CurrentLocalFile->dev_ch = CurrentLocalFile->fsdir = CurrentLocalFile->fsdev = CurrentLocalFile->name = CurrentLocalFile->name_append = NULL;
     CurrentLocalFile->channel = -1;
 
-#if    defined(HASNCACHE) && HASNCACHE < 2
+#if defined(HASNCACHE) && HASNCACHE < 2
     CurrentLocalFile->node_addr = (KA_T)NULL;
-#endif    /* defined(HASNCACHE) && HASNCACHE<2 */
+#endif
 
-    CurrentLocalFile->next = (struct lfile *) NULL;
+    CurrentLocalFile->next = NULL;
     CurrentLocalFile->ntype = NodeType = N_REGLR;
     NameChars[0] = '\0';
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     CurrentLocalFile->fct = CurrentLocalFile->ffg = CurrentLocalFile->pof = (long)0;
     CurrentLocalFile->fna = (KA_T)NULL;
     CurrentLocalFile->fsv = (unsigned char)0;
-#endif    /* defined(HASFSTRUCT) */
+#endif
 
-#if    defined(HASLFILEADD) && defined(SETLFILEADD)
+#if defined(HASLFILEADD) && defined(SETLFILEADD)
     /*
      * Do local initializations.
      */
         SETLFILEADD
-#endif    /* defined(HASLFILEADD) && defined(SETLFILEADD) */
+#endif
 
 /*
  * See if the file descriptor has been selected.
@@ -266,27 +246,20 @@ alloc_lfile(name, num)
     }
 }
 
-
 /*
  * alloc_lproc() - allocate local proc structure space
  */
 
 void
-alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sel_flags)
-        int pid;            /* Process ID */
-        int pgid;            /* process group ID */
-        int ppid;            /* parent process ID */
-        UID_ARG uid;            /* User ID */
-        char *cmd;            /* command */
-        int pss;            /* process select state */
-        int sel_flags;            /* process select flags */
+alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss,
+            int sel_flags)
 {
     static int size = 0;
 
     if (!LocalProcTable) {
         if (!(LocalProcTable = (struct lproc *) malloc(
                 (MALLOC_S)(LPROCINCR * sizeof(struct lproc))))) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: no malloc space for %d local proc structures\n",
                            ProgramName, LPROCINCR);
             Exit(1);
@@ -298,11 +271,11 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sel_flags)
         tmp = (struct lproc *) realloc((MALLOC_P *) LocalProcTable,
                                        (MALLOC_S)(size * sizeof(struct lproc)));
         if (!tmp) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: no realloc space for %d local proc structures\n",
                            ProgramName, size);
-            (void) free((FREE_P *) LocalProcTable);
-            LocalProcTable = (struct lproc *) NULL;
+            free((FREE_P *) LocalProcTable);
+            LocalProcTable = NULL;
             Exit(1);
         }
         LocalProcTable = tmp;
@@ -310,43 +283,42 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sel_flags)
     CurrentLocalProc = &LocalProcTable[NumLocalProcs++];
     CurrentLocalProc->pid = pid;
 
-#if    defined(HASTASKS)
+#if defined(HASTASKS)
     CurrentLocalProc->tid = 0;
-#endif    /* defined(HASTASKS) */
+#endif
 
     CurrentLocalProc->pgid = pgid;
     CurrentLocalProc->ppid = ppid;
-    CurrentLocalProc->file = (struct lfile *) NULL;
+    CurrentLocalProc->file = NULL;
     CurrentLocalProc->sel_flags = (short) sel_flags;
     CurrentLocalProc->sel_state = (short) pss;
     CurrentLocalProc->uid = (uid_t) uid;
 /*
  * Allocate space for the full command name and copy it there.
  */
-    if (!(CurrentLocalProc->cmd = mkstrcpy(cmd, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for command name: ",
+    if (!(CurrentLocalProc->cmd = mkstrcpy(cmd, NULL))) {
+        fprintf(stderr, "%s: PID %d, no space for command name: ",
                        ProgramName, pid);
         safestrprt(cmd, stderr, 1);
         Exit(1);
     }
 
-#if    defined(HASZONES)
+#if defined(HASZONES)
     /*
      * Clear the zone name pointer.  The dialect's own code will set it.
      */
-        CurrentLocalProc->zn = (char *)NULL;
-#endif    /* defined(HASZONES) */
+        CurrentLocalProc->zn = NULL;
+#endif
 
-#if    defined(HASSELINUX)
+#if defined(HASSELINUX)
     /*
      * Clear the security context pointer.  The dialect's own code will
      * set it.
      */
-        CurrentLocalProc->cntx = (char *)NULL;
-#endif    /* defined(HASSELINUX) */
+        CurrentLocalProc->cntx = NULL;
+#endif
 
 }
-
 
 /*
  * ck_fd_status() - check FD status
@@ -357,10 +329,7 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sel_flags)
  */
 
 extern int
-ck_fd_status(name, num)
-        char *name;            /* file descriptor name (may be NULL) */
-        int num;            /* file descriptor number -- -1 if
-					 * none */
+ck_fd_status(char *name, int num)
 {
     char *cp;
     struct fd_lst *fp;
@@ -401,14 +370,12 @@ ck_fd_status(name, num)
     return (0);
 }
 
-
 /*
  * comppid() - compare PIDs
  */
 
 int
-comppid(lhs, rhs)
-        COMP_P *lhs, *rhs;
+comppid(COMP_P *lhs, COMP_P *rhs)
 {
     struct lproc **p1 = (struct lproc **) lhs;
     struct lproc **p2 = (struct lproc **) rhs;
@@ -418,42 +385,34 @@ comppid(lhs, rhs)
     if ((*p1)->pid > (*p2)->pid)
         return (1);
 
-#if    defined(HASTASKS)
+#if defined(HASTASKS)
     if ((*p1)->tid < (*p2)->tid)
         return(-1);
     if ((*p1)->tid > (*p2)->tid)
         return(1);
-#endif    /* defined(HASTASKS) */
+#endif
 
     return (0);
 }
-
 
 /*
  * ent_inaddr() - enter Internet addresses
  */
 
 void
-ent_inaddr(local_addr, local_port, foreign_addr, foreign_port, addr_family)
-        unsigned char *local_addr;        /* local Internet address */
-        int local_port;                /* local port */
-        unsigned char *foreign_addr;        /* foreign Internet address -- may
-					 * be NULL to indicate no foreign
-					 * address is known */
-        int foreign_port;                /* foreign port */
-        int addr_family;                /* address family -- e.g, AF_INET,
-					 * AF_INET */
+ent_inaddr(unsigned char *local_addr, int local_port,
+           unsigned char *foreign_addr, int foreign_port, int addr_family)
 {
     int match;
 
     if (local_addr) {
         CurrentLocalFile->li[0].addr_family = addr_family;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         if (addr_family == AF_INET6)
         CurrentLocalFile->li[0].ia.a6 = *(struct in6_addr *)local_addr;
         else
-#endif    /* defined(HASIPv6) */
+#endif
 
         CurrentLocalFile->li[0].ia.a4 = *(struct in_addr *) local_addr;
         CurrentLocalFile->li[0].port = local_port;
@@ -462,11 +421,11 @@ ent_inaddr(local_addr, local_port, foreign_addr, foreign_port, addr_family)
     if (foreign_addr) {
         CurrentLocalFile->li[1].addr_family = addr_family;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         if (addr_family == AF_INET6)
         CurrentLocalFile->li[1].ia.a6 = *(struct in6_addr *)foreign_addr;
         else
-#endif    /* defined(HASIPv6) */
+#endif
 
         CurrentLocalFile->li[1].ia.a4 = *(struct in_addr *) foreign_addr;
         CurrentLocalFile->li[1].port = foreign_port;
@@ -482,7 +441,6 @@ ent_inaddr(local_addr, local_port, foreign_addr, foreign_port, addr_family)
             CurrentLocalFile->sel_flags |= SELNA;
     }
 }
-
 
 /*
  * examine_lproc() - examine local process
@@ -513,17 +471,17 @@ examine_lproc() {
     }
     if (CurrentLocalProc->sel_state && NumPidSelections == 1 && sbp) {
         print_init();
-        (void) print_proc();
+        print_proc();
         PrintPass++;
         if (PrintPass < 2)
-            (void) print_proc();
+            print_proc();
         CurrentLocalProc->sel_state = 0;
     }
 /*
  * Deprecate an unselected (or listed) process.
  */
     if (!CurrentLocalProc->sel_state) {
-        (void) free_lproc(CurrentLocalProc);
+        free_lproc(CurrentLocalProc);
         NumLocalProcs--;
     }
 /*
@@ -533,63 +491,57 @@ examine_lproc() {
     return ((sbp && NumUnselectedPids == 0) ? 1 : 0);
 }
 
-
 /*
  * free_lproc() - free lproc entry and its associated malloc'd space
  */
 
 void
-free_lproc(proc)
-        struct lproc *proc;
+free_lproc(struct lproc *proc)
 {
     struct lfile *lf, *nf;
 
     for (lf = proc->file; lf; lf = nf) {
         if (lf->dev_ch) {
-            (void) free((FREE_P *) lf->dev_ch);
-            lf->dev_ch = (char *) NULL;
+            free((FREE_P *) lf->dev_ch);
+            lf->dev_ch = NULL;
         }
         if (lf->name) {
-            (void) free((FREE_P *) lf->name);
-            lf->name = (char *) NULL;
+            free((FREE_P *) lf->name);
+            lf->name = NULL;
         }
         if (lf->name_append) {
-            (void) free((FREE_P *) lf->name_append);
-            lf->name_append = (char *) NULL;
+            free((FREE_P *) lf->name_append);
+            lf->name_append = NULL;
         }
 
-#if    defined(HASLFILEADD) && defined(CLRLFILEADD)
+#if defined(HASLFILEADD) && defined(CLRLFILEADD)
         CLRLFILEADD(lf)
-#endif    /* defined(HASLFILEADD) && defined(CLRLFILEADD) */
+#endif
 
         nf = lf->next;
-        (void) free((FREE_P *) lf);
+        free((FREE_P *) lf);
     }
-    proc->file = (struct lfile *) NULL;
+    proc->file = NULL;
     if (proc->cmd) {
-        (void) free((FREE_P *) proc->cmd);
-        proc->cmd = (char *) NULL;
+        free((FREE_P *) proc->cmd);
+        proc->cmd = NULL;
     }
 
-#if    defined(HASSELINUX)
+#if defined(HASSELINUX)
     if (proc->cntx) {
-        (void) free((FREE_P *) proc->cntx);
-        proc->cntx = (char *) NULL;
+        free((FREE_P *) proc->cntx);
+        proc->cntx = NULL;
     }
-#endif    /* defined(HASSELINUX) */
+#endif
 
 }
-
 
 /*
  * is_cmd_excl() - is command excluded?
  */
 
 int
-is_cmd_excl(cmd, pss, select_flags)
-        char *cmd;            /* command name */
-        short *pss;            /* process state */
-        short *select_flags;            /* process select flags */
+is_cmd_excl(char *cmd, short *pss, short *select_flags)
 {
     int i;
     struct str_lst *sp;
@@ -640,27 +592,24 @@ is_cmd_excl(cmd, pss, select_flags)
     return (OptAndSelection ? 1 : 0);
 }
 
-
 /*
  * is_file_sel() - is file selected?
  */
 
 static int
-is_file_sel(proc, file)
-        struct lproc *proc;        /* lproc structure pointer */
-        struct lfile *file;        /* lfile structure pointer */
+is_file_sel(struct lproc *proc, struct lfile *file)
 {
     if (!file || !file->sel_flags)
         return (0);
     if (CurrentLocalFile->sel_flags & SELEXCLF)
         return (0);
 
-#if    defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
+#if defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
     if (MyRealUid && (MyRealUid != proc->uid)) {
         if (!(file->sel_flags & (SELNA | SELNET)))
         return(0);
     }
-#endif    /* defined(HASSECURITY) && defined(HASNOSOCKSECURITY) */
+#endif
 
     if (SelectAll)
         return (1);
@@ -669,16 +618,12 @@ is_file_sel(proc, file)
     return (1);
 }
 
-
 /*
  * find_int_lst() - binary search for value in sorted int_lst array
  */
 
 static struct int_lst *
-find_int_lst(list, num_entries, val)
-	struct int_lst *list;		/* sorted int_lst array */
-	int num_entries;			/* array length */
-	int val;			/* value to find */
+find_int_lst(struct int_lst *list, int num_entries, int val)
 {
     int low = 0, high = num_entries - 1, midpoint;
 
@@ -694,46 +639,36 @@ find_int_lst(list, num_entries, val)
     return (struct int_lst *)NULL;
 }
 
-
 /*
  * is_proc_excl() - is process excluded?
  */
 
 int
 
-#if    defined(HASTASKS)
-is_proc_excl(pid, pgid, uid, pss, select_flags, tid)
-#else	/* !defined(HASTASKS) */
-is_proc_excl(pid, pgid, uid, pss, select_flags)
-#endif    /* defined(HASTASKS) */
-
-        int pid;            /* Process ID */
-        int pgid;            /* process group ID */
-        UID_ARG uid;            /* User ID */
-        short *pss;            /* process select state for lproc */
-        short *select_flags;            /* select flags for lproc */
-
-#if    defined(HASTASKS)
-int tid;			/* task ID (not a task if zero) */
-#endif    /* defined(HASTASKS) */
+#if defined(HASTASKS)
+is_proc_excl(int pid, int pgid, UID_ARG uid, short *pss, short *select_flags,
+             int tid)
+#else
+is_proc_excl(int pid, int pgid, UID_ARG uid, short *pss, short *select_flags)
+#endif
 
 {
     int i, j;
 
     *pss = *select_flags = 0;
 
-#if    defined(HASSECURITY)
+#if defined(HASSECURITY)
     /*
      * The process is excluded by virtue of the security option if it
      * isn't owned by the owner of this lsof process, unless the
      * HASNOSOCKSECURITY option is also specified.  In that case the
      * selected socket files of any process may be listed.
      */
-# if	!defined(HASNOSOCKSECURITY)
+#ifndef HASNOSOCKSECURITY
         if (MyRealUid && MyRealUid != (uid_t)uid)
             return(1);
-# endif	/* !defined(HASNOSOCKSECURITY) */
-#endif    /* defined(HASSECURITY) */
+#endif
+#endif
 
 /*
  * If the excluding of process listing by UID has been specified, see if the
@@ -776,11 +711,11 @@ int tid;			/* task ID (not a task if zero) */
     if (SelectAll) {
         *pss = PS_PRI;
 
-#if    defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
+#if defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
         *select_flags = SELALL & ~(SELNA | SELNET);
-#else	/* !defined(HASSECURITY) || !defined(HASNOSOCKSECURITY) */
+#else
         *select_flags = SELALL;
-#endif    /* defined(HASSECURITY) && defined(HASNOSOCKSECURITY) */
+#endif
 
         return (0);
     }
@@ -838,7 +773,7 @@ int tid;			/* task ID (not a task if zero) */
             return (1);
     }
 
-#if    defined(HASTASKS)
+#if defined(HASTASKS)
     if ((SelectionFlags & SELTASK) && tid) {
 
     /*
@@ -850,7 +785,7 @@ int tid;			/* task ID (not a task if zero) */
         ||  (OptAndSelection && ((*select_flags & SelectionFlags) == SelectionFlags)))
         return(0);
     }
-#endif    /* defined(HASTASKS) */
+#endif
 
 /*
  * When neither the process group ID, nor the PID, nor the task, nor the UID
@@ -893,7 +828,6 @@ int tid;			/* task ID (not a task if zero) */
     return (OptAndSelection ? 1 : 0);
 }
 
-
 /*
  * link_lfile() - link local file structures
  */
@@ -914,23 +848,20 @@ link_lfile() {
         OptNfs = 2;
     if (OptTask && (CurrentLocalFile->sel_flags & SELTASK))
         OptTask = 2;
-    CurrentLocalFile = (struct lfile *) NULL;
+    CurrentLocalFile = NULL;
 }
 
-
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
 /*
  * print_fflags() - print interpreted f_flag[s]
  */
 
 char *
-print_fflags(ffg, pof)
-    long ffg;		/* file structure's flags value */
-    long pof;		/* process open files flags value */
+print_fflags(long ffg, long pof)
 {
     int alloc_len, count, file_flags;
     static int buf_len = 0;
-    static char *buf_ptr = (char *)NULL;
+    static char *buf_ptr = NULL;
     char *sep;
     int sepl;
     struct pff_tab *tp;
@@ -962,7 +893,7 @@ print_fflags(ffg, pof)
             break;
         alloc_len = (int)strlen(tp->nm) + sepl;
         buf_ptr = alloc_fflbuf(&buf_ptr, &buf_len, alloc_len + count);
-        (void) snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, tp->nm);
+        snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, tp->nm);
         sep = ",";
         sepl = 1;
         work_flags &= ~(tp->val);
@@ -973,10 +904,10 @@ print_fflags(ffg, pof)
      * in hex.
      */
         if (work_flags || OptFileStructFlagHex) {
-        (void) snpf(xbuf, sizeof(xbuf), "0x%lx", work_flags);
+        snpf(xbuf, sizeof(xbuf), "0x%lx", work_flags);
         alloc_len = (int)strlen(xbuf) + sepl;
         buf_ptr = alloc_fflbuf(&buf_ptr, &buf_len, alloc_len + count);
-        (void) snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, xbuf);
+        snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, xbuf);
         count += alloc_len;
         }
     }
@@ -989,8 +920,7 @@ print_fflags(ffg, pof)
     }
     return(buf_ptr);
 }
-#endif    /* defined(HASFSTRUCT) */
-
+#endif
 
 /*
  * print_proc() - print process
@@ -1009,13 +939,13 @@ print_proc() {
         return (0);
     if (OptTerse) {
 
-#if    defined(HASTASKS)
+#if defined(HASTASKS)
         /*
          * If this is a task of a process, skip it.
          */
             if (CurrentLocalProc->tid)
             return(0);
-#endif    /* defined(HASTASKS) */
+#endif
 
         /*
          * The mode is terse and something in the process appears to have
@@ -1025,7 +955,7 @@ print_proc() {
          */
         for (CurrentLocalFile = CurrentLocalProc->file; CurrentLocalFile; CurrentLocalFile = CurrentLocalFile->next) {
             if (is_file_sel(CurrentLocalProc, CurrentLocalFile)) {
-                (void) printf("%d\n", CurrentLocalProc->pid);
+                printf("%d\n", CurrentLocalProc->pid);
                 return (1);
             }
         }
@@ -1043,30 +973,30 @@ print_proc() {
         if (!CurrentLocalFile)
             return (rv);
         rv = 1;
-        (void) printf("%c%d%c", LSOF_FID_PID, CurrentLocalProc->pid, Terminator);
+        printf("%c%d%c", LSOF_FID_PID, CurrentLocalProc->pid, Terminator);
 
-#if    defined(HASTASKS)
+#if defined(HASTASKS)
         if (FieldSelection[LSOF_FIX_TID].st && CurrentLocalProc->tid)
-        (void) printf("%c%d%c", LSOF_FID_TID, CurrentLocalProc->tid, Terminator);
-#endif    /* defined(HASTASKS) */
+        printf("%c%d%c", LSOF_FID_TID, CurrentLocalProc->tid, Terminator);
+#endif
 
-#if    defined(HASZONES)
+#if defined(HASZONES)
         if (FieldSelection[LSOF_FIX_ZONE].st && OptZone && CurrentLocalProc->zn)
-        (void) printf("%c%s%c", LSOF_FID_ZONE, CurrentLocalProc->zn, Terminator);
-#endif    /* defined(HASZONES) */
+        printf("%c%s%c", LSOF_FID_ZONE, CurrentLocalProc->zn, Terminator);
+#endif
 
-#if    defined(HASSELINUX)
+#if defined(HASSELINUX)
         if (FieldSelection[LSOF_FIX_SEC_CONTEXT].st && OptSecContext && CurrentLocalProc->cntx && ContextStatus)
-        (void) printf("%c%s%c", LSOF_FID_SEC_CONTEXT, CurrentLocalProc->cntx, Terminator);
-#endif    /* defined(HASSELINUX) */
+        printf("%c%s%c", LSOF_FID_SEC_CONTEXT, CurrentLocalProc->cntx, Terminator);
+#endif
 
         if (FieldSelection[LSOF_FIX_PGID].st && OptProcessGroup)
-            (void) printf("%c%d%c", LSOF_FID_PGID, CurrentLocalProc->pgid, Terminator);
+            printf("%c%d%c", LSOF_FID_PGID, CurrentLocalProc->pgid, Terminator);
 
-#if    defined(HASPPID)
+#if defined(HASPPID)
         if (FieldSelection[LSOF_FIX_PPID].st && OptParentPid)
-        (void) printf("%c%d%c", LSOF_FID_PPID, CurrentLocalProc->ppid, Terminator);
-#endif    /* defined(HASPPID) */
+        printf("%c%d%c", LSOF_FID_PPID, CurrentLocalProc->ppid, Terminator);
+#endif
 
         if (FieldSelection[LSOF_FIX_CMD].st) {
             putchar(LSOF_FID_CMD);
@@ -1074,11 +1004,11 @@ print_proc() {
             putchar(Terminator);
         }
         if (FieldSelection[LSOF_FIX_UID].st)
-            (void) printf("%c%d%c", LSOF_FID_UID, (int) CurrentLocalProc->uid, Terminator);
+            printf("%c%d%c", LSOF_FID_UID, (int) CurrentLocalProc->uid, Terminator);
         if (FieldSelection[LSOF_FIX_LOGIN].st) {
             cp = printuid((UID_ARG) CurrentLocalProc->uid, &type);
             if (type == 0)
-                (void) printf("%c%s%c", LSOF_FID_LOGIN, cp, Terminator);
+                printf("%c%s%c", LSOF_FID_LOGIN, cp, Terminator);
         }
         if (Terminator == '\0')
             putchar('\n');
@@ -1105,57 +1035,57 @@ print_proc() {
         if (FieldSelection[LSOF_FIX_FILE_DESC].st) {
             for (cp = CurrentLocalFile->fd; *cp == ' '; cp++);
             if (*cp) {
-                (void) printf("%c%s%c", LSOF_FID_FILE_DESC, cp, Terminator);
+                printf("%c%s%c", LSOF_FID_FILE_DESC, cp, Terminator);
                 line_count++;
             }
         }
         if (FieldSelection[LSOF_FIX_ACCESS].st) {
-            (void) printf("%c%c%c",
+            printf("%c%c%c",
                           LSOF_FID_ACCESS, CurrentLocalFile->access, Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_LOCK].st) {
-            (void) printf("%c%c%c", LSOF_FID_LOCK, CurrentLocalFile->lock, Terminator);
+            printf("%c%c%c", LSOF_FID_LOCK, CurrentLocalFile->lock, Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_TYPE].st) {
             for (cp = CurrentLocalFile->type; *cp == ' '; cp++);
             if (*cp) {
-                (void) printf("%c%s%c", LSOF_FID_TYPE, cp, Terminator);
+                printf("%c%s%c", LSOF_FID_TYPE, cp, Terminator);
                 line_count++;
             }
         }
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
         if (FieldSelection[LSOF_FIX_FILE_STRUCT_ADDR].st && (OptFileStructValues & FSV_FILE_ADDR)
         &&  (CurrentLocalFile->fsv & FSV_FILE_ADDR)) {
-        (void) printf("%c%s%c", LSOF_FID_FILE_STRUCT_ADDR,
-            print_kptr(CurrentLocalFile->fsa, (char *)NULL, 0), Terminator);
+        printf("%c%s%c", LSOF_FID_FILE_STRUCT_ADDR,
+            print_kptr(CurrentLocalFile->fsa, NULL, 0), Terminator);
         line_count++;
         }
         if (FieldSelection[LSOF_FIX_FILE_STRUCT_COUNT].st && (OptFileStructValues & FSV_FILE_COUNT)
         &&  (CurrentLocalFile->fsv & FSV_FILE_COUNT)) {
-        (void) printf("%c%ld%c", LSOF_FID_FILE_STRUCT_COUNT, CurrentLocalFile->fct, Terminator);
+        printf("%c%ld%c", LSOF_FID_FILE_STRUCT_COUNT, CurrentLocalFile->fct, Terminator);
         line_count++;
         }
         if (FieldSelection[LSOF_FIX_FILE_FLAGS].st && (OptFileStructValues & FSV_FILE_FLAGS)
         &&  (CurrentLocalFile->fsv & FSV_FILE_FLAGS) && (OptFileStructFlagHex || CurrentLocalFile->ffg || CurrentLocalFile->pof)) {
-        (void) printf("%c%s%c", LSOF_FID_FILE_FLAGS,
+        printf("%c%s%c", LSOF_FID_FILE_FLAGS,
             print_fflags(CurrentLocalFile->ffg, CurrentLocalFile->pof), Terminator);
         line_count++;
         }
         if (FieldSelection[LSOF_FIX_NODE_ID].st && (OptFileStructValues & FSV_NODE_ID)
         &&  (CurrentLocalFile->fsv & FSV_NODE_ID)) {
-        (void) printf("%c%s%c", LSOF_FID_NODE_ID,
-            print_kptr(CurrentLocalFile->fna, (char *)NULL, 0), Terminator);
+        printf("%c%s%c", LSOF_FID_NODE_ID,
+            print_kptr(CurrentLocalFile->fna, NULL, 0), Terminator);
         line_count++;
         }
-#endif    /* defined(HASFSTRUCT) */
+#endif
 
         if (FieldSelection[LSOF_FIX_DEV_CHAR].st && CurrentLocalFile->dev_ch && CurrentLocalFile->dev_ch[0]) {
             for (cp = CurrentLocalFile->dev_ch; *cp == ' '; cp++);
             if (*cp) {
-                (void) printf("%c%s%c", LSOF_FID_DEV_CHAR, cp, Terminator);
+                printf("%c%s%c", LSOF_FID_DEV_CHAR, cp, Terminator);
                 line_count++;
             }
         }
@@ -1164,7 +1094,7 @@ print_proc() {
                 ulong_val = (unsigned long) ((unsigned int) CurrentLocalFile->dev);
             else
                 ulong_val = (unsigned long) CurrentLocalFile->dev;
-            (void) printf("%c0x%lx%c", LSOF_FID_DEV_NUM, ulong_val, Terminator);
+            printf("%c0x%lx%c", LSOF_FID_DEV_NUM, ulong_val, Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_RDEV].st && CurrentLocalFile->rdev_def) {
@@ -1172,62 +1102,62 @@ print_proc() {
                 ulong_val = (unsigned long) ((unsigned int) CurrentLocalFile->rdev);
             else
                 ulong_val = (unsigned long) CurrentLocalFile->rdev;
-            (void) printf("%c0x%lx%c", LSOF_FID_RDEV, ulong_val, Terminator);
+            printf("%c0x%lx%c", LSOF_FID_RDEV, ulong_val, Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_SIZE].st && CurrentLocalFile->sz_def) {
             putchar(LSOF_FID_SIZE);
 
-#if    defined(HASPRINTSZ)
+#if defined(HASPRINTSZ)
             cp = HASPRINTSZ(CurrentLocalFile);
-#else	/* !defined(HASPRINTSZ) */
-            (void) snpf(buf, sizeof(buf), SizeOffFormatD, CurrentLocalFile->sz);
+#else
+            snpf(buf, sizeof(buf), SizeOffFormatD, CurrentLocalFile->sz);
             cp = buf;
-#endif    /* defined(HASPRINTSZ) */
+#endif
 
-            (void) printf("%s", cp);
+            printf("%s", cp);
             putchar(Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_OFFSET].st && CurrentLocalFile->off_def) {
             putchar(LSOF_FID_OFFSET);
 
-#if    defined(HASPRINTOFF)
+#if defined(HASPRINTOFF)
             cp = HASPRINTOFF(CurrentLocalFile, 0);
-#else	/* !defined(HASPRINTOFF) */
-            (void) snpf(buf, sizeof(buf), SizeOffFormat0t, CurrentLocalFile->off);
+#else
+            snpf(buf, sizeof(buf), SizeOffFormat0t, CurrentLocalFile->off);
             cp = buf;
-#endif    /* defined(HASPRINTOFF) */
+#endif
 
             len = strlen(cp);
             if (OffsetDecDigitLimit && len > (OffsetDecDigitLimit + 2)) {
 
-#if    defined(HASPRINTOFF)
+#if defined(HASPRINTOFF)
                 cp = HASPRINTOFF(CurrentLocalFile, 1);
-#else	/* !defined(HASPRINTOFF) */
-                (void) snpf(buf, sizeof(buf), SizeOffFormatX, CurrentLocalFile->off);
+#else
+                snpf(buf, sizeof(buf), SizeOffFormatX, CurrentLocalFile->off);
                 cp = buf;
-#endif    /* defined(HASPRINTOFF) */
+#endif
 
             }
-            (void) printf("%s", cp);
+            printf("%s", cp);
             putchar(Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_INODE].st && CurrentLocalFile->inp_ty == 1) {
             putchar(LSOF_FID_INODE);
-            (void) printf(InodeFormatDecimal, CurrentLocalFile->inode);
+            printf(InodeFormatDecimal, CurrentLocalFile->inode);
             putchar(Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_NLINK].st && CurrentLocalFile->nlink_def) {
-            (void) printf("%c%ld%c", LSOF_FID_NLINK, CurrentLocalFile->nlink, Terminator);
+            printf("%c%ld%c", LSOF_FID_NLINK, CurrentLocalFile->nlink, Terminator);
             line_count++;
         }
         if (FieldSelection[LSOF_FIX_PROTO].st && CurrentLocalFile->inp_ty == 2) {
             for (cp = CurrentLocalFile->iproto; *cp == ' '; cp++);
             if (*cp) {
-                (void) printf("%c%s%c", LSOF_FID_PROTO, cp, Terminator);
+                printf("%c%s%c", LSOF_FID_PROTO, cp, Terminator);
                 line_count++;
             }
         }

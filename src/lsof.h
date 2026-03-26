@@ -2,7 +2,6 @@
  * lsof.h - common header file for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,29 +25,23 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-/*
- * $Id: lsof.h,v 1.65 2011/09/07 19:13:49 abe Exp $
- */
-
-
-#if    !defined(LSOF_H)
+#ifndef LSOF_H
 #define    LSOF_H    1
 
 #include "machine.h"
 
-# if    !defined(FSV_DEFAULT)
+#ifndef FSV_DEFAULT
 #define    FSV_DEFAULT    0
-# endif    /* !defined(FSV_DEFAULT) */
+#endif
 
 #include "lsof_fields.h"
 
 #include <ctype.h>
 #include <errno.h>
 
-# if    defined(HASSETLOCALE)
+#if defined(HASSETLOCALE)
 #include <locale.h>
-# endif    /* defined(HASSETLOCALE) */
+#endif
 
 #include <netdb.h>
 #include <pwd.h>
@@ -57,16 +50,15 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-
 /*
  * Definitions and structures that may be needed by dlsof.h
  */
 
-# if    !defined(INODETYPE)
+#ifndef INODETYPE
 #define    INODETYPE    unsigned long    /* node number storage type */
 #define    INODEPSPEC    "l"        /* node number printf specification
 					 * modifier */
-# endif    /* !defined(INODETYPE) */
+#endif
 
 struct l_dev {
     dev_t rdev;            /* device */
@@ -75,7 +67,6 @@ struct l_dev {
     int v;                /* has been verified
 					 * (when DCUnsafe == 1) */
 };
-
 
 /*
  * FILE_FLAG column names
@@ -162,7 +153,6 @@ struct l_dev {
 #define    FF_WAITING    "WTG"
 #define    FF_WRITE    "W"
 
-
 /*
  * Process open file flag names
  */
@@ -180,7 +170,6 @@ struct l_dev {
 #define    POF_RESERVED    "OPIP"
 #define    POF_RSVWT    "RSVW"
 
-
 /*
  * Cross-over (-x) option values
  */
@@ -195,17 +184,17 @@ struct l_dev {
 					 * may need it */
 #include "./regex.h"
 
-# if    defined(EMPTY)
+#if defined(EMPTY)
 #undef	EMPTY
-# endif    /* defined(EMPTY) */
+#endif
 
-# if    defined(HASUTMPX)
+#if defined(HASUTMPX)
 #include <utmpx.h>
-# else	/* !defined(HASUTMPX) */
+#else
 
 #include <utmp.h>
 
-# endif    /* defined(HASUTMPX) */
+#endif
 
 extern int errno;
 extern char *optarg;
@@ -213,11 +202,11 @@ extern int optind;
 
 #define    ACCESSERRFMT    "%s: WARNING: access %s: %s\n"
 
-# if    defined(HASDCACHE)
+#if defined(HASDCACHE)
 #define	CRC_POLY	0120001 	/* CRC-16 polynomial */
 #define	CRC_TBLL	256		/* crc table length for software */
 #define	CRC_BITS	8		/* number of bits contributing */
-# endif    /* defined(HASDCACHE) */
+#endif
 #define    CMDL        9        /* maximum number of characters from
 					 * command name to print in COMMAND
 					 * column */
@@ -228,42 +217,42 @@ extern int optind;
 #define    FSV_FILE_FLAGS        0x4        /* file struct flags */
 #define    FSV_NODE_ID        0x8        /* file struct node ID status */
 
-# if    !defined(GET_MAJ_DEV)
+#ifndef GET_MAJ_DEV
 #define    GET_MAJ_DEV    major        /* if no dialect specific macro has
 					 * been defined, use standard major()
 					 * macro */
-# endif    /* !defined(GET_MAJ_DEV) */
+#endif
 
-# if    !defined(GET_MIN_DEV)
+#ifndef GET_MIN_DEV
 #define    GET_MIN_DEV    minor        /* if no dialect specific macro has
 					 * been defined, use standard minor()
 					 * macro */
-# endif    /* !defined(GET_MIN_DEV) */
+#endif
 
-# if    defined(HASSELINUX)
+#if defined(HASSELINUX)
 #define	HASHCNTX	128		/* security context hash bucket count
 * -- MUST BE A POWER OF 2!!! */
-# endif    /* defined(HASSELINUX) */
+#endif
 
-# if    defined(HASZONES)
+#if defined(HASZONES)
 #define	HASHZONE	128		/* zone hash bucket count -- MUST BE
 * A POWER OF 2!!! */
-# endif    /* defined(HASZONES) */
+#endif
 
 #define    IDINCR        10        /* PID/PGID table malloc() increment */
 
-# if    !defined(INADDR_LOOPBACK)
+#ifndef INADDR_LOOPBACK
 #define    INADDR_LOOPBACK    (u_long)0x7f000001
-# endif    /* !defined(INADDR_LOOPBACK) */
+#endif
 
 #define    IPROTOL        8        /* Internet protocol length */
 
-# if    !defined(KA_T_FMT_X)
+#ifndef KA_T_FMT_X
 #define    KA_T_FMT_X    "0x%08lx"    /* format for printing kernel
 					 * addresses in 0x... format */
-# endif    /* !defined(KA_T_FMT_X) */
+#endif
 
-# if    !defined(LOGINML)
+#ifndef LOGINML
 #  if    defined(HASUTMPX)
 static struct utmpx dummy_utmp;		/* to get login name length */
 #define	LOGINML		sizeof(dummy_utmp.ut_user)
@@ -273,26 +262,26 @@ static struct utmp dummy_utmp;        /* to get login name length */
 #define    LOGINML        sizeof(dummy_utmp.ut_name)
 /* login name length */
 #  endif    /* defined(HASUTMPX) */
-# endif    /* !defined(LOGINML) */
+#endif
 
 #define    LPROCINCR    128        /* LocalProcTable[] allocation increment */
 #define    LSOF_URL    "https://github.com/lsof-org/lsof"
 #define    MIN_AF_ADDR    sizeof(struct in_addr)
 /* minimum AF_* address length */
 
-# if    defined(HASIPv6)
+#if defined(HASIPv6)
 #define	MAX_AF_ADDR	sizeof(struct in6_addr)
 /* maximum AF_* address length */
-# else	/* !defined(HASIPv6) */
+#else
 #define    MAX_AF_ADDR    MIN_AF_ADDR    /* maximum AF_* address length */
-# endif    /* defined(HASIPv6) */
+#endif
 
 #define    MAXDCPATH    4        /* paths in DevCachePath[] */
 #define    MAXNWAD        100        /* maximum network addresses */
 
-# if    !defined(MEMMOVE)
+#ifndef MEMMOVE
 #define    MEMMOVE        memmove
-# endif    /* !defined*MEMMOVE) */
+#endif
 
 #define    N_REGLR        0        /* regular file system node */
 #define    N_AFS        1        /* AFS node */
@@ -349,16 +338,16 @@ static struct utmp dummy_utmp;        /* to get login name length */
 #define    N_XFS        52        /* XFS node */
 #define    N_ZFS        53        /* ZFS node */
 
-# if    !defined(OFFDECDIG)
+#ifndef OFFDECDIG
 #define    OFFDECDIG    8        /* maximum number of digits in the
 					 * offset decimal form (0t...) */
-# endif    /* !defined(OFFDECDIG) */
+#endif
 
-# if    !defined(USELOCALREADDIR)
+#ifndef USELOCALREADDIR
 #define    CloseDir    closedir    /* use standard closedir() */
 #define    OpenDir        opendir        /* use standard opendir() */
 #define    ReadDir        readdir        /* use standard readdir() */
-# endif    /* !defined(USELOCALREADDIR) */
+#endif
 
 #define    RPTTM        15        /* default repeat seconds */
 #define    RTD        " rtd"        /* root directory fd name */
@@ -378,25 +367,24 @@ static struct utmp dummy_utmp;        /* to get login name length */
 #define    UIDINCR        10        /* UID table malloc() increment */
 #define    USERPRTL    8        /* UID/login print length limit */
 
-# if    !defined(SZOFFTYPE)
+#ifndef SZOFFTYPE
 #define    SZOFFTYPE    unsigned long    /* type for size and offset */
 #undef    SZOFFPSPEC
 #define    SZOFFPSPEC    "l"        /* SZOFFTYPE printf specification
 					 * modifier */
-# endif    /* !defined(SZOFFTYPE) */
+#endif
 
-# if    !defined(TIMEVAL_LSOF)
+#ifndef TIMEVAL_LSOF
 #define    TIMEVAL_LSOF    timeval
-# endif    /* !defined(TIMEVAL_LSOF) */
+#endif
 
-# if    !defined(XDR_PMAPLIST)
+#ifndef XDR_PMAPLIST
 #define    XDR_PMAPLIST    xdr_pmaplist
-# endif    /* !defined(XDR_PMAPLIST) */
+#endif
 
-# if    !defined(XDR_VOID)
+#ifndef XDR_VOID
 #define    XDR_VOID    xdr_void
-# endif    /* !defined(XDR_VOID) */
-
+#endif
 
 /*
  * Output title definitions
@@ -444,7 +432,6 @@ extern int UserColWidth;
 #define ZONETTL        "ZONE"
 extern int ZoneColWidth;
 
-
 /*
  * Selection flags
  */
@@ -478,7 +465,7 @@ extern int ZoneColWidth;
  * Structure definitions
  */
 
-# if    defined(HAS_AFS)
+#if defined(HAS_AFS)
 struct afsnode {			/* AFS pseudo-node structure */
     dev_t dev;
     unsigned char ino_st;		/* 1 if inode has a value */
@@ -487,24 +474,23 @@ struct afsnode {			/* AFS pseudo-node structure */
     unsigned long size;
     long nlink;
 };
-# endif    /* defined(HAS_AFS) */
+#endif
 
-# if    defined(HAS_STD_CLONE)
+#if defined(HAS_STD_CLONE)
 struct clone {
     int dx;			/* index of device entry in DeviceTable[] */
     struct clone *next;	/* forward link */
 };
 extern struct clone *Clone;
-# endif    /* defined(HAS_STD_CLONE) */
+#endif
 
-# if    defined(HASNLIST)
+#if defined(HASNLIST)
 struct drive_Nl {			/* data to drive build_Nl() */
     char *nn;			/* nickname for lookups */
     char *knm;			/* kernel variable for name list */
 };
 extern struct drive_Nl Drive_Nl[];	/* defined in dstore.c */
-# endif    /* defined(HASNLIST) */
-
+#endif
 
 /*
  * Global storage definitions (including their structure definitions)
@@ -536,12 +522,12 @@ typedef struct lsof_rx {        /* regular expression table entry */
 extern lsof_rx_t *CommandRegexTable;
 extern int NumCommandRegexUsed;
 
-# if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
 struct pff_tab {			/* print file flags table structure */
     long val;			/* flag value */
     char *nm;			/* name to print for flag */
 };
-# endif    /* defined(HASFSTRUCT) */
+#endif
 
 struct seluid {
     uid_t uid;            /* User ID */
@@ -551,10 +537,10 @@ struct seluid {
 					 * (meaningful only if excl == 0) */
 };
 
-# if    defined(HASBLKDEV)
+#if defined(HASBLKDEV)
 extern struct l_dev *BlockDeviceTable, **BlockSortedDevices;
 extern int BlockNumDevices;
-# endif    /* defined(HASBLKDEV) */
+#endif
 
 extern int CheckPasswdChange;
 
@@ -570,7 +556,7 @@ extern int CommandColLimit;
 extern int CommandNameInclusions;
 extern int CommandNameExclusions;
 
-# if    defined(HASSELINUX)
+#if defined(HASSELINUX)
 typedef struct cntxlist {
     char *cntx;			/* zone name */
     int f;				/* "find" flag (used only in ContextArgList) */
@@ -578,9 +564,9 @@ typedef struct cntxlist {
 } cntxlist_t;
 extern cntxlist_t *ContextArgList;
 extern int ContextStatus;
-# endif    /* defined(HASSELINUX) */
+#endif
 
-# if    defined(HASDCACHE)
+#if defined(HASDCACHE)
 extern unsigned DevCacheChecksum;
 extern int DevCacheFd;
 extern FILE *DevCacheStream;
@@ -590,7 +576,7 @@ extern int DevCachePathIndex;
 extern int DevCacheRebuilt;
 extern int DevCacheState;
 extern int DevCacheUnsafe;
-# endif    /* defined(HASDCACHE) */
+#endif
 
 extern int DevCacheHelp;
 extern dev_t DeviceOfDev;
@@ -608,10 +594,10 @@ extern int OptFileSystem;
 extern int OptHelp;
 extern int OptHostLookup;
 
-# if    defined(HASNCACHE)
+#if defined(HASNCACHE)
 extern int OptNameCache;
 extern int NameCacheReload;
-# endif    /* defined(HASNCACHE) */
+#endif
 
 extern int OptNetwork;
 extern int OptNetworkType;
@@ -621,9 +607,9 @@ extern int OptOffset;
 extern int OptOverhead;
 extern int OptPortLookup;
 
-# if    !defined(HASNORPC_H)
+#ifndef HASNORPC_H
 extern int OptPortMap;
-# endif    /* !defined(HASNORPC_H) */
+#endif
 
 extern int OptProcessGroup;
 extern int OptParentPid;
@@ -639,9 +625,9 @@ extern int OptUserToLogin;
 extern int OptVerbose;
 extern int OptWarnings;
 
-# if    defined(HASXOPT_VALUE)
+#if defined(HASXOPT_VALUE)
 extern int OptCrossoverExt;
-# endif    /* defined(HASXOPT_VALUE) */
+#endif
 
 extern int OptCrossover;
 extern int OptZone;
@@ -689,25 +675,25 @@ struct lfile {
     unsigned char is_nfs;        /* NFS file status */
     unsigned char is_stream;    /* stream device status */
 
-# if    defined(HASVXFS) && defined(HASVXFSDNLC)
+#if defined(HASVXFS) && defined(HASVXFSDNLC)
     unsigned char is_vxfs;		/* VxFS file status */
-# endif    /* defined(HASVXFS) && defined(HASVXFSDNLC) */
+#endif
 
     unsigned char lmi_srch;        /* local mount info search status:
 					 * 1 = printname() search required */
 
-# if    defined(HASMNTSTAT)
+#if defined(HASMNTSTAT)
     unsigned char mnt_stat;		/* mount point stat(2) status */
-# endif    /* defined(HASMNTSTAT) */
+#endif
 
     unsigned char nlink_def;    /* link count definition status */
     unsigned char off_def;        /* offset definition status */
     unsigned char rdev_def;        /* rdev definition status */
     unsigned char sz_def;        /* size definition status */
 
-# if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     unsigned char fsv;		/* file struct value status */
-# endif    /* defined(HASFSTRUCT) */
+#endif
 
     char fd[FDLEN];
     char iproto[IPROTOL];
@@ -725,9 +711,9 @@ struct lfile {
     char *fsdir;            /* file system directory */
     char *fsdev;            /* file system device */
 
-# if    defined(HASFSINO)
+#if defined(HASFSINO)
     INODETYPE fs_ino;		/* file system inode number */
-# endif    /* defined HASFSINO) */
+#endif
 
     struct linaddr {        /* local Internet address information */
         int addr_family;        /* address family: 0 for none; AF_INET;
@@ -736,9 +722,9 @@ struct lfile {
         union {
             struct in_addr a4;    /* AF_INET Internet address */
 
-# if    defined(HASIPv6)
+#if defined(HASIPv6)
             struct in6_addr a6;	/* AF_INET6 Internet address */
-# endif    /* defined(HASIPv6) */
+#endif
 
         } ia;
     } li[2];            /* li[0]: local
@@ -753,7 +739,7 @@ struct lfile {
             unsigned int uval;    /* unsigned integer state */
         } state;
 
-# if    defined(HASSOOPT)
+#if defined(HASSOOPT)
         unsigned char pqlens;	/* pqlen status: 0 = none */
         unsigned char qlens;	/* qlen status:  0 = none */
         unsigned char qlims;	/* qlim status:  0 = none */
@@ -767,71 +753,70 @@ struct lfile {
         unsigned int qlim;		/* connection queue limit */
         unsigned long rbsz;		/* receive buffer size */
         unsigned long sbsz;		/* send buffer size */
-# endif    /* defined(HASSOOPT) */
+#endif
 
-# if    defined(HASSOSTATE)
+#if defined(HASSOSTATE)
         unsigned int sock_state;	/* socket state */
 #  if	defined(HASSBSTATE)
         unsigned int sbs_rcv;	/* receive socket buffer state */
         unsigned int sbs_snd;	/* send socket buffer state */
 #  endif	/* defined(HASSBSTATE) */
-# endif    /* defined(HASSOSTATE) */
+#endif
 
-# if    defined(HASTCPOPT)
+#if defined(HASTCPOPT)
         unsigned int topt;		/* TCP options */
         unsigned char msss;		/* mss status: 0 = none */
         unsigned long mss;		/* TCP maximum segment size */
-# endif    /* defined(HASTCPOPT) */
+#endif
 
-# if    defined(HASTCPTPIQ)
+#if defined(HASTCPTPIQ)
         unsigned long recv_queue;	/* receive queue length */
         unsigned long send_queue;	/* send queue length */
         unsigned char recv_queue_st;	/* recv_queue status: 0 = none */
         unsigned char send_queue_st;	/* send_queue status: 0 = none */
-# endif    /* defined(HASTCPTPIQ) */
+#endif
 
-# if    defined(HASTCPTPIW)
+#if defined(HASTCPTPIW)
         unsigned char read_win_st;	/* read_win status: 0 = none */
         unsigned char write_win_st;	/* write_win status: 0 = none */
         unsigned long read_win;		/* read window size */
         unsigned long write_win;	/* write window size */
-# endif    /* defined(HASTCPTPIW) */
+#endif
 
     } lts;
     char *name;
     char *name_append;        /* NAME column addition */
 
-# if    defined(HASNCACHE) && HASNCACHE < 2
+#if defined(HASNCACHE) && HASNCACHE < 2
     KA_T node_addr;		/* file structure's node address */
-# endif    /* defined(HASNCACHE) && HASNCACHE<2 */
+#endif
 
-# if    defined(HASNCACHE) && defined(HASNCVPID)
+#if defined(HASNCACHE) && defined(HASNCVPID)
     unsigned long cap_id;	/* capability ID */
-# endif    /* defined(HASNCACHE) && defined(HASNCVPID) */
+#endif
 
-# if    defined(HASLFILEADD)
+#if defined(HASLFILEADD)
     HASLFILEADD
-# endif    /* defined(HASLFILEADD) */
+#endif
 
-# if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     KA_T fsa;			/* file structure address */
     long fct;			/* file structure's f_count */
     long ffg;			/* file structure's f_flag */
     long pof;			/* process open-file flags */
     KA_T fna;			/* file structure node address */
-# endif    /* defined(HASFSTRUCT) */
+#endif
 
     struct lfile *next;
 };
 extern struct lfile *CurrentLocalFile, *PrevLocalFile;
 
-
 struct lproc {
     char *cmd;            /* command name */
 
-# if    defined(HASSELINUX)
+#if defined(HASSELINUX)
     char *cntx;			/* security context */
-# endif    /* defined(HASSELINUX) */
+#endif
 
     short sel_flags;        /* select flags -- SEL* symbols */
     short sel_state;        /* state: 0 = not selected
@@ -839,17 +824,17 @@ struct lproc {
 				 	 *	  2 = partially selected */
     int pid;            /* process ID */
 
-# if    defined(HASTASKS)
+#if defined(HASTASKS)
     int tid;			/* task ID */
-# endif    /* HASTASKS */
+#endif
 
     int pgid;            /* process group ID */
     int ppid;            /* parent process ID */
     uid_t uid;            /* user ID */
 
-# if    defined(HASZONES)
+#if defined(HASZONES)
     char *zn;			/* zone name */
-# endif    /* defined(HASZONES) */
+#endif
 
     struct lfile *file;        /* open files of process */
 };
@@ -859,9 +844,9 @@ extern char *Memory;
 extern int MountSupplementState;
 extern char *MountSupplementPath;
 
-# if    defined(HASPROCFS)
+#if defined(HASPROCFS)
 extern struct mounts *Mtprocfs;
-# endif
+#endif
 
 extern int MaxPgidEntries;
 extern int MaxPidEntries;
@@ -873,13 +858,13 @@ extern char *NameChars;
 extern size_t NameCharsLength;
 extern int NumDevices;
 
-# if    defined(HASNLIST)
+#if defined(HASNLIST)
 #  if	!defined(NLIST_TYPE)
 #define	NLIST_TYPE	nlist
 #  endif	/* !defined(NLIST_TYPE) */
 extern struct NLIST_TYPE *NlistTable;
 extern int NlistLength;
-# endif    /* defined(HASNLIST) */
+#endif
 extern long LinkCountThreshold;
 extern int NumLocalProcs;
 extern char *NamelistFilePath;
@@ -911,12 +896,12 @@ extern struct nwad *NetworkAddrList;
 extern int OffsetDecDigitLimit;
 extern char *ProgramName;
 
-# if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
 extern struct pff_tab Pff_tab[];	/* file flags table */
 extern struct pff_tab Pof_tab[];	/* process open file flags table */
-# endif    /* defined(HASFSTRUCT) */
+#endif
 
-# if    defined(HASPROCFS)
+#if defined(HASPROCFS)
 struct procfsid {
     pid_t pid;			/* search PID */
     char *nm;			/* search name */
@@ -932,7 +917,7 @@ struct procfsid {
 extern int ProcFsFound;
 extern struct procfsid *ProcFsIdTable;
 extern int ProcFsSearching;
-# endif    /* defined(HASPROCFS) */
+#endif
 
 extern int PrintPass;
 extern int RepeatTime;
@@ -970,16 +955,16 @@ extern int UdpStateExcludeCount;
 extern int UdpNumStates;
 extern char **UdpStateNames;
 
-# if    defined(HASZONES)
+#if defined(HASZONES)
 typedef struct znhash {
     char *zn;			/* zone name */
     int f;				/* "find" flag (used only in ZoneArg) */
     struct znhash *next;		/* next zone hash entry */
 } znhash_t;
 extern znhash_t **ZoneArg;
-# endif    /* defined(HASZONES) */
+#endif
 
 #include "proto.h"
 #include "dproto.h"
 
-#endif    /* LSOF_H */
+#endif

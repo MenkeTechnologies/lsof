@@ -74,9 +74,9 @@ static int ADevU = 0;            /* entries used in ADev[] */
  * Local function prototypes
  */
 
-_PROTOTYPE(static int rmdupdev, (struct l_dev ***dp, int n, char *nm));
+static int rmdupdev(struct l_dev ***dp, int n, char *nm);
 
-_PROTOTYPE(static void saveADev, (struct stat *s));
+static void saveADev(struct stat *s);
 
 
 #if    defined(HASSPECDEVD)

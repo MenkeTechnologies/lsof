@@ -2,7 +2,6 @@
  * store.c - common global storage for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,37 +25,30 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
-
 
 /*
  * Global storage definitions
  */
 
-#if    defined(HASBLKDEV)
+#if defined(HASBLKDEV)
 struct l_dev *BlockDeviceTable = (struct l_dev *)NULL;
                 /* block device table pointer */
 int BlockNumDevices = 0;			/* number of entries in BlockDeviceTable[] */
 struct l_dev **BlockSortedDevices = (struct l_dev **)NULL;
                 /* pointer to BlockDeviceTable[] pointers, sorted
                  * by device */
-#endif    /* defined(HASBLKDEV) */
+#endif
 
 int CheckPasswdChange = 0;        /* time to check /etc/passwd for change */
 
-#if    defined(HAS_STD_CLONE)
+#if defined(HAS_STD_CLONE)
 struct clone *Clone = (struct clone *)NULL;
                 /* clone device list */
-#endif    /* defined(HAS_STD_CLONE) */
+#endif
 
 int CommandColWidth;            /* COMMAND column width */
-struct str_lst *CommandNameList = (struct str_lst *) NULL;
+struct str_lst *CommandNameList = NULL;
 /* command names selected with -c */
 int CommandColLimit = CMDL;        /* COMMAND column width limit */
 int CommandNameInclusions = 0;            /* command name inclusions selected with -c */
@@ -64,23 +56,23 @@ int CommandNameExclusions = 0;            /* command name exclusions selected wi
 lsof_rx_t *CommandRegexTable = (lsof_rx_t *) NULL;
 /* command regular expression table */
 
-#if    defined(HASSELINUX)
+#if defined(HASSELINUX)
 cntxlist_t *ContextArgList = (cntxlist_t *)NULL;
                 /* security context arguments supplied with
                  * -Z */
 int ContextColWidth;			/* security context column width */
 int ContextStatus = 0;		/* security context status: 0 == disabled,
 				 * 1 == enabled */
-#endif    /* defined(HASSELINUX) */
+#endif
 
-#if    defined(HASDCACHE)
+#if defined(HASDCACHE)
 unsigned DevCacheChecksum;		/* device cache file checksum */
 int DevCacheFd = -1;			/* device cache file descriptor */
 FILE *DevCacheStream = (FILE *)NULL;	/* stream pointer for DevCacheFd */
-char *DevCachePathArg = (char *)NULL;	/* device cache path from -D[b|r|u]<path> */
+char *DevCachePathArg = NULL;	/* device cache path from -D[b|r|u]<path> */
 char *DevCachePath[] = {		/* device cache paths, indexed by DevCachePathIndex
 				 *when it's >= 0 */
-    (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL
+    NULL, NULL, NULL, NULL
 };
 int DevCachePathIndex = -1;		/* device cache path index:
 				 *	-1 = path not defined
@@ -100,15 +92,14 @@ int DevCacheState = 3;		/* device cache state:
 				 */
 int DevCacheUnsafe = 0;		/* device cache file is potentially unsafe,
 				 * (The [cm]time check failed.) */
-#endif    /* defined(HASDCACHE) */
+#endif
 
 int DevCacheHelp = 0;            /* -D? status */
 
 int DeviceColWidth;            /* DEVICE column width */
 dev_t DeviceOfDev;            /* device number of /dev or its equivalent */
-struct l_dev *DeviceTable = (struct l_dev *) NULL;
+struct l_dev *DeviceTable = NULL;
 /* device table pointer */
-
 
 /*
  * Externals for a stkdir(), dumbed-down for older AIX compilers.
@@ -132,10 +123,10 @@ int OptFileSystem = 0;        /* -f option status:
 				 *    1 = paths are just files
 				 *    2 = paths must be file systems */
 
-#if    defined(HASNCACHE)
+#if defined(HASNCACHE)
 int OptNameCache = 1;		/* -C option status */
 int NameCacheReload = 1;		/* 1 == call ncache_load() */
-#endif    /* defined(HASNCACHE) */
+#endif
 
 int OptFieldOutput = 0;            /* -f and -F status */
 int FileFlagColWidth;            /* FILE-FLAG column width */
@@ -154,13 +145,13 @@ int OptOffset = 0;        /* -o option status */
 int OptOverhead = 0;            /* -O option status */
 int OptPortLookup = 1;            /* -P option status */
 
-#if    !defined(HASNORPC_H)
-# if    defined(HASPMAPENABLED)
+#ifndef HASNORPC_H
+#if    defined(HASPMAPENABLED)
 int OptPortMap = 1;		/* +|-M option status */
-# else	/* !defined(HASPMAPENABLED) */
+#else
 int OptPortMap = 0;        /* +|-M option status */
-# endif    /* defined(HASPMAPENABLED) */
-#endif    /* !defined(HASNORPC_H) */
+#endif
+#endif
 
 int OptProcessGroup = 0;            /* -g option status */
 int OptParentPid = 0;            /* -R option status */
@@ -178,20 +169,20 @@ int OptUnixSocket = 0;            /* -U option status */
 int OptUserToLogin = 1;            /* -l option status */
 int OptVerbose = 0;        /* -V option status */
 
-#if    defined(WARNINGSTATE)
+#if defined(WARNINGSTATE)
 int OptWarnings = 1;			/* +|-w option status */
-#else	/* !defined(WARNINGSTATE) */
+#else
 int OptWarnings = 0;            /* +|-w option status */
-#endif    /* defined(WARNINGSTATE) */
+#endif
 
-#if    defined(HASXOPT_VALUE)
+#if defined(HASXOPT_VALUE)
 int OptCrossoverExt = HASXOPT_VALUE;	/* -X option status */
-#endif    /* defined(HASXOPT_VALUE) */
+#endif
 
 int OptCrossover = 0;            /* -x option value */
 int OptZone = 0;            /* -z option status */
 
-struct fd_lst *FdList = (struct fd_lst *) NULL;
+struct fd_lst *FdList = NULL;
 /* file descriptors selected with -d */
 int FdListType = -1;            /* FdList[] type: -1 == none
 				 *		0 == include
@@ -232,26 +223,26 @@ struct fieldsel FieldSelection[] = {
 };
 
 int HeaderPrinted = 0;            /* header print status */
-char *InodeFormatDecimal = (char *) NULL;
+char *InodeFormatDecimal = NULL;
 /* INODETYPE decimal printf specification */
-char *InodeFormatHex = (char *) NULL;
+char *InodeFormatHex = NULL;
 /* INODETYPE hexadecimal printf specification */
-struct lfile *CurrentLocalFile = (struct lfile *) NULL;
+struct lfile *CurrentLocalFile = NULL;
 /* current local file structure */
-struct lproc *CurrentLocalProc = (struct lproc *) NULL;
+struct lproc *CurrentLocalProc = NULL;
 /* current local process table entry */
-struct lproc *LocalProcTable = (struct lproc *) NULL;
+struct lproc *LocalProcTable = NULL;
 /* local process table */
-char *Memory = (char *) NULL;    /* core file path */
+char *Memory = NULL;    /* core file path */
 int MountSupplementState = 0;            /* mount supplement state: 0 == none
 				 *			   1 == create
 				 *			   2 == read */
-char *MountSupplementPath = (char *) NULL;    /* mount supplement path -- if MountSupplementState == 2 */
+char *MountSupplementPath = NULL;    /* mount supplement path -- if MountSupplementState == 2 */
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
 struct mounts *Mtprocfs = (struct mounts *)NULL;
                 /* /proc mount entry */
-#endif    /* defined(HASPROCFS) */
+#endif
 
 int MaxPgidEntries = 0;            /* maximum process group ID table entries */
 int MaxPidEntries = 0;            /* maximum PID table entries */
@@ -259,23 +250,23 @@ int MaxUidEntries = 0;            /* maximum UID table entries */
 gid_t MyRealGid;            /* real GID of this lsof process */
 int MyProcessId;            /* lsof's process ID */
 uid_t MyRealUid;            /* real UID of this lsof process */
-char *NameChars = (char *) NULL;    /* name characters for printing */
+char *NameChars = NULL;    /* name characters for printing */
 size_t NameCharsLength = (size_t) 0;    /* sizeof(NameChars) */
 int NumCommandRegexUsed = 0;        /* number of CommandRegexTable[] entries */
 int NumDevices = 0;            /* number of entries in DeviceTable[] */
 
-#if    defined(HASNLIST)
+#if defined(HASNLIST)
 struct NLIST_TYPE *NlistTable = (struct NLIST_TYPE *)NULL;
                 /* kernel name list */
 int NlistLength = 0;			/* NlistTable calloc'd length */
-#endif    /* defined(HASNLIST) */
+#endif
 
 long LinkCountThreshold = 0l;        /* report nlink values below this number
 				 * (0 = report all nlink values) */
 int NumLocalProcs = 0;            /* number of entries in LocalProcTable[] */
 int LinkCountColWidth;            /* NLINK column width */
 int NameColWidth;            /* NAME column width */
-char *NamelistFilePath = (char *) NULL;    /* namelist file path */
+char *NamelistFilePath = NULL;    /* namelist file path */
 int NodeColWidth;            /* NODE column width */
 int NumPgidSelections = 0;            /* -g option count */
 int NumPgidInclusions = 0;            /* -g option inclusion count */
@@ -288,30 +279,30 @@ int NodeType;            /* node type (see N_* symbols) */
 int NumUidSelections = 0;            /* -u option count */
 int NumUidExclusions = 0;        /* -u option count of UIDs excluded */
 int NumUidInclusions = 0;        /* -u option count of UIDs included */
-struct nwad *NetworkAddrList = (struct nwad *) NULL;
+struct nwad *NetworkAddrList = NULL;
 /* list of network addresses */
 int OffsetDecDigitLimit = OFFDECDIG;    /* offset decimal form (0t...) digit limit */
 int OffsetColWidth;            /* OFFSET column width */
 int PgidColWidth;            /* PGID column width */
 int PidColWidth;            /* PID column width */
-struct lfile *PrevLocalFile = (struct lfile *) NULL;
+struct lfile *PrevLocalFile = NULL;
 /* previous local file structure */
 char *ProgramName;            /* program name */
 int PpidColWidth;            /* PPID column width */
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
 int ProcFsFound = 0;		/* 1 when searching for an proc file system
 				 * file and one was found */
 struct procfsid *ProcFsIdTable = (struct procfsid *)NULL;
                 /* proc file system PID search table */
 int ProcFsSearching = 0;		/* 1 if searching for any proc file system
 				 * file */
-#endif    /* defined(HASPROCFS) */
+#endif
 
 int PrintPass = 0;            /* print pass: 0 = compute column widths
 				 *	       1 = print */
 int RepeatTime = 0;            /* repeat time -- set by -r */
-struct l_dev **SortedDevices = (struct l_dev **) NULL;
+struct l_dev **SortedDevices = NULL;
 /* pointer to DeviceTable[] pointers, sorted
  * by device */
 int SelectAll = 1;            /* all processes are selected (default) */
@@ -319,34 +310,34 @@ int SelectionFlags = 0;        /* selection flags -- see SEL* in lsof.h */
 int SetgidState = 0;            /* setgid state */
 int SelectInetOnly = 0;        /* select only Internet socket files */
 int SetuidRootState = 0;        /* setuid-root state */
-struct sfile *SearchFileChain = (struct sfile *) NULL;
+struct sfile *SearchFileChain = NULL;
 /* chain of files to search for */
-struct int_lst *SearchPgidList = (struct int_lst *) NULL;
+struct int_lst *SearchPgidList = NULL;
 /* process group IDs to search for */
-struct int_lst *SearchPidList = (struct int_lst *) NULL;
+struct int_lst *SearchPidList = NULL;
 /* Process IDs to search for */
-struct seluid *SearchUidList = (struct seluid *) NULL;
+struct seluid *SearchUidList = NULL;
 /* User IDs to include or exclude */
 int SizeColWidth;            /* SIZE column width */
 int SizeOffColWidth;            /* SIZE/OFF column width */
-char *SizeOffFormat0t = (char *) NULL;
+char *SizeOffFormat0t = NULL;
 /* SZOFFTYPE 0t%u printf specification */
-char *SizeOffFormatD = (char *) NULL;
+char *SizeOffFormatD = NULL;
 /* SZOFFTYPE %d printf  specification */
-char *SizeOffFormatDv = (char *) NULL;
+char *SizeOffFormatDv = NULL;
 /* SZOFFTYPE %*d printf  specification */
-char *SizeOffFormatX = (char *) NULL;
+char *SizeOffFormatX = NULL;
 /* SZOFFTYPE %#x printf  specification */
 int TaskPrintFlag = 0;        /* task print flag */
 int TcpStateAlloc = 0;        /* allocated (possibly unused) entries in TCP
 				 * state tables */
-unsigned char *TcpStateInclude = (unsigned char *) NULL;
+unsigned char *TcpStateInclude = NULL;
 /* included TCP states */
 int TcpStateIncludeCount = 0;        /* number of entries in TcpStateInclude[] */
 int TcpStateOffset = 0;        /* offset for TCP state number to adjust
 				 * negative numbers to an index into TcpStateNames[],
 				 * TcpStateInclude[] and TcpStateExclude[] */
-unsigned char *TcpStateExclude = (unsigned char *) NULL;
+unsigned char *TcpStateExclude = NULL;
 /* excluded TCP states */
 int TcpStateExcludeCount = 0;        /* number of entries in TcpStateExclude[] */
 int TcpNumStates = 0;        /* number of TCP states -- either in
@@ -359,13 +350,13 @@ int TimeoutLimit = TMLIMIT;        /* Readlink() and stat() timeout (seconds) */
 int TypeColWidth;            /* TYPE column width */
 int UdpStateAlloc = 0;        /* allocated (possibly unused) entries in UDP
 				 * state tables */
-unsigned char *UdpStateInclude = (unsigned char *) NULL;
+unsigned char *UdpStateInclude = NULL;
 /* included UDP states */
 int UdpStateIncludeCount = 0;        /* number of entries in UdpStateInclude[] */
 int UdpStateOffset = 0;        /* offset for UDP state number to adjust
 				 * negative numbers to an index into UdpStateNames[],
 				 * UdpStateInclude[] and UdpStateExclude[] */
-unsigned char *UdpStateExclude = (unsigned char *) NULL;
+unsigned char *UdpStateExclude = NULL;
 /* excluded UDP states */
 int UdpStateExcludeCount = 0;        /* number of entries in UdpStateExclude[] */
 int UdpNumStates = 0;        /* number of UDP states  in UdpStateNames[] */
@@ -373,9 +364,9 @@ char **UdpStateNames = (char **) NULL;    /* local UDP state names, indexed by s
 				 * state number */
 int UserColWidth;            /* USER column width */
 
-#if    defined(HASZONES)
+#if defined(HASZONES)
 znhash_t **ZoneArg = (znhash_t **)NULL;
                 /* zone arguments supplied with -z */
-#endif    /* defined(HASZONES) */
+#endif
 
 int ZoneColWidth;            /* ZONE column width */

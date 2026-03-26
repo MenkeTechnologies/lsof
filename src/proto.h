@@ -2,7 +2,6 @@
  * proto.h - common function prototypes for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,117 +25,87 @@
  * 4. This notice may not be removed or altered.
  */
 
+#ifndef PROTO_H
+#define PROTO_H
 
-/*
- * $Id: proto.h,v 1.36 2011/09/07 19:13:49 abe Exp $
- */
+#if defined(__GNUC__) || defined(__clang__)
+#define exiting __attribute__((__noreturn__))
+#else
+#define exiting
+#endif
 
+extern void add_nma(char *str, int len);
 
-#if    !defined(PROTO_H)
-#define    PROTO_H    1
+extern void alloc_lfile(char *nm, int num);
 
+extern void alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sel_flags);
 
-/*
- * The _PROTOTYPE macro provides strict ANSI C prototypes if __STDC__
- * is defined, and old-style K&R prototypes otherwise.
- *
- * (With thanks to Andy Tanenbaum)
- */
+extern void build_IPstates(void);
 
-# if    defined(__STDC__)
-#define    _PROTOTYPE(function, params)    function params
-# else	/* !defined(__STDC__) */
-#define	_PROTOTYPE(function, params)	function()
-# endif /* defined(__STDC__) */
+extern void childx(void);
 
+extern int ck_fd_status(char *nm, int num);
 
-/*
- * The following define keeps gcc>=2.7 from complaining about the failure
- * of the Exit() function to return.
- *
- * Paul Eggert supplied it.
- */
+extern int ck_file_arg(int first_arg_idx, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp);
 
-# if    defined(__GNUC__) && !(__GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 7))
-#define    exiting    __attribute__((__noreturn__))
-# else	/* !gcc || gcc<2.7 */
-#define	exiting
-# endif    /* gcc && gcc>=2.7 */
+extern void ckkv(char *dialect, char *expected_rev, char *expected_ver, char *expected_arch);
 
+extern void clr_devtab(void);
 
-_PROTOTYPE(extern void add_nma, (char *str, int len));
+extern int compdev(COMP_P * lhs, COMP_P * rhs);
 
-_PROTOTYPE(extern void alloc_lfile, (char *nm, int num));
+extern int comppid(COMP_P * lhs, COMP_P * rhs);
 
-_PROTOTYPE(extern void alloc_lproc, (int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sel_flags));
+#if defined(WILLDROPGID)
+extern void dropgid(void);
+#endif
 
-_PROTOTYPE(extern void build_IPstates, (void));
+extern char *endnm(size_t * remaining_size);
 
-_PROTOTYPE(extern void childx, (void));
+extern int enter_cmd_rx(char *regex_str);
 
-_PROTOTYPE(extern int ck_fd_status, (char *nm, int num));
+extern void enter_dev_ch(char *m);
 
-_PROTOTYPE(extern int ck_file_arg, (int first_arg_idx, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp));
+extern int enter_dir(char *dir_path, int descend);
 
-_PROTOTYPE(extern void ckkv, (char *dialect, char *expected_rev, char *expected_ver, char *expected_arch));
+#if defined(HASEOPT)
+extern int enter_efsys(char *path, int rdlnk);
+#endif
 
-_PROTOTYPE(extern void clr_devtab, (void));
+extern int enter_fd(char *fd_str);
 
-_PROTOTYPE(extern int compdev, (COMP_P * lhs, COMP_P * rhs));
+extern int enter_network_address(char *na);
 
-_PROTOTYPE(extern int comppid, (COMP_P * lhs, COMP_P * rhs));
+extern int enter_id(enum IDType type, char *id_str);
 
-# if    defined(WILLDROPGID)
-_PROTOTYPE(extern void dropgid,(void));
-# endif    /* defined(WILLDROPGID) */
+extern void enter_IPstate(char *type, char *name, int nr);
 
-_PROTOTYPE(extern char *endnm, (size_t * remaining_size));
+extern void enter_nm(char *m);
 
-_PROTOTYPE(extern int enter_cmd_rx, (char *regex_str));
+#if defined(HASTCPUDPSTATE)
+extern int enter_state_spec(char *ss);
+#endif
 
-_PROTOTYPE(extern void enter_dev_ch, (char *m));
+extern int enter_str_lst(char *opt, char *str_val, struct str_lst **list_ptr,
+        int *incl, int *excl);
 
-_PROTOTYPE(extern int enter_dir, (char *dir_path, int descend));
+extern int enter_uid(char *us);
 
-# if    defined(HASEOPT)
-_PROTOTYPE(extern int enter_efsys,(char *path, int rdlnk));
-# endif    /* defined(HASEOPT) */
+extern void ent_inaddr(unsigned char *local_addr, int lp, unsigned char *foreign_addr, int fp, int af);
 
-_PROTOTYPE(extern int enter_fd, (char *fd_str));
+extern int examine_lproc(void);
 
-_PROTOTYPE(extern int enter_network_address, (char *na));
+extern void Exit(int xv) exiting;
 
-_PROTOTYPE(extern int enter_id, (enum IDType type, char *id_str));
+extern void find_ch_ino(void);
 
-_PROTOTYPE(extern void enter_IPstate, (char *type, char *name, int nr));
+extern void free_lproc(struct lproc *proc);
 
-_PROTOTYPE(extern void enter_nm, (char *m));
+extern void gather_proc_info(void);
 
-# if    defined(HASTCPUDPSTATE)
-_PROTOTYPE(extern int enter_state_spec,(char *ss));
-# endif    /* defined(HASTCPUDPSTATE) */
+extern char *gethostnm(unsigned char *inet_addr, int addr_family);
 
-_PROTOTYPE(extern int enter_str_lst, (char *opt, char *str_val, struct str_lst **list_ptr,
-        int *incl, int *excl));
-
-_PROTOTYPE(extern int enter_uid, (char *us));
-
-_PROTOTYPE(extern void ent_inaddr, (unsigned char *local_addr, int lp, unsigned char *foreign_addr, int fp, int af));
-
-_PROTOTYPE(extern int examine_lproc, (void));
-
-_PROTOTYPE(extern void Exit, (int xv)) exiting;
-
-_PROTOTYPE(extern void find_ch_ino, (void));
-
-_PROTOTYPE(extern void free_lproc, (struct lproc *proc));
-
-_PROTOTYPE(extern void gather_proc_info, (void));
-
-_PROTOTYPE(extern char *gethostnm, (unsigned char *inet_addr, int addr_family));
-
-# if    !defined(GET_MAX_FD)
-/*
+#ifndef GET_MAX_FD/*
  * This is not strictly a prototype, but GET_MAX_FD is the name of the
  * function that, in lieu of getdtablesize(), returns the maximum file
  * descriptor plus one (or file descriptor count).  GET_MAX_FD may be
@@ -145,228 +114,213 @@ _PROTOTYPE(extern char *gethostnm, (unsigned char *inet_addr, int addr_family));
  */
 
 #define    GET_MAX_FD    getdtablesize
-# endif    /* !defined(GET_MAX_FD) */
+#endif
 
-_PROTOTYPE(extern int hashbyname, (char *name, int mod));
+extern int hashbyname(char *name, int mod);
 
-_PROTOTYPE(extern void hashSfile, (void));
+extern void hashSfile(void);
 
-_PROTOTYPE(extern void initialize, (void));
+extern void initialize(void);
 
-_PROTOTYPE(extern int is_cmd_excl, (char *cmd, short *pss, short *sf));
+extern int is_cmd_excl(char *cmd, short *pss, short *sf);
 
-_PROTOTYPE(extern int is_nw_addr, (unsigned char *inet_addr, int p, int af));
+extern int is_nw_addr(unsigned char *inet_addr, int p, int af);
 
-#if    defined(HASTASKS)
-_PROTOTYPE(extern int is_proc_excl,(int pid, int pgid, UID_ARG uid, short *pss, short *sf, int tid));
-#else	/* !defined(HASTASKS) */
+#if defined(HASTASKS)
+extern int is_proc_excl(int pid, int pgid, UID_ARG uid, short *pss, short *sf, int tid);
+#else
 
-_PROTOTYPE(extern int is_proc_excl, (int pid, int pgid, UID_ARG uid, short *pss, short *sf));
+extern int is_proc_excl(int pid, int pgid, UID_ARG uid, short *pss, short *sf);
 
-#endif    /* defined(HASTASKS) */
+#endif
 
-_PROTOTYPE(extern int is_readable, (char *path, int msg));
+extern int is_readable(char *path, int msg);
 
-_PROTOTYPE(extern int kread, (KA_T
-        addr,
-        char *buf, READLEN_T
-        len));
+extern int kread(KA_T addr, char *buf, READLEN_T len);
 
-_PROTOTYPE(extern void link_lfile, (void));
+extern void link_lfile(void);
 
-_PROTOTYPE(extern struct l_dev *lkupdev, (dev_t * dev, dev_t * rdev,
-        int i,
-        int r));
+extern struct l_dev *lkupdev(dev_t *dev, dev_t *rdev, int i, int r);
 
-_PROTOTYPE(extern int main, (int argc, char *argv[]));
+extern int main(int argc, char *argv[]);
 
-_PROTOTYPE(extern int lstatsafely, (char *path, struct stat *buf));
+extern int lstatsafely(char *path, struct stat *buf);
 
-_PROTOTYPE(extern char *mkstrcpy, (char *src, MALLOC_S *rlp));
+extern char *mkstrcpy(char *src, MALLOC_S *rlp);
 
-_PROTOTYPE(extern char *mkstrcat, (char *str1, int len1, char *str2, int len2, char *str3, int len3, MALLOC_S *clp));
+extern char *mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3, MALLOC_S *clp);
 
-_PROTOTYPE(extern int printdevname, (dev_t * dev, dev_t * rdev,
-        int force,
-        int nty));
+extern int printdevname(dev_t *dev, dev_t *rdev, int force, int nty);
 
-_PROTOTYPE(extern void print_file, (void));
+extern void print_file(void);
 
-_PROTOTYPE(extern void print_init, (void));
+extern void print_init(void);
 
-_PROTOTYPE(extern void printname, (int newline));
+extern void printname(int newline);
 
-_PROTOTYPE(extern char *print_kptr, (KA_T
-        kp,
-        char *buf, size_t
-        bufl));
+extern char *print_kptr(KA_T kp, char *buf, size_t bufl);
 
-_PROTOTYPE(extern int print_proc, (void));
+extern int print_proc(void);
 
-_PROTOTYPE(extern void printrawaddr, (struct sockaddr *sock_addr));
+extern void printrawaddr(struct sockaddr *sock_addr);
 
-_PROTOTYPE(extern void print_tcptpi, (int newline));
+extern void print_tcptpi(int newline);
 
-_PROTOTYPE(extern char *printuid, (UID_ARG
-        uid,
-        int *type));
+extern char *printuid(UID_ARG uid, int *type);
 
-_PROTOTYPE(extern void printunkaf, (int fam, int type));
+extern void printunkaf(int fam, int type);
 
-_PROTOTYPE(extern char *printsockty, (int type));
+extern char *printsockty(int type);
 
-_PROTOTYPE(extern void process_file, (KA_T
-        fp));
+extern void process_file(KA_T fp);
 
-_PROTOTYPE(extern void process_node, (KA_T
-        f));
+extern void process_node(KA_T f);
 
-_PROTOTYPE(extern char *Readlink, (char *arg));
+extern char *Readlink(char *arg);
 
-_PROTOTYPE(extern void readdev, (int skip));
+extern void readdev(int skip);
 
-_PROTOTYPE(extern struct mounts *readmnt, (void));
+extern struct mounts *readmnt(void);
 
-_PROTOTYPE(extern void rereaddev, (void));
+extern void rereaddev(void);
 
-_PROTOTYPE(extern int safestrlen, (char *str, int flags));
+extern int safestrlen(char *str, int flags);
 
-_PROTOTYPE(extern void safestrprtn, (char *str, int len, FILE *stream, int flags));
+extern void safestrprtn(char *str, int len, FILE *stream, int flags);
 
-_PROTOTYPE(extern void safestrprt, (char *str, FILE *stream, int flags));
+extern void safestrprt(char *str, FILE *stream, int flags);
 
-_PROTOTYPE(extern int statsafely, (char *path, struct stat *buf));
+extern int statsafely(char *path, struct stat *buf);
 
-_PROTOTYPE(extern void stkdir, (char *p));
+extern void stkdir(char *p);
 
-_PROTOTYPE(extern void usage, (int xv, int fh, int version));
+extern void usage(int xv, int fh, int version);
 
-_PROTOTYPE(extern int util_strftime, (char *fmtr, int fmtl, char *fmt));
+extern int util_strftime(char *fmtr, int fmtl, char *fmt);
 
-_PROTOTYPE(extern int vfy_dev, (struct l_dev *dp));
+extern int vfy_dev(struct l_dev *dp);
 
-_PROTOTYPE(extern char *x2dev, (char *hex_str, dev_t *dev_ptr));
-
-# if    defined(HASBLKDEV)
-_PROTOTYPE(extern void find_bl_ino,(void));
-_PROTOTYPE(extern struct l_dev *lkupbdev,(dev_t *dev,dev_t *rdev,int i,int r));
-_PROTOTYPE(extern int printbdevname,(dev_t *dev, dev_t *rdev, int f));
-# endif    /* defined(HASBLKDEV) */
-
-# if    defined(HASCDRNODE)
-_PROTOTYPE(extern int readcdrnode,(KA_T ca, struct cdrnode *c));
-# endif    /* defined(HASCDRNODE) */
-
-# if    defined(HASDCACHE)
-_PROTOTYPE(extern void alloc_dcache,(void));
-_PROTOTYPE(extern void crc,(char *b, int l, unsigned *s));
-_PROTOTYPE(extern void crdbld,(void));
-_PROTOTYPE(extern int ctrl_dcache,(char *ctrl_char));
-_PROTOTYPE(extern int dcpath,(int read_write, int npw));
-_PROTOTYPE(extern int open_dcache,(int m, int r, struct stat *sb));
-_PROTOTYPE(extern int read_dcache,(void));
-_PROTOTYPE(extern int wr2DCfd,(char *buf, unsigned *cnt));
-_PROTOTYPE(extern void write_dcache,(void));
-# endif    /* defined(HASDCACHE) */
-
-# if    defined(HASFIFONODE)
-_PROTOTYPE(extern int readfifonode,(KA_T fa, struct fifonode *f));
-# endif    /* defined(HASFIFONODE) */
-
-# if    defined(HASFSTRUCT)
-_PROTOTYPE(extern char *print_fflags,(long ffg, long pof));
-# endif    /* defined(HASFSTRUCT) */
-
-# if    defined(HASGNODE)
-_PROTOTYPE(extern int readgnode,(KA_T ga, struct gnode *g));
-# endif    /* defined(HASGNODE) */
-
-# if    defined(HASKQUEUE)
-_PROTOTYPE(extern void process_kqueue,(KA_T ka));
-# endif    /* defined(HASKQUEUE) */
-
-# if    defined(HASHSNODE)
-_PROTOTYPE(extern int readhsnode,(KA_T ha, struct hsnode *h));
-# endif    /* defined(HASHSNODE) */
-
-# if    defined(HASINODE)
-_PROTOTYPE(extern int readinode,(KA_T ia, struct inode *i));
-# endif    /* defined(HASINODE) */
-
-# if    defined(HASNCACHE)
-_PROTOTYPE(extern void ncache_load,(void));
-_PROTOTYPE(extern char *ncache_lookup,(char *buf, int blen, int *fp));
-# endif    /* defined(HASNCACHE) */
-
-# if    defined(HASNLIST)
-_PROTOTYPE(extern void build_Nl,(struct drive_Nl *d));
-_PROTOTYPE(extern int get_Nl_value,(char *nn, struct drive_Nl *d, KA_T *value));
-# endif    /* defined(HASNLIST) */
-
-# if    defined(HASPIPENODE)
-_PROTOTYPE(extern int readpipenode,(KA_T pa, struct pipenode *p));
-# endif    /* defined(HASPIPENODE) */
-
-# if    defined(HASPRINTDEV)
-_PROTOTYPE(extern char *HASPRINTDEV,(struct lfile *lf, dev_t *dev));
-# endif    /* defined(HASPRINTDEV) */
-
-# if    defined(HASPRINTINO)
-_PROTOTYPE(extern char *HASPRINTINO,(struct lfile *lf));
-# endif    /* defined(HASPRINTINO) */
-
-# if    defined(HASPRINTNM)
-_PROTOTYPE(extern void HASPRINTNM,(struct lfile *lf));
-# endif    /* defined(HASPRINTNM) */
-
-# if    defined(HASPRINTOFF)
-_PROTOTYPE(extern char *HASPRINTOFF,(struct lfile *lf, int ty));
-# endif    /* defined(HASPRINTOFF) */
-
-# if    defined(HASPRINTSZ)
-_PROTOTYPE(extern char *HASPRINTSZ,(struct lfile *lf));
-# endif    /* defined(HASPRINTSZ) */
-
-# if    defined(HASPRIVNMCACHE)
-_PROTOTYPE(extern int HASPRIVNMCACHE,(struct lfile *lf));
-# endif    /* defined(HASPRIVNMCACHE) */
-
-# if    !defined(HASPRIVPRIPP)
-
-_PROTOTYPE(extern void printiproto, (int proto));
-
-# endif    /* !defined(HASPRIVPRIPP) */
-
-# if    defined(HASRNODE)
-_PROTOTYPE(extern int readrnode,(KA_T ra, struct rnode *r));
-# endif    /* defined(HASRNODE) */
-
-# if    defined(HASSPECDEVD)
-_PROTOTYPE(extern void HASSPECDEVD,(char *p, struct stat *s));
-# endif    /* defined(HASSPECDEVD) */
-
-# if    defined(HASSNODE)
-_PROTOTYPE(extern int readsnode,(KA_T sa, struct snode *s));
-# endif    /* defined(HASSNODE) */
-
-# if    defined(HASSTREAMS)
-_PROTOTYPE(extern int readstdata,(KA_T addr, struct stdata *buf));
-_PROTOTYPE(extern int readsthead,(KA_T addr, struct queue *buf));
-_PROTOTYPE(extern int readstidnm,(KA_T addr, char *buf, READLEN_T len));
-_PROTOTYPE(extern int readstmin,(KA_T addr, struct module_info *buf));
-_PROTOTYPE(extern int readstqinit,(KA_T addr, struct qinit *buf));
-# endif    /* defined(HASSTREAMS) */
-
-# if    defined(HASTMPNODE)
-_PROTOTYPE(extern int readtnode,(KA_T ta, struct tmpnode *t));
-# endif    /* defined(HASTMPNODE) */
-
-# if    defined(HASVNODE)
-_PROTOTYPE(extern int readvnode,(KA_T va, struct vnode *v));
-# endif    /* defined(HASVNODE) */
-
-# if    defined(USE_LIB_SNPF)
-_PROTOTYPE(extern int snpf,(char *str, int len, char *fmt, ...));
-# endif    /* defined(USE_LIB_SNPF) */
-
-# endif    /* !defined(PROTO_H) */
+extern char *x2dev(char *hex_str, dev_t *dev_ptr);
+
+#if defined(HASBLKDEV)
+extern void find_bl_ino(void);
+extern struct l_dev *lkupbdev(dev_t *dev,dev_t *rdev,int i,int r);
+extern int printbdevname(dev_t *dev, dev_t *rdev, int f);
+#endif
+
+#if defined(HASCDRNODE)
+extern int readcdrnode(KA_T ca, struct cdrnode *c);
+#endif
+
+#if defined(HASDCACHE)
+extern void alloc_dcache(void);
+extern void crc(char *b, int l, unsigned *s);
+extern void crdbld(void);
+extern int ctrl_dcache(char *ctrl_char);
+extern int dcpath(int read_write, int npw);
+extern int open_dcache(int m, int r, struct stat *sb);
+extern int read_dcache(void);
+extern int wr2DCfd(char *buf, unsigned *cnt);
+extern void write_dcache(void);
+#endif
+
+#if defined(HASFIFONODE)
+extern int readfifonode(KA_T fa, struct fifonode *f);
+#endif
+
+#if defined(HASFSTRUCT)
+extern char *print_fflags(long ffg, long pof);
+#endif
+
+#if defined(HASGNODE)
+extern int readgnode(KA_T ga, struct gnode *g);
+#endif
+
+#if defined(HASKQUEUE)
+extern void process_kqueue(KA_T ka);
+#endif
+
+#if defined(HASHSNODE)
+extern int readhsnode(KA_T ha, struct hsnode *h);
+#endif
+
+#if defined(HASINODE)
+extern int readinode(KA_T ia, struct inode *i);
+#endif
+
+#if defined(HASNCACHE)
+extern void ncache_load(void);
+extern char *ncache_lookup(char *buf, int blen, int *fp);
+#endif
+
+#if defined(HASNLIST)
+extern void build_Nl(struct drive_Nl *d);
+extern int get_Nl_value(char *nn, struct drive_Nl *d, KA_T *value);
+#endif
+
+#if defined(HASPIPENODE)
+extern int readpipenode(KA_T pa, struct pipenode *p);
+#endif
+
+#if defined(HASPRINTDEV)
+extern char *HASPRINTDEV(struct lfile *lf, dev_t *dev);
+#endif
+
+#if defined(HASPRINTINO)
+extern char *HASPRINTINO(struct lfile *lf);
+#endif
+
+#if defined(HASPRINTNM)
+extern void HASPRINTNM(struct lfile *lf);
+#endif
+
+#if defined(HASPRINTOFF)
+extern char *HASPRINTOFF(struct lfile *lf, int ty);
+#endif
+
+#if defined(HASPRINTSZ)
+extern char *HASPRINTSZ(struct lfile *lf);
+#endif
+
+#if defined(HASPRIVNMCACHE)
+extern int HASPRIVNMCACHE(struct lfile *lf);
+#endif
+
+#ifndef HASPRIVPRIPP
+extern void printiproto(int proto);
+
+#endif
+
+#if defined(HASRNODE)
+extern int readrnode(KA_T ra, struct rnode *r);
+#endif
+
+#if defined(HASSPECDEVD)
+extern void HASSPECDEVD(char *p, struct stat *s);
+#endif
+
+#if defined(HASSNODE)
+extern int readsnode(KA_T sa, struct snode *s);
+#endif
+
+#if defined(HASSTREAMS)
+extern int readstdata(KA_T addr, struct stdata *buf);
+extern int readsthead(KA_T addr, struct queue *buf);
+extern int readstidnm(KA_T addr, char *buf, READLEN_T len);
+extern int readstmin(KA_T addr, struct module_info *buf);
+extern int readstqinit(KA_T addr, struct qinit *buf);
+#endif
+
+#if defined(HASTMPNODE)
+extern int readtnode(KA_T ta, struct tmpnode *t);
+#endif
+
+#if defined(HASVNODE)
+extern int readvnode(KA_T va, struct vnode *v);
+#endif
+
+#if defined(USE_LIB_SNPF)
+extern int snpf(char *str, int len, char *fmt, ...);
+#endif
+
+#endif

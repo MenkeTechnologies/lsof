@@ -82,14 +82,14 @@ static int NVips = 0;                /* entries allocated to Vips */
 /*
  * Local function prototypes
  */
-_PROTOTYPE(static void enter_vn_text, (struct vnode_info_path *vip, int *n));
+static void enter_vn_text(struct vnode_info_path *vip, int *n);
 
-_PROTOTYPE(static void process_fds, (int pid, uint32_t n, int ckscko));
+static void process_fds(int pid, uint32_t n, int ckscko);
 
-_PROTOTYPE(static void process_text, (int pid));
+static void process_text(int pid);
 
 #if    DARWINV >= 900
-_PROTOTYPE(static void process_threads,(int pid, uint32_t n));
+static void process_threads(int pid, uint32_t n);
 #endif    /* DARWINV>=900 */
 
 

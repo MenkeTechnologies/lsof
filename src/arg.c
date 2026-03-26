@@ -2,7 +2,6 @@
  * arg.c - common argument processing support functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,26 +25,18 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "lsof.h"
 
-
 /*
  * cmp_int_lst() - compare int_lst entries by integer value for qsort
  */
 
 static int
-cmp_int_lst(lhs, rhs)
-	const void *lhs;
-	const void *rhs;
+cmp_int_lst(const void *lhs, const void *rhs)
 {
     const struct int_lst *left = (const struct int_lst *)lhs;
     const struct int_lst *right = (const struct int_lst *)rhs;
@@ -55,13 +46,11 @@ cmp_int_lst(lhs, rhs)
     return 0;
 }
 
-
 /*
  * Local definitions
  */
 
 #define    CMDRXINCR    32        /* CommandRegexTable[] allocation increment */
-
 
 /*
  * Local static variables
@@ -69,40 +58,33 @@ cmp_int_lst(lhs, rhs)
 
 static int NCmdRxA = 0;            /* space allocated to CommandRegexTable[] */
 
-
 /*
  * Local function prototypes
  */
 
-_PROTOTYPE(static int ckfd_range, (char *first, char *dash, char *last, int *low_fd, int *high_fd));
+static int ckfd_range(char *first, char *dash, char *last, int *low_fd, int *high_fd);
 
-_PROTOTYPE(static int enter_fd_lst, (char *name, int low_fd, int high_fd, int excl));
+static int enter_fd_lst(char *name, int low_fd, int high_fd, int excl);
 
-_PROTOTYPE(static int enter_nwad, (struct nwad *nwad_ptr, int start_port, int end_port, char *addr_str, struct hostent *host_entry));
+static int enter_nwad(struct nwad *nwad_ptr, int start_port, int end_port, char *addr_str, struct hostent *host_entry);
 
-_PROTOTYPE(static struct hostent *lkup_hostnm, (char *hostname, struct nwad *nwad_ptr));
+static struct hostent *lkup_hostnm(char *hostname, struct nwad *nwad_ptr);
 
-_PROTOTYPE(static char *isIPv4addr, (char *hostname, unsigned char *addr_buf, int addr_len));
-
+static char *isIPv4addr(char *hostname, unsigned char *addr_buf, int addr_len);
 
 /*
  * ckfd_range() - check fd range
  */
 
 static int
-ckfd_range(first, dash, last, low_fd, high_fd)
-        char *first;            /* starting character */
-        char *dash;            /* '-' location */
-        char *last;            /* '\0' location */
-        int *low_fd;            /* returned low value */
-        int *high_fd;            /* returned high value */
+ckfd_range(char *first, char *dash, char *last, int *low_fd, int *high_fd)
 {
     char *char_ptr;
 /*
  * See if the range character pointers make sense.
  */
     if (first >= dash || dash >= last) {
-        (void) fprintf(stderr, "%s: illegal FD range for -d: ", ProgramName);
+        fprintf(stderr, "%s: illegal FD range for -d: ", ProgramName);
         safestrprt(first, stderr, 1);
         return (1);
     }
@@ -114,7 +96,7 @@ ckfd_range(first, dash, last, low_fd, high_fd)
 
             FD_range_nondigit:
 
-            (void) fprintf(stderr, "%s: non-digit in -d FD range: ", ProgramName);
+            fprintf(stderr, "%s: non-digit in -d FD range: ", ProgramName);
             safestrprt(first, stderr, 1);
             return (1);
         }
@@ -126,51 +108,43 @@ ckfd_range(first, dash, last, low_fd, high_fd)
         *high_fd = (*high_fd * 10) + (int) (*char_ptr - '0');
     }
     if (*low_fd >= *high_fd) {
-        (void) fprintf(stderr, "%s: -d FD range's low >= its high: ", ProgramName);
+        fprintf(stderr, "%s: -d FD range's low >= its high: ", ProgramName);
         safestrprt(first, stderr, 1);
         return (1);
     }
     return (0);
 }
 
-
 /*
  * ck_file_arg() - check file arguments
  */
 
 int
-ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
-        int first_arg_idx;            /* first file argument index */
-        int arg_count;            /* argument count */
-        char *av[];        /* argument vector */
-        int fs_value;            /* OptFileSystem value (real or temporary) */
-        int readlink_status;            /* Readlink() status if argument count == 1:
-				 *	0 = undone; 1 = done */
-        struct stat *sbp;    /* if non-NULL, pointer to stat(2) buffer
-				 * when argument count == 1 */
+ck_file_arg(int first_arg_idx, int arg_count, char *av[], int fs_value,
+            int readlink_status, struct stat *sbp)
 {
     char *alloc_path, *fnm, *fsnm, *path;
     short err = 0;
     int fs_match, ftype, j, k;
     MALLOC_S len;
     struct mounts *mount_ptr;
-    static struct mounts **mmp = (struct mounts **) NULL;
+    static struct mounts **mmp = NULL;
     int max_mounts, num_mounts;
     static int nma = 0;
     struct stat stat_buf;
     struct sfile *sfp;
     short stat_status = 0;
 
-#if    defined(CKFA_EXPDEV)
+#if defined(CKFA_EXPDEV)
     dev_t dev, rdev;
-#endif    /* defined(CKFA_EXPDEV) */
+#endif
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
     unsigned char ad, an;
     int pfsnl = -1;
     pid_t pid;
     struct procfsid *pfi;
-#endif    /* defined(HASPROCFS) */
+#endif
 
 /*
  * Loop through arguments.
@@ -196,11 +170,11 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                 path[k] = '\0';
             else {
                 if (!(alloc_path = (char *) malloc((MALLOC_S)(k + 1)))) {
-                    (void) fprintf(stderr, "%s: no space for copy of %s\n",
+                    fprintf(stderr, "%s: no space for copy of %s\n",
                                    ProgramName, path);
                     Exit(1);
                 }
-                (void) strncpy(alloc_path, path, k);
+                strncpy(alloc_path, path, k);
                 alloc_path[k] = '\0';
                 path = alloc_path;
             }
@@ -244,14 +218,14 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                 if (mmp) {
                     struct mounts **tmp = (struct mounts **) realloc((MALLOC_P *) mmp, len);
                     if (!tmp) {
-                        (void) free((FREE_P *) mmp);
-                        mmp = (struct mounts **) NULL;
+                        free((FREE_P *) mmp);
+                        mmp = NULL;
                     } else
                         mmp = tmp;
                 } else
                     mmp = (struct mounts **) malloc(len);
                 if (!mmp) {
-                    (void) fprintf(stderr,
+                    fprintf(stderr,
                                    "%s: no space for mount pointers\n", ProgramName);
                     Exit(1);
                 }
@@ -259,11 +233,11 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
             mmp[num_mounts++] = mount_ptr;
         }
         if (fs_value == 2 && num_mounts == 0) {
-            (void) fprintf(stderr, "%s: not a file system: ", ProgramName);
+            fprintf(stderr, "%s: not a file system: ", ProgramName);
             safestrprt(av[first_arg_idx], stderr, 1);
             PathStatErrorCount = 1;
             if (path != av[first_arg_idx])
-                (void) free((FREE_P *) path);
+                free((FREE_P *) path);
             continue;
         }
         /*
@@ -277,7 +251,7 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
              * Allocate an sfile structure and fill in the type and link.
              */
             if (!(sfp = (struct sfile *) malloc(sizeof(struct sfile)))) {
-                (void) fprintf(stderr, "%s: no space for files\n", ProgramName);
+                fprintf(stderr, "%s: no space for files\n", ProgramName);
                 Exit(1);
             }
             sfp->next = SearchFileChain;
@@ -290,7 +264,7 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                  * and set a NULL file system name.
                  */
                 fnm = path;
-                fsnm = (char *) NULL;
+                fsnm = NULL;
                 /*
                  * Stat the path to obtain its characteristics.
                  */
@@ -300,26 +274,26 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                     if (statsafely(fnm, &stat_buf) != 0) {
                         int en = errno;
 
-                        (void) fprintf(stderr, "%s: status error on ", ProgramName);
+                        fprintf(stderr, "%s: status error on ", ProgramName);
                         safestrprt(fnm, stderr, 0);
-                        (void) fprintf(stderr, ": %s\n", strerror(en));
+                        fprintf(stderr, ": %s\n", strerror(en));
                         SearchFileChain = sfp->next;
-                        (void) free((FREE_P *) sfp);
+                        free((FREE_P *) sfp);
                         PathStatErrorCount = 1;
                         if (path != av[first_arg_idx])
-                            (void) free((FREE_P *) path);
+                            free((FREE_P *) path);
                         continue;
                     }
 
-#if    defined(HASSPECDEVD)
-                    (void) HASSPECDEVD(fnm, &stat_buf);
-#endif    /* defined(HASSPECDEVD) */
+#if defined(HASSPECDEVD)
+                    HASSPECDEVD(fnm, &stat_buf);
+#endif
 
                 }
                 sfp->i = (INODETYPE) stat_buf.st_ino;
                 sfp->mode = stat_buf.st_mode & S_IFMT;
 
-#if    defined(CKFA_EXPDEV)
+#if defined(CKFA_EXPDEV)
                 /*
                  * Expand device numbers before saving, so that they match the
                  * already-expanded local mount info table device numbers.
@@ -327,35 +301,35 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                  */
                     sfp->dev = expdev(stat_buf.st_dev);
                     sfp->rdev = expdev(stat_buf.st_rdev);
-#else	/* !defined(CKFA_EXPDEV) */
+#else
                 sfp->dev = stat_buf.st_dev;
                 sfp->rdev = stat_buf.st_rdev;
-#endif    /* defined(CKFA_EXPDEV) */
+#endif
 
-#if    defined(CKFA_MPXCHAN)
+#if defined(CKFA_MPXCHAN)
                 /*
                  * Save a (possible) multiplexed channel number.  (This is an
                  * AIX artifact.)
                  */
                     sfp->ch = getchan(path);
-#endif    /* defined(CKFA_MPXCHAN) */
+#endif
 
             } else {
                 mount_ptr = mmp[max_mounts++];
                 stat_status++;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
                 /*
                  * If this is a /proc file system, set the search flag and
                  * abandon the sfile entry.
                  */
                     if (mount_ptr == Mtprocfs) {
                     SearchFileChain = sfp->next;
-                    (void) free((FREE_P *)sfp);
+                    free((FREE_P *)sfp);
                     ProcFsSearching = 1;
                     continue;
                     }
-#endif    /* defined(HASPROCFS) */
+#endif
 
                 /*
                  * Derive file name and file system name for a mount point.
@@ -377,61 +351,61 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
             if (!fnm || fnm == path) {
                 sfp->name = fnm;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
                 an = 0;
-#endif    /* defined(HASPROCFS) */
+#endif
 
             } else {
-                if (!(sfp->name = mkstrcpy(fnm, (MALLOC_S *) NULL))) {
-                    (void) fprintf(stderr,
+                if (!(sfp->name = mkstrcpy(fnm, NULL))) {
+                    fprintf(stderr,
                                    "%s: no space for file name: ", ProgramName);
                     safestrprt(fnm, stderr, 1);
                     Exit(1);
                 }
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
                 an = 1;
-#endif    /* defined(HASPROCFS) */
+#endif
 
             }
             if (!fsnm || fsnm == path) {
                 sfp->devnm = fsnm;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
                 ad = 0;
-#endif    /* defined(HASPROCFS) */
+#endif
 
             } else {
-                if (!(sfp->devnm = mkstrcpy(fsnm, (MALLOC_S *) NULL))) {
-                    (void) fprintf(stderr,
+                if (!(sfp->devnm = mkstrcpy(fsnm, NULL))) {
+                    fprintf(stderr,
                                    "%s: no space for file system name: ", ProgramName);
                     safestrprt(fsnm, stderr, 1);
                     Exit(1);
                 }
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
                 ad = 1;
-#endif    /* defined(HASPROCFS) */
+#endif
 
             }
-            if (!(sfp->aname = mkstrcpy(av[first_arg_idx], (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr,
+            if (!(sfp->aname = mkstrcpy(av[first_arg_idx], NULL))) {
+                fprintf(stderr,
                                "%s: no space for argument file name: ", ProgramName);
                 safestrprt(av[first_arg_idx], stderr, 1);
                 Exit(1);
             }
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
             /*
              * See if this is an individual member of a proc file system.
              */
             if (!Mtprocfs || ProcFsSearching)
                 continue;
 
-# if	defined(HASFSTYPE) && HASFSTYPE==1
+#if	defined(HASFSTYPE) && HASFSTYPE==1
             if (strcmp(stat_buf.st_fstype, HASPROCFS) != 0)
                 continue;
-# endif	/* defined(HASFSTYPE) && HASFSTYPE==1 */
+#endif
 
             if (pfsnl == -1)
                 pfsnl = strlen(Mtprocfs->dir);
@@ -441,11 +415,11 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                 continue;
             if (path[pfsnl] != '/')
 
-# if	defined(HASPINODEN)
+#if	defined(HASPINODEN)
                 pid = 0;
-# else	/* !defined(HASPINODEN) */
+#else
                 continue;
-# endif	/* defined(HASPINODEN) */
+#endif
 
             else {
                 for (j = pfsnl+1; path[j]; j++) {
@@ -455,11 +429,11 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
                 if (path[j] || (j - pfsnl - 1) < 1
                 ||  (sfp->mode & S_IFMT) != S_IFREG)
 
-# if	defined(HASPINODEN)
+#if	defined(HASPINODEN)
                 pid = 0;
-# else	/* !defined(HASPINODEN) */
+#else
                 continue;
-# endif	/* defined(HASPINODEN) */
+#endif
 
                 else
                 pid = atoi(&path[pfsnl+1]);
@@ -467,7 +441,7 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
             if (!(pfi = (struct procfsid *)malloc((MALLOC_S)
                      sizeof(struct procfsid))))
             {
-                (void) fprintf(stderr, "%s: no space for %s ID: ",
+                fprintf(stderr, "%s: no space for %s ID: ",
                 ProgramName, Mtprocfs->dir);
                 safestrprt(path, stderr, 1);
                 Exit(1);
@@ -478,44 +452,42 @@ ck_file_arg(first_arg_idx, arg_count, av, fs_value, readlink_status, sbp)
             pfi->next = ProcFsIdTable;
             ProcFsIdTable = pfi;
 
-# if	defined(HASPINODEN)
+#if	defined(HASPINODEN)
             pfi->inode = (INODETYPE)sfp->i;
-# endif	/* defined(HASPINODEN) */
+#endif
 
             /*
              * Abandon the SearchFileChain entry, lest it be used in is_file_named().
              */
             SearchFileChain = sfp->next;
             if (ad)
-                (void) free((FREE_P *)sfp->devnm);
+                free((FREE_P *)sfp->devnm);
             if (an)
-                (void) free((FREE_P *)sfp->name);
-            (void) free((FREE_P *)sfp);
-#endif    /* defined(HASPROCFS) */
+                free((FREE_P *)sfp->name);
+            free((FREE_P *)sfp);
+#endif
 
         } while (max_mounts < num_mounts);
         if (!ftype && path != av[first_arg_idx])
-            (void) free((FREE_P *) path);
+            free((FREE_P *) path);
     }
     if (!stat_status)
         err = 1;
     return ((int) err);
 }
 
-
-#if    defined(HASDCACHE)
+#if defined(HASDCACHE)
 /*
  * ctrl_dcache() - enter device cache control
  */
 
 int
-ctrl_dcache(ctrl_char)
-    char *ctrl_char;			/* control string */
+ctrl_dcache(char *ctrl_char)
 {
     int rc = 0;
 
     if (!ctrl_char) {
-        (void) fprintf(stderr,
+        fprintf(stderr,
         "%s: no device cache option control string\n", ProgramName);
         return(1);
     }
@@ -525,7 +497,7 @@ ctrl_dcache(ctrl_char)
     switch (*ctrl_char) {
     case '?':
         if (*(ctrl_char+1) != '\0') {
-        (void) fprintf(stderr, "%s: nothing should follow -D?\n", ProgramName);
+        fprintf(stderr, "%s: nothing should follow -D?\n", ProgramName);
         return(1);
         }
         DevCacheHelp = 1;
@@ -534,9 +506,9 @@ ctrl_dcache(ctrl_char)
     case 'B':
         if (SetuidRootState
 
-#if	!defined(WILLDROPGID)
+#ifndef WILLDROPGID
         ||  MyRealUid
-#endif	/* !defined(WILLDROPGID) */
+#endif
 
         )
         rc = 1;
@@ -554,9 +526,9 @@ ctrl_dcache(ctrl_char)
     case 'U':
         if (SetuidRootState
 
-#if	!defined(WILLDROPGID)
+#ifndef WILLDROPGID
         ||  MyRealUid
-#endif	/* !defined(WILLDROPGID) */
+#endif
 
         )
         rc = 1;
@@ -571,12 +543,12 @@ ctrl_dcache(ctrl_char)
         }
         /* fall through */
     default:
-        (void) fprintf(stderr, "%s: unknown -D option: ", ProgramName);
+        fprintf(stderr, "%s: unknown -D option: ", ProgramName);
         safestrprt(ctrl_char, stderr, 1);
         return(1);
     }
     if (rc) {
-        (void) fprintf(stderr, "%s: -D option restricted to root: ", ProgramName);
+        fprintf(stderr, "%s: -D option restricted to root: ", ProgramName);
         safestrprt(ctrl_char, stderr, 1);
         return(1);
     }
@@ -586,24 +558,22 @@ ctrl_dcache(ctrl_char)
     for (ctrl_char++; *ctrl_char && (*ctrl_char == ' ' || *ctrl_char == '\t'); ctrl_char++)
         ;
     if (strlen(ctrl_char)) {
-        if (!(DevCachePathArg = mkstrcpy(ctrl_char, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr, "%s: no space for -D path: ", ProgramName);
+        if (!(DevCachePathArg = mkstrcpy(ctrl_char, NULL))) {
+        fprintf(stderr, "%s: no space for -D path: ", ProgramName);
         safestrprt(ctrl_char, stderr, 1);
         Exit(1);
         }
     }
     return(0);
 }
-#endif    /* defined(HASDCACHE) */
-
+#endif
 
 /*
  * enter_cmd_rx() - enter command regular expression
  */
 
 int
-enter_cmd_rx(regex_str)
-        char *regex_str;            /* regular expression */
+enter_cmd_rx(char *regex_str)
 {
     int bmod = 0;
     int bxmod = 0;
@@ -613,12 +583,12 @@ enter_cmd_rx(regex_str)
     int compile_flags = REG_NOSUB | REG_EXTENDED;
     char reb[256], *xb, *xe, *xm;
     MALLOC_S extra_len;
-    char *regex_pattern = (char *) NULL;
+    char *regex_pattern = NULL;
 /*
  * Make sure the supplied string starts a regular expression.
  */
     if (!*regex_str || (*regex_str != '/')) {
-        (void) fprintf(stderr, "%s: regexp doesn't begin with '/': ", ProgramName);
+        fprintf(stderr, "%s: regexp doesn't begin with '/': ", ProgramName);
         if (regex_str)
             safestrprt(regex_str, stderr, 1);
         return (1);
@@ -632,7 +602,7 @@ enter_cmd_rx(regex_str)
             break;
     }
     if (*xe != '/') {
-        (void) fprintf(stderr, "%s: regexp doesn't end with '/': ", ProgramName);
+        fprintf(stderr, "%s: regexp doesn't end with '/': ", ProgramName);
         safestrprt(regex_str, stderr, 1);
         return (1);
     }
@@ -644,14 +614,14 @@ enter_cmd_rx(regex_str)
             case 'b':            /* This is a basic expression. */
                 if (++bmod > 1) {
                     if (bmod == 2) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: b regexp modifier already used: ", ProgramName);
                         safestrprt(regex_str, stderr, 1);
                     }
                     i = 1;
                 } else if (xmod) {
                     if (++bxmod == 1) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: b and x regexp modifiers conflict: ", ProgramName);
                         safestrprt(regex_str, stderr, 1);
                     }
@@ -662,7 +632,7 @@ enter_cmd_rx(regex_str)
             case 'i':            /* Ignore case. */
                 if (++imod > 1) {
                     if (imod == 2) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: i regexp modifier already used: ", ProgramName);
                         safestrprt(regex_str, stderr, 1);
                     }
@@ -673,14 +643,14 @@ enter_cmd_rx(regex_str)
             case 'x':            /* This is an extended expression. */
                 if (++xmod > 1) {
                     if (xmod == 2) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: x regexp modifier already used: ", ProgramName);
                         safestrprt(regex_str, stderr, 1);
                     }
                     i = 1;
                 } else if (bmod) {
                     if (++bxmod == 1) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: b and x regexp modifiers conflict: ", ProgramName);
                         safestrprt(regex_str, stderr, 1);
                     }
@@ -689,7 +659,7 @@ enter_cmd_rx(regex_str)
                     compile_flags |= REG_EXTENDED;
                 break;
             default:
-                (void) fprintf(stderr, "%s: invalid regexp modifier: %c\n",
+                fprintf(stderr, "%s: invalid regexp modifier: %c\n",
                                ProgramName, (int) *xm);
                 i = 1;
         }
@@ -701,11 +671,11 @@ enter_cmd_rx(regex_str)
  */
     extra_len = (MALLOC_S)(xe - xb);
     if (!(regex_pattern = (char *) malloc(extra_len + 1))) {
-        (void) fprintf(stderr, "%s: no regexp space for: ", ProgramName);
+        fprintf(stderr, "%s: no regexp space for: ", ProgramName);
         safestrprt(regex_str, stderr, 1);
         Exit(1);
     }
-    (void) strncpy(regex_pattern, xb, extra_len);
+    strncpy(regex_pattern, xb, extra_len);
     regex_pattern[(int) extra_len] = '\0';
 /*
  * Assign a new CommandRegexTable[] slot for this expression.
@@ -720,14 +690,14 @@ enter_cmd_rx(regex_str)
         if (CommandRegexTable) {
             lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CommandRegexTable, extra_len);
             if (!tmp) {
-                (void) free((FREE_P *) CommandRegexTable);
+                free((FREE_P *) CommandRegexTable);
                 CommandRegexTable = (lsof_rx_t *) NULL;
             } else
                 CommandRegexTable = tmp;
         } else
             CommandRegexTable = (lsof_rx_t *) malloc(extra_len);
         if (!CommandRegexTable) {
-            (void) fprintf(stderr, "%s: no space for regexp: ", ProgramName);
+            fprintf(stderr, "%s: no space for regexp: ", ProgramName);
             safestrprt(regex_str, stderr, 1);
             Exit(1);
         }
@@ -738,13 +708,13 @@ enter_cmd_rx(regex_str)
  * Compile the expression.
  */
     if ((regex_err = regcomp(&CommandRegexTable[i].cx, regex_pattern, compile_flags))) {
-        (void) fprintf(stderr, "%s: regexp error: ", ProgramName);
+        fprintf(stderr, "%s: regexp error: ", ProgramName);
         safestrprt(regex_str, stderr, 0);
-        (void) regerror(regex_err, &CommandRegexTable[i].cx, &reb[0], sizeof(reb));
-        (void) fprintf(stderr, ": %s\n", reb);
+        regerror(regex_err, &CommandRegexTable[i].cx, &reb[0], sizeof(reb));
+        fprintf(stderr, ": %s\n", reb);
         if (regex_pattern) {
-            (void) free((FREE_P *) regex_pattern);
-            regex_pattern = (char *) NULL;
+            free((FREE_P *) regex_pattern);
+            regex_pattern = NULL;
         }
         return (1);
     }
@@ -757,17 +727,14 @@ enter_cmd_rx(regex_str)
     return (0);
 }
 
-
-#if    defined(HASEOPT)
+#if defined(HASEOPT)
 /*
  * enter_efsys() -- enter path of file system whose kernel blocks are to be
  *		    eliminated
  */
 
 int
-enter_efsys(path, rdlnk)
-    char *path;			/* file system path */
-    int rdlnk;			/* avoid readlink(2) if non-zero */
+enter_efsys(char *path, int rdlnk)
 {
     char *ec;			/* pointer to copy of path */
     efsys_list_t *ep;		/* file system path list pointer */
@@ -776,13 +743,13 @@ enter_efsys(path, rdlnk)
 
     if (!path || (*path != '/')) {
         if (!OptWarnings)
-        (void) fprintf(stderr,
+        fprintf(stderr,
             "%s: -e not followed by a file system path: \"%s\"\n",
             ProgramName, path);
         return(1);
     }
-    if (!(ec = mkstrcpy(path, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr, "%s: no space for -e string: ", ProgramName);
+    if (!(ec = mkstrcpy(path, NULL))) {
+        fprintf(stderr, "%s: no space for -e string: ", ProgramName);
         safestrprt(path, stderr, 1);
         Exit(1);
     }
@@ -790,7 +757,7 @@ enter_efsys(path, rdlnk)
         resolved_path = ec;
     else {
         if (!(resolved_path = Readlink(ec))) {
-            (void) free((FREE_P *) ec);
+            free((FREE_P *) ec);
             return(1);
         }
     }
@@ -806,12 +773,12 @@ enter_efsys(path, rdlnk)
     for (ep = ExcludedFileSysList; ep; ep = ep->next) {
        if (!strcmp(ep->path, resolved_path)) {
         if (resolved_path != ec)
-            (void) free((FREE_P *) ec);
+            free((FREE_P *) ec);
         return(0);
        }
     }
     if (!(ep = (efsys_list_t *)malloc((MALLOC_S)(sizeof(efsys_list_t))))) {
-       (void) fprintf(stderr, "%s: no space for \"-e %s\" entry\n",
+       fprintf(stderr, "%s: no space for \"-e %s\" entry\n",
         ProgramName, path);
        Exit(1);
     }
@@ -820,21 +787,19 @@ enter_efsys(path, rdlnk)
     ep->rdlnk = rdlnk;
     ep->mp = (struct mounts *)NULL;
     if (resolved_path != ec)
-        (void) free((FREE_P *) ec);
+        free((FREE_P *) ec);
     if (!(ep->next = ExcludedFileSysList))
         ExcludedFileSysList = ep;
     return(0);
 }
-#endif    /* defined(HASEOPT) */
-
+#endif
 
 /*
  * enter_fd() - enter file descriptor list for searching
  */
 
 int
-enter_fd(fd_str)
-        char *fd_str;            /* file descriptor list pointer */
+enter_fd(char *fd_str)
 {
     char c, *cp1, *cp2, *dash;
     int err, excl, high, low;
@@ -843,11 +808,11 @@ enter_fd(fd_str)
  *  Check for non-empty list and make a copy.
  */
     if (!fd_str || (strlen(fd_str) + 1) < 2) {
-        (void) fprintf(stderr, "%s: no file descriptor specified\n", ProgramName);
+        fprintf(stderr, "%s: no file descriptor specified\n", ProgramName);
         return (1);
     }
-    if (!(fc = mkstrcpy(fd_str, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: no space for fd string: ", ProgramName);
+    if (!(fc = mkstrcpy(fd_str, NULL))) {
+        fprintf(stderr, "%s: no space for fd string: ", ProgramName);
         safestrprt(fd_str, stderr, 1);
         Exit(1);
     }
@@ -867,7 +832,7 @@ enter_fd(fd_str)
             cp1++;
         } else
             excl = 0;
-        for (cp2 = cp1, dash = (char *) NULL; *cp2 && *cp2 != ','; cp2++) {
+        for (cp2 = cp1, dash = NULL; *cp2 && *cp2 != ','; cp2++) {
             if (*cp2 == '-')
                 dash = cp2;
         }
@@ -878,7 +843,7 @@ enter_fd(fd_str)
                 if (ckfd_range(cp1, dash, cp2, &low, &high))
                     err = 1;
                 else {
-                    if (enter_fd_lst((char *) NULL, low, high, excl))
+                    if (enter_fd_lst(NULL, low, high, excl))
                         err = 1;
                 }
             } else {
@@ -890,21 +855,16 @@ enter_fd(fd_str)
             break;
         cp1 = cp2 + 1;
     }
-    (void) free((FREE_P *) fc);
+    free((FREE_P *) fc);
     return (err);
 }
-
 
 /*
  * enter_fd_lst() - make an entry in the FD list, FdList
  */
 
 static int
-enter_fd_lst(name, low_fd, high_fd, excl)
-        char *name;            /* FD name (none if NULL) */
-        int low_fd;                /* FD low boundary (if name NULL) */
-        int high_fd;                /* FD high boundary (if name NULL) */
-        int excl;            /* exclusion on match */
+enter_fd_lst(char *name, int low_fd, int high_fd, int excl)
 {
     char buf[256], *cp;
     int n;
@@ -920,19 +880,19 @@ enter_fd_lst(name, low_fd, high_fd, excl)
                  * If warnings are enabled, report a mixture.
                  */
                 if (name) {
-                    (void) snpf(buf, sizeof(buf) - 1, "%s%s",
+                    snpf(buf, sizeof(buf) - 1, "%s%s",
                                 excl ? "^" : "", name);
                 } else {
                     if (low_fd != high_fd) {
-                        (void) snpf(buf, sizeof(buf) - 1, "%s%d-%d",
+                        snpf(buf, sizeof(buf) - 1, "%s%d-%d",
                                     excl ? "^" : "", low_fd, high_fd);
                     } else {
-                        (void) snpf(buf, sizeof(buf) - 1, "%s%d",
+                        snpf(buf, sizeof(buf) - 1, "%s%d",
                                     excl ? "^" : "", low_fd);
                     }
                 }
                 buf[sizeof(buf) - 1] = '\0';
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: %s in an %s -d list: %s\n", ProgramName,
                                excl ? "exclude" : "include",
                                FdListType ? "exclude" : "include",
@@ -945,7 +905,7 @@ enter_fd_lst(name, low_fd, high_fd, excl)
  * Allocate an fd_lst entry.
  */
     if (!(f = (struct fd_lst *) malloc((MALLOC_S)sizeof(struct fd_lst)))) {
-        (void) fprintf(stderr, "%s: no space for FD list entry\n", ProgramName);
+        fprintf(stderr, "%s: no space for FD list entry\n", ProgramName);
         Exit(1);
     }
     if (name) {
@@ -964,19 +924,19 @@ enter_fd_lst(name, low_fd, high_fd, excl)
             n = (n * 10) + (int) (*cp - '0');
         }
         if (*cp) {
-            if (!(f->nm = mkstrcpy(name, (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr,
+            if (!(f->nm = mkstrcpy(name, NULL))) {
+                fprintf(stderr,
                                "%s: no space for copy of: %s\n", ProgramName, name);
                 Exit(1);
             }
             low_fd = 1;
             high_fd = 0;
         } else {
-            f->nm = (char *) NULL;
+            f->nm = NULL;
             low_fd = high_fd = n;
         }
     } else
-        f->nm = (char *) NULL;
+        f->nm = NULL;
 /*
  * Skip duplicates.
  */
@@ -987,8 +947,8 @@ enter_fd_lst(name, low_fd, high_fd, excl)
         } else if ((low_fd != ft->lo) || (high_fd != ft->hi))
             continue;
         if (f->nm)
-            (void) free((FREE_P *) f->nm);
-        (void) free((FREE_P *) f);
+            free((FREE_P *) f->nm);
+        free((FREE_P *) f);
         return (0);
     }
 /*
@@ -1002,7 +962,6 @@ enter_fd_lst(name, low_fd, high_fd, excl)
     return (0);
 }
 
-
 /*
  * enter_dir() - enter the files of a directory for searching
  */
@@ -1010,21 +969,17 @@ enter_fd_lst(name, low_fd, high_fd, excl)
 #define    EDDEFFNL    128        /* default file name length */
 
 int
-enter_dir(dir_path, descend)
-        char *dir_path;            /* directory path name pointer */
-        int descend;            /* subdirectory descend flag:
-					 *	0 = don't descend
-					 *	1 = descend */
+enter_dir(char *dir_path, int descend)
 {
     char *av[2];
     dev_t ddev;
     DIR *dfp;
-    char *dn = (char *) NULL;
+    char *dn = NULL;
     MALLOC_S dnl, dnamlen;
     struct DIRTYPE *dp;
     int en, sl;
     int fct = 0;
-    char *fp = (char *) NULL;
+    char *fp = NULL;
     MALLOC_S fpl = (MALLOC_S) 0;
     MALLOC_S fpli = (MALLOC_S) 0;
     struct stat stat_buf;
@@ -1034,7 +989,7 @@ enter_dir(dir_path, descend)
  */
     if (!dir_path || !*dir_path || *dir_path == '+' || *dir_path == '-') {
         if (!OptWarnings)
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: +d not followed by a directory path\n", ProgramName);
         return (1);
     }
@@ -1043,31 +998,31 @@ enter_dir(dir_path, descend)
     if (statsafely(dn, &stat_buf)) {
         if (!OptWarnings) {
             en = errno;
-            (void) fprintf(stderr, "%s: WARNING: can't stat(", ProgramName);
+            fprintf(stderr, "%s: WARNING: can't stat(", ProgramName);
             safestrprt(dn, stderr, 0);
-            (void) fprintf(stderr, "): %s\n", strerror(en));
+            fprintf(stderr, "): %s\n", strerror(en));
         }
         if (dn && dn != dir_path) {
-            (void) free((FREE_P *) dn);
-            dn = (char *) NULL;
+            free((FREE_P *) dn);
+            dn = NULL;
         }
         return (1);
     }
     if ((stat_buf.st_mode & S_IFMT) != S_IFDIR) {
         if (!OptWarnings) {
-            (void) fprintf(stderr, "%s: WARNING: not a directory: ", ProgramName);
+            fprintf(stderr, "%s: WARNING: not a directory: ", ProgramName);
             safestrprt(dn, stderr, 1);
         }
         if (dn && dn != dir_path) {
-            (void) free((FREE_P *) dn);
-            dn = (char *) NULL;
+            free((FREE_P *) dn);
+            dn = NULL;
         }
         return (1);
     }
 
-#if    defined(HASSPECDEVD)
-    (void) HASSPECDEVD(dn, &stat_buf);
-#endif    /* defined(HASSPECDEVD) */
+#if defined(HASSPECDEVD)
+    HASSPECDEVD(dn, &stat_buf);
+#endif
 
     ddev = stat_buf.st_dev;
 /*
@@ -1075,12 +1030,12 @@ enter_dir(dir_path, descend)
  */
     DirStackAlloc = DirStackIndex = 0;
     DirStack = (char **) NULL;
-    (void) stkdir(dn);
-    av[0] = (dn == dir_path) ? mkstrcpy(dn, (MALLOC_S *) NULL) : dn;
-    av[1] = (char *) NULL;
-    dn = (char *) NULL;
+    stkdir(dn);
+    av[0] = (dn == dir_path) ? mkstrcpy(dn, NULL) : dn;
+    av[1] = NULL;
+    dn = NULL;
     if (!ck_file_arg(0, 1, av, 1, 1, &stat_buf)) {
-        av[0] = (char *) NULL;
+        av[0] = NULL;
         fct++;
     }
 /*
@@ -1089,7 +1044,7 @@ enter_dir(dir_path, descend)
     while (--DirStackIndex >= 0) {
         if (!(dn = DirStack[DirStackIndex]))
             continue;
-        DirStack[DirStackIndex] = (char *) NULL;
+        DirStack[DirStackIndex] = NULL;
         /*
          * Open the directory path and prepare its name for use with the
          * files in the directory.
@@ -1097,14 +1052,14 @@ enter_dir(dir_path, descend)
         if (!(dfp = OpenDir(dn))) {
             if (!OptWarnings) {
                 if ((en = errno) != ENOENT) {
-                    (void) fprintf(stderr,
+                    fprintf(stderr,
                                    "%s: WARNING: can't opendir(", ProgramName);
                     safestrprt(dn, stderr, 0);
-                    (void) fprintf(stderr, "): %s\n", strerror(en));
+                    fprintf(stderr, "): %s\n", strerror(en));
                 }
             }
-            (void) free((FREE_P *) dn);
-            dn = (char *) NULL;
+            free((FREE_P *) dn);
+            dn = NULL;
             continue;
         }
         dnl = strlen(dn);
@@ -1120,16 +1075,16 @@ enter_dir(dir_path, descend)
             else
                 fp = (char *) realloc(fp, fpl);
             if (!fp) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: no space for path to entries in directory: %s\n",
                                ProgramName, dn);
-                (void) CloseDir(dfp);
+                CloseDir(dfp);
                 Exit(1);
             }
         }
-        (void) snpf(fp, (size_t) fpl, "%s%s", dn, sl ? "/" : "");
-        (void) free((FREE_P *) dn);
-        dn = (char *) NULL;
+        snpf(fp, (size_t) fpl, "%s%s", dn, sl ? "/" : "");
+        free((FREE_P *) dn);
+        dn = NULL;
         /*
          * Read the contents of the directory.
          */
@@ -1144,11 +1099,11 @@ enter_dir(dir_path, descend)
             if (!dp->d_ino)
                 continue;
 
-#if     defined(HASDNAMLEN)
+#if defined(HASDNAMLEN)
             dnamlen = (MALLOC_S)dp->d_namlen;
-#else   /* !defined(HASDNAMLEN) */
+#else
             dnamlen = (MALLOC_S) strlen(dp->d_name);
-#endif  /* defined(HASDNAMLEN) */
+#endif
 
             if (!dnamlen)
                 continue;
@@ -1165,14 +1120,14 @@ enter_dir(dir_path, descend)
             if ((int) fpli > 0) {
                 fpl += fpli;
                 if (!(fp = (char *) realloc(fp, fpl))) {
-                    (void) fprintf(stderr, "%s: no space for: ", ProgramName);
+                    fprintf(stderr, "%s: no space for: ", ProgramName);
                     safestrprt(dn, stderr, 0);
                     putc('/', stderr);
                     safestrprtn(dp->d_name, dnamlen, stderr, 1);
                     Exit(1);
                 }
             }
-            (void) strncpy(fp + dnl + sl, dp->d_name, dnamlen);
+            strncpy(fp + dnl + sl, dp->d_name, dnamlen);
             fp[dnl + sl + dnamlen] = '\0';
             /*
              * Lstatsafely() the entry; complain if that fails.
@@ -1182,18 +1137,18 @@ enter_dir(dir_path, descend)
             if (lstatsafely(fp, &stat_buf)) {
                 if ((en = errno) != ENOENT) {
                     if (!OptWarnings) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: WARNING: can't lstat(", ProgramName);
                         safestrprt(fp, stderr, 0);
-                        (void) fprintf(stderr, "): %s\n", strerror(en));
+                        fprintf(stderr, "): %s\n", strerror(en));
                     }
                 }
                 continue;
             }
 
-#if    defined(HASSPECDEVD)
-            (void) HASSPECDEVD(fp, &stat_buf);
-#endif    /* defined(HASSPECDEVD) */
+#if defined(HASSPECDEVD)
+            HASSPECDEVD(fp, &stat_buf);
+#endif
 
             if (!(OptCrossover & XO_FILESYS)) {
 
@@ -1216,10 +1171,10 @@ enter_dir(dir_path, descend)
                     if (statsafely(fp, &stat_buf)) {
                         if ((en = errno) != ENOENT) {
                             if (!OptWarnings) {
-                                (void) fprintf(stderr,
+                                fprintf(stderr,
                                                "%s: WARNING: can't stat(", ProgramName);
                                 safestrprt(fp, stderr, 0);
-                                (void) fprintf(stderr,
+                                fprintf(stderr,
                                                ") symbolc link: %s\n", strerror(en));
                             }
                         }
@@ -1229,10 +1184,10 @@ enter_dir(dir_path, descend)
                     continue;
             }
             if (av[0]) {
-                (void) free((FREE_P *) av[0]);
-                av[0] = (char *) NULL;
+                free((FREE_P *) av[0]);
+                av[0] = NULL;
             }
-            av[0] = mkstrcpy(fp, (MALLOC_S *) NULL);
+            av[0] = mkstrcpy(fp, NULL);
             if ((stat_buf.st_mode & S_IFMT) == S_IFDIR && descend)
 
                 /*
@@ -1244,33 +1199,33 @@ enter_dir(dir_path, descend)
              * to consider the entry a file, not a file system.
              */
             if (!ck_file_arg(0, 1, av, 1, 1, &stat_buf)) {
-                av[0] = (char *) NULL;
+                av[0] = NULL;
                 fct++;
             }
         }
-        (void) CloseDir(dfp);
+        CloseDir(dfp);
         if (dn && dn != dir_path) {
-            (void) free((FREE_P *) dn);
-            dn = (char *) NULL;
+            free((FREE_P *) dn);
+            dn = NULL;
         }
     }
 /*
  * Free malloc()'d space.
  */
     if (dn && dn != dir_path) {
-        (void) free((FREE_P *) dn);
-        dn = (char *) NULL;
+        free((FREE_P *) dn);
+        dn = NULL;
     }
     if (av[0] && av[0] != fp) {
-        (void) free((FREE_P *) av[0]);
-        av[0] = (char *) NULL;
+        free((FREE_P *) av[0]);
+        av[0] = NULL;
     }
     if (fp) {
-        (void) free((FREE_P *) fp);
-        fp = (char *) NULL;
+        free((FREE_P *) fp);
+        fp = NULL;
     }
     if (DirStack) {
-        (void) free((FREE_P *) DirStack);
+        free((FREE_P *) DirStack);
         DirStack = (char **) NULL;
     }
     if (!fct) {
@@ -1279,7 +1234,7 @@ enter_dir(dir_path, descend)
          * Warn if no files were recorded for searching.
          */
         if (!OptWarnings) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: WARNING: no files found in directory: ", ProgramName);
             safestrprt(dir_path, stderr, 1);
         }
@@ -1288,22 +1243,19 @@ enter_dir(dir_path, descend)
     return (0);
 }
 
-
 /*
  * enter_id() - enter PGID or PID for searching
  */
 
 int
-enter_id(type, id_str)
-        enum IDType type;            /* type: PGID or PID */
-        char *id_str;            /* process group ID string pointer */
+enter_id(enum IDType type, char *id_str)
 {
     char *char_ptr;
     int err, i, id, j, mx, id_num, ni, nx, exclude;
     struct int_lst *s;
 
     if (!id_str) {
-        (void) fprintf(stderr, "%s: no process%s ID specified\n",
+        fprintf(stderr, "%s: no process%s ID specified\n",
                        ProgramName, (type == PGID) ? " group" : "");
         return (1);
     }
@@ -1326,9 +1278,9 @@ enter_id(type, id_str)
             s = SearchPidList;
             break;
         default:
-            (void) fprintf(stderr, "%s: enter_id \"", ProgramName);
+            fprintf(stderr, "%s: enter_id \"", ProgramName);
             safestrprt(id_str, stderr, 0);
-            (void) fprintf(stderr, "\", invalid type: %d\n", type);
+            fprintf(stderr, "\", invalid type: %d\n", type);
             Exit(1);
     }
 /*
@@ -1348,14 +1300,14 @@ enter_id(type, id_str)
                 }
             }
 
-#if    defined(__STDC__)
+#if defined(__STDC__)
             if (!isdigit((unsigned char) *char_ptr))
-#else	/* !defined(__STDC__) */
+#else
                 if (!isascii(*char_ptr) || !isdigit((unsigned char) *char_ptr))
-#endif    /* __STDC__ */
+#endif
 
             {
-                (void) fprintf(stderr, "%s: illegal process%s ID: ",
+                fprintf(stderr, "%s: illegal process%s ID: ",
                                ProgramName, (type == PGID) ? " group" : "");
                 safestrprt(id_str, stderr, 1);
                 return (1);
@@ -1373,7 +1325,7 @@ enter_id(type, id_str)
                     j = 1;
                     continue;
                 }
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: P%sID %d has been included and excluded.\n",
                                ProgramName,
                                (type == PGID) ? "G" : "",
@@ -1396,13 +1348,13 @@ enter_id(type, id_str)
                 struct int_lst *tmp = (struct int_lst *) realloc((MALLOC_P *) s,
                                                (MALLOC_S)(sizeof(struct int_lst) * mx));
                 if (!tmp) {
-                    (void) free((FREE_P *) s);
-                    s = (struct int_lst *) NULL;
+                    free((FREE_P *) s);
+                    s = NULL;
                 } else
                     s = tmp;
             }
             if (!s) {
-                (void) fprintf(stderr, "%s: no space for %d process%s IDs",
+                fprintf(stderr, "%s: no space for %d process%s IDs",
                                ProgramName, mx, (type == PGID) ? " group" : "");
                 Exit(1);
             }
@@ -1439,36 +1391,34 @@ enter_id(type, id_str)
     return (err);
 }
 
-
 /*
  * enter_network_address() - enter Internet address for searching
  */
 
 int
-enter_network_address(na)
-        char *na;            /* Internet address string pointer */
+enter_network_address(char *na)
 {
     int addr_entry, i, protocol;
     int end_port = -1;
     int ft = 0;
-    struct hostent *host_entry = (struct hostent *) NULL;
-    char *hn = (char *) NULL;
+    struct hostent *host_entry = NULL;
+    char *hn = NULL;
     MALLOC_S l;
     struct nwad n;
     char *p, *wa;
     int pt = 0;
     int port_upper = 0;
     struct servent *se, *se1;
-    char *sn = (char *) NULL;
+    char *sn = NULL;
     int start_port = -1;
     MALLOC_S snl = 0;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
     char *char_ptr;
-#endif    /* defined(HASIPv6) */
+#endif
 
     if (!na) {
-        (void) fprintf(stderr, "%s: no network address specified\n", ProgramName);
+        fprintf(stderr, "%s: no network address specified\n", ProgramName);
         return (1);
     }
     zeromem((char *) &n, sizeof(n));
@@ -1483,13 +1433,13 @@ enter_network_address(na)
             ft = 4;
         else if (*wa == '6') {
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
             ft = 6;
-#else	/* !defined(HASIPv6) */
-            (void) fprintf(stderr, "%s: IPv6 not supported: -i ", ProgramName);
+#else
+            fprintf(stderr, "%s: IPv6 not supported: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
-#endif    /* defined(HASIPv6) */
+#endif
 
         }
         wa++;
@@ -1523,11 +1473,11 @@ enter_network_address(na)
             n.addr_family = AF_INET;
             break;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         case 6:
             n.addr_family = AF_INET6;
             break;
-#endif    /* defined(HASIPv6) */
+#endif
 
     }
 /*
@@ -1537,18 +1487,18 @@ enter_network_address(na)
     if (*wa && *wa != '@' && *wa != ':') {
         for (p = wa; *wa && *wa != '@' && *wa != ':'; wa++);
         if ((l = wa - p)) {
-            if (!(n.proto = mkstrcat(p, l, (char *) NULL, -1, (char *) NULL,
-                                     -1, (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr,
+            if (!(n.proto = mkstrcat(p, l, NULL, -1, NULL,
+                                     -1, NULL))) {
+                fprintf(stderr,
                                "%s: no space for protocol name from: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 nwad_exit:
                 if (n.proto)
-                    (void) free((FREE_P *) n.proto);
+                    free((FREE_P *) n.proto);
                 if (hn)
-                    (void) free((FREE_P *) hn);
+                    free((FREE_P *) hn);
                 if (sn)
-                    (void) free((FREE_P *) sn);
+                    free((FREE_P *) sn);
                 return (1);
             }
             /*
@@ -1557,7 +1507,7 @@ enter_network_address(na)
             if ((strcasecmp(n.proto, "tcp") != 0)
                 && (strcasecmp(n.proto, "udp") != 0)
                 && (strcasecmp(n.proto, "udplite") != 0)) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: unknown protocol name (%s) in: -i ", ProgramName, n.proto);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
@@ -1580,11 +1530,11 @@ enter_network_address(na)
         wa++;
         if (!*wa || *wa == ':') {
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
             unacc_address:
-#endif    /* defined(HASIPv6) */
+#endif
 
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: unacceptable Internet address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
@@ -1596,7 +1546,7 @@ enter_network_address(na)
              * Process IPv4 address.
              */
             if (ft == 6) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
@@ -1605,13 +1555,13 @@ enter_network_address(na)
             n.addr_family = AF_INET;
         } else if (*wa == '[') {
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
             /*
              * Make sure IPv6 addresses are permitted.  If they are, assemble
              * one.
              */
             if (ft == 4) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                 "%s: IPv6 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
@@ -1631,7 +1581,7 @@ enter_network_address(na)
                 goto unacc_address;
             if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.addr[0])) {
                 if (ft == 6) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                     "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
@@ -1643,12 +1593,12 @@ enter_network_address(na)
             } else
                 n.addr_family = AF_INET6;
             wa = char_ptr + 1;
-#else	/* !defined(HASIPv6) */
-            (void) fprintf(stderr,
+#else
+            fprintf(stderr,
                            "%s: unsupported IPv6 address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
-#endif    /* defined(HASIPv6) */
+#endif
 
         } else {
 
@@ -1657,15 +1607,15 @@ enter_network_address(na)
              */
             for (p = wa; *p && *p != ':'; p++);
             if ((l = p - wa)) {
-                if (!(hn = mkstrcat(wa, l, (char *) NULL, -1, (char *) NULL,
-                                    -1, (MALLOC_S *) NULL))) {
-                    (void) fprintf(stderr,
+                if (!(hn = mkstrcat(wa, l, NULL, -1, NULL,
+                                    -1, NULL))) {
+                    fprintf(stderr,
                                    "%s: no space for host name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
 
                 /*
                  * If no IP version has been specified, look up an IPv6 host
@@ -1680,11 +1630,11 @@ enter_network_address(na)
                     n.addr_family = AF_INET;
                     host_entry = lkup_hostnm(hn, &n);
                     }
-#else	/* !defined(HASIPv6) */
+#else
                 if (!ft)
                     n.addr_family = AF_INET;
                 host_entry = lkup_hostnm(hn, &n);
-#endif    /* defined(HASIPv6) */
+#endif
 
                 if (!host_entry) {
                     fprintf(stderr, "%s: unknown host name (%s) in: -i ",
@@ -1713,7 +1663,7 @@ enter_network_address(na)
     if (*wa != ':' || *(wa + 1) == '\0') {
 
         unacc_port:
-        (void) fprintf(stderr,
+        fprintf(stderr,
                        "%s: unacceptable port specification in: -i ", ProgramName);
         safestrprt(na, stderr, 1);
         goto nwad_exit;
@@ -1729,7 +1679,7 @@ enter_network_address(na)
                  */
                 for (p = wa; *wa && *wa != ','; wa++);
                 if (!(l = wa - p)) {
-                    (void) fprintf(stderr,
+                    fprintf(stderr,
                                    "%s: invalid service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
@@ -1738,8 +1688,8 @@ enter_network_address(na)
                     if (l > snl) {
                         char *tmp = (char *) realloc((MALLOC_P *) sn, l + 1);
                         if (!tmp) {
-                            (void) free((FREE_P *) sn);
-                            sn = (char *) NULL;
+                            free((FREE_P *) sn);
+                            sn = NULL;
                         } else
                             sn = tmp;
                         snl = l;
@@ -1749,12 +1699,12 @@ enter_network_address(na)
                     snl = l;
                 }
                 if (!sn) {
-                    (void) fprintf(stderr,
+                    fprintf(stderr,
                                    "%s: no space for service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
-                (void) strncpy(sn, p, l);
+                strncpy(sn, p, l);
                 *(sn + l) = '\0';
                 if (n.proto) {
 
@@ -1763,7 +1713,7 @@ enter_network_address(na)
                      * number for the service name for the specified protocol.
                      */
                     if (!(se = getservbyname(sn, n.proto))) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: unknown service %s for %s in: -i ",
                                        ProgramName, sn, n.proto);
                         safestrprt(na, stderr, 1);
@@ -1781,16 +1731,16 @@ enter_network_address(na)
                     if ((se1 = getservbyname(sn, "udp")))
                         port_upper = (int) ntohs(se1->s_port);
                     if (!se && !se1) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: unknown service %s in: -i ", ProgramName, sn);
                         safestrprt(na, stderr, 1);
                         goto nwad_exit;
                     }
                     if (se && se1 && pt != port_upper) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: TCP=%d and UDP=%d %s ports conflict;\n",
                                        ProgramName, pt, port_upper, sn);
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "      specify \"tcp:%s\" or \"udp:%s\": -i ",
                                        sn, sn);
                         safestrprt(na, stderr, 1);
@@ -1846,7 +1796,7 @@ enter_network_address(na)
             if (enter_nwad(&n, start_port, end_port, na, host_entry))
                 goto nwad_exit;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
             /*
              * If IPv6 is enabled, a host name was specified, and the
              * associated * address is for the AF_INET6 address family,
@@ -1858,7 +1808,7 @@ enter_network_address(na)
                 if ((host_entry = lkup_hostnm(hn, &n)))
                 continue;
             }
-#endif    /* defined(HASIPv6) */
+#endif
 
             i = 0;
         }
@@ -1866,9 +1816,9 @@ enter_network_address(na)
             break;
     }
     if (hn)
-        (void) free((FREE_P *) hn);
+        free((FREE_P *) hn);
     if (sn)
-        (void) free((FREE_P *) sn);
+        free((FREE_P *) sn);
     return (0);
 }
 
@@ -1877,14 +1827,8 @@ enter_network_address(na)
  */
 
 static int
-enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
-        struct nwad *nwad_ptr;            /* pointer to partially completed
-					 * nwad (less port) */
-        int start_port;                /* starting port number */
-        int end_port;                /* ending port number */
-        char *addr_str;            /* string that states the address */
-        struct hostent *host_entry;        /* pointer to hostent struct from which
-					 * network address came */
+enter_nwad(struct nwad *nwad_ptr, int start_port, int end_port,
+           char *addr_str, struct hostent *host_entry)
 {
     int ac;
     unsigned char *ap;
@@ -1895,14 +1839,14 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
  * Allocate space for the argument specification.
  */
     if (strlen(addr_str)) {
-        if (!(nwad_ptr->arg = mkstrcpy(addr_str, (MALLOC_S *) NULL))) {
-            (void) fprintf(stderr,
+        if (!(nwad_ptr->arg = mkstrcpy(addr_str, NULL))) {
+            fprintf(stderr,
                            "%s: no space for Internet argument: -i ", ProgramName);
             safestrprt(addr_str, stderr, 1);
             Exit(1);
         }
     } else
-        nwad_ptr->arg = (char *) NULL;
+        nwad_ptr->arg = NULL;
 /*
  * Loop through all hostent addresses.
  */
@@ -1921,10 +1865,10 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
 	    ||   (!nc.addr[4]  && !nc.addr[5]  && !nc.addr[6]  && !nc.addr[7]
 	    &&    !nc.addr[8]  && !nc.addr[9]  && !nc.addr[10] && !nc.addr[11]
 	    &&    !nc.addr[12] && !nc.addr[13] && !nc.addr[14] && !nc.addr[15]))
-            #endif    /* defined(HASIPv6) */
+            #endif
 
             && start_port == -1) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: incomplete Internet address specification: -i ", ProgramName);
             safestrprt(addr_str, stderr, 1);
             return (1);
@@ -1934,7 +1878,7 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
          * search efficiency.
          */
         if (na >= MAXNWAD) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: network address limit (%d) exceeded: -i ",
                            ProgramName, MAXNWAD);
             safestrprt(addr_str, stderr, 1);
@@ -1944,7 +1888,7 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
          * Allocate space for the address specification.
          */
         if ((np = (struct nwad *) malloc(sizeof(struct nwad))) == NULL) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: no space for network address from: -i ", ProgramName);
             safestrprt(addr_str, stderr, 1);
             return (1);
@@ -1968,7 +1912,7 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
         if (!(ap = (unsigned char *) host_entry->h_addr_list[ac++]))
             break;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         {
         int i;
 
@@ -1980,31 +1924,29 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
         }
         nc.addr[i] = *ap;
         }
-#else	/* !defined(HASIPv6) */
+#else
         nc.addr[0] = *ap++;
         nc.addr[1] = *ap++;
         nc.addr[2] = *ap++;
         nc.addr[3] = *ap;
-#endif    /* defined(HASIPv6) */
+#endif
 
     }
     return (0);
 }
 
-
-#if    defined(HASTCPUDPSTATE)
+#if defined(HASTCPUDPSTATE)
 /*
  * enter_state_spec() -- enter TCP and UDP state specifications
  */
 
 int
-enter_state_spec(ss)
-    char *ss;			/* state specification string */
+enter_state_spec(char *ss)
 {
     char *cp, *ne, *ns, *pr;
     int err, d, f, i, tx, x;
     size_t len;
-    static char *ssc = (char *)NULL;
+    static char *ssc = NULL;
     char *ty;
 /*
  * Check the protocol specification.
@@ -2014,28 +1956,28 @@ enter_state_spec(ss)
         tx = 0;
     }
 
-#if	!defined(USE_LIB_PRINT_TCPTPI)
+#ifndef USE_LIB_PRINT_TCPTPI
     else if (!strncasecmp(ss, "UDP:", 4)) {
         pr = "UDP";
         tx = 1;
     }
 
-#endif	/* !defined(USE_LIB_PRINT_TCPTPI) */
+#endif
 
     else {
-        (void) fprintf(stderr, "%s: unknown -s protocol: \"%s\"\n",
+        fprintf(stderr, "%s: unknown -s protocol: \"%s\"\n",
         ProgramName, ss);
         return(1);
     }
     cp = ss + 4;
     if (!*cp) {
-        (void) fprintf(stderr, "%s: no %s state names in: %s\n",
+        fprintf(stderr, "%s: no %s state names in: %s\n",
         ProgramName, pr, ss);
         return(1);
     }
-    (void) build_IPstates();
+    build_IPstates();
     if (!(tx ? UdpStateNames : TcpStateNames)) {
-        (void) fprintf(stderr, "%s: no %s state names available: %s\n",
+        fprintf(stderr, "%s: no %s state names available: %s\n",
         ProgramName, pr, ss);
         return(1);
     }
@@ -2052,7 +1994,7 @@ enter_state_spec(ss)
 
 no_IorX_space:
 
-            (void) fprintf(stderr, "%s: no %s table space\n",
+            fprintf(stderr, "%s: no %s table space\n",
                 ProgramName, ty);
             Exit(1);
             }
@@ -2091,9 +2033,9 @@ no_IorX_space:
  * record them in the appropriate inclusion or exclusion table.
  */
     if (ssc)
-        (void) free((MALLOC_P *)ssc);
-    if (!(ssc = mkstrcpy(cp, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr,
+        free((MALLOC_P *)ssc);
+    if (!(ssc = mkstrcpy(cp, NULL))) {
+        fprintf(stderr,
         "%s: no temporary state argument space for: %s\n", ProgramName, ss);
         Exit(1);
     }
@@ -2123,7 +2065,7 @@ no_IorX_space:
         cp++;
         }
         if (!(len = (size_t)(ne - ns))) {
-        (void) fprintf(stderr, "%s: NULL %s state name in: %s\n",
+        fprintf(stderr, "%s: NULL %s state name in: %s\n",
             ProgramName, pr, ss);
         err = 1;
         continue;
@@ -2152,7 +2094,7 @@ no_IorX_space:
         }
         }
         if (!f) {
-        (void) fprintf(stderr, "%s: unknown %s state name: %s\n",
+        fprintf(stderr, "%s: unknown %s state name: %s\n",
             ProgramName, pr, ns);
         err = 1;
         continue;
@@ -2195,7 +2137,7 @@ no_IorX_space:
         /*
          * Report a duplicate.
          */
-        (void) fprintf(stderr, "%s: duplicate %s %sclusion: %s\n",
+        fprintf(stderr, "%s: duplicate %s %sclusion: %s\n",
             ProgramName, pr,
             x ? "ex" : "in",
             ns);
@@ -2206,25 +2148,20 @@ no_IorX_space:
  * Release any temporary space and return.
  */
     if (ssc) {
-        (void) free((MALLOC_P *)ssc);
-        ssc = (char *)NULL;
+        free((MALLOC_P *)ssc);
+        ssc = NULL;
     }
     return(err);
 }
-#endif    /* defined(HASTCPUDPSTATE) */
-
+#endif
 
 /*
  * enter_str_lst() - enter a string on a list
  */
 
 int
-enter_str_lst(opt, str_val, list_ptr, incl, excl)
-        char *opt;            /* option name */
-        char *str_val;            /* string to enter */
-        struct str_lst **list_ptr;        /* string's list */
-        int *incl;            /* included count */
-        int *excl;            /* excluded count */
+enter_str_lst(char *opt, char *str_val, struct str_lst **list_ptr,
+              int *incl, int *excl)
 {
     char *char_ptr;
     short i, exclude;
@@ -2232,7 +2169,7 @@ enter_str_lst(opt, str_val, list_ptr, incl, excl)
     struct str_lst *lpt;
 
     if (!str_val || *str_val == '-' || *str_val == '+') {
-        (void) fprintf(stderr, "%s: missing %s option value\n",
+        fprintf(stderr, "%s: missing %s option value\n",
                        ProgramName, opt);
         return (1);
     }
@@ -2245,14 +2182,14 @@ enter_str_lst(opt, str_val, list_ptr, incl, excl)
         exclude = 0;
     }
     if (!(char_ptr = mkstrcpy(str_val, &len))) {
-        (void) fprintf(stderr, "%s: no string copy space: ", ProgramName);
+        fprintf(stderr, "%s: no string copy space: ", ProgramName);
         safestrprt(str_val, stderr, 1);
         return (1);
     }
     if ((lpt = (struct str_lst *) malloc(sizeof(struct str_lst))) == NULL) {
-        (void) fprintf(stderr, "%s: no list space: ", ProgramName);
+        fprintf(stderr, "%s: no list space: ", ProgramName);
         safestrprt(str_val, stderr, 1);
-        (void) free((FREE_P *) char_ptr);
+        free((FREE_P *) char_ptr);
         return (1);
     }
     lpt->f = 0;
@@ -2268,14 +2205,12 @@ enter_str_lst(opt, str_val, list_ptr, incl, excl)
     return (0);
 }
 
-
 /*
  * enter_uid() - enter User Identifier for searching
  */
 
 int
-enter_uid(us)
-        char *us;            /* User IDentifier string pointer */
+enter_uid(char *us)
 {
     int err, i, j, lnml, nn;
     unsigned char excl;
@@ -2286,7 +2221,7 @@ enter_uid(us)
     uid_t uid;
 
     if (!us) {
-        (void) fprintf(stderr, "%s: no UIDs specified\n", ProgramName);
+        fprintf(stderr, "%s: no UIDs specified\n", ProgramName);
         return (1);
     }
     for (err = 0, s = us; *s;) {
@@ -2302,7 +2237,7 @@ enter_uid(us)
                     s++;
                     lnml++;
                 }
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: -u login name > %d characters: ", ProgramName,
                                (int) LOGINML);
                 safestrprtn(st, lnml, stderr, 1);
@@ -2317,11 +2252,11 @@ enter_uid(us)
             if (nn)
                 continue;
 
-#if    defined(__STDC__)
+#if defined(__STDC__)
             if (isdigit((unsigned char) *s))
-#else	/* !defined(__STDC__) */
+#else
                 if (isascii(*s) && isdigit((unsigned char) *s))
-#endif    /* defined(__STDC__) */
+#endif
 
                 uid = (uid * 10) + *s - '0';
             else
@@ -2334,7 +2269,7 @@ enter_uid(us)
         if (nn) {
             lnm[lnml++] = '\0';
             if ((pw = getpwnam(lnm)) == NULL) {
-                (void) fprintf(stderr, "%s: can't get UID for ", ProgramName);
+                fprintf(stderr, "%s: can't get UID for ", ProgramName);
                 safestrprt(lnm, stderr, 1);
                 err = 1;
                 continue;
@@ -2342,7 +2277,7 @@ enter_uid(us)
                 uid = pw->pw_uid;
         }
 
-#if    defined(HASSECURITY) && !defined(HASNOSOCKSECURITY)
+#if defined(HASSECURITY) && !defined(HASNOSOCKSECURITY)
         /*
          * If the security mode is enabled, only the root user may list files
          * belonging to user IDs other than the real user ID of this lsof
@@ -2350,13 +2285,13 @@ enter_uid(us)
          * list anyone else's socket files.
          */
             if (MyRealUid && uid != MyRealUid) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                 "%s: ID %d request rejected because of security mode.\n",
                 ProgramName, uid);
             err = 1;
             continue;
             }
-#endif    /* defined(HASSECURITY)  && !defined(HASNOSOCKSECURITY) */
+#endif
 
         /*
          * Avoid entering duplicates.
@@ -2368,7 +2303,7 @@ enter_uid(us)
                 j = 1;
                 continue;
             }
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: UID %d has been included and excluded.\n",
                            ProgramName, (int) uid);
             err = j = 1;
@@ -2387,25 +2322,25 @@ enter_uid(us)
             else {
                 struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) SearchUidList, len);
                 if (!tmp) {
-                    (void) free((FREE_P *) SearchUidList);
-                    SearchUidList = (struct seluid *) NULL;
+                    free((FREE_P *) SearchUidList);
+                    SearchUidList = NULL;
                 } else
                     SearchUidList = tmp;
             }
             if (!SearchUidList) {
-                (void) fprintf(stderr, "%s: no space for UIDs", ProgramName);
+                fprintf(stderr, "%s: no space for UIDs", ProgramName);
                 Exit(1);
             }
         }
         if (nn) {
-            if (!(lp = mkstrcpy(lnm, (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr, "%s: no space for login: ", ProgramName);
+            if (!(lp = mkstrcpy(lnm, NULL))) {
+                fprintf(stderr, "%s: no space for login: ", ProgramName);
                 safestrprt(lnm, stderr, 1);
                 Exit(1);
             }
             SearchUidList[NumUidSelections].lnm = lp;
         } else
-            SearchUidList[NumUidSelections].lnm = (char *) NULL;
+            SearchUidList[NumUidSelections].lnm = NULL;
         SearchUidList[NumUidSelections].uid = uid;
         SearchUidList[NumUidSelections++].excl = excl;
         if (excl)
@@ -2416,16 +2351,12 @@ enter_uid(us)
     return (err);
 }
 
-
 /*
  * isIPv4addr() - is host name an IPv4 address
  */
 
 static char *
-isIPv4addr(hostname, addr_buf, addr_len)
-        char *hostname;            /* host name */
-        unsigned char *addr_buf;        /* address receptor */
-        int addr_len;                /* address receptor length */
+isIPv4addr(char *hostname, unsigned char *addr_buf, int addr_len)
 {
     int dot_count = 0;            /* dot count */
     int i;                /* temorary index */
@@ -2436,9 +2367,9 @@ isIPv4addr(hostname, addr_buf, addr_len)
  * arguments must be acceptable.
  */
     if ((*hostname < '0') || (*hostname > '9'))
-        return ((char *) NULL);
+        return (NULL);
     if (!addr_buf || (addr_len < MIN_AF_ADDR))
-        return ((char *) NULL);
+        return (NULL);
 /*
  * Start the first octet assembly, then parse tge remainder of the host
  * name for four octets, separated by dots.
@@ -2453,9 +2384,9 @@ isIPv4addr(hostname, addr_buf, addr_len)
              */
             dot_count++;
             if ((ov[ovx] < 0) || (ov[ovx] > 255))
-                return ((char *) NULL);
+                return (NULL);
             if (++ovx > (MIN_AF_ADDR - 1))
-                return ((char *) NULL);
+                return (NULL);
             ov[ovx] = -1;
         } else if ((*hostname >= '0') && (*hostname <= '9')) {
 
@@ -2471,7 +2402,7 @@ isIPv4addr(hostname, addr_buf, addr_len)
             /*
              * A non-address character has been detected.
              */
-            return ((char *) NULL);
+            return (NULL);
         }
         hostname++;
     }
@@ -2481,7 +2412,7 @@ isIPv4addr(hostname, addr_buf, addr_len)
     if ((dot_count != 3)
         || (ovx != (MIN_AF_ADDR - 1))
         || (ov[ovx] < 0) || (ov[ovx] > 255))
-        return ((char *) NULL);
+        return (NULL);
 /*
  * Copy the octets as unsigned characters and return the ending host name
  * character position.
@@ -2492,15 +2423,12 @@ isIPv4addr(hostname, addr_buf, addr_len)
     return (hostname);
 }
 
-
 /*
  * lkup_hostnm() - look up host name
  */
 
 static struct hostent *
-lkup_hostnm(hostname, nwad_ptr)
-        char *hostname;            /* host name */
-        struct nwad *nwad_ptr;            /* network address destination */
+lkup_hostnm(char *hostname, struct nwad *nwad_ptr)
 {
     unsigned char *ap;
     struct hostent *he;
@@ -2509,11 +2437,11 @@ lkup_hostnm(hostname, nwad_ptr)
  * Get hostname structure pointer.  Return NULL if there is none.
  */
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
     he = gethostbyname2(hostname, nwad_ptr->addr_family);
-#else	/* !defined(HASIPv6) */
+#else
     he = gethostbyname(hostname);
-#endif    /* defined(HASIPv6) */
+#endif
 
     if (!he)
         return (he);
@@ -2521,7 +2449,7 @@ lkup_hostnm(hostname, nwad_ptr)
  * Copy first hostname structure address to destination structure.
  */
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
     if (nwad_ptr->addr_family != he->h_addrtype)
         return((struct hostent *)NULL);
     if (nwad_ptr->addr_family == AF_INET6) {
@@ -2531,18 +2459,18 @@ lkup_hostnm(hostname, nwad_ptr)
      */
         if (he->h_length > MAX_AF_ADDR)
         return((struct hostent *)NULL);
-        (void) memcpy((void *)&nwad_ptr->addr[0], (void *)he->h_addr, he->h_length);
+        memcpy((void *)&nwad_ptr->addr[0], (void *)he->h_addr, he->h_length);
         if ((ln = MAX_AF_ADDR - he->h_length) > 0)
         zeromem((char *)&nwad_ptr->addr[he->h_length], ln);
         return(he);
     }
-#endif    /* defined(HASIPv6) */
+#endif
 
 /*
  * Copy an AF_INET address.
  */
     if (he->h_length != 4)
-        return ((struct hostent *) NULL);
+        return (NULL);
     ap = (unsigned char *) he->h_addr;
     nwad_ptr->addr[0] = *ap++;
     nwad_ptr->addr[1] = *ap++;

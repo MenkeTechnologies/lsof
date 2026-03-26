@@ -2,7 +2,6 @@
  * misc.c - common miscellaneous functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,52 +25,43 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
-#if    defined(HASWIDECHAR) && defined(WIDECHARINCL)
+#if defined(HASWIDECHAR) && defined(WIDECHARINCL)
 #include WIDECHARINCL
-#endif    /* defined(HASWIDECHAR) && defined(WIDECHARINCL) */
-
+#endif
 
 /*
  * Local definitions
  */
 
-#if    !defined(MAXSYMLINKS)
+#ifndef MAXSYMLINKS
 #define    MAXSYMLINKS    32
-#endif    /* !defined(MAXSYMLINKS) */
-
+#endif
 
 /*
  * Local function prototypes
  */
 
-_PROTOTYPE(static void closePipes, (void));
+static void closePipes(void);
 
-_PROTOTYPE(static int dolstat, (char *path, char *buf, int len));
+static int dolstat(char *path, char *buf, int len);
 
-_PROTOTYPE(static int dostat, (char *path, char *buf, int len));
+static int dostat(char *path, char *buf, int len);
 
-_PROTOTYPE(static int doreadlink, (char *path, char *buf, int len));
+static int doreadlink(char *path, char *buf, int len);
 
-_PROTOTYPE(static int doinchild, (int (*func)(), char *func_arg, char *rbuf, int rbln));
+static int doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln);
 
-#if    defined(HASINTSIGNAL)
-_PROTOTYPE(static int handleint,(int sig));
-#else	/* !defined(HASINTSIGNAL) */
+#if defined(HASINTSIGNAL)
+static int handleint(int sig);
+#else
 
-_PROTOTYPE(static void handleint, (int sig));
+static void handleint(int sig);
 
-#endif    /* defined(HASINTSIGNAL) */
+#endif
 
-_PROTOTYPE(static char *safepup, (unsigned int ch, int *char_len));
-
+static char *safepup(unsigned int ch, int *char_len);
 
 /*
  * Local variables
@@ -88,8 +78,7 @@ static int CtSigs[] = {0, SIGINT, SIGKILL};
  * cause the child to exit */
 #define    NCTSIGS    (sizeof(CtSigs) / sizeof(int))
 
-
-#if    defined(HASNLIST)
+#if defined(HASNLIST)
 /*
  * build-NlistTable() - build kernel name list table
  */
@@ -98,8 +87,7 @@ static struct drive_Nl *Build_Nl = (struct drive_Nl *)NULL;
                     /* the default Drive_Nl address */
 
 void
-build_Nl(drv)
-    struct drive_Nl *drv;		/* data to drive the construction */
+build_Nl(struct drive_Nl *drv)
 {
     struct drive_Nl *drive_ptr;
     int i, num;
@@ -107,14 +95,14 @@ build_Nl(drv)
     for (drive_ptr = drv, num = 0; drive_ptr->nn; drive_ptr++, num++)
         ;
     if (num < 1) {
-        (void) fprintf(stderr,
+        fprintf(stderr,
         "%s: can't calculate kernel name list length\n", ProgramName);
         Exit(1);
     }
     if (!(NlistTable = (struct NLIST_TYPE *)calloc((num + 1),
                            sizeof(struct NLIST_TYPE))))
     {
-        (void) fprintf(stderr,
+        fprintf(stderr,
         "%s: can't allocate %d bytes to kernel name list structure\n",
         ProgramName, (int)((num + 1) * sizeof(struct NLIST_TYPE)));
         Exit(1);
@@ -125,8 +113,7 @@ build_Nl(drv)
     NlistLength = (int)((num + 1) * sizeof(struct NLIST_TYPE));
     Build_Nl = drv;
 }
-#endif    /* defined(HASNLIST) */
-
+#endif
 
 /*
  * childx() - make child process exit (if possible)
@@ -143,7 +130,7 @@ childx() {
          * First close the pipes to and from the child.  That should cause the
          * child to exit.  Compute alarm time shares.
          */
-        (void) closePipes();
+        closePipes();
         if ((alarm_time = TimeoutLimit / NCTSIGS) < TMLIMMIN)
             alarm_time = TMLIMMIN;
         /*
@@ -161,12 +148,12 @@ childx() {
                  * If the last signal has been sent, issue a warning (unless
                  * warninge have been suppressed) and exit the signal loop.
                  */
-                (void) alarm(0);
-                (void) signal(SIGALRM, SIG_DFL);
+                alarm(0);
+                signal(SIGALRM, SIG_DFL);
                 if (sig_idx < (NCTSIGS - 1))
                     continue;
                 if (!OptWarnings)
-                    (void) fprintf(stderr,
+                    fprintf(stderr,
                                    "%s: WARNING -- child process %d may be hung.\n",
                                    ProgramName, (int) Cpid);
                 break;
@@ -178,19 +165,18 @@ childx() {
              * Wrap the wait() with an alarm.
              */
             if (sig_idx)
-                (void) kill(Cpid, CtSigs[sig_idx]);
-            (void) signal(SIGALRM, handleint);
-            (void) alarm(alarm_time);
+                kill(Cpid, CtSigs[sig_idx]);
+            signal(SIGALRM, handleint);
+            alarm(alarm_time);
             wpid = (pid_t) wait(NULL);
-            (void) alarm(0);
-            (void) signal(SIGALRM, SIG_DFL);
+            alarm(0);
+            signal(SIGALRM, SIG_DFL);
             if (wpid == Cpid)
                 break;
         }
         Cpid = 0;
     }
 }
-
 
 /*
  * closePipes() - close open pipe file descriptors
@@ -202,20 +188,18 @@ closePipes() {
 
     for (i = 0; i < 4; i++) {
         if (Pipes[i] >= 0) {
-            (void) close(Pipes[i]);
+            close(Pipes[i]);
             Pipes[i] = -1;
         }
     }
 }
-
 
 /*
  * compdev() - compare DeviceTable[] entries
  */
 
 int
-compdev(lhs, rhs)
-        COMP_P *lhs, *rhs;
+compdev(COMP_P *lhs, COMP_P *rhs)
 {
     struct l_dev **p1 = (struct l_dev **) lhs;
     struct l_dev **p2 = (struct l_dev **) rhs;
@@ -231,24 +215,19 @@ compdev(lhs, rhs)
     return (strcmp((*p1)->name, (*p2)->name));
 }
 
-
 /*
  * doinchild() -- do a function in a child process
  */
 
 static int
-doinchild(func, func_arg, rbuf, rbln)
-        int (*func)();            /* function to perform */
-        char *func_arg;            /* function parameter */
-        char *rbuf;            /* response buffer */
-        int rbln;            /* response buffer length */
+doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
 {
     int errno_val, return_val;
 /*
  * Check reply buffer size.
  */
     if (!OptOverhead && rbln > MAXPATHLEN) {
-        (void) fprintf(stderr,
+        fprintf(stderr,
                        "%s: doinchild error; response buffer too large: %d\n",
                        ProgramName, rbln);
         Exit(1);
@@ -264,9 +243,9 @@ doinchild(func, func_arg, rbuf, rbln)
             /*
              * Process an alarm that has rung.
              */
-            (void) alarm(0);
-            (void) signal(SIGALRM, SIG_DFL);
-            (void) childx();
+            alarm(0);
+            signal(SIGALRM, SIG_DFL);
+            childx();
             errno = ETIMEDOUT;
             return (1);
         } else if (!Cpid) {
@@ -276,7 +255,7 @@ doinchild(func, func_arg, rbuf, rbln)
              * process.
              */
             if (pipe(Pipes) < 0 || pipe(&Pipes[2]) < 0) {
-                (void) fprintf(stderr, "%s: can't open pipes: %s\n",
+                fprintf(stderr, "%s: can't open pipes: %s\n",
                                ProgramName, strerror(errno));
                 Exit(1);
             }
@@ -299,18 +278,18 @@ doinchild(func, func_arg, rbuf, rbln)
                 for (file_desc = 0, node_desc = GET_MAX_FD(); file_desc < node_desc; file_desc++) {
                     if (file_desc == Pipes[0] || file_desc == Pipes[3])
                         continue;
-                    (void) close(file_desc);
+                    close(file_desc);
                     if (file_desc == Pipes[1])
                         Pipes[1] = -1;
                     else if (file_desc == Pipes[2])
                         Pipes[2] = -1;
                 }
                 if (Pipes[1] >= 0) {
-                    (void) close(Pipes[1]);
+                    close(Pipes[1]);
                     Pipes[1] = -1;
                 }
                 if (Pipes[2] >= 0) {
-                    (void) close(Pipes[2]);
+                    close(Pipes[2]);
                     Pipes[2] = -1;
                 }
                 /*
@@ -337,18 +316,18 @@ doinchild(func, func_arg, rbuf, rbln)
                         || write(Pipes[3], r_rbuf, r_rbln) != r_rbln)
                         break;
                 }
-                (void) _exit(0);
+                _exit(0);
             }
             /*
              * Continue in the parent process to finish the setup.
              */
             if (Cpid < 0) {
-                (void) fprintf(stderr, "%s: can't fork: %s\n",
+                fprintf(stderr, "%s: can't fork: %s\n",
                                ProgramName, strerror(errno));
                 Exit(1);
             }
-            (void) close(Pipes[0]);
-            (void) close(Pipes[3]);
+            close(Pipes[0]);
+            close(Pipes[3]);
             Pipes[0] = Pipes[3] = -1;
         }
     }
@@ -359,8 +338,8 @@ doinchild(func, func_arg, rbuf, rbln)
          * Send a function to the child and wait for the response.
          */
         len = strlen(func_arg) + 1;
-        (void) signal(SIGALRM, handleint);
-        (void) alarm(TimeoutLimit);
+        signal(SIGALRM, handleint);
+        alarm(TimeoutLimit);
         if (write(Pipes[1], (char *) &func, sizeof(func)) != sizeof(func)
             || write(Pipes[1], (char *) &len, sizeof(len)) != sizeof(len)
             || write(Pipes[1], func_arg, len) != len
@@ -368,9 +347,9 @@ doinchild(func, func_arg, rbuf, rbln)
             || read(Pipes[2], (char *) &return_val, sizeof(return_val)) != sizeof(return_val)
             || read(Pipes[2], (char *) &errno_val, sizeof(errno_val)) != sizeof(errno_val)
             || read(Pipes[2], rbuf, rbln) != rbln) {
-            (void) alarm(0);
-            (void) signal(SIGALRM, SIG_DFL);
-            (void) childx();
+            alarm(0);
+            signal(SIGALRM, SIG_DFL);
+            childx();
             errno = ECHILD;
             return (-1);
         }
@@ -379,30 +358,26 @@ doinchild(func, func_arg, rbuf, rbln)
         /*
          * Do the operation directly -- not in a child.
          */
-        (void) signal(SIGALRM, handleint);
-        (void) alarm(TimeoutLimit);
+        signal(SIGALRM, handleint);
+        alarm(TimeoutLimit);
         return_val = func(func_arg, rbuf, rbln);
         errno_val = errno;
     }
 /*
  * Function completed, response collected -- complete the operation.
  */
-    (void) alarm(0);
-    (void) signal(SIGALRM, SIG_DFL);
+    alarm(0);
+    signal(SIGALRM, SIG_DFL);
     errno = errno_val;
     return (return_val);
 }
-
 
 /*
  * dolstat() - do an lstat() function
  */
 
 static int
-dolstat(path, rbuf, rbln)
-        char *path;            /* path */
-        char *rbuf;            /* response buffer */
-        int rbln;            /* response buffer length */
+dolstat(char *path, char *rbuf, int rbln)
 
 /* ARGSUSED */
 
@@ -410,30 +385,22 @@ dolstat(path, rbuf, rbln)
     return (lstat(path, (struct stat *) rbuf));
 }
 
-
 /*
  * doreadlink() -- do a readlink() function
  */
 
 static int
-doreadlink(path, rbuf, rbln)
-        char *path;            /* path */
-        char *rbuf;            /* response buffer */
-        int rbln;            /* response buffer length */
+doreadlink(char *path, char *rbuf, int rbln)
 {
     return (readlink(path, rbuf, rbln));
 }
-
 
 /*
  * dostat() - do a stat() function
  */
 
 static int
-dostat(path, rbuf, rbln)
-        char *path;            /* path */
-        char *rbuf;            /* response buffer */
-        int rbln;            /* response buffer length */
+dostat(char *path, char *rbuf, int rbln)
 
 /* ARGSUSED */
 
@@ -441,8 +408,7 @@ dostat(path, rbuf, rbln)
     return (stat(path, (struct stat *) rbuf));
 }
 
-
-#if    defined(WILLDROPGID)
+#if defined(WILLDROPGID)
 /*
  * dropgid() - drop setgid permission
  */
@@ -452,54 +418,48 @@ dropgid()
 {
     if (!SetuidRootState && SetgidState) {
         if (setgid(MyRealGid) < 0) {
-        (void) fprintf(stderr, "%s: can't setgid(%d): %s\n",
+        fprintf(stderr, "%s: can't setgid(%d): %s\n",
             ProgramName, (int)MyRealGid, strerror(errno));
         Exit(1);
         }
         SetgidState = 0;
     }
 }
-#endif    /* defined(WILLDROPGID) */
-
+#endif
 
 /*
  * enter_dev_ch() - enter device characters in file structure
  */
 
 void
-enter_dev_ch(msg)
-        char *msg;
+enter_dev_ch(char *msg)
 {
     char *msg_ptr;
 
     if (!msg || *msg == '\0')
         return;
-    if (!(msg_ptr = mkstrcpy(msg, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: no more dev_ch space at PID %d: \n",
+    if (!(msg_ptr = mkstrcpy(msg, NULL))) {
+        fprintf(stderr, "%s: no more dev_ch space at PID %d: \n",
                        ProgramName, CurrentLocalProc->pid);
         safestrprt(msg, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->dev_ch)
-        (void) free((FREE_P *) CurrentLocalFile->dev_ch);
+        free((FREE_P *) CurrentLocalFile->dev_ch);
     CurrentLocalFile->dev_ch = msg_ptr;
 }
-
 
 /*
  * enter_IPstate() -- enter a TCP or UDP state
  */
 
 void
-enter_IPstate(type, name, state_num)
-        char *type;            /* type -- TCP or UDP */
-        char *name;            /* state name (may be NULL) */
-        int state_num;                /* state number */
+enter_IPstate(char *type, char *name, int state_num)
 {
 
-#if    defined(USE_LIB_PRINT_TCPTPI)
+#if defined(USE_LIB_PRINT_TCPTPI)
     TcpNumStates = state_num;
-#else	/* !defined(USE_LIB_PRINT_TCPTPI) */
+#else
 
     int alloc_len, i, j, occur_count, new_num, num_states, off, tx;
     char *char_ptr;
@@ -508,7 +468,7 @@ enter_IPstate(type, name, state_num)
  * Check the type name and set the type index.
  */
     if (!type) {
-        (void) fprintf(stderr,
+        fprintf(stderr,
                        "%s: no type specified to enter_IPstate()\n", ProgramName);
         Exit(1);
     }
@@ -517,7 +477,7 @@ enter_IPstate(type, name, state_num)
     else if (!strcmp(type, "UDP"))
         tx = 1;
     else {
-        (void) fprintf(stderr, "%s: unknown type for enter_IPstate: %s\n",
+        fprintf(stderr, "%s: unknown type for enter_IPstate: %s\n",
                        ProgramName, type);
         Exit(1);
     }
@@ -529,7 +489,7 @@ enter_IPstate(type, name, state_num)
         if (tx) {
             if (UdpStateNames) {
                 if (!UdpNumStates) {
-                    (void) free((MALLOC_P *) UdpStateNames);
+                    free((MALLOC_P *) UdpStateNames);
                     UdpStateNames = (char **) NULL;
                 }
                 if (UdpNumStates < UdpStateAlloc) {
@@ -537,9 +497,9 @@ enter_IPstate(type, name, state_num)
                     len = (MALLOC_S)(UdpNumStates * sizeof(char *));
                     tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
                     if (!tmp) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: can't reduce UdpStateNames[]\n", ProgramName);
-                        (void) free((FREE_P *) UdpStateNames);
+                        free((FREE_P *) UdpStateNames);
                         UdpStateNames = (char **) NULL;
                         Exit(1);
                     }
@@ -550,7 +510,7 @@ enter_IPstate(type, name, state_num)
         } else {
             if (TcpStateNames) {
                 if (!TcpNumStates) {
-                    (void) free((MALLOC_P *) TcpStateNames);
+                    free((MALLOC_P *) TcpStateNames);
                     TcpStateNames = (char **) NULL;
                 }
                 if (TcpNumStates < TcpStateAlloc) {
@@ -558,9 +518,9 @@ enter_IPstate(type, name, state_num)
                     len = (MALLOC_S)(TcpNumStates * sizeof(char *));
                     tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
                     if (!tmp) {
-                        (void) fprintf(stderr,
+                        fprintf(stderr,
                                        "%s: can't reduce TcpStateNames[]\n", ProgramName);
-                        (void) free((FREE_P *) TcpStateNames);
+                        free((FREE_P *) TcpStateNames);
                         TcpStateNames = (char **) NULL;
                         Exit(1);
                     }
@@ -575,15 +535,15 @@ enter_IPstate(type, name, state_num)
  * Check the name and number.
  */
     if ((len = (size_t) strlen(name)) < 1) {
-        (void) fprintf(stderr,
+        fprintf(stderr,
                        "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, type, name, state_num);
         Exit(1);
     }
 /*
  * Make a copy of the name.
  */
-    if (!(char_ptr = mkstrcpy(name, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr,
+    if (!(char_ptr = mkstrcpy(name, NULL))) {
+        fprintf(stderr,
                        "%s: enter_IPstate(): no %s space for %s\n",
                        ProgramName, type, name);
         Exit(1);
@@ -611,7 +571,7 @@ enter_IPstate(type, name, state_num)
                 if (tx) {
                     char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
                     if (!tmp) {
-                        (void) free((FREE_P *) UdpStateNames);
+                        free((FREE_P *) UdpStateNames);
                         UdpStateNames = (char **) NULL;
                         goto no_IP_space;
                     }
@@ -620,7 +580,7 @@ enter_IPstate(type, name, state_num)
                 } else {
                     char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
                     if (!tmp) {
-                        (void) free((FREE_P *) TcpStateNames);
+                        free((FREE_P *) TcpStateNames);
                         TcpStateNames = (char **) NULL;
                         goto no_IP_space;
                     }
@@ -631,11 +591,11 @@ enter_IPstate(type, name, state_num)
                     if (tx) {
                         if (i < UdpNumStates)
                             UdpStateNames[j] = UdpStateNames[i];
-                        UdpStateNames[i] = (char *) NULL;
+                        UdpStateNames[i] = NULL;
                     } else {
                         if (i < TcpNumStates)
                             TcpStateNames[j] = TcpStateNames[i];
-                        TcpStateNames[i] = (char *) NULL;
+                        TcpStateNames[i] = NULL;
                     }
                 }
                 if (tx)
@@ -667,7 +627,7 @@ enter_IPstate(type, name, state_num)
             if (UdpStateNames) {
                 char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
                 if (!tmp) {
-                    (void) free((FREE_P *) UdpStateNames);
+                    free((FREE_P *) UdpStateNames);
                     UdpStateNames = (char **) NULL;
                 } else
                     UdpStateNames = tmp;
@@ -677,7 +637,7 @@ enter_IPstate(type, name, state_num)
 
                 no_IP_space:
 
-                (void) fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
+                fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
                 Exit(1);
             }
             UdpNumStates = new_num;
@@ -686,7 +646,7 @@ enter_IPstate(type, name, state_num)
             if (TcpStateNames) {
                 char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
                 if (!tmp) {
-                    (void) free((FREE_P *) TcpStateNames);
+                    free((FREE_P *) TcpStateNames);
                     TcpStateNames = (char **) NULL;
                 } else
                     TcpStateNames = tmp;
@@ -699,9 +659,9 @@ enter_IPstate(type, name, state_num)
         }
         while (i < alloc_len) {
             if (tx)
-                UdpStateNames[i] = (char *) NULL;
+                UdpStateNames[i] = NULL;
             else
-                TcpStateNames[i] = (char *) NULL;
+                TcpStateNames[i] = NULL;
             i++;
         }
     } else {
@@ -718,7 +678,7 @@ enter_IPstate(type, name, state_num)
 
             dup_IP_state:
 
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: duplicate %s state %d (already %s): %s\n",
                            ProgramName, type, state_num,
                            tx ? UdpStateNames[state_num + UdpStateOffset] : TcpStateNames[state_num + TcpStateOffset],
@@ -731,67 +691,57 @@ enter_IPstate(type, name, state_num)
             goto dup_IP_state;
         TcpStateNames[state_num + TcpStateOffset] = char_ptr;
     }
-#endif    /* defined(USE_LIB_PRINT_TCPTPI) */
+#endif
 
 }
-
 
 /*
  * enter_nm() - enter name in local file structure
  */
 
 void
-enter_nm(name)
-        char *name;
+enter_nm(char *name)
 {
     char *name_ptr;
 
     if (!name || *name == '\0')
         return;
-    if (!(name_ptr = mkstrcpy(name, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: no more nm space at PID %d for: ",
+    if (!(name_ptr = mkstrcpy(name, NULL))) {
+        fprintf(stderr, "%s: no more nm space at PID %d for: ",
                        ProgramName, CurrentLocalProc->pid);
         safestrprt(name, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->name)
-        (void) free((FREE_P *) CurrentLocalFile->name);
+        free((FREE_P *) CurrentLocalFile->name);
     CurrentLocalFile->name = name_ptr;
 }
-
 
 /*
  * Exit() - do a clean exit()
  */
 
 void
-Exit(exit_val)
-        int exit_val;                /* exit() value */
+Exit(int exit_val)
 {
-    (void) childx();
+    childx();
 
-#if    defined(HASDCACHE)
+#if defined(HASDCACHE)
     if (DevCacheRebuilt && !OptWarnings)
-        (void) fprintf(stderr, "%s: WARNING: %s was updated.\n",
+        fprintf(stderr, "%s: WARNING: %s was updated.\n",
         ProgramName, DevCachePath[DevCachePathIndex]);
-#endif    /* defined(HASDCACHE) */
+#endif
 
     exit(exit_val);
 }
 
-
-#if    defined(HASNLIST)
+#if defined(HASNLIST)
 /*
  * get_Nl_value() - get NlistTable value for nickname
  */
 
 int
-get_Nl_value(nickname, drv, value)
-    char *nickname;			/* nickname of requested entry */
-    struct drive_Nl *drv;		/* drive_Nl table that built NlistTable
-					 * (if NULL, use Build_Nl) */
-    KA_T *value;			/* returned value (if NULL,
-					 * return nothing) */
+get_Nl_value(char *nickname, struct drive_Nl *drv, KA_T *value)
 {
     int i;
 
@@ -808,14 +758,13 @@ get_Nl_value(nickname, drv, value)
     }
     return(-1);
 }
-#endif    /* defined(HASNLIST) */
-
+#endif
 
 /*
  * handleint() - handle an interrupt
  */
 
-#if    defined(HASINTSIGNAL)
+#if defined(HASINTSIGNAL)
 static int
 #else
 static void
@@ -823,21 +772,17 @@ static void
 
 /* ARGSUSED */
 
-handleint(sig)
-        int sig;
+handleint(int sig)
 {
     longjmp(Jmp_buf, 1);
 }
-
 
 /*
  * hashbyname() - hash by name
  */
 
 int
-hashbyname(name, mod)
-        char *name;            /* pointer to NUL-terminated name */
-        int mod;            /* hash modulus */
+hashbyname(char *name, int mod)
 {
     int i, j;
 
@@ -849,17 +794,12 @@ hashbyname(name, mod)
     return (((int) (i * 31415)) & (mod - 1));
 }
 
-
 /*
  * is_nw_addr() - is this network address selected?
  */
 
 int
-is_nw_addr(inet_addr, port, addr_family)
-        unsigned char *inet_addr;        /* Internet address */
-        int port;                /* port */
-        int addr_family;                /* address family -- e.g., AF_INET,
-					 * AF_INET6 */
+is_nw_addr(unsigned char *inet_addr, int port, int addr_family)
 {
     struct nwad *node;
 
@@ -873,7 +813,7 @@ is_nw_addr(inet_addr, port, addr_family)
         if (addr_family && node->addr_family && addr_family != node->addr_family)
             continue;
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         if (addr_family == AF_INET6) {
             static const unsigned char zero_addr[16] = {0};
             if (memcmp(node->addr, zero_addr, 16) != 0) {
@@ -881,7 +821,7 @@ is_nw_addr(inet_addr, port, addr_family)
                     continue;
             }
         } else if (addr_family == AF_INET)
-#endif    /* defined(HASIPv6) */
+#endif
 
         {
             static const unsigned char zero_addr[4] = {0};
@@ -891,10 +831,10 @@ is_nw_addr(inet_addr, port, addr_family)
             }
         }
 
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
         else
         continue;
-#endif    /* defined(HASIPv6) */
+#endif
 
         if (node->sport == -1 || (port >= node->sport && port <= node->eport)) {
             node->found = 1;
@@ -904,7 +844,6 @@ is_nw_addr(inet_addr, port, addr_family)
     return (0);
 }
 
-
 /*
  * mkstrcpy() - make a string copy in malloc()'d space
  *
@@ -913,11 +852,7 @@ is_nw_addr(inet_addr, port, addr_family)
  */
 
 char *
-mkstrcpy(src, rlp)
-        char *src;            /* source */
-        MALLOC_S *rlp;            /* returned length pointer (optional)
-					 * The returned length is an strlen()
-					 * equivalent */
+mkstrcpy(char *src, MALLOC_S *rlp)
 {
     MALLOC_S len;
     char *ns;
@@ -926,7 +861,7 @@ mkstrcpy(src, rlp)
     ns = (char *) malloc(len + 1);
     if (ns) {
         if (src)
-            (void) memcpy(ns, src, len + 1);
+            memcpy(ns, src, len + 1);
         else
             *ns = '\0';
     }
@@ -934,7 +869,6 @@ mkstrcpy(src, rlp)
         *rlp = len;
     return (ns);
 }
-
 
 /*
  * mkstrcat() - make a catenated copy of up to three strings under optional
@@ -945,15 +879,8 @@ mkstrcpy(src, rlp)
  */
 
 char *
-mkstrcat(str1, len1, str2, len2, str3, len3, clp)
-        char *str1;            /* source string 1 */
-        int len1;                /* length of string 1 (-1 if none) */
-        char *str2;            /* source string 2 */
-        int len2;                /* length of string 2 (-1 if none) */
-        char *str3;            /* source string 3 (optional) */
-        int len3;            /* length of string 3 (-1 if none) */
-        MALLOC_S *clp;            /* pointer to return of copy length
-					 * (optional) */
+mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3,
+         MALLOC_S *clp)
 {
     MALLOC_S cat_len, slen1, slen2, slen3;
     char *char_ptr;
@@ -975,15 +902,15 @@ mkstrcat(str1, len1, str2, len2, str3, len3, clp)
         char *text_ptr = char_ptr;
 
         if (str1 && slen1) {
-            (void) strncpy(text_ptr, str1, slen1);
+            strncpy(text_ptr, str1, slen1);
             text_ptr += slen1;
         }
         if (str2 && slen2) {
-            (void) strncpy(text_ptr, str2, slen2);
+            strncpy(text_ptr, str2, slen2);
             text_ptr += slen2;
         }
         if (str3 && slen3) {
-            (void) strncpy(text_ptr, str3, slen3);
+            strncpy(text_ptr, str3, slen3);
             text_ptr += slen3;
         }
         *text_ptr = '\0';
@@ -993,37 +920,31 @@ mkstrcat(str1, len1, str2, len2, str3, len3, clp)
     return (char_ptr);
 }
 
-
 /*
  * is_readable() -- is file readable
  */
 
 int
-is_readable(path, msg)
-        char *path;            /* file path */
-        int msg;            /* issue warning message if 1 */
+is_readable(char *path, int msg)
 {
     if (access(path, R_OK) < 0) {
         if (!OptWarnings && msg == 1)
-            (void) fprintf(stderr, ACCESSERRFMT, ProgramName, path, strerror(errno));
+            fprintf(stderr, ACCESSERRFMT, ProgramName, path, strerror(errno));
         return (0);
     }
     return (1);
 }
-
 
 /*
  * lstatsafely() - lstat path safely (i. e., with timeout)
  */
 
 int
-lstatsafely(path, buf)
-        char *path;            /* file path */
-        struct stat *buf;        /* stat buffer address */
+lstatsafely(char *path, struct stat *buf)
 {
     if (OptBlockDevice) {
         if (!OptWarnings)
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: avoiding stat(%s): -b was specified.\n",
                            ProgramName, path);
         errno = EWOULDBLOCK;
@@ -1032,14 +953,12 @@ lstatsafely(path, buf)
     return (doinchild(dolstat, path, (char *) buf, sizeof(struct stat)));
 }
 
-
 /*
  * Readlink() - read and interpret file system symbolic links
  */
 
 char *
-Readlink(arg)
-        char *arg;            /* argument to be interpreted */
+Readlink(char *arg)
 {
     char abuf[MAXPATHLEN + 1];
     int alen;
@@ -1047,7 +966,7 @@ Readlink(arg)
     char *argp1, *argp2;
     int i, len, llen, slen;
     char lbuf[MAXPATHLEN + 1];
-    static char *op = (char *) NULL;
+    static char *op = NULL;
     static int ss = 0;
     char *s1;
     static char **stk = (char **) NULL;
@@ -1058,11 +977,11 @@ Readlink(arg)
  */
     if (OptBlockDevice) {
         if (!OptWarnings) {
-            (void) fprintf(stderr, "%s: avoiding readlink(", ProgramName);
+            fprintf(stderr, "%s: avoiding readlink(", ProgramName);
             safestrprt(arg, stderr, 0);
-            (void) fprintf(stderr, "): -b was specified.\n");
+            fprintf(stderr, "): -b was specified.\n");
         }
-        op = (char *) NULL;
+        op = NULL;
         return (arg);
     }
 /*
@@ -1079,14 +998,14 @@ Readlink(arg)
 
             path_too_long:
             if (!OptWarnings) {
-                (void) fprintf(stderr,
+                fprintf(stderr,
                                "%s: readlink() path too long: ", ProgramName);
                 safestrprt(op ? op : arg, stderr, 1);
             }
-            op = (char *) NULL;
-            return ((char *) NULL);
+            op = NULL;
+            return (NULL);
         }
-        (void) strncpy(tbuf, arg, len);
+        strncpy(tbuf, arg, len);
         tbuf[len] = '\0';
         /*
          * Dereference a symbolic link.
@@ -1098,7 +1017,7 @@ Readlink(arg)
              * the previous assembly with it.
              */
             if (lbuf[0] == '/') {
-                (void) strncpy(abuf, lbuf, llen);
+                strncpy(abuf, lbuf, llen);
                 ap = &abuf[llen];
                 *ap = '\0';
                 alen = llen;
@@ -1149,7 +1068,7 @@ Readlink(arg)
             goto path_too_long;
         if (slen == 2)
             *ap++ = '/';
-        (void) strncpy(ap, s1, llen);
+        strncpy(ap, s1, llen);
         ap += llen;
         *ap = '\0';
         alen += (llen + slen - 1);
@@ -1161,22 +1080,22 @@ Readlink(arg)
     if (strcmp(arg, abuf) == 0) {
         for (i = 0; i < sx; i++) {
             if (i < (sx - 1))
-                (void) free((FREE_P *) stk[i]);
-            stk[i] = (char *) NULL;
+                free((FREE_P *) stk[i]);
+            stk[i] = NULL;
         }
         sx = 0;
-        op = (char *) NULL;
+        op = NULL;
         return (arg);
     }
 /*
  * If the assembled path and argument are different, add it to the
  * string stack, then Readlink() it.
  */
-    if (!(s1 = mkstrcpy(abuf, (MALLOC_S *) NULL))) {
+    if (!(s1 = mkstrcpy(abuf, NULL))) {
 
         no_readlink_space:
 
-        (void) fprintf(stderr, "%s: no Readlink string space for ", ProgramName);
+        fprintf(stderr, "%s: no Readlink string space for ", ProgramName);
         safestrprt(abuf, stderr, 1);
         Exit(1);
     }
@@ -1187,20 +1106,20 @@ Readlink(arg)
          * the stack, and return no path.
          */
         if (!OptWarnings) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: too many (> %d) symbolic links in readlink() path: ",
                            ProgramName, MAXSYMLINKS);
             safestrprt(op ? op : arg, stderr, 1);
         }
         for (i = 0; i < sx; i++) {
-            (void) free((FREE_P *) stk[i]);
-            stk[i] = (char *) NULL;
+            free((FREE_P *) stk[i]);
+            stk[i] = NULL;
         }
-        (void) free((FREE_P *) stk);
+        free((FREE_P *) stk);
         stk = (char **) NULL;
         ss = sx = 0;
-        op = (char *) NULL;
-        return ((char *) NULL);
+        op = NULL;
+        return (NULL);
     }
     if (++sx > ss) {
         if (!stk)
@@ -1216,108 +1135,91 @@ Readlink(arg)
     return (Readlink(s1));
 }
 
-
-#if    defined(HASSTREAMS)
+#if defined(HASSTREAMS)
 /*
  * readstdata() - read stream's stdata structure
  */
 
 int
-readstdata(addr, buf)
-    KA_T addr;			/* stdata address in kernel*/
-    struct stdata *buf;		/* buffer addess */
+readstdata(KA_T addr, struct stdata *buf)
 {
     if (!addr
     ||  kread(addr, (char *)buf, sizeof(struct stdata))) {
-        (void) snpf(NameChars, NameCharsLength, "no stream data in %s",
-        print_kptr(addr, (char *)NULL, 0));
+        snpf(NameChars, NameCharsLength, "no stream data in %s",
+        print_kptr(addr, NULL, 0));
         return(1);
     }
     return(0);
 }
-
 
 /*
  * readsthead() - read stream head
  */
 
 int
-readsthead(addr, buf)
-    KA_T addr;			/* starting queue pointer in kernel */
-    struct queue *buf;		/* buffer for queue head */
+readsthead(KA_T addr, struct queue *buf)
 {
     KA_T kern_ptr;
 
     if (!addr) {
-        (void) snpf(NameChars, NameCharsLength, "no stream queue head");
+        snpf(NameChars, NameCharsLength, "no stream queue head");
         return(1);
     }
     for (kern_ptr = addr; kern_ptr; kern_ptr = (KA_T)buf->q_next) {
         if (kread(kern_ptr, (char *)buf, sizeof(struct queue))) {
-        (void) snpf(NameChars, NameCharsLength, "bad stream queue link at %s",
-            print_kptr(kern_ptr, (char *)NULL, 0));
+        snpf(NameChars, NameCharsLength, "bad stream queue link at %s",
+            print_kptr(kern_ptr, NULL, 0));
         return(1);
         }
     }
     return(0);
 }
 
-
 /*
  * readstidnm() - read stream module ID name
  */
 
 int
-readstidnm(addr, buf, len)
-    KA_T addr;			/* module ID name address in kernel */
-    char *buf;			/* receiving buffer address */
-    READLEN_T len;			/* buffer length */
+readstidnm(KA_T addr, char *buf, READLEN_T len)
 {
     if (!addr || kread(addr, buf, len)) {
-        (void) snpf(NameChars, NameCharsLength, "can't read module ID name from %s",
-        print_kptr(addr, (char *)NULL, 0));
+        snpf(NameChars, NameCharsLength, "can't read module ID name from %s",
+        print_kptr(addr, NULL, 0));
         return(1);
     }
     return(0);
 }
-
 
 /*
  * readstmin() - read stream's module info
  */
 
 int
-readstmin(addr, buf)
-    KA_T addr;			/* module info address in kernel */
-    struct module_info *buf;	/* receiving buffer address */
+readstmin(KA_T addr, struct module_info *buf)
 {
     if (!addr || kread(addr, (char *)buf, sizeof(struct module_info))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read module info from %s",
-        print_kptr(addr, (char *)NULL, 0));
+        snpf(NameChars, NameCharsLength, "can't read module info from %s",
+        print_kptr(addr, NULL, 0));
         return(1);
     }
     return(0);
 }
-
 
 /*
  * readstqinit() - read stream's queue information structure
  */
 
 int
-readstqinit(addr, buf)
-    KA_T addr;			/* queue info address in kernel */
-    struct qinit *buf;		/* receiving buffer address */
+readstqinit(KA_T addr, struct qinit *buf)
 {
     if (!addr || kread(addr, (char *)buf, sizeof(struct qinit))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read queue info from %s",
-        print_kptr(addr, (char *)NULL, 0));
+        snpf(NameChars, NameCharsLength, "can't read queue info from %s",
+        print_kptr(addr, NULL, 0));
         return(1);
     }
     return(0);
 }
-#endif    /* HASSTREAMS */
-
+#endif
 
 /*
  * safepup() - safely print an unprintable character -- i.e., print it in a
@@ -1328,11 +1230,7 @@ readstqinit(addr, buf)
  */
 
 static char *
-safepup(ch, char_len)
-        unsigned int ch;            /* unprintable (i.e., !isprint())
-					 * character */
-        int *char_len;            /* returned printable strlen -- NULL if
-					 * no return needed */
+safepup(unsigned int ch, int *char_len)
 {
     int len;
     char *rp;
@@ -1383,21 +1281,13 @@ safepup(ch, char_len)
     return (rp);
 }
 
-
 /*
  * safestrlen() - calculate a "safe" string length -- i.e., compute space for
  *		  non-printable characters when printed in a printable form
  */
 
 int
-safestrlen(str, flags)
-        char *str;            /* string pointer */
-        int flags;            /* flags:
-					 *   bit 0: 0 (0) = no NL
-					 *	    1 (1) = add trailing NL
-					 *	 1: 0 (0) = ' ' printable
-					 *	    1 (2) = ' ' not printable
-					 */
+safestrlen(char *str, int flags)
 {
     char unprintable_ch;
     int len = 0;
@@ -1446,39 +1336,23 @@ safestrlen(str, flags)
     return (len);
 }
 
-
 /*
  * safestrprt() - print a string "safely" to the indicated stream -- i.e.,
  *		  print unprintable characters in a printable form
  */
 
 void
-safestrprt(str, stream, flags)
-        char *str;            /* string to print pointer pointer */
-        FILE *stream;            /* destination stream -- e.g., stderr
-					 * or stdout */
-        int flags;            /* flags:
-					 *   bit 0: 0 (0) = no NL
-					 *	    1 (1) = add trailing NL
-					 *	 1: 0 (0) = ' ' printable
-					 *	    1 (2) = ' ' not printable
-					 *	 2: 0 (0) = print string as is
-					 *	    1 (4) = surround string
-					 *		    with '"'
-					 *	 4: 0 (0) = print ending '\n'
-					 *	    1 (8) = don't print ending
-					 *		    '\n'
-					 */
+safestrprt(char *str, FILE *stream, int flags)
 {
     char ch;
     int new_line_count, total_line_count, sl;
 
-#if    defined(HASWIDECHAR)
+#if defined(HASWIDECHAR)
     wchar_t wchar;
     int wcmx = MB_CUR_MAX;
-#else	/* !defined(HASWIDECHAR) */
+#else
     static int wcmx = 1;
-#endif    /* defined(HASWIDECHAR) */
+#endif
 
     ch = (flags & 2) ? ' ' : '\0';
     if (flags & 4)
@@ -1509,7 +1383,7 @@ safestrprt(str, stream, flags)
 
         for (sl = strlen(str); *str; sl -= new_line_count, str += new_line_count) {
 
-#if    defined(HASWIDECHAR)
+#if defined(HASWIDECHAR)
             if (wcmx > 1) {
                 new_line_count = mblen(str, sl);
                 if (new_line_count > 1) {
@@ -1520,7 +1394,7 @@ safestrprt(str, stream, flags)
                 } else {
                     for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
                         fputs(safepup((unsigned int)*(str + total_line_count),
-                              (int *)NULL), stream);
+                              NULL), stream);
                     }
                 }
                 continue;
@@ -1528,16 +1402,16 @@ safestrprt(str, stream, flags)
                 new_line_count = 1;
             } else
                 new_line_count = 1;
-#else	/* !defined(HASWIDECHAR) */
+#else
             new_line_count = 1;
-#endif    /* defined(HASWIDECHAR) */
+#endif
 
             if (printable[(unsigned char)*str] && *str != ch)
                 putc((int) (*str & 0xff), stream);
             else {
                 if ((flags & 8) && (*str == '\n') && !*(str + 1))
                     break;
-                fputs(safepup((unsigned int) *str, (int *) NULL), stream);
+                fputs(safepup((unsigned int) *str, NULL), stream);
             }
         }
     }
@@ -1547,31 +1421,13 @@ safestrprt(str, stream, flags)
         putc('\n', stream);
 }
 
-
 /*
  * safestrprtn() - print a specified number of characters from a string
  *		   "safely" to the indicated stream
  */
 
 void
-safestrprtn(str, len, stream, flags)
-        char *str;            /* string to print pointer pointer */
-        int len;            /* safe number of characters to
-					 * print */
-        FILE *stream;            /* destination stream -- e.g., stderr
-					 * or stdout */
-        int flags;            /* flags:
-					 *   bit 0: 0 (0) = no NL
-					 *	    1 (1) = add trailing NL
-					 *	 1: 0 (0) = ' ' printable
-					 *	    1 (2) = ' ' not printable
-					 *	 2: 0 (0) = print string as is
-					 *	    1 (4) = surround string
-					 *		    with '"'
-					 *	 4: 0 (0) = print ending '\n'
-					 *	    1 (8) = don't print ending
-					 *		    '\n'
-					 */
+safestrprtn(char *str, int len, FILE *stream, int flags)
 {
     char ch, *uchar_ptr;
     int char_len, i;
@@ -1625,19 +1481,16 @@ safestrprtn(str, len, stream, flags)
         putc('\n', stream);
 }
 
-
 /*
  * statsafely() - stat path safely (i. e., with timeout)
  */
 
 int
-statsafely(path, buf)
-        char *path;            /* file path */
-        struct stat *buf;        /* stat buffer address */
+statsafely(char *path, struct stat *buf)
 {
     if (OptBlockDevice) {
         if (!OptWarnings)
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: avoiding stat(%s): -b was specified.\n",
                            ProgramName, path);
         errno = EWOULDBLOCK;
@@ -1646,14 +1499,12 @@ statsafely(path, buf)
     return (doinchild(dostat, path, (char *) buf, sizeof(struct stat)));
 }
 
-
 /*
  * stkdir() - stack directory name
  */
 
 void
-stkdir(path)
-        char *path;        /* directory path */
+stkdir(char *path)
 {
     MALLOC_S len;
 /*
@@ -1667,13 +1518,13 @@ stkdir(path)
         else {
             char **tmp = (char **) realloc((MALLOC_P *) DirStack, len);
             if (!tmp) {
-                (void) free((FREE_P *) DirStack);
+                free((FREE_P *) DirStack);
                 DirStack = (char **) NULL;
             } else
                 DirStack = tmp;
         }
         if (!DirStack) {
-            (void) fprintf(stderr,
+            fprintf(stderr,
                            "%s: no space for directory stack at: ", ProgramName);
             safestrprt(path, stderr, 1);
             Exit(1);
@@ -1682,23 +1533,20 @@ stkdir(path)
 /*
  * Allocate space for the name, copy it there and put its pointer on the stack.
  */
-    if (!(DirStack[DirStackIndex] = mkstrcpy(path, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: no space for: ", ProgramName);
+    if (!(DirStack[DirStackIndex] = mkstrcpy(path, NULL))) {
+        fprintf(stderr, "%s: no space for: ", ProgramName);
         safestrprt(path, stderr, 1);
         Exit(1);
     }
     DirStackIndex++;
 }
 
-
 /*
  * x2dev() - convert hexadecimal ASCII string to device number
  */
 
 char *
-x2dev(hex_str, dev_ptr)
-        char *hex_str;            /* ASCII string */
-        dev_t *dev_ptr;            /* device receptacle */
+x2dev(char *hex_str, dev_t *dev_ptr)
 {
     char *cp, *cp1;
     int num;
@@ -1727,17 +1575,17 @@ x2dev(hex_str, dev_ptr)
             unsigned char c = cls[(unsigned char)*cp];
             if (c == 1) continue;
             if (c == 2) break;
-            return ((char *) NULL);
+            return (NULL);
         }
     }
     if (!num)
-        return ((char *) NULL);
+        return (NULL);
     if (num > (2 * (int) sizeof(dev_t))) {
         cp1 = hex_str;
         hex_str += (num - (2 * sizeof(dev_t)));
         while (cp1 < hex_str) {
             if (*cp1 != 'f' && *cp1 != 'F')
-                return ((char *) NULL);
+                return (NULL);
             cp1++;
         }
     }

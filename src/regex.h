@@ -10,7 +10,6 @@
  *
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -38,7 +37,6 @@
  *
  * 4. This notice may not be removed or altered.
  */
-
 
 #ifdef    USE_LIB_REGEX
 /*
@@ -70,8 +68,7 @@
    Boston, MA 02111-1307, USA.  */
 
 #ifndef _REGEX_H
-#define _REGEX_H 1
-
+#define _REGEX_H
 /* Allow the use in C++ code.  */
 #ifdef __cplusplus
 extern "C" {
@@ -293,7 +290,6 @@ extern reg_syntax_t re_syntax_options;
 /* If sizeof(int) == 2, then ((1 << 15) - 1) overflows.  */
 #define RE_DUP_MAX (0x7fff)
 
-
 /* POSIX `cflags' bits (i.e., information for `regcomp').  */
 
 /* If this bit is set, then use extended regular expression syntax.
@@ -313,7 +309,6 @@ extern reg_syntax_t re_syntax_options;
    If not set, then returns differ between not matching and errors.  */
 #define REG_NOSUB (REG_NEWLINE << 1)
 
-
 /* POSIX `eflags' bits (i.e., information for regexec).  */
 
 /* If this bit is set, then the beginning-of-line operator doesn't match
@@ -325,7 +320,6 @@ extern reg_syntax_t re_syntax_options;
 
 /* Like REG_NOTBOL, except for the end-of-line.  */
 #define REG_NOTEOL (1 << 1)
-
 
 /* If any error codes are removed, changed, or added, update the
    `re_error_msg' table in regex.c.  */
@@ -366,7 +360,7 @@ typedef enum
    private to the regex routines.  */
 
 #ifndef RE_TRANSLATE_TYPE
-# define RE_TRANSLATE_TYPE char *
+#define RE_TRANSLATE_TYPE char *
 #endif
 
 struct re_pattern_buffer
@@ -442,7 +436,6 @@ typedef struct re_pattern_buffer regex_t;
 /* Type for byte offsets within the string.  POSIX mandates this.  */
 typedef int regoff_t;
 
-
 /* This is the structure we store register match data in.  See
    regex.texinfo for a full description of what registers match.  */
 struct re_registers
@@ -452,14 +445,12 @@ struct re_registers
   regoff_t *end;
 };
 
-
 /* If `regs_allocated' is REGS_UNALLOCATED in the pattern buffer,
    `re_match_2' returns information about at least this many registers
    the first time a `regs' structure is passed.  */
 #ifndef RE_NREGS
-# define RE_NREGS 30
+#define RE_NREGS 30
 #endif
-
 
 /* POSIX specification for registers.  Aside from the different names than
    `re_registers', POSIX uses an array of structures, instead of a
@@ -480,13 +471,13 @@ typedef struct
 
 #if __STDC__
 
-# define _RE_ARGS(args) args
+#define _RE_ARGS(args) args
 
-#else /* not __STDC__ */
+#else
 
-# define _RE_ARGS(args) ()
+#define _RE_ARGS(args) ()
 
-#endif /* not __STDC__ */
+#endif
 
 /* Sets the current default syntax to SYNTAX, and return the old syntax.
    You can also simply assign to the `re_syntax_options' variable.  */
@@ -499,12 +490,10 @@ extern const char *re_compile_pattern
   _RE_ARGS ((const char *pattern, size_t length,
              struct re_pattern_buffer *buffer));
 
-
 /* Compile a fastmap for the compiled pattern in BUFFER; used to
    accelerate searches.  Return 0 if successful and -2 if was an
    internal error.  */
 extern int re_compile_fastmap _RE_ARGS ((struct re_pattern_buffer *buffer));
-
 
 /* Search in the string STRING (with length LENGTH) for the pattern
    compiled into BUFFER.  Start searching at position START, for RANGE
@@ -515,7 +504,6 @@ extern int re_search
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string,
             int length, int start, int range, struct re_registers *regs));
 
-
 /* Like `re_search', but search in the concatenation of STRING1 and
    STRING2.  Also, stop searching at index START + STOP.  */
 extern int re_search_2
@@ -523,20 +511,17 @@ extern int re_search_2
              int length1, const char *string2, int length2,
              int start, int range, struct re_registers *regs, int stop));
 
-
 /* Like `re_search', but return how many characters in STRING the regexp
    in BUFFER matched, starting at position START.  */
 extern int re_match
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string,
              int length, int start, struct re_registers *regs));
 
-
 /* Relates to `re_match' as `re_search_2' relates to `re_search'.  */
 extern int re_match_2
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string1,
              int length1, const char *string2, int length2,
              int start, struct re_registers *regs, int stop));
-
 
 /* Set REGS to hold NUM_REGS registers, storing them in STARTS and
    ENDS.  Subsequent matches using BUFFER and REGS will use this memory
@@ -559,19 +544,19 @@ extern void re_set_registers
 /* 4.2 bsd compatibility.  */
 extern char *re_comp _RE_ARGS ((const char *));
 extern int re_exec _RE_ARGS ((const char *));
-# endif
+#endif
 #endif
 
 /* GCC 2.95 and later have "__restrict"; C99 compilers have
    "restrict", and "configure" may have defined "restrict".  */
 #ifndef __restrict
-# if ! (2 < __GNUC__ || (2 == __GNUC__ && 95 <= __GNUC_MINOR__))
+#if ! (2 < __GNUC__ || (2 == __GNUC__ && 95 <= __GNUC_MINOR__))
 #  if defined restrict || 199901L <= __STDC_VERSION__
 #   define __restrict restrict
 #  else
 #   define __restrict
 #  endif
-# endif
+#endif
 #endif
 /* For now unconditionally define __restrict_arr to expand to nothing.
    Ideally we would have a test for the compiler which allows defining
@@ -595,9 +580,9 @@ extern void regfree _RE_ARGS ((regex_t *__preg));
 
 #ifdef __cplusplus
 }
-#endif	/* C++ */
+#endif
 
-#endif /* regex.h */
+#endif
 
 /*
 Local variables:
@@ -607,7 +592,7 @@ trim-versions-without-asking: nil
 End:
 */
 
-#else	/* !defined(USE_LIB_REGEX) */
+#else
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-include-next"
@@ -615,4 +600,4 @@ End:
 #include_next <regex.h>
 #pragma clang diagnostic pop
 
-#endif    /* defined(USE_LIB_REGEX) */
+#endif
