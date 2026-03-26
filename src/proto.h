@@ -76,7 +76,7 @@ _PROTOTYPE(extern void childx, (void));
 
 _PROTOTYPE(extern int ck_fd_status, (char *nm, int num));
 
-_PROTOTYPE(extern int ck_file_arg, (int i, int ac, char *av[], int fv, int rs, struct stat *sbp));
+_PROTOTYPE(extern int ck_file_arg, (int i, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp));
 
 _PROTOTYPE(extern void ckkv, (char *d, char *er, char *ev, char *ea));
 
@@ -133,7 +133,7 @@ _PROTOTYPE(extern void free_lproc, (struct lproc *lp));
 
 _PROTOTYPE(extern void gather_proc_info, (void));
 
-_PROTOTYPE(extern char *gethostnm, (unsigned char *ia, int af));
+_PROTOTYPE(extern char *gethostnm, (unsigned char *ia, int addr_family));
 
 # if    !defined(GET_MAX_FD)
 /*
@@ -209,11 +209,11 @@ _PROTOTYPE(extern void print_tcptpi, (int nl));
 
 _PROTOTYPE(extern char *printuid, (UID_ARG
         uid,
-        int *ty));
+        int *type));
 
-_PROTOTYPE(extern void printunkaf, (int fam, int ty));
+_PROTOTYPE(extern void printunkaf, (int fam, int type));
 
-_PROTOTYPE(extern char *printsockty, (int ty));
+_PROTOTYPE(extern char *printsockty, (int type));
 
 _PROTOTYPE(extern void process_file, (KA_T
         fp));

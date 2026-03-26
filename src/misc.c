@@ -70,7 +70,7 @@ _PROTOTYPE(static void handleint, (int sig));
 
 #endif    /* defined(HASINTSIGNAL) */
 
-_PROTOTYPE(static char *safepup, (unsigned int c, int *cl));
+_PROTOTYPE(static char *safepup, (unsigned int ch, int *char_len));
 
 
 /*
@@ -98,32 +98,32 @@ static struct drive_Nl *Build_Nl = (struct drive_Nl *)NULL;
                     /* the default Drive_Nl address */
 
 void
-build_Nl(d)
-    struct drive_Nl *d;		/* data to drive the construction */
+build_Nl(drv)
+    struct drive_Nl *drv;		/* data to drive the construction */
 {
-    struct drive_Nl *dp;
-    int i, n;
+    struct drive_Nl *drive_ptr;
+    int i, num;
 
-    for (dp = d, n = 0; dp->nn; dp++, n++)
+    for (drive_ptr = drv, num = 0; drive_ptr->nn; drive_ptr++, num++)
         ;
-    if (n < 1) {
+    if (num < 1) {
         (void) fprintf(stderr,
         "%s: can't calculate kernel name list length\n", ProgramName);
         Exit(1);
     }
-    if (!(NlistTable = (struct NLIST_TYPE *)calloc((n + 1),
+    if (!(NlistTable = (struct NLIST_TYPE *)calloc((num + 1),
                            sizeof(struct NLIST_TYPE))))
     {
         (void) fprintf(stderr,
         "%s: can't allocate %d bytes to kernel name list structure\n",
-        ProgramName, (int)((n + 1) * sizeof(struct NLIST_TYPE)));
+        ProgramName, (int)((num + 1) * sizeof(struct NLIST_TYPE)));
         Exit(1);
     }
-    for (dp = d, i = 0; i < n; dp++, i++) {
-        NlistTable[i].NL_NAME = dp->knm;
+    for (drive_ptr = drv, i = 0; i < num; drive_ptr++, i++) {
+        NlistTable[i].NL_NAME = drive_ptr->knm;
     }
-    NlistLength = (int)((n + 1) * sizeof(struct NLIST_TYPE));
-    Build_Nl = d;
+    NlistLength = (int)((num + 1) * sizeof(struct NLIST_TYPE));
+    Build_Nl = drv;
 }
 #endif    /* defined(HASNLIST) */
 
@@ -134,7 +134,7 @@ build_Nl(d)
 
 void
 childx() {
-    static int at, sx;
+    static int alarm_time, sig_idx;
     pid_t wpid;
 
     if (Cpid > 1) {
@@ -144,13 +144,13 @@ childx() {
          * child to exit.  Compute alarm time shares.
          */
         (void) closePipes();
-        if ((at = TimeoutLimit / NCTSIGS) < TMLIMMIN)
-            at = TMLIMMIN;
+        if ((alarm_time = TimeoutLimit / NCTSIGS) < TMLIMMIN)
+            alarm_time = TMLIMMIN;
         /*
          * Loop, waiting for the child to exit.  After the first pass, help
          * the child exit by sending it signals.
          */
-        for (sx = 0; sx < NCTSIGS; sx++) {
+        for (sig_idx = 0; sig_idx < NCTSIGS; sig_idx++) {
             if (setjmp(Jmp_buf)) {
 
                 /*
@@ -163,7 +163,7 @@ childx() {
                  */
                 (void) alarm(0);
                 (void) signal(SIGALRM, SIG_DFL);
-                if (sx < (NCTSIGS - 1))
+                if (sig_idx < (NCTSIGS - 1))
                     continue;
                 if (!OptWarnings)
                     (void) fprintf(stderr,
@@ -177,10 +177,10 @@ childx() {
              *
              * Wrap the wait() with an alarm.
              */
-            if (sx)
-                (void) kill(Cpid, CtSigs[sx]);
+            if (sig_idx)
+                (void) kill(Cpid, CtSigs[sig_idx]);
             (void) signal(SIGALRM, handleint);
-            (void) alarm(at);
+            (void) alarm(alarm_time);
             wpid = (pid_t) wait(NULL);
             (void) alarm(0);
             (void) signal(SIGALRM, SIG_DFL);
@@ -243,7 +243,7 @@ doinchild(fn, fp, rbuf, rbln)
         char *rbuf;            /* response buffer */
         int rbln;            /* response buffer length */
 {
-    int en, rv;
+    int errno_val, return_val;
 /*
  * Check reply buffer size.
  */
@@ -289,20 +289,20 @@ doinchild(fn, fp, rbuf, rbln)
                  * Begin the child process.
                  */
 
-                int fd, nd, r_al, r_rbln;
+                int file_desc, node_desc, r_al, r_rbln;
                 char r_arg[MAXPATHLEN + 1], r_rbuf[MAXPATHLEN + 1];
                 int (*r_fn)();
                 /*
                  * Close all open file descriptors except Pipes[0] and
                  * Pipes[3].
                  */
-                for (fd = 0, nd = GET_MAX_FD(); fd < nd; fd++) {
-                    if (fd == Pipes[0] || fd == Pipes[3])
+                for (file_desc = 0, node_desc = GET_MAX_FD(); file_desc < node_desc; file_desc++) {
+                    if (file_desc == Pipes[0] || file_desc == Pipes[3])
                         continue;
-                    (void) close(fd);
-                    if (fd == Pipes[1])
+                    (void) close(file_desc);
+                    if (file_desc == Pipes[1])
                         Pipes[1] = -1;
-                    else if (fd == Pipes[2])
+                    else if (file_desc == Pipes[2])
                         Pipes[2] = -1;
                 }
                 if (Pipes[1] >= 0) {
@@ -328,12 +328,12 @@ doinchild(fn, fp, rbuf, rbln)
                            != (int) sizeof(r_rbln)
                         || r_rbln < 1 || r_rbln > (int) sizeof(r_rbuf))
                         break;
-                    rv = r_fn(r_arg, r_rbuf, r_rbln);
-                    en = errno;
-                    if (write(Pipes[3], (char *) &rv, sizeof(rv))
-                        != sizeof(rv)
-                        || write(Pipes[3], (char *) &en, sizeof(en))
-                           != sizeof(en)
+                    return_val = r_fn(r_arg, r_rbuf, r_rbln);
+                    errno_val = errno;
+                    if (write(Pipes[3], (char *) &return_val, sizeof(return_val))
+                        != sizeof(return_val)
+                        || write(Pipes[3], (char *) &errno_val, sizeof(errno_val))
+                           != sizeof(errno_val)
                         || write(Pipes[3], r_rbuf, r_rbln) != r_rbln)
                         break;
                 }
@@ -365,8 +365,8 @@ doinchild(fn, fp, rbuf, rbln)
             || write(Pipes[1], (char *) &len, sizeof(len)) != sizeof(len)
             || write(Pipes[1], fp, len) != len
             || write(Pipes[1], (char *) &rbln, sizeof(rbln)) != sizeof(rbln)
-            || read(Pipes[2], (char *) &rv, sizeof(rv)) != sizeof(rv)
-            || read(Pipes[2], (char *) &en, sizeof(en)) != sizeof(en)
+            || read(Pipes[2], (char *) &return_val, sizeof(return_val)) != sizeof(return_val)
+            || read(Pipes[2], (char *) &errno_val, sizeof(errno_val)) != sizeof(errno_val)
             || read(Pipes[2], rbuf, rbln) != rbln) {
             (void) alarm(0);
             (void) signal(SIGALRM, SIG_DFL);
@@ -381,16 +381,16 @@ doinchild(fn, fp, rbuf, rbln)
          */
         (void) signal(SIGALRM, handleint);
         (void) alarm(TimeoutLimit);
-        rv = fn(fp, rbuf, rbln);
-        en = errno;
+        return_val = fn(fp, rbuf, rbln);
+        errno_val = errno;
     }
 /*
  * Function completed, response collected -- complete the operation.
  */
     (void) alarm(0);
     (void) signal(SIGALRM, SIG_DFL);
-    errno = en;
-    return (rv);
+    errno = errno_val;
+    return (return_val);
 }
 
 
@@ -467,22 +467,22 @@ dropgid()
  */
 
 void
-enter_dev_ch(m)
-        char *m;
+enter_dev_ch(msg)
+        char *msg;
 {
-    char *mp;
+    char *msg_ptr;
 
-    if (!m || *m == '\0')
+    if (!msg || *msg == '\0')
         return;
-    if (!(mp = mkstrcpy(m, (MALLOC_S *) NULL))) {
+    if (!(msg_ptr = mkstrcpy(msg, (MALLOC_S *) NULL))) {
         (void) fprintf(stderr, "%s: no more dev_ch space at PID %d: \n",
                        ProgramName, CurrentLocalProc->pid);
-        safestrprt(m, stderr, 1);
+        safestrprt(msg, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->dev_ch)
         (void) free((FREE_P *) CurrentLocalFile->dev_ch);
-    CurrentLocalFile->dev_ch = mp;
+    CurrentLocalFile->dev_ch = msg_ptr;
 }
 
 
@@ -491,18 +491,18 @@ enter_dev_ch(m)
  */
 
 void
-enter_IPstate(ty, nm, nr)
+enter_IPstate(ty, nm, state_num)
         char *ty;            /* type -- TCP or UDP */
         char *nm;            /* state name (may be NULL) */
-        int nr;                /* state number */
+        int state_num;                /* state number */
 {
 
 #if    defined(USE_LIB_PRINT_TCPTPI)
-    TcpNumStates = nr;
+    TcpNumStates = state_num;
 #else	/* !defined(USE_LIB_PRINT_TCPTPI) */
 
-    int al, i, j, oc, nn, ns, off, tx;
-    char *cp;
+    int alloc_len, i, j, occur_count, new_num, num_states, off, tx;
+    char *char_ptr;
     MALLOC_S len;
 /*
  * Check the type name and set the type index.
@@ -576,23 +576,23 @@ enter_IPstate(ty, nm, nr)
  */
     if ((len = (size_t) strlen(nm)) < 1) {
         (void) fprintf(stderr,
-                       "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, ty, nm, nr);
+                       "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, ty, nm, state_num);
         Exit(1);
     }
 /*
  * Make a copy of the name.
  */
-    if (!(cp = mkstrcpy(nm, (MALLOC_S *) NULL))) {
+    if (!(char_ptr = mkstrcpy(nm, (MALLOC_S *) NULL))) {
         (void) fprintf(stderr,
                        "%s: enter_IPstate(): no %s space for %s\n",
                        ProgramName, ty, nm);
         Exit(1);
     }
 /*
- * Set the necessary offset for using nr as an index.  If it is
+ * Set the necessary offset for using state_num as an index.  If it is
  * a new offset, adjust previous entries.
  */
-    if ((nr < 0) && ((off = -nr) > (tx ? UdpStateOffset : TcpStateOffset))) {
+    if ((state_num < 0) && ((off = -state_num) > (tx ? UdpStateOffset : TcpStateOffset))) {
         if (tx ? UdpStateNames : TcpStateNames) {
 
             /*
@@ -600,14 +600,14 @@ enter_IPstate(ty, nm, nr)
              * a previously allocated state table must be enlarged and its
              * previous entries moved.
              */
-            oc = off - (tx ? UdpStateOffset : TcpStateOffset);
-            al = tx ? UdpStateAlloc : TcpStateAlloc;
-            ns = tx ? UdpNumStates : TcpNumStates;
-            if ((nn = ns + oc) >= al) {
-                while ((nn + 5) > al) {
-                    al += TCPUDPALLOC;
+            occur_count = off - (tx ? UdpStateOffset : TcpStateOffset);
+            alloc_len = tx ? UdpStateAlloc : TcpStateAlloc;
+            num_states = tx ? UdpNumStates : TcpNumStates;
+            if ((new_num = num_states + occur_count) >= alloc_len) {
+                while ((new_num + 5) > alloc_len) {
+                    alloc_len += TCPUDPALLOC;
                 }
-                len = (MALLOC_S)(al * sizeof(char *));
+                len = (MALLOC_S)(alloc_len * sizeof(char *));
                 if (tx) {
                     char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
                     if (!tmp) {
@@ -616,7 +616,7 @@ enter_IPstate(ty, nm, nr)
                         goto no_IP_space;
                     }
                     UdpStateNames = tmp;
-                    UdpStateAlloc = al;
+                    UdpStateAlloc = alloc_len;
                 } else {
                     char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
                     if (!tmp) {
@@ -625,9 +625,9 @@ enter_IPstate(ty, nm, nr)
                         goto no_IP_space;
                     }
                     TcpStateNames = tmp;
-                    TcpStateAlloc = al;
+                    TcpStateAlloc = alloc_len;
                 }
-                for (i = 0, j = oc; i < oc; i++, j++) {
+                for (i = 0, j = occur_count; i < occur_count; i++, j++) {
                     if (tx) {
                         if (i < UdpNumStates)
                             UdpStateNames[j] = UdpStateNames[i];
@@ -639,9 +639,9 @@ enter_IPstate(ty, nm, nr)
                     }
                 }
                 if (tx)
-                    UdpNumStates += oc;
+                    UdpNumStates += occur_count;
                 else
-                    TcpNumStates += oc;
+                    TcpNumStates += occur_count;
             }
         }
         if (tx)
@@ -650,19 +650,19 @@ enter_IPstate(ty, nm, nr)
             TcpStateOffset = off;
     }
 /*
- * Enter name as {Tc|Ud}pSt[nr + {Tc|Ud}pStOff].
+ * Enter name as {Tc|Ud}pSt[state_num + {Tc|Ud}pStOff].
  *
  * Allocate space, as required.
  */
-    al = tx ? UdpStateAlloc : TcpStateAlloc;
+    alloc_len = tx ? UdpStateAlloc : TcpStateAlloc;
     off = tx ? UdpStateOffset : TcpStateOffset;
-    nn = nr + off + 1;
-    if (nn > al) {
+    new_num = state_num + off + 1;
+    if (new_num > alloc_len) {
         i = tx ? UdpNumStates : TcpNumStates;
-        while ((nn + 5) > al) {
-            al += TCPUDPALLOC;
+        while ((new_num + 5) > alloc_len) {
+            alloc_len += TCPUDPALLOC;
         }
-        len = (MALLOC_S)(al * sizeof(char *));
+        len = (MALLOC_S)(alloc_len * sizeof(char *));
         if (tx) {
             if (UdpStateNames) {
                 char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
@@ -680,8 +680,8 @@ enter_IPstate(ty, nm, nr)
                 (void) fprintf(stderr, "%s: no %s state space\n", ProgramName, ty);
                 Exit(1);
             }
-            UdpNumStates = nn;
-            UdpStateAlloc = al;
+            UdpNumStates = new_num;
+            UdpStateAlloc = alloc_len;
         } else {
             if (TcpStateNames) {
                 char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
@@ -694,10 +694,10 @@ enter_IPstate(ty, nm, nr)
                 TcpStateNames = (char **) malloc(len);
             if (!TcpStateNames)
                 goto no_IP_space;
-            TcpNumStates = nn;
-            TcpStateAlloc = al;
+            TcpNumStates = new_num;
+            TcpStateAlloc = alloc_len;
         }
-        while (i < al) {
+        while (i < alloc_len) {
             if (tx)
                 UdpStateNames[i] = (char *) NULL;
             else
@@ -706,30 +706,30 @@ enter_IPstate(ty, nm, nr)
         }
     } else {
         if (tx) {
-            if (nn > UdpNumStates)
-                UdpNumStates = nn;
+            if (new_num > UdpNumStates)
+                UdpNumStates = new_num;
         } else {
-            if (nn > TcpNumStates)
-                TcpNumStates = nn;
+            if (new_num > TcpNumStates)
+                TcpNumStates = new_num;
         }
     }
     if (tx) {
-        if (UdpStateNames[nr + UdpStateOffset]) {
+        if (UdpStateNames[state_num + UdpStateOffset]) {
 
             dup_IP_state:
 
             (void) fprintf(stderr,
                            "%s: duplicate %s state %d (already %s): %s\n",
-                           ProgramName, ty, nr,
-                           tx ? UdpStateNames[nr + UdpStateOffset] : TcpStateNames[nr + TcpStateOffset],
+                           ProgramName, ty, state_num,
+                           tx ? UdpStateNames[state_num + UdpStateOffset] : TcpStateNames[state_num + TcpStateOffset],
                            nm);
             Exit(1);
         }
-        UdpStateNames[nr + UdpStateOffset] = cp;
+        UdpStateNames[state_num + UdpStateOffset] = char_ptr;
     } else {
-        if (TcpStateNames[nr + TcpStateOffset])
+        if (TcpStateNames[state_num + TcpStateOffset])
             goto dup_IP_state;
-        TcpStateNames[nr + TcpStateOffset] = cp;
+        TcpStateNames[state_num + TcpStateOffset] = char_ptr;
     }
 #endif    /* defined(USE_LIB_PRINT_TCPTPI) */
 
@@ -741,22 +741,22 @@ enter_IPstate(ty, nm, nr)
  */
 
 void
-enter_nm(m)
-        char *m;
+enter_nm(name)
+        char *name;
 {
-    char *mp;
+    char *name_ptr;
 
-    if (!m || *m == '\0')
+    if (!name || *name == '\0')
         return;
-    if (!(mp = mkstrcpy(m, (MALLOC_S *) NULL))) {
+    if (!(name_ptr = mkstrcpy(name, (MALLOC_S *) NULL))) {
         (void) fprintf(stderr, "%s: no more nm space at PID %d for: ",
                        ProgramName, CurrentLocalProc->pid);
-        safestrprt(m, stderr, 1);
+        safestrprt(name, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->nm)
         (void) free((FREE_P *) CurrentLocalFile->nm);
-    CurrentLocalFile->nm = mp;
+    CurrentLocalFile->nm = name_ptr;
 }
 
 
@@ -765,8 +765,8 @@ enter_nm(m)
  */
 
 void
-Exit(xv)
-        int xv;                /* exit() value */
+Exit(exit_val)
+        int exit_val;                /* exit() value */
 {
     (void) childx();
 
@@ -776,7 +776,7 @@ Exit(xv)
         ProgramName, DevCachePath[DevCachePathIndex]);
 #endif    /* defined(HASDCACHE) */
 
-    exit(xv);
+    exit(exit_val);
 }
 
 
@@ -786,9 +786,9 @@ Exit(xv)
  */
 
 int
-get_Nl_value(nn, d, v)
-    char *nn;			/* nickname of requested entry */
-    struct drive_Nl *d;		/* drive_Nl table that built NlistTable
+get_Nl_value(nickname, drv, v)
+    char *nickname;			/* nickname of requested entry */
+    struct drive_Nl *drv;		/* drive_Nl table that built NlistTable
 					 * (if NULL, use Build_Nl) */
     KA_T *v;			/* returned value (if NULL,
 					 * return nothing) */
@@ -797,10 +797,10 @@ get_Nl_value(nn, d, v)
 
     if (!NlistTable || !NlistLength)
         return(-1);
-    if (!d)
-        d = Build_Nl;
-    for (i = 0; d->nn; d++, i++) {
-        if (strcmp(d->nn, nn) == 0) {
+    if (!drv)
+        drv = Build_Nl;
+    for (i = 0; drv->nn; drv++, i++) {
+        if (strcmp(drv->nn, nickname) == 0) {
         if (v)
             *v = (KA_T)NlistTable[i].n_value;
         return(i);
@@ -855,47 +855,47 @@ hashbyname(nm, mod)
  */
 
 int
-is_nw_addr(ia, p, af)
+is_nw_addr(ia, port, addr_family)
         unsigned char *ia;        /* Internet address */
-        int p;                /* port */
-        int af;                /* address family -- e.g., AF_INET,
+        int port;                /* port */
+        int addr_family;                /* address family -- e.g., AF_INET,
 					 * AF_INET6 */
 {
-    struct nwad *n;
+    struct nwad *node;
 
-    if (!(n = NetworkAddrList))
+    if (!(node = NetworkAddrList))
         return (0);
-    for (; n; n = n->next) {
-        if (n->proto) {
-            if (strcasecmp(n->proto, CurrentLocalFile->iproto) != 0)
+    for (; node; node = node->next) {
+        if (node->proto) {
+            if (strcasecmp(node->proto, CurrentLocalFile->iproto) != 0)
                 continue;
         }
-        if (af && n->af && af != n->af)
+        if (addr_family && node->af && addr_family != node->af)
             continue;
 
 #if    defined(HASIPv6)
-        if (af == AF_INET6) {
-        if (n->a[15] || n->a[14] || n->a[13] || n->a[12]
-        ||  n->a[11] || n->a[10] || n->a[9]  || n->a[8]
-        ||  n->a[7]  || n->a[6]  || n->a[5]  || n->a[4]
-        ||  n->a[3]  || n->a[2]  || n->a[1]  || n->a[0]) {
-            if (ia[15] != n->a[15] || ia[14] != n->a[14]
-            ||  ia[13] != n->a[13] || ia[12] != n->a[12]
-            ||  ia[11] != n->a[11] || ia[10] != n->a[10]
-            ||  ia[9]  != n->a[9]  || ia[8]  != n->a[8]
-            ||  ia[7]  != n->a[7]  || ia[6]  != n->a[6]
-            ||  ia[5]  != n->a[5]  || ia[4]  != n->a[4]
-            ||  ia[3]  != n->a[3]  || ia[2]  != n->a[2]
-            ||  ia[1]  != n->a[1]  || ia[0]  != n->a[0])
+        if (addr_family == AF_INET6) {
+        if (node->a[15] || node->a[14] || node->a[13] || node->a[12]
+        ||  node->a[11] || node->a[10] || node->a[9]  || node->a[8]
+        ||  node->a[7]  || node->a[6]  || node->a[5]  || node->a[4]
+        ||  node->a[3]  || node->a[2]  || node->a[1]  || node->a[0]) {
+            if (ia[15] != node->a[15] || ia[14] != node->a[14]
+            ||  ia[13] != node->a[13] || ia[12] != node->a[12]
+            ||  ia[11] != node->a[11] || ia[10] != node->a[10]
+            ||  ia[9]  != node->a[9]  || ia[8]  != node->a[8]
+            ||  ia[7]  != node->a[7]  || ia[6]  != node->a[6]
+            ||  ia[5]  != node->a[5]  || ia[4]  != node->a[4]
+            ||  ia[3]  != node->a[3]  || ia[2]  != node->a[2]
+            ||  ia[1]  != node->a[1]  || ia[0]  != node->a[0])
             continue;
         }
-        } else if (af == AF_INET)
+        } else if (addr_family == AF_INET)
 #endif    /* defined(HASIPv6) */
 
         {
-            if (n->a[3] || n->a[2] || n->a[1] || n->a[0]) {
-                if (ia[3] != n->a[3] || ia[2] != n->a[2]
-                    || ia[1] != n->a[1] || ia[0] != n->a[0])
+            if (node->a[3] || node->a[2] || node->a[1] || node->a[0]) {
+                if (ia[3] != node->a[3] || ia[2] != node->a[2]
+                    || ia[1] != node->a[1] || ia[0] != node->a[0])
                     continue;
             }
         }
@@ -905,8 +905,8 @@ is_nw_addr(ia, p, af)
         continue;
 #endif    /* defined(HASIPv6) */
 
-        if (n->sport == -1 || (p >= n->sport && p <= n->eport)) {
-            n->f = 1;
+        if (node->sport == -1 || (port >= node->sport && port <= node->eport)) {
+            node->f = 1;
             return (1);
         }
     }
@@ -964,8 +964,8 @@ mkstrcat(s1, l1, s2, l2, s3, l3, clp)
         MALLOC_S *clp;            /* pointer to return of copy length
 					 * (optional) */
 {
-    MALLOC_S cl, len1, len2, len3;
-    char *cp;
+    MALLOC_S cat_len, len1, len2, len3;
+    char *char_ptr;
 
     if (s1)
         len1 = (MALLOC_S)((l1 >= 0) ? l1 : strlen(s1));
@@ -979,27 +979,27 @@ mkstrcat(s1, l1, s2, l2, s3, l3, clp)
         len3 = (MALLOC_S)((l3 >= 0) ? l3 : strlen(s3));
     else
         len3 = (MALLOC_S) 0;
-    cl = len1 + len2 + len3;
-    if ((cp = (char *) malloc(cl + 1))) {
-        char *tp = cp;
+    cat_len = len1 + len2 + len3;
+    if ((char_ptr = (char *) malloc(cat_len + 1))) {
+        char *text_ptr = char_ptr;
 
         if (s1 && len1) {
-            (void) strncpy(tp, s1, len1);
-            tp += len1;
+            (void) strncpy(text_ptr, s1, len1);
+            text_ptr += len1;
         }
         if (s2 && len2) {
-            (void) strncpy(tp, s2, len2);
-            tp += len2;
+            (void) strncpy(text_ptr, s2, len2);
+            text_ptr += len2;
         }
         if (s3 && len3) {
-            (void) strncpy(tp, s3, len3);
-            tp += len3;
+            (void) strncpy(text_ptr, s3, len3);
+            text_ptr += len3;
         }
-        *tp = '\0';
+        *text_ptr = '\0';
     }
     if (clp)
-        *clp = cl;
-    return (cp);
+        *clp = cat_len;
+    return (char_ptr);
 }
 
 
@@ -1255,16 +1255,16 @@ readsthead(addr, buf)
     KA_T addr;			/* starting queue pointer in kernel */
     struct queue *buf;		/* buffer for queue head */
 {
-    KA_T qp;
+    KA_T kern_ptr;
 
     if (!addr) {
         (void) snpf(NameChars, NameCharsLength, "no stream queue head");
         return(1);
     }
-    for (qp = addr; qp; qp = (KA_T)buf->q_next) {
-        if (kread(qp, (char *)buf, sizeof(struct queue))) {
+    for (kern_ptr = addr; kern_ptr; kern_ptr = (KA_T)buf->q_next) {
+        if (kread(kern_ptr, (char *)buf, sizeof(struct queue))) {
         (void) snpf(NameChars, NameCharsLength, "bad stream queue link at %s",
-            print_kptr(qp, (char *)NULL, 0));
+            print_kptr(kern_ptr, (char *)NULL, 0));
         return(1);
         }
     }
@@ -1337,18 +1337,18 @@ readstqinit(addr, buf)
  */
 
 static char *
-safepup(c, cl)
-        unsigned int c;            /* unprintable (i.e., !isprint())
+safepup(ch, char_len)
+        unsigned int ch;            /* unprintable (i.e., !isprint())
 					 * character */
-        int *cl;            /* returned printable strlen -- NULL if
+        int *char_len;            /* returned printable strlen -- NULL if
 					 * no return needed */
 {
     int len;
     char *rp;
     static char up[8];
 
-    if (c < 0x20) {
-        switch (c) {
+    if (ch < 0x20) {
+        switch (ch) {
             case '\b':
                 rp = "\\b";
                 break;
@@ -1366,18 +1366,18 @@ safepup(c, cl)
                 break;
             default:
                 up[0] = '^';
-                up[1] = (char)(c + 0x40);
+                up[1] = (char)(ch + 0x40);
                 up[2] = '\0';
                 rp = up;
         }
         len = 2;
-    } else if (c == 0xff) {
+    } else if (ch == 0xff) {
         rp = "^?";
         len = 2;
     } else {
         {
             static const char hex[] = "0123456789abcdef";
-            unsigned int v = c & 0xff;
+            unsigned int v = ch & 0xff;
             up[0] = '\\';
             up[1] = 'x';
             up[2] = hex[(v >> 4) & 0xf];
@@ -1387,8 +1387,8 @@ safepup(c, cl)
         rp = up;
         len = 4;
     }
-    if (cl)
-        *cl = len;
+    if (char_len)
+        *char_len = len;
     return (rp);
 }
 
@@ -1408,10 +1408,10 @@ safestrlen(sp, flags)
 					 *	    1 (2) = ' ' not printable
 					 */
 {
-    char c;
+    char unprintable_ch;
     int len = 0;
 
-    c = (flags & 2) ? ' ' : '\0';
+    unprintable_ch = (flags & 2) ? ' ' : '\0';
     if (sp) {
     /*
      * Use a lookup table for character expansion length to avoid
@@ -1446,7 +1446,7 @@ safestrlen(sp, flags)
         };
         for (; *sp; sp++) {
             unsigned char ch = (unsigned char)*sp;
-            if (ch == (unsigned char)c)
+            if (ch == (unsigned char)unprintable_ch)
                 len += (ch < 0x20 || ch == 0xff) ? 2 : 4;
             else
                 len += explen[ch];
@@ -1479,17 +1479,17 @@ safestrprt(sp, fs, flags)
 					 *		    '\n'
 					 */
 {
-    char c;
-    int lnc, lnt, sl;
+    char ch;
+    int new_line_count, total_line_count, sl;
 
 #if    defined(HASWIDECHAR)
-    wchar_t w;
+    wchar_t wchar;
     int wcmx = MB_CUR_MAX;
 #else	/* !defined(HASWIDECHAR) */
     static int wcmx = 1;
 #endif    /* defined(HASWIDECHAR) */
 
-    c = (flags & 2) ? ' ' : '\0';
+    ch = (flags & 2) ? ' ' : '\0';
     if (flags & 4)
         putc('"', fs);
     if (sp) {
@@ -1516,32 +1516,32 @@ safestrprt(sp, fs, flags)
                             0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
         };
 
-        for (sl = strlen(sp); *sp; sl -= lnc, sp += lnc) {
+        for (sl = strlen(sp); *sp; sl -= new_line_count, sp += new_line_count) {
 
 #if    defined(HASWIDECHAR)
             if (wcmx > 1) {
-                lnc = mblen(sp, sl);
-                if (lnc > 1) {
-                if ((mbtowc(&w, sp, sl) == lnc) && iswprint(w)) {
-                    for (lnt = 0; lnt < lnc; lnt++) {
-                    putc((int)*(sp + lnt), fs);
+                new_line_count = mblen(sp, sl);
+                if (new_line_count > 1) {
+                if ((mbtowc(&wchar, sp, sl) == new_line_count) && iswprint(wchar)) {
+                    for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
+                    putc((int)*(sp + total_line_count), fs);
                     }
                 } else {
-                    for (lnt = 0; lnt < lnc; lnt++) {
-                        fputs(safepup((unsigned int)*(sp + lnt),
+                    for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
+                        fputs(safepup((unsigned int)*(sp + total_line_count),
                               (int *)NULL), fs);
                     }
                 }
                 continue;
                 } else
-                lnc = 1;
+                new_line_count = 1;
             } else
-                lnc = 1;
+                new_line_count = 1;
 #else	/* !defined(HASWIDECHAR) */
-            lnc = 1;
+            new_line_count = 1;
 #endif    /* defined(HASWIDECHAR) */
 
-            if (printable[(unsigned char)*sp] && *sp != c)
+            if (printable[(unsigned char)*sp] && *sp != ch)
                 putc((int) (*sp & 0xff), fs);
             else {
                 if ((flags & 8) && (*sp == '\n') && !*(sp + 1))
@@ -1582,8 +1582,8 @@ safestrprtn(sp, len, fs, flags)
 					 *		    '\n'
 					 */
 {
-    char c, *up;
-    int cl, i;
+    char ch, *uchar_ptr;
+    int char_len, i;
 
     if (flags & 4)
         putc('"', fs);
@@ -1609,19 +1609,19 @@ safestrprtn(sp, len, fs, flags)
                             0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
                             0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
         };
-        c = (flags & 2) ? ' ' : '\0';
+        ch = (flags & 2) ? ' ' : '\0';
         for (i = 0; i < len && *sp; sp++) {
-            if (printable[(unsigned char)*sp] && *sp != c) {
+            if (printable[(unsigned char)*sp] && *sp != ch) {
                 putc((int) (*sp & 0xff), fs);
                 i++;
             } else {
                 if ((flags & 8) && (*sp == '\n') && !*(sp + 1))
                     break;
-                up = safepup((unsigned int) *sp, &cl);
-                if ((i + cl) > len)
+                uchar_ptr = safepup((unsigned int) *sp, &char_len);
+                if ((i + char_len) > len)
                     break;
-                fputs(up, fs);
-                i += cl;
+                fputs(uchar_ptr, fs);
+                i += char_len;
             }
         }
     } else
@@ -1661,8 +1661,8 @@ statsafely(path, buf)
  */
 
 void
-stkdir(p)
-        char *p;        /* directory path */
+stkdir(path)
+        char *path;        /* directory path */
 {
     MALLOC_S len;
 /*
@@ -1684,16 +1684,16 @@ stkdir(p)
         if (!DirStack) {
             (void) fprintf(stderr,
                            "%s: no space for directory stack at: ", ProgramName);
-            safestrprt(p, stderr, 1);
+            safestrprt(path, stderr, 1);
             Exit(1);
         }
     }
 /*
  * Allocate space for the name, copy it there and put its pointer on the stack.
  */
-    if (!(DirStack[DirStackIndex] = mkstrcpy(p, (MALLOC_S *) NULL))) {
+    if (!(DirStack[DirStackIndex] = mkstrcpy(path, (MALLOC_S *) NULL))) {
         (void) fprintf(stderr, "%s: no space for: ", ProgramName);
-        safestrprt(p, stderr, 1);
+        safestrprt(path, stderr, 1);
         Exit(1);
     }
     DirStackIndex++;
@@ -1710,8 +1710,8 @@ x2dev(s, d)
         dev_t *d;            /* device receptacle */
 {
     char *cp, *cp1;
-    int n;
-    dev_t r;
+    int num;
+    dev_t result;
 
 /*
  * Skip an optional leading 0x.  Count the number of hex digits up to the end
@@ -1732,18 +1732,18 @@ x2dev(s, d)
             ['8']=1,['9']=1,['a']=1,['b']=1,['c']=1,['d']=1,['e']=1,['f']=1,
             ['A']=1,['B']=1,['C']=1,['D']=1,['E']=1,['F']=1,[' ']=2,[',']=2,
         };
-        for (cp = s, n = 0; *cp; cp++, n++) {
+        for (cp = s, num = 0; *cp; cp++, num++) {
             unsigned char c = cls[(unsigned char)*cp];
             if (c == 1) continue;
             if (c == 2) break;
             return ((char *) NULL);
         }
     }
-    if (!n)
+    if (!num)
         return ((char *) NULL);
-    if (n > (2 * (int) sizeof(dev_t))) {
+    if (num > (2 * (int) sizeof(dev_t))) {
         cp1 = s;
-        s += (n - (2 * sizeof(dev_t)));
+        s += (num - (2 * sizeof(dev_t)));
         while (cp1 < s) {
             if (*cp1 != 'f' && *cp1 != 'F')
                 return ((char *) NULL);
@@ -1763,10 +1763,10 @@ x2dev(s, d)
             ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
             ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
         };
-        for (r = 0; s < cp; s++) {
-            r = (r << 4) | (hv[(unsigned char)*s] & 0xf);
+        for (result = 0; s < cp; s++) {
+            result = (result << 4) | (hv[(unsigned char)*s] & 0xf);
         }
     }
-    *d = r;
+    *d = result;
     return (s);
 }

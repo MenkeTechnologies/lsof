@@ -271,25 +271,25 @@ hashSfile()
  */
 
 int
-is_file_named(p, cd)
-    char *p;			/* path name; NULL = search by device
+is_file_named(path, cdev)
+    char *path;			/* path name; NULL = search by device
 					 * and inode (from *CurrentLocalFile) */
-    int cd;				/* character or block type file --
+    int cdev;				/* character or block type file --
 					 * VCHR or VBLK vnode, or S_IFCHR
 					 * or S_IFBLK inode */
 {
     char *ep;
-    int f = 0;
+    int found = 0;
     struct sfile *s = (struct sfile *)NULL;
     struct hsfile *sh;
     size_t sz;
 /*
  * Check for a path name match, as requested.
  */
-    if (p && HbyNmCt) {
-        for (sh = &HbyNm[hashbyname(p, SFNMHASH)]; sh; sh = sh->next) {
-        if ((s = sh->s) && strcmp(p, s->aname) == 0) {
-            f = 2;
+    if (path && HbyNmCt) {
+        for (sh = &HbyNm[hashbyname(path, SFNMHASH)]; sh; sh = sh->next) {
+        if ((s = sh->s) && strcmp(path, s->aname) == 0) {
+            found = 2;
             break;
         }
         }
@@ -299,7 +299,7 @@ is_file_named(p, cd)
 /*
  * If this is a stream, check for a clone device match.
  */
-    if (!f && HbyCdCt && CurrentLocalFile->is_stream && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
+    if (!found && HbyCdCt && CurrentLocalFile->is_stream && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
     &&  (CurrentLocalFile->dev == DeviceOfDev))
     {
         for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(CurrentLocalFile->rdev), 0,
@@ -309,7 +309,7 @@ is_file_named(p, cd)
         {
         if ((s = sh->s) && (GET_MAJ_DEV(CurrentLocalFile->rdev)
         ==		    GET_MIN_DEV(s->rdev))) {
-            f = 3;
+            found = 3;
             break;
         }
         }
@@ -319,7 +319,7 @@ is_file_named(p, cd)
 /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
+    if (!found && HbyFdiCt && CurrentLocalFile->dev_def
     && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
     {
         for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
@@ -331,7 +331,7 @@ is_file_named(p, cd)
         {
         if ((s = sh->s) && (CurrentLocalFile->dev == s->dev)
         &&  (CurrentLocalFile->inode == s->i)) {
-            f = 1;
+            found = 1;
             break;
         }
         }
@@ -339,7 +339,7 @@ is_file_named(p, cd)
 /*
  * Check for a file system match.
  */
-    if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
+    if (!found && HbyFsdCt && CurrentLocalFile->dev_def) {
         for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
                            GET_MIN_DEV(CurrentLocalFile->dev), 0,
                        SFFSHASH)];
@@ -347,7 +347,7 @@ is_file_named(p, cd)
          sh = sh->next)
         {
         if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)) {
-            f = 1;
+            found = 1;
             break;
         }
         }
@@ -355,7 +355,7 @@ is_file_named(p, cd)
 /*
  * Check for a character or block device match.
  */
-    if (!f && HbyFrdCt && cd
+    if (!found && HbyFrdCt && cdev
     &&  CurrentLocalFile->dev_def && (CurrentLocalFile->dev == DeviceOfDev)
     &&  CurrentLocalFile->rdev_def
     && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
@@ -371,7 +371,7 @@ is_file_named(p, cd)
         if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)
         &&  (s->rdev == CurrentLocalFile->rdev) && (s->i == CurrentLocalFile->inode))
         {
-            f = 1;
+            found = 1;
             break;
         }
         }
@@ -379,7 +379,7 @@ is_file_named(p, cd)
 /*
  * Convert the name if a match occurred.
  */
-    switch (f) {
+    switch (found) {
     case 0:
         return(0);
     case 1:
@@ -397,7 +397,7 @@ is_file_named(p, cd)
         }
         break;
     case 2:
-        (void) strcpy(NameChars, p);
+        (void) strcpy(NameChars, path);
         break;
 
 # if	defined(HAVECLONEMAJ)

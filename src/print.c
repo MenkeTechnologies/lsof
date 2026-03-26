@@ -93,9 +93,9 @@ _PROTOTYPE(static void update_portmap, (struct porttab *pt, char *pn));
 
 _PROTOTYPE(static void fill_porttab, (void));
 
-_PROTOTYPE(static char *lkup_port, (int p, int pr, int src));
+_PROTOTYPE(static char *lkup_port, (int port, int protocol, int src));
 
-_PROTOTYPE(static char *lkup_svcnam, (int h, int p, int pr, int ss));
+_PROTOTYPE(static char *lkup_svcnam, (int hash_idx, int port, int protocol, int svc_status));
 
 _PROTOTYPE(static int printinaddr, (void));
 
@@ -158,19 +158,19 @@ endnm(sz)
 
 static void
 fill_portmap() {
-    char buf[128], *cp, *nm;
-    CLIENT *c;
-    int h, port, pr;
-    MALLOC_S nl;
+    char buf[128], *char_ptr, *name;
+    CLIENT *client;
+    int hash_idx, port, protocol;
+    MALLOC_S name_len;
     struct pmaplist *p = (struct pmaplist *) NULL;
-    struct porttab *pt;
-    struct rpcent *r;
-    struct TIMEVAL_LSOF tm;
+    struct porttab *port_entry;
+    struct rpcent *rpc_entry;
+    struct TIMEVAL_LSOF timeout;
 
 #if    !defined(CAN_USE_CLNT_CREATE)
-    struct hostent *he;
-    struct sockaddr_in ia;
-    int s = RPC_ANYSOCK;
+    struct hostent *host_entry;
+    struct sockaddr_in sock_addr;
+    int sock = RPC_ANYSOCK;
 #endif    /* !defined(CAN_USE_CLNT_CREATE) */
 
 /*
@@ -178,30 +178,30 @@ fill_portmap() {
  */
 
 #if    !defined(CAN_USE_CLNT_CREATE)
-    zeromem(&ia, sizeof(ia));
-    ia.sin_family = AF_INET;
-    if ((he = gethostbyname("localhost")))
-        MEMMOVE((caddr_t) & ia.sin_addr, he->h_addr, he->h_length);
-    ia.sin_port = htons(PMAPPORT);
+    zeromem(&sock_addr, sizeof(sock_addr));
+    sock_addr.sin_family = AF_INET;
+    if ((host_entry = gethostbyname("localhost")))
+        MEMMOVE((caddr_t) & sock_addr.sin_addr, host_entry->h_addr, host_entry->h_length);
+    sock_addr.sin_port = htons(PMAPPORT);
 #endif    /* !defined(CAN_USE_CLNT_CREATE) */
 
-    tm.tv_sec = 60;
-    tm.tv_usec = 0;
+    timeout.tv_sec = 60;
+    timeout.tv_usec = 0;
 /*
  * Get an RPC client handle.  Then ask for a dump of the port map.
  */
 
 #if    defined(CAN_USE_CLNT_CREATE)
-    if (!(c = clnt_create("localhost", PMAPPROG, PMAPVERS, "tcp")))
+    if (!(client = clnt_create("localhost", PMAPPROG, PMAPVERS, "tcp")))
 #else	/* !defined(CAN_USE_CLNT_CREATE) */
-    if (!(c = clnttcp_create(&ia, PMAPPROG, PMAPVERS, &s, 0, 0)))
+    if (!(client = clnttcp_create(&sock_addr, PMAPPROG, PMAPVERS, &sock, 0, 0)))
 #endif    /* defined(CAN_USE_CLNT_CREATE) */
 
         return;
-    if (clnt_call(c, PMAPPROC_DUMP, XDR_VOID, NULL, XDR_PMAPLIST,
-                  (caddr_t) & p, tm)
+    if (clnt_call(client, PMAPPROC_DUMP, XDR_VOID, NULL, XDR_PMAPLIST,
+                  (caddr_t) & p, timeout)
         != RPC_SUCCESS) {
-        clnt_destroy(c);
+        clnt_destroy(client);
         return;
     }
 /*
@@ -214,69 +214,69 @@ fill_portmap() {
          * Determine the port map entry's protocol; ignore all but TCP and UDP.
          */
         if (p->pml_map.pm_prot == IPPROTO_TCP)
-            pr = 2;
+            protocol = 2;
         else if (p->pml_map.pm_prot == IPPROTO_UDP)
-            pr = 3;
+            protocol = 3;
         else
             continue;
         /*
          * See if there's already a portmap entry for this port.  If there is,
          * ignore this entry.
          */
-        h = HASHPORT((port = (int) p->pml_map.pm_port));
-        for (pt = Pth[pr][h]; pt; pt = pt->next) {
-            if (pt->port == port)
+        hash_idx = HASHPORT((port = (int) p->pml_map.pm_port));
+        for (port_entry = Pth[protocol][hash_idx]; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port == port)
                 break;
         }
-        if (pt)
+        if (port_entry)
             continue;
         /*
          * Save the registration name or number.
          */
-        cp = (char *) NULL;
-        if ((r = (struct rpcent *) getrpcbynumber(p->pml_map.pm_prog))) {
-            if (r->r_name && strlen(r->r_name))
-                cp = r->r_name;
+        char_ptr = (char *) NULL;
+        if ((rpc_entry = (struct rpcent *) getrpcbynumber(p->pml_map.pm_prog))) {
+            if (rpc_entry->r_name && strlen(rpc_entry->r_name))
+                char_ptr = rpc_entry->r_name;
         }
-        if (!cp) {
+        if (!char_ptr) {
             (void) snpf(buf, sizeof(buf), "%lu",
                         (unsigned long) p->pml_map.pm_prog);
-            cp = buf;
+            char_ptr = buf;
         }
-        if (!strlen(cp))
+        if (!strlen(char_ptr))
             continue;
         /*
          * Allocate space for the portmap name entry and copy it there.
          */
-        if (!(nm = mkstrcpy(cp, &nl))) {
+        if (!(name = mkstrcpy(char_ptr, &name_len))) {
             (void) fprintf(stderr,
                            "%s: can't allocate space for portmap entry: ", ProgramName);
-            safestrprt(cp, stderr, 1);
+            safestrprt(char_ptr, stderr, 1);
             Exit(1);
         }
-        if (!nl) {
-            (void) free((FREE_P *) nm);
+        if (!name_len) {
+            (void) free((FREE_P *) name);
             continue;
         }
         /*
          * Allocate and fill a porttab struct entry for the portmap table.
          * Link it to the head of its hash bucket, and make it the new head.
          */
-        if (!(pt = (struct porttab *) malloc(sizeof(struct porttab)))) {
+        if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate porttab entry for portmap: ", ProgramName);
-            safestrprt(nm, stderr, 1);
-            (void) free((FREE_P *) nm);
+            safestrprt(name, stderr, 1);
+            (void) free((FREE_P *) name);
             Exit(1);
         }
-        pt->name = nm;
-        pt->nl = nl;
-        pt->port = port;
-        pt->next = Pth[pr][h];
-        pt->ss = 0;
-        Pth[pr][h] = pt;
+        port_entry->name = name;
+        port_entry->nl = name_len;
+        port_entry->port = port;
+        port_entry->next = Pth[protocol][hash_idx];
+        port_entry->ss = 0;
+        Pth[protocol][hash_idx] = port_entry;
     }
-    clnt_destroy(c);
+    clnt_destroy(client);
 }
 
 #endif    /* !defined(HASNORPC_H) */
@@ -289,11 +289,11 @@ fill_portmap() {
 
 static void
 fill_porttab() {
-    int h, p, pr;
-    MALLOC_S nl;
-    char *nm;
-    struct porttab *pt;
-    struct servent *se;
+    int hash_idx, port, protocol;
+    MALLOC_S name_len;
+    char *name;
+    struct porttab *port_entry;
+    struct servent *serv_entry;
 
     (void) endservent();
 /*
@@ -301,55 +301,55 @@ fill_porttab() {
  * name associated with them.
  */
     (void) setservent(1);
-    while ((se = getservent())) {
-        if (!se->s_name || !se->s_proto)
+    while ((serv_entry = getservent())) {
+        if (!serv_entry->s_name || !serv_entry->s_proto)
             continue;
-        if (strcasecmp(se->s_proto, "TCP") == 0)
-            pr = 0;
-        else if (strcasecmp(se->s_proto, "UDP") == 0)
-            pr = 1;
+        if (strcasecmp(serv_entry->s_proto, "TCP") == 0)
+            protocol = 0;
+        else if (strcasecmp(serv_entry->s_proto, "UDP") == 0)
+            protocol = 1;
         else
             continue;
-        if (!se->s_name || !strlen(se->s_name))
+        if (!serv_entry->s_name || !strlen(serv_entry->s_name))
             continue;
-        p = ntohs(se->s_port);
+        port = ntohs(serv_entry->s_port);
         /*
          * See if a port->service entry is already cached for this port and
          * prototcol.  If it is, leave it alone.
          */
-        h = HASHPORT(p);
-        for (pt = Pth[pr][h]; pt; pt = pt->next) {
-            if (pt->port == p)
+        hash_idx = HASHPORT(port);
+        for (port_entry = Pth[protocol][hash_idx]; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port == port)
                 break;
         }
-        if (pt)
+        if (port_entry)
             continue;
         /*
          * Add a new entry to the cache for this port and protocol.
          */
-        if (!(nm = mkstrcpy(se->s_name, &nl))) {
+        if (!(name = mkstrcpy(serv_entry->s_name, &name_len))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for port %d name: %s\n",
-                           ProgramName, (int) (nl + 1), p, se->s_name);
+                           ProgramName, (int) (name_len + 1), port, serv_entry->s_name);
             Exit(1);
         }
-        if (!nl) {
-            (void) free((FREE_P *) nm);
+        if (!name_len) {
+            (void) free((FREE_P *) name);
             continue;
         }
-        if (!(pt = (struct porttab *) malloc(sizeof(struct porttab)))) {
+        if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate porttab entry for port %d: %s\n",
-                           ProgramName, p, se->s_name);
-            (void) free((FREE_P *) nm);
+                           ProgramName, port, serv_entry->s_name);
+            (void) free((FREE_P *) name);
             Exit(1);
         }
-        pt->name = nm;
-        pt->nl = nl - 1;
-        pt->port = p;
-        pt->next = Pth[pr][h];
-        pt->ss = 0;
-        Pth[pr][h] = pt;
+        port_entry->name = name;
+        port_entry->nl = name_len - 1;
+        port_entry->port = port;
+        port_entry->next = Pth[protocol][hash_idx];
+        port_entry->ss = 0;
+        Pth[protocol][hash_idx] = port_entry;
     }
     (void) endservent();
 }
@@ -360,17 +360,17 @@ fill_porttab() {
  */
 
 char *
-gethostnm(ia, af)
+gethostnm(ia, addr_family)
         unsigned char *ia;        /* Internet address */
-        int af;                /* address family -- e.g., AF_INET
+        int addr_family;        /* address family -- e.g., AF_INET
 					 * or AF_INET6 */
 {
-    int al = MIN_AF_ADDR;
+    int addr_len = MIN_AF_ADDR;
     char hbuf[256];
     static struct hostcache *hc = (struct hostcache *) NULL;
     static int hcx = 0;
     char *hn, *np;
-    struct hostent *he = (struct hostent *) NULL;
+    struct hostent *host_entry = (struct hostent *) NULL;
     int i, j;
     MALLOC_S len;
     static int nhc = 0;
@@ -379,18 +379,18 @@ gethostnm(ia, af)
  */
 
 #if    defined(HASIPv6)
-    if (af == AF_INET6)
-        al = MAX_AF_ADDR;
+    if (addr_family == AF_INET6)
+        addr_len = MAX_AF_ADDR;
 #endif    /* defined(HASIPv6) */
 
     for (i = 0; i < hcx; i++) {
-        if (af != hc[i].af)
+        if (addr_family != hc[i].af)
             continue;
-        for (j = 0; j < al; j++) {
+        for (j = 0; j < addr_len; j++) {
             if (ia[j] != hc[i].a[j])
                 break;
         }
-        if (j >= al)
+        if (j >= addr_len)
             return (hc[i].name);
     }
 /*
@@ -399,18 +399,18 @@ gethostnm(ia, af)
  * hostent structure, construct a numeric version of the address.
  */
     if (OptHostLookup)
-        he = gethostbyaddr((char *) ia, al, af);
-    if (!he || !he->h_name) {
+        host_entry = gethostbyaddr((char *) ia, addr_len, addr_family);
+    if (!host_entry || !host_entry->h_name) {
 
 #if    defined(HASIPv6)
-        if (af == AF_INET6) {
+        if (addr_family == AF_INET6) {
 
         /*
          * Since IPv6 numeric addresses use `:' as a separator, enclose
          * them in brackets.
          */
         hbuf[0] = '[';
-        if (!inet_ntop(af, ia, hbuf + 1, sizeof(hbuf) - 3)) {
+        if (!inet_ntop(addr_family, ia, hbuf + 1, sizeof(hbuf) - 3)) {
             (void) snpf(&hbuf[1], (sizeof(hbuf) - 1),
             "can't format IPv6 address]");
         } else {
@@ -420,14 +420,14 @@ gethostnm(ia, af)
         } else
 #endif    /* defined(HASIPv6) */
 
-        if (af == AF_INET)
+        if (addr_family == AF_INET)
             (void) snpf(hbuf, sizeof(hbuf), "%u.%u.%u.%u", ia[0], ia[1],
                         ia[2], ia[3]);
         else
-            (void) snpf(hbuf, sizeof(hbuf), "(unknown AF value: %d)", af);
+            (void) snpf(hbuf, sizeof(hbuf), "(unknown AF value: %d)", addr_family);
         hn = hbuf;
     } else
-        hn = (char *) he->h_name;
+        hn = (char *) host_entry->h_name;
 /*
  * Allocate space for name and copy name to it.
  */
@@ -458,8 +458,8 @@ gethostnm(ia, af)
             Exit(1);
         }
     }
-    hc[hcx].af = af;
-    for (i = 0; i < al; i++) {
+    hc[hcx].af = addr_family;
+    for (i = 0; i < addr_len; i++) {
         hc[hcx].a[i] = ia[i];
     }
     hc[hcx++].name = np;
@@ -472,18 +472,18 @@ gethostnm(ia, af)
  */
 
 static char *
-lkup_port(p, pr, src)
-        int p;                /* port number */
-        int pr;                /* protocol index: 0 = tcp, 1 = udp */
+lkup_port(port, protocol, src)
+        int port;            /* port number */
+        int protocol;            /* protocol index: 0 = tcp, 1 = udp */
         int src;            /* port source: 0 = local
 					 *		1 = foreign */
 {
-    int h, i, nh;
-    MALLOC_S nl;
-    char *nm, *pn;
+    int hash_idx, i, nh;
+    MALLOC_S name_len;
+    char *name, *pn;
     static char pb[128];
     static int pm = 0;
-    struct porttab *pt;
+    struct porttab *port_entry;
 /*
  * If the hash buckets haven't been allocated, do so.
  */
@@ -495,16 +495,16 @@ lkup_port(p, pr, src)
         nh = OptPortMap ? 4 : 2;
 #endif    /* defined(HASNORPC_H) */
 
-        for (h = 0; h < nh; h++) {
-            if (!(Pth[h] = (struct porttab **) calloc(PORTHASHBUCKETS,
+        for (hash_idx = 0; hash_idx < nh; hash_idx++) {
+            if (!(Pth[hash_idx] = (struct porttab **) calloc(PORTHASHBUCKETS,
                                                       sizeof(struct porttab *)))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for %s %s hash buckets\n",
                                ProgramName,
                                (int) (2 * (PORTHASHBUCKETS * sizeof(struct porttab *))),
-                               (h & 1) ? "UDP" : "TCP",
-                               (h > 1) ? "portmap" : "port");
-                for (i = 0; i < h; i++) {
+                               (hash_idx & 1) ? "UDP" : "TCP",
+                               (hash_idx > 1) ? "portmap" : "port");
+                for (i = 0; i < hash_idx; i++) {
                     (void) free((FREE_P *) Pth[i]);
                     Pth[i] = (struct porttab **) NULL;
                 }
@@ -528,29 +528,29 @@ lkup_port(p, pr, src)
  * Hash the port and see if its name has been cached.  Look for a local
  * port first in the portmap, if portmap searching is enabled.
  */
-    h = HASHPORT(p);
+    hash_idx = HASHPORT(port);
 
 #if    !defined(HASNORPC_H)
     if (!src && OptPortMap) {
-        for (pt = Pth[pr + 2][h]; pt; pt = pt->next) {
-            if (pt->port != p)
+        for (port_entry = Pth[protocol + 2][hash_idx]; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port != port)
                 continue;
-            if (!pt->ss) {
-                pn = OptPortLookup ? lkup_svcnam(h, p, pr, 0) : (char *) NULL;
+            if (!port_entry->ss) {
+                pn = OptPortLookup ? lkup_svcnam(hash_idx, port, protocol, 0) : (char *) NULL;
                 if (!pn) {
-                    (void) snpf(pb, sizeof(pb), "%d", p);
+                    (void) snpf(pb, sizeof(pb), "%d", port);
                     pn = pb;
                 }
-                (void) update_portmap(pt, pn);
+                (void) update_portmap(port_entry, pn);
             }
-            return (pt->name);
+            return (port_entry->name);
         }
     }
 #endif    /* !defined(HASNORPC_H) */
 
-    for (pt = Pth[pr][h]; pt; pt = pt->next) {
-        if (pt->port == p)
-            return (pt->name);
+    for (port_entry = Pth[protocol][hash_idx]; port_entry; port_entry = port_entry->next) {
+        if (port_entry->port == port)
+            return (port_entry->name);
     }
 /*
  * Search for a possible service name, unless the -P option has been specified.
@@ -560,16 +560,16 @@ lkup_port(p, pr, src)
  * Don't cache %d conversions; a zero port number is a %d conversion that
  * is represented by "*".
  */
-    pn = OptPortLookup ? lkup_svcnam(h, p, pr, 1) : (char *) NULL;
+    pn = OptPortLookup ? lkup_svcnam(hash_idx, port, protocol, 1) : (char *) NULL;
     if (!pn || !strlen(pn)) {
-        if (p) {
+        if (port) {
         /*
          * Fast integer-to-string for port numbers (avoids snpf overhead).
          */
             char *ep = &pb[sizeof(pb) - 1];
-            int v = p;
+            int value = port;
             *ep = '\0';
-            do { *--ep = '0' + (v % 10); v /= 10; } while (v);
+            do { *--ep = '0' + (value % 10); value /= 10; } while (value);
             /* shift to start of pb for stable return pointer */
             {
                 int dlen = (int)(&pb[sizeof(pb) - 1] - ep);
@@ -586,9 +586,9 @@ lkup_port(p, pr, src)
 /*
  * Allocate a new porttab entry for the TCP or UDP service name.
  */
-    if (!(pt = (struct porttab *) malloc(sizeof(struct porttab)))) {
+    if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
         (void) fprintf(stderr,
-                       "%s: can't allocate porttab entry for port %d\n", ProgramName, p);
+                       "%s: can't allocate porttab entry for port %d\n", ProgramName, port);
         Exit(1);
     }
 /*
@@ -597,19 +597,19 @@ lkup_port(p, pr, src)
  *
  * Return a pointer to the name.
  */
-    if (!(nm = mkstrcpy(pn, &nl))) {
+    if (!(name = mkstrcpy(pn, &name_len))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for port name: ", ProgramName);
         safestrprt(pn, stderr, 1);
         Exit(1);
     }
-    pt->name = nm;
-    pt->nl = nl;
-    pt->port = p;
-    pt->next = Pth[pr][h];
-    pt->ss = 0;
-    Pth[pr][h] = pt;
-    return (nm);
+    port_entry->name = name;
+    port_entry->nl = name_len;
+    port_entry->port = port;
+    port_entry->next = Pth[protocol][hash_idx];
+    port_entry->ss = 0;
+    Pth[protocol][hash_idx] = port_entry;
+    return (name);
 }
 
 
@@ -618,20 +618,20 @@ lkup_port(p, pr, src)
  */
 
 static char *
-lkup_svcnam(h, p, pr, ss)
-        int h;                /* porttab hash index */
-        int p;                /* port number */
-        int pr;                /* protocol: 0 = TCP, 1 = UDP */
-        int ss;                /* search status: 1 = Pth[pr][h]
+lkup_svcnam(hash_idx, port, protocol, svc_status)
+        int hash_idx;            /* porttab hash index */
+        int port;            /* port number */
+        int protocol;            /* protocol: 0 = TCP, 1 = UDP */
+        int svc_status;            /* search status: 1 = Pth[protocol][hash_idx]
 					 *		  already searched */
 {
     static int fl[PORTTABTHRESH];
     static int fln = 0;
     static int gsbp = 0;
     int i;
-    struct porttab *pt;
+    struct porttab *port_entry;
     static int ptf = 0;
-    struct servent *se;
+    struct servent *serv_entry;
 /*
  * Do nothing if -P has been specified.
  */
@@ -644,10 +644,10 @@ lkup_svcnam(h, p, pr, ss)
          * Search service name cache, if it hasn't already been done.
          * Return the name of a match.
          */
-        if (!ss) {
-            for (pt = Pth[pr][h]; pt; pt = pt->next) {
-                if (pt->port == p)
-                    return (pt->name);
+        if (!svc_status) {
+            for (port_entry = Pth[protocol][hash_idx]; port_entry; port_entry = port_entry->next) {
+                if (port_entry->port == port)
+                    return (port_entry->name);
             }
         }
 /*
@@ -662,19 +662,19 @@ lkup_svcnam(h, p, pr, ss)
             break;
         if (gsbp < PORTTABTHRESH) {
             for (i = 0; i < fln; i++) {
-                if (fl[i] == p)
+                if (fl[i] == port)
                     return ((char *) NULL);
             }
             gsbp++;
-            if ((se = getservbyport(htons(p), pr ? "udp" : "tcp")))
-                return (se->s_name);
+            if ((serv_entry = getservbyport(htons(port), protocol ? "udp" : "tcp")))
+                return (serv_entry->s_name);
             if (fln < PORTTABTHRESH)
-                fl[fln++] = p;
+                fl[fln++] = port;
             return ((char *) NULL);
         }
         (void) fill_porttab();
         ptf++;
-        ss = 0;
+        svc_status = 0;
     }
     return ((char *) NULL);
 }
@@ -687,7 +687,7 @@ lkup_svcnam(h, p, pr, ss)
 void
 print_file() {
     char buf[128];
-    char *cp = (char *) NULL;
+    char *char_ptr = (char *) NULL;
     dev_t dev;
     int devs, len;
 
@@ -768,15 +768,15 @@ print_file() {
 /*
  * Size or print the command.
  */
-    cp = (CurrentLocalProc->cmd && *CurrentLocalProc->cmd != '\0') ? CurrentLocalProc->cmd : "(unknown)";
+    char_ptr = (CurrentLocalProc->cmd && *CurrentLocalProc->cmd != '\0') ? CurrentLocalProc->cmd : "(unknown)";
     if (!PrintPass) {
-        len = safestrlen(cp, 2);
+        len = safestrlen(char_ptr, 2);
         if (CommandColLimit && (len > CommandColLimit))
             len = CommandColLimit;
         if (len > CommandColWidth)
             CommandColWidth = len;
     } else
-        safestrprtn(cp, CommandColWidth, stdout, 2);
+        safestrprtn(char_ptr, CommandColWidth, stdout, 2);
 /*
  * Size or print the process ID.
  */
@@ -909,13 +909,13 @@ print_file() {
 
 # if	!defined(HASNOFSADDR)
             if (OptFileStructValues & FSV_FILE_ADDR) {
-            cp =  (CurrentLocalFile->fsv & FSV_FILE_ADDR) ? print_kptr(CurrentLocalFile->fsa, buf, sizeof(buf))
+            char_ptr =  (CurrentLocalFile->fsv & FSV_FILE_ADDR) ? print_kptr(CurrentLocalFile->fsa, buf, sizeof(buf))
                          : "";
             if (!PrintPass) {
-                if ((len = strlen(cp)) > FileStructAddrColWidth)
+                if ((len = strlen(char_ptr)) > FileStructAddrColWidth)
                 FileStructAddrColWidth = len;
             } else
-                (void) printf(" %*.*s", FileStructAddrColWidth, FileStructAddrColWidth, cp);
+                (void) printf(" %*.*s", FileStructAddrColWidth, FileStructAddrColWidth, char_ptr);
 
             }
 # endif	/* !defined(HASNOFSADDR) */
@@ -924,40 +924,40 @@ print_file() {
             if (OptFileStructValues & FSV_FILE_COUNT) {
             if (CurrentLocalFile->fsv & FSV_FILE_COUNT) {
                 (void) snpf(buf, sizeof(buf), "%ld", CurrentLocalFile->fct);
-                cp = buf;
+                char_ptr = buf;
             } else
-                cp = "";
+                char_ptr = "";
             if (!PrintPass) {
-                if ((len = strlen(cp)) > FileCountColWidth)
+                if ((len = strlen(char_ptr)) > FileCountColWidth)
                 FileCountColWidth = len;
             } else
-                (void) printf(" %*.*s", FileCountColWidth, FileCountColWidth, cp);
+                (void) printf(" %*.*s", FileCountColWidth, FileCountColWidth, char_ptr);
             }
 # endif	/* !defined(HASNOFSCOUNT) */
 
 # if	!defined(HASNOFSFLAGS)
             if (OptFileStructValues & FSV_FILE_FLAGS) {
             if ((CurrentLocalFile->fsv & FSV_FILE_FLAGS) && (OptFileStructFlagHex || CurrentLocalFile->ffg || CurrentLocalFile->pof))
-                cp = print_fflags(CurrentLocalFile->ffg, CurrentLocalFile->pof);
+                char_ptr = print_fflags(CurrentLocalFile->ffg, CurrentLocalFile->pof);
             else
-                cp = "";
+                char_ptr = "";
             if (!PrintPass) {
-                if ((len = strlen(cp)) > FileFlagColWidth)
+                if ((len = strlen(char_ptr)) > FileFlagColWidth)
                 FileFlagColWidth = len;
             } else
-                (void) printf(" %*.*s", FileFlagColWidth, FileFlagColWidth, cp);
+                (void) printf(" %*.*s", FileFlagColWidth, FileFlagColWidth, char_ptr);
             }
 # endif	/* !defined(HASNOFSFLAGS) */
 
 # if	!defined(HASNOFSNADDR)
             if (OptFileStructValues & FSV_NODE_ID) {
-            cp = (CurrentLocalFile->fsv & FSV_NODE_ID) ? print_kptr(CurrentLocalFile->fna, buf, sizeof(buf))
+            char_ptr = (CurrentLocalFile->fsv & FSV_NODE_ID) ? print_kptr(CurrentLocalFile->fna, buf, sizeof(buf))
                         : "";
             if (!PrintPass) {
-                if ((len = strlen(cp)) > NodeIdColWidth)
+                if ((len = strlen(char_ptr)) > NodeIdColWidth)
                 NodeIdColWidth = len;
             } else
-                (void) printf(" %*.*s", NodeIdColWidth, NodeIdColWidth, cp);
+                (void) printf(" %*.*s", NodeIdColWidth, NodeIdColWidth, char_ptr);
             }
 # endif	/* !defined(HASNOFSNADDR) */
 
@@ -979,18 +979,18 @@ print_file() {
     if (devs) {
 
 #if    defined(HASPRINTDEV)
-        cp = HASPRINTDEV(CurrentLocalFile, &dev);
+        char_ptr = HASPRINTDEV(CurrentLocalFile, &dev);
 #else	/* !defined(HASPRINTDEV) */
         (void) snpf(buf, sizeof(buf), "%u,%u", GET_MAJ_DEV(dev),
                     GET_MIN_DEV(dev));
-        cp = buf;
+        char_ptr = buf;
 #endif    /* defined(HASPRINTDEV) */
 
     }
 
     if (!PrintPass) {
         if (devs)
-            len = strlen(cp);
+            len = strlen(char_ptr);
         else if (CurrentLocalFile->dev_ch)
             len = strlen(CurrentLocalFile->dev_ch);
         else
@@ -999,7 +999,7 @@ print_file() {
             DeviceColWidth = len;
     } else {
         if (devs)
-            (void) printf(" %*.*s", DeviceColWidth, DeviceColWidth, cp);
+            (void) printf(" %*.*s", DeviceColWidth, DeviceColWidth, char_ptr);
         else {
             if (CurrentLocalFile->dev_ch)
                 (void) printf(" %*.*s", DeviceColWidth, DeviceColWidth, CurrentLocalFile->dev_ch);
@@ -1014,33 +1014,33 @@ print_file() {
         if (CurrentLocalFile->sz_def) {
 
 #if    defined(HASPRINTSZ)
-            cp = HASPRINTSZ(CurrentLocalFile);
+            char_ptr = HASPRINTSZ(CurrentLocalFile);
 #else	/* !defined(HASPRINTSZ) */
             (void) snpf(buf, sizeof(buf), SizeOffFormatD, CurrentLocalFile->sz);
-            cp = buf;
+            char_ptr = buf;
 #endif    /* defined(HASPRINTSZ) */
 
-            len = strlen(cp);
+            len = strlen(char_ptr);
         } else if (CurrentLocalFile->off_def) {
 
 #if    defined(HASPRINTOFF)
-            cp = HASPRINTOFF(CurrentLocalFile, 0);
+            char_ptr = HASPRINTOFF(CurrentLocalFile, 0);
 #else	/* !defined(HASPRINTOFF) */
             (void) snpf(buf, sizeof(buf), SizeOffFormat0t, CurrentLocalFile->off);
-            cp = buf;
+            char_ptr = buf;
 #endif    /* defined(HASPRINTOFF) */
 
-            len = strlen(cp);
+            len = strlen(char_ptr);
             if (OffsetDecDigitLimit && len > (OffsetDecDigitLimit + 2)) {
 
 #if    defined(HASPRINTOFF)
-                cp = HASPRINTOFF(CurrentLocalFile, 1);
+                char_ptr = HASPRINTOFF(CurrentLocalFile, 1);
 #else	/* !defined(HASPRINTOFF) */
                 (void) snpf(buf, sizeof(buf), SizeOffFormatX, CurrentLocalFile->off);
-                cp = buf;
+                char_ptr = buf;
 #endif    /* defined(HASPRINTOFF) */
 
-                len = strlen(cp);
+                len = strlen(char_ptr);
             }
         } else
             len = 0;
@@ -1059,23 +1059,23 @@ print_file() {
         else if (CurrentLocalFile->off_def) {
 
 #if    defined(HASPRINTOFF)
-            cp = HASPRINTOFF(CurrentLocalFile, 0);
+            char_ptr = HASPRINTOFF(CurrentLocalFile, 0);
 #else	/* !defined(HASPRINTOFF) */
             (void) snpf(buf, sizeof(buf), SizeOffFormat0t, CurrentLocalFile->off);
-            cp = buf;
+            char_ptr = buf;
 #endif    /* defined(HASPRINTOFF) */
 
-            if (OffsetDecDigitLimit && (int) strlen(cp) > (OffsetDecDigitLimit + 2)) {
+            if (OffsetDecDigitLimit && (int) strlen(char_ptr) > (OffsetDecDigitLimit + 2)) {
 
 #if    defined(HASPRINTOFF)
-                cp = HASPRINTOFF(CurrentLocalFile, 1);
+                char_ptr = HASPRINTOFF(CurrentLocalFile, 1);
 #else	/* !defined(HASPRINTOFF) */
                 (void) snpf(buf, sizeof(buf), SizeOffFormatX, CurrentLocalFile->off);
-                cp = buf;
+                char_ptr = buf;
 #endif    /* defined(HASPRINTOFF) */
 
             }
-            (void) printf("%*.*s", SizeOffColWidth, SizeOffColWidth, cp);
+            (void) printf("%*.*s", SizeOffColWidth, SizeOffColWidth, char_ptr);
         } else
             (void) printf("%*.*s", SizeOffColWidth, SizeOffColWidth, "");
     }
@@ -1085,14 +1085,14 @@ print_file() {
     if (OptLinkCount) {
         if (CurrentLocalFile->nlink_def) {
             (void) snpf(buf, sizeof(buf), " %ld", CurrentLocalFile->nlink);
-            cp = buf;
+            char_ptr = buf;
         } else
-            cp = "";
+            char_ptr = "";
         if (!PrintPass) {
-            if ((len = strlen(cp)) > LinkCountColWidth)
+            if ((len = strlen(char_ptr)) > LinkCountColWidth)
                 LinkCountColWidth = len;
         } else
-            (void) printf(" %*s", LinkCountColWidth, cp);
+            (void) printf(" %*s", LinkCountColWidth, char_ptr);
     }
 /*
  * Size or print the inode information.
@@ -1101,31 +1101,31 @@ print_file() {
         case 1:
 
 #if    defined(HASPRINTINO)
-            cp = HASPRINTINO(CurrentLocalFile);
+            char_ptr = HASPRINTINO(CurrentLocalFile);
 #else	/* !defined(HASPRINTINO) */
             (void) snpf(buf, sizeof(buf), InodeFormatDecimal, CurrentLocalFile->inode);
-            cp = buf;
+            char_ptr = buf;
 #endif    /* defined(HASPRINTINO) */
 
             break;
         case 2:
             if (CurrentLocalFile->iproto[0])
-                cp = CurrentLocalFile->iproto;
+                char_ptr = CurrentLocalFile->iproto;
             else
-                cp = "";
+                char_ptr = "";
             break;
         case 3:
             (void) snpf(buf, sizeof(buf), InodeFormatHex, CurrentLocalFile->inode);
-            cp = buf;
+            char_ptr = buf;
             break;
         default:
-            cp = "";
+            char_ptr = "";
     }
     if (!PrintPass) {
-        if ((len = strlen(cp)) > NodeColWidth)
+        if ((len = strlen(char_ptr)) > NodeColWidth)
             NodeColWidth = len;
     } else {
-        (void) printf(" %*.*s", NodeColWidth, NodeColWidth, cp);
+        (void) printf(" %*.*s", NodeColWidth, NodeColWidth, char_ptr);
     }
 /*
  * If this is the second pass, print the name column.  (It doesn't need
@@ -1152,7 +1152,7 @@ static int
 printinaddr() {
     int i, len, src;
     char *host, *port;
-    int nl = NameCharsLength - 1;
+    int name_len = NameCharsLength - 1;
     char *np = NameChars;
     char pbuf[32];
 /*
@@ -1168,7 +1168,7 @@ printinaddr() {
             /*
              * If this is the foreign address, insert the separator.
              */
-            if (nl < 2)
+            if (name_len < 2)
 
                 addr_too_long:
 
@@ -1179,7 +1179,7 @@ printinaddr() {
                 }
             *np++ = '-';
             *np++ = '>';
-            nl -= 2;
+            name_len -= 2;
         }
         /*
          * Convert the address to a host name.
@@ -1261,23 +1261,23 @@ printinaddr() {
          * Enter the host name.
          */
         if (host) {
-            if ((len = strlen(host)) > nl)
+            if ((len = strlen(host)) > name_len)
                 goto addr_too_long;
             if (len) {
-                (void) snpf(np, nl, "%s", host);
+                (void) snpf(np, name_len, "%s", host);
                 np += len;
-                nl -= len;
+                name_len -= len;
             }
         }
         /*
          * Enter the port number, preceded by a colon.
          */
         if (port) {
-            if (((len = strlen(port)) + 1) >= nl)
+            if (((len = strlen(port)) + 1) >= name_len)
                 goto addr_too_long;
-            (void) snpf(np, nl, ":%s", port);
+            (void) snpf(np, name_len, ":%s", port);
             np += len + 1;
-            nl -= len - 1;
+            name_len -= len - 1;
         }
     }
     if (NameChars[0]) {
@@ -2019,11 +2019,11 @@ printname(nl)
 
 #if    defined(HASNCACHE)
     char buf[MAXPATHLEN];
-    char *cp;
-    int fp;
+    char *char_ptr;
+    int full_path;
 #endif    /* defined(HASNCACHE) */
 
-    int ps = 0;
+    int print_status = 0;
 
     if (CurrentLocalFile->nm && CurrentLocalFile->nm[0]) {
 
@@ -2031,18 +2031,18 @@ printname(nl)
          * Print the name characters, if there are some.
          */
         safestrprt(CurrentLocalFile->nm, stdout, 0);
-        ps++;
+        print_status++;
         if (!CurrentLocalFile->li[0].af && !CurrentLocalFile->li[1].af)
             goto print_nma;
     }
     if (CurrentLocalFile->li[0].af || CurrentLocalFile->li[1].af) {
-        if (ps)
+        if (print_status)
             putchar(' ');
         /*
          * If the file has Internet addresses, print them.
          */
         if (printinaddr())
-            ps++;
+            print_status++;
         goto print_nma;
     }
     if (((CurrentLocalFile->ntype == N_BLK) || (CurrentLocalFile->ntype == N_CHR))
@@ -2052,7 +2052,7 @@ printname(nl)
         /*
          * If this is a block or character device and it has a name, print it.
          */
-        ps++;
+        print_status++;
         goto print_nma;
     }
     if (CurrentLocalFile->is_com) {
@@ -2061,13 +2061,13 @@ printname(nl)
          * If this is a common node, print that fact.
          */
         (void) fputs("COMMON: ", stdout);
-        ps++;
+        print_status++;
         goto print_nma;
     }
 
 #if    defined(HASPRIVNMCACHE)
     if (HASPRIVNMCACHE(CurrentLocalFile)) {
-        ps++;
+        print_status++;
         goto print_nma;
     }
 #endif    /* defined(HASPRIVNMCACHE) */
@@ -2102,7 +2102,7 @@ printname(nl)
 #if    !defined(HASNCACHE) || HASNCACHE < 2
         if (CurrentLocalFile->fsdir) {
             safestrprt(CurrentLocalFile->fsdir, stdout, 0);
-            ps++;
+            print_status++;
         }
 #endif    /* !defined(HASNCACHE) || HASNCACHE<2 */
 
@@ -2124,21 +2124,21 @@ printname(nl)
 
             NameCacheReload = 0;
         }
-        if ((cp = ncache_lookup(buf, sizeof(buf), &fp))) {
+        if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
             char *cp1;
 
-            if (*cp == '\0')
+            if (*char_ptr == '\0')
             goto print_nma;
-            if (fp && CurrentLocalFile->fsdir) {
-            if (*cp != '/') {
+            if (full_path && CurrentLocalFile->fsdir) {
+            if (*char_ptr != '/') {
                 cp1 = strrchr(CurrentLocalFile->fsdir, '/');
                 if (cp1 == (char *)NULL ||  *(cp1 + 1) != '\0')
                 putchar('/');
                 }
             } else
             (void) fputs(" -- ", stdout);
-            safestrprt(cp, stdout, 0);
-            ps++;
+            safestrprt(char_ptr, stdout, 0);
+            print_status++;
             goto print_nma;
         }
         }
@@ -2157,26 +2157,26 @@ printname(nl)
 
         NameCacheReload = 0;
         }
-        if ((cp = ncache_lookup(buf, sizeof(buf), &fp))) {
-        if (fp) {
-            safestrprt(cp, stdout, 0);
-            ps++;
+        if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
+        if (full_path) {
+            safestrprt(char_ptr, stdout, 0);
+            print_status++;
         } else {
             if (CurrentLocalFile->fsdir) {
             safestrprt(CurrentLocalFile->fsdir, stdout, 0);
-            ps++;
+            print_status++;
             }
-            if (*cp) {
+            if (*char_ptr) {
             (void) fputs(" -- ", stdout);
-            safestrprt(cp, stdout, 0);
-            ps++;
+            safestrprt(char_ptr, stdout, 0);
+            print_status++;
             }
         }
         goto print_nma;
         }
         if (CurrentLocalFile->fsdir) {
         safestrprt(CurrentLocalFile->fsdir, stdout, 0);
-        ps++;
+        print_status++;
         }
 # endif	/* HASNCACHE<2 */
 #endif    /* defined(HASNCACHE) */
@@ -2188,7 +2188,7 @@ printname(nl)
                 (void) putchar('(');
             safestrprt(CurrentLocalFile->fsdev, stdout, 0);
             (void) putchar(')');
-            ps++;
+            print_status++;
         }
     }
 /*
@@ -2199,10 +2199,10 @@ printname(nl)
     print_nma:
 
     if (CurrentLocalFile->nma) {
-        if (ps)
+        if (print_status)
             putchar(' ');
         safestrprt(CurrentLocalFile->nma, stdout, 0);
-        ps++;
+        print_status++;
     }
 /*
  * If this file has TCP/IP state information, print it.
@@ -2219,7 +2219,7 @@ printname(nl)
 #endif    /* defined(HASTCPTPIW) */
 
         )) {
-        if (ps)
+        if (print_status)
             putchar(' ');
         (void) print_tcptpi(0);
     }
@@ -2264,49 +2264,49 @@ printrawaddr(sa)
  */
 
 char *
-printsockty(ty)
-        int ty;                /* socket type -- e.g., from so_type */
+printsockty(type)
+        int type;            /* socket type -- e.g., from so_type */
 {
     static char buf[64];
-    char *cp;
+    char *char_ptr;
 
-    switch (ty) {
+    switch (type) {
 
 #if    defined(SOCK_STREAM)
         case SOCK_STREAM:
-            cp = "STREAM";
+            char_ptr = "STREAM";
             break;
 #endif    /* defined(SOCK_STREAM) */
 
 #if    defined(SOCK_STREAM)
         case SOCK_DGRAM:
-            cp = "DGRAM";
+            char_ptr = "DGRAM";
             break;
 #endif    /* defined(SOCK_DGRAM) */
 
 #if    defined(SOCK_RAW)
         case SOCK_RAW:
-            cp = "RAW";
+            char_ptr = "RAW";
             break;
 #endif    /* defined(SOCK_RAW) */
 
 #if    defined(SOCK_RDM)
         case SOCK_RDM:
-            cp = "RDM";
+            char_ptr = "RDM";
             break;
 #endif    /* defined(SOCK_RDM) */
 
 #if    defined(SOCK_SEQPACKET)
         case SOCK_SEQPACKET:
-            cp = "SEQPACKET";
+            char_ptr = "SEQPACKET";
             break;
 #endif    /* defined(SOCK_SEQPACKET) */
 
         default:
-            (void) snpf(buf, sizeof(buf), "SOCK_%#x", ty);
+            (void) snpf(buf, sizeof(buf), "SOCK_%#x", type);
             return (buf);
     }
-    (void) snpf(buf, sizeof(buf), "SOCK_%s", cp);
+    (void) snpf(buf, sizeof(buf), "SOCK_%s", char_ptr);
     return (buf);
 }
 
@@ -2316,12 +2316,12 @@ printsockty(ty)
  */
 
 char *
-printuid(uid, ty)
+printuid(uid, type)
         UID_ARG uid;            /* User IDentification number */
-        int *ty;            /* returned UID type pointer (NULL
+        int *type;            /* returned UID type pointer (NULL
 					 * (if none wanted).  If non-NULL
-					 * then: *ty = 0 = login name
-					 *	     = 1 = UID number */
+					 * then: *type = 0 = login name
+					 *	       = 1 = UID number */
 {
     int i;
     struct passwd *pw;
@@ -2388,8 +2388,8 @@ printuid(uid, ty)
         i = (int) ((((unsigned long) uid * 31415L) >> 7) & (UIDCACHEL - 1));
         for (up = uc[i]; up; up = up->next) {
             if (up->uid == (uid_t) uid) {
-                if (ty)
-                    *ty = 0;
+                if (type)
+                    *type = 0;
                 return (up->nm);
             }
         }
@@ -2419,8 +2419,8 @@ printuid(uid, ty)
             upn->uid = (uid_t) uid;
             upn->next = uc[i];
             uc[i] = upn;
-            if (ty)
-                *ty = 0;
+            if (type)
+                *type = 0;
             return (upn->nm);
         }
     }
@@ -2428,8 +2428,8 @@ printuid(uid, ty)
  * Produce a numeric conversion of the UID.
  */
     (void) snpf(user, sizeof(user), "%*lu", USERPRTL, (unsigned long) uid);
-    if (ty)
-        *ty = 1;
+    if (type)
+        *type = 1;
     return (user);
 }
 
@@ -2439,9 +2439,9 @@ printuid(uid, ty)
  */
 
 void
-printunkaf(fam, ty)
+printunkaf(fam, type)
         int fam;            /* unknown address family */
-        int ty;                /* output type: 0 = terse; 1 = full */
+        int type;            /* output type: 0 = terse; 1 = full */
 {
     char *p, *s;
 
@@ -2786,14 +2786,14 @@ printunkaf(fam, ty)
 #endif    /* defined(AF_PPP) */
 
         default:
-            if (!ty)
+            if (!type)
                 (void) snpf(NameChars, NameCharsLength, "%#x", fam);
             else
                 (void) snpf(NameChars, NameCharsLength,
                             "no further information on family %#x", fam);
             return;
     }
-    if (!ty)
+    if (!type)
         (void) snpf(NameChars, NameCharsLength, "%sAF_%s", p, s);
     else
         (void) snpf(NameChars, NameCharsLength, "no further information on %sAF_%s",
@@ -2813,26 +2813,26 @@ update_portmap(pt, pn)
         struct porttab *pt;        /* porttab entry */
         char *pn;            /* port name */
 {
-    MALLOC_S al, nl;
-    char *cp;
+    MALLOC_S pn_len, name_len;
+    char *char_ptr;
 
     if (pt->ss)
         return;
-    if (!(al = strlen(pn))) {
+    if (!(pn_len = strlen(pn))) {
         pt->ss = 1;
         return;
     }
-    nl = al + pt->nl + 2;
-    if (!(cp = (char *) malloc(nl + 1))) {
+    name_len = pn_len + pt->nl + 2;
+    if (!(char_ptr = (char *) malloc(name_len + 1))) {
         (void) fprintf(stderr,
                        "%s: can't allocate %d bytes for portmap name: %s[%s]\n",
-                       ProgramName, (int) (nl + 1), pn, pt->name);
+                       ProgramName, (int) (name_len + 1), pn, pt->name);
         Exit(1);
     }
-    (void) snpf(cp, nl + 1, "%s[%s]", pn, pt->name);
+    (void) snpf(char_ptr, name_len + 1, "%s[%s]", pn, pt->name);
     (void) free((FREE_P *) pt->name);
-    pt->name = cp;
-    pt->nl = nl;
+    pt->name = char_ptr;
+    pt->nl = name_len;
     pt->ss = 1;
 }
 #endif    /* !defined(HASNORPC_H) */

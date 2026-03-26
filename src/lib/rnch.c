@@ -717,10 +717,10 @@ no_local_space:
  */
 
 char *
-ncache_lookup(buf, blen, fp)
+ncache_lookup(buf, blen, full_path)
     char *buf;			/* receiving name buffer */
     int blen;			/* receiving buffer length */
-    int *fp;			/* full path reply */
+    int *full_path;			/* full path reply */
 {
     char *cp = buf;
     struct l_nch *lc;
@@ -728,7 +728,7 @@ ncache_lookup(buf, blen, fp)
     int nl, rlen;
 
     *cp = '\0';
-    *fp = 0;
+    *full_path = 0;
 
 # if	defined(HASFSINO)
 /*
@@ -787,7 +787,7 @@ ncache_lookup(buf, blen, fp)
     for (;;) {
         if (!lc->pa) {
         if (ncache_isroot(lc->dp, cp))
-            *fp = 1;
+            *full_path = 1;
         break;
         }
         lc = lc->pa;

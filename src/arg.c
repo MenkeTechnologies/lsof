@@ -78,7 +78,7 @@ _PROTOTYPE(static int ckfd_range, (char *first, char *dash, char *last, int *lo,
 
 _PROTOTYPE(static int enter_fd_lst, (char *nm, int lo, int hi, int excl));
 
-_PROTOTYPE(static int enter_nwad, (struct nwad *n, int sp, int ep, char *s, struct hostent *he));
+_PROTOTYPE(static int enter_nwad, (struct nwad *n, int start_port, int end_port, char *s, struct hostent *host_entry));
 
 _PROTOTYPE(static struct hostent *lkup_hostnm, (char *hn, struct nwad *n));
 
@@ -97,7 +97,7 @@ ckfd_range(first, dash, last, lo, hi)
         int *lo;            /* returned low value */
         int *hi;            /* returned high value */
 {
-    char *cp;
+    char *char_ptr;
 /*
  * See if the range character pointers make sense.
  */
@@ -109,8 +109,8 @@ ckfd_range(first, dash, last, lo, hi)
 /*
  * Assemble and check the high and low values.
  */
-    for (cp = first, *lo = 0; *cp && cp < dash; cp++) {
-        if (!isdigit((unsigned char) *cp)) {
+    for (char_ptr = first, *lo = 0; *char_ptr && char_ptr < dash; char_ptr++) {
+        if (!isdigit((unsigned char) *char_ptr)) {
 
             FD_range_nondigit:
 
@@ -118,12 +118,12 @@ ckfd_range(first, dash, last, lo, hi)
             safestrprt(first, stderr, 1);
             return (1);
         }
-        *lo = (*lo * 10) + (int) (*cp - '0');
+        *lo = (*lo * 10) + (int) (*char_ptr - '0');
     }
-    for (cp = dash + 1, *hi = 0; *cp && cp < last; cp++) {
-        if (!isdigit((unsigned char) *cp))
+    for (char_ptr = dash + 1, *hi = 0; *char_ptr && char_ptr < last; char_ptr++) {
+        if (!isdigit((unsigned char) *char_ptr))
             goto FD_range_nondigit;
-        *hi = (*hi * 10) + (int) (*cp - '0');
+        *hi = (*hi * 10) + (int) (*char_ptr - '0');
     }
     if (*lo >= *hi) {
         (void) fprintf(stderr, "%s: -d FD range's low >= its high: ", ProgramName);
@@ -139,27 +139,27 @@ ckfd_range(first, dash, last, lo, hi)
  */
 
 int
-ck_file_arg(i, ac, av, fv, rs, sbp)
+ck_file_arg(i, arg_count, av, fs_value, readlink_status, sbp)
         int i;            /* first file argument index */
-        int ac;            /* argument count */
+        int arg_count;            /* argument count */
         char *av[];        /* argument vector */
-        int fv;            /* OptFileSystem value (real or temporary) */
-        int rs;            /* Readlink() status if argument count == 1:
+        int fs_value;            /* OptFileSystem value (real or temporary) */
+        int readlink_status;            /* Readlink() status if argument count == 1:
 				 *	0 = undone; 1 = done */
         struct stat *sbp;    /* if non-NULL, pointer to stat(2) buffer
 				 * when argument count == 1 */
 {
-    char *ap, *fnm, *fsnm, *path;
+    char *alloc_path, *fnm, *fsnm, *path;
     short err = 0;
-    int fsm, ftype, j, k;
-    MALLOC_S l;
-    struct mounts *mp;
+    int fs_match, ftype, j, k;
+    MALLOC_S len;
+    struct mounts *mount_ptr;
     static struct mounts **mmp = (struct mounts **) NULL;
-    int mx, nm;
+    int max_mounts, num_mounts;
     static int nma = 0;
-    struct stat sb;
+    struct stat stat_buf;
     struct sfile *sfp;
-    short ss = 0;
+    short stat_status = 0;
 
 #if    defined(CKFA_EXPDEV)
     dev_t dev, rdev;
@@ -175,8 +175,8 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
 /*
  * Loop through arguments.
  */
-    for (; i < ac; i++) {
-        if (rs && (ac == 1) && (i == 0))
+    for (; i < arg_count; i++) {
+        if (readlink_status && (arg_count == 1) && (i == 0))
             path = av[i];
         else {
             if (!(path = Readlink(av[i]))) {
@@ -195,70 +195,70 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             if (path != av[i])
                 path[k] = '\0';
             else {
-                if (!(ap = (char *) malloc((MALLOC_S)(k + 1)))) {
+                if (!(alloc_path = (char *) malloc((MALLOC_S)(k + 1)))) {
                     (void) fprintf(stderr, "%s: no space for copy of %s\n",
                                    ProgramName, path);
                     Exit(1);
                 }
-                (void) strncpy(ap, path, k);
-                ap[k] = '\0';
-                path = ap;
+                (void) strncpy(alloc_path, path, k);
+                alloc_path[k] = '\0';
+                path = alloc_path;
             }
         }
         /*
          * Check for file system argument.
          */
-        for (ftype = 1, mp = readmnt(), nm = 0;
-             (fv != 1) && mp;
-             mp = mp->next) {
-            fsm = 0;
-            if (strcmp(mp->dir, path) == 0)
-                fsm++;
-            else if (fv == 2 || (mp->fs_mode & S_IFMT) == S_IFBLK) {
-                if (mp->fsnmres && strcmp(mp->fsnmres, path) == 0)
-                    fsm++;
+        for (ftype = 1, mount_ptr = readmnt(), num_mounts = 0;
+             (fs_value != 1) && mount_ptr;
+             mount_ptr = mount_ptr->next) {
+            fs_match = 0;
+            if (strcmp(mount_ptr->dir, path) == 0)
+                fs_match++;
+            else if (fs_value == 2 || (mount_ptr->fs_mode & S_IFMT) == S_IFBLK) {
+                if (mount_ptr->fsnmres && strcmp(mount_ptr->fsnmres, path) == 0)
+                    fs_match++;
             }
-            if (!fsm)
+            if (!fs_match)
                 continue;
             ftype = 0;
             /*
              * Skip duplicates.
              */
-            for (mx = 0; mx < nm; mx++) {
-                if (strcmp(mp->dir, mmp[mx]->dir) == 0
-                    && mp->dev == mmp[mx]->dev
-                    && mp->rdev == mmp[mx]->rdev
-                    && mp->inode == mmp[mx]->inode)
+            for (max_mounts = 0; max_mounts < num_mounts; max_mounts++) {
+                if (strcmp(mount_ptr->dir, mmp[max_mounts]->dir) == 0
+                    && mount_ptr->dev == mmp[max_mounts]->dev
+                    && mount_ptr->rdev == mmp[max_mounts]->rdev
+                    && mount_ptr->inode == mmp[max_mounts]->inode)
                     break;
             }
-            if (mx < nm)
+            if (max_mounts < num_mounts)
                 continue;
             /*
              * Allocate space for and save another mount point match and
              * the type of match -- directory name (mounted) or file system
              * name (mounted-on).
              */
-            if (nm >= nma) {
+            if (num_mounts >= nma) {
                 nma += 5;
-                l = (MALLOC_S)(nma * sizeof(struct mounts *));
+                len = (MALLOC_S)(nma * sizeof(struct mounts *));
                 if (mmp) {
-                    struct mounts **tmp = (struct mounts **) realloc((MALLOC_P *) mmp, l);
+                    struct mounts **tmp = (struct mounts **) realloc((MALLOC_P *) mmp, len);
                     if (!tmp) {
                         (void) free((FREE_P *) mmp);
                         mmp = (struct mounts **) NULL;
                     } else
                         mmp = tmp;
                 } else
-                    mmp = (struct mounts **) malloc(l);
+                    mmp = (struct mounts **) malloc(len);
                 if (!mmp) {
                     (void) fprintf(stderr,
                                    "%s: no space for mount pointers\n", ProgramName);
                     Exit(1);
                 }
             }
-            mmp[nm++] = mp;
+            mmp[num_mounts++] = mount_ptr;
         }
-        if (fv == 2 && nm == 0) {
+        if (fs_value == 2 && num_mounts == 0) {
             (void) fprintf(stderr, "%s: not a file system: ", ProgramName);
             safestrprt(av[i], stderr, 1);
             PathStatErrorCount = 1;
@@ -270,7 +270,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
          * Loop through the file system matches.  If there were none, make one
          * pass through the loop, using simply the path name.
          */
-        mx = 0;
+        max_mounts = 0;
         do {
 
             /*
@@ -294,10 +294,10 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                 /*
                  * Stat the path to obtain its characteristics.
                  */
-                if (sbp && (ac == 1))
-                    sb = *sbp;
+                if (sbp && (arg_count == 1))
+                    stat_buf = *sbp;
                 else {
-                    if (statsafely(fnm, &sb) != 0) {
+                    if (statsafely(fnm, &stat_buf) != 0) {
                         int en = errno;
 
                         (void) fprintf(stderr, "%s: status error on ", ProgramName);
@@ -312,12 +312,12 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                     }
 
 #if    defined(HASSPECDEVD)
-                    (void) HASSPECDEVD(fnm, &sb);
+                    (void) HASSPECDEVD(fnm, &stat_buf);
 #endif    /* defined(HASSPECDEVD) */
 
                 }
-                sfp->i = (INODETYPE) sb.st_ino;
-                sfp->mode = sb.st_mode & S_IFMT;
+                sfp->i = (INODETYPE) stat_buf.st_ino;
+                sfp->mode = stat_buf.st_mode & S_IFMT;
 
 #if    defined(CKFA_EXPDEV)
                 /*
@@ -325,11 +325,11 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                  * already-expanded local mount info table device numbers.
                  * (This is an EP/IX 2.1.1 and above artifact.)
                  */
-                    sfp->dev = expdev(sb.st_dev);
-                    sfp->rdev = expdev(sb.st_rdev);
+                    sfp->dev = expdev(stat_buf.st_dev);
+                    sfp->rdev = expdev(stat_buf.st_rdev);
 #else	/* !defined(CKFA_EXPDEV) */
-                sfp->dev = sb.st_dev;
-                sfp->rdev = sb.st_rdev;
+                sfp->dev = stat_buf.st_dev;
+                sfp->rdev = stat_buf.st_rdev;
 #endif    /* defined(CKFA_EXPDEV) */
 
 #if    defined(CKFA_MPXCHAN)
@@ -341,15 +341,15 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
 #endif    /* defined(CKFA_MPXCHAN) */
 
             } else {
-                mp = mmp[mx++];
-                ss++;
+                mount_ptr = mmp[max_mounts++];
+                stat_status++;
 
 #if    defined(HASPROCFS)
                 /*
                  * If this is a /proc file system, set the search flag and
                  * abandon the sfile entry.
                  */
-                    if (mp == Mtprocfs) {
+                    if (mount_ptr == Mtprocfs) {
                     SearchFileChain = sfp->next;
                     (void) free((FREE_P *)sfp);
                     ProcFsSearching = 1;
@@ -362,14 +362,14 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                  *
                  * Save the device numbers, inode number, and modes.
                  */
-                fnm = mp->dir;
-                fsnm = mp->fsname;
-                sfp->dev = mp->dev;
-                sfp->rdev = mp->rdev;
-                sfp->i = mp->inode;
-                sfp->mode = mp->mode & S_IFMT;
+                fnm = mount_ptr->dir;
+                fsnm = mount_ptr->fsname;
+                sfp->dev = mount_ptr->dev;
+                sfp->rdev = mount_ptr->rdev;
+                sfp->i = mount_ptr->inode;
+                sfp->mode = mount_ptr->mode & S_IFMT;
             }
-            ss = 1;        /* indicate a "safe" stat() */
+            stat_status = 1;        /* indicate a "safe" stat() */
             /*
              * Store the file name and file system name pointers in the sfile
              * structure, allocating space as necessary.
@@ -429,7 +429,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                 continue;
 
 # if	defined(HASFSTYPE) && HASFSTYPE==1
-            if (strcmp(sb.st_fstype, HASPROCFS) != 0)
+            if (strcmp(stat_buf.st_fstype, HASPROCFS) != 0)
                 continue;
 # endif	/* defined(HASFSTYPE) && HASFSTYPE==1 */
 
@@ -493,11 +493,11 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             (void) free((FREE_P *)sfp);
 #endif    /* defined(HASPROCFS) */
 
-        } while (mx < nm);
+        } while (max_mounts < num_mounts);
         if (!ftype && path != av[i])
             (void) free((FREE_P *) path);
     }
-    if (!ss)
+    if (!stat_status)
         err = 1;
     return ((int) err);
 }
@@ -607,13 +607,13 @@ enter_cmd_rx(x)
 {
     int bmod = 0;
     int bxmod = 0;
-    int i, re;
+    int i, regex_err;
     int imod = 0;
     int xmod = 0;
-    int co = REG_NOSUB | REG_EXTENDED;
+    int compile_flags = REG_NOSUB | REG_EXTENDED;
     char reb[256], *xb, *xe, *xm;
-    MALLOC_S xl;
-    char *xp = (char *) NULL;
+    MALLOC_S extra_len;
+    char *regex_pattern = (char *) NULL;
 /*
  * Make sure the supplied string starts a regular expression.
  */
@@ -657,7 +657,7 @@ enter_cmd_rx(x)
                     }
                     i = 1;
                 } else
-                    co &= ~REG_EXTENDED;
+                    compile_flags &= ~REG_EXTENDED;
                 break;
             case 'i':            /* Ignore case. */
                 if (++imod > 1) {
@@ -668,7 +668,7 @@ enter_cmd_rx(x)
                     }
                     i = 1;
                 } else
-                    co |= REG_ICASE;
+                    compile_flags |= REG_ICASE;
                 break;
             case 'x':            /* This is an extended expression. */
                 if (++xmod > 1) {
@@ -686,7 +686,7 @@ enter_cmd_rx(x)
                     }
                     i = 1;
                 } else
-                    co |= REG_EXTENDED;
+                    compile_flags |= REG_EXTENDED;
                 break;
             default:
                 (void) fprintf(stderr, "%s: invalid regexp modifier: %c\n",
@@ -699,14 +699,14 @@ enter_cmd_rx(x)
 /*
  * Allocate space to hold expression and copy it there.
  */
-    xl = (MALLOC_S)(xe - xb);
-    if (!(xp = (char *) malloc(xl + 1))) {
+    extra_len = (MALLOC_S)(xe - xb);
+    if (!(regex_pattern = (char *) malloc(extra_len + 1))) {
         (void) fprintf(stderr, "%s: no regexp space for: ", ProgramName);
         safestrprt(x, stderr, 1);
         Exit(1);
     }
-    (void) strncpy(xp, xb, xl);
-    xp[(int) xl] = '\0';
+    (void) strncpy(regex_pattern, xb, extra_len);
+    regex_pattern[(int) extra_len] = '\0';
 /*
  * Assign a new CommandRegexTable[] slot for this expression.
  */
@@ -716,16 +716,16 @@ enter_cmd_rx(x)
          * More CommandRegexTable[] space must be assigned.
          */
         NCmdRxA += CMDRXINCR;
-        xl = (MALLOC_S)(NCmdRxA * sizeof(lsof_rx_t));
+        extra_len = (MALLOC_S)(NCmdRxA * sizeof(lsof_rx_t));
         if (CommandRegexTable) {
-            lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CommandRegexTable, xl);
+            lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CommandRegexTable, extra_len);
             if (!tmp) {
                 (void) free((FREE_P *) CommandRegexTable);
                 CommandRegexTable = (lsof_rx_t *) NULL;
             } else
                 CommandRegexTable = tmp;
         } else
-            CommandRegexTable = (lsof_rx_t *) malloc(xl);
+            CommandRegexTable = (lsof_rx_t *) malloc(extra_len);
         if (!CommandRegexTable) {
             (void) fprintf(stderr, "%s: no space for regexp: ", ProgramName);
             safestrprt(x, stderr, 1);
@@ -733,18 +733,18 @@ enter_cmd_rx(x)
         }
     }
     i = NumCommandRegexUsed;
-    CommandRegexTable[i].exp = xp;
+    CommandRegexTable[i].exp = regex_pattern;
 /*
  * Compile the expression.
  */
-    if ((re = regcomp(&CommandRegexTable[i].cx, xp, co))) {
+    if ((regex_err = regcomp(&CommandRegexTable[i].cx, regex_pattern, compile_flags))) {
         (void) fprintf(stderr, "%s: regexp error: ", ProgramName);
         safestrprt(x, stderr, 0);
-        (void) regerror(re, &CommandRegexTable[i].cx, &reb[0], sizeof(reb));
+        (void) regerror(regex_err, &CommandRegexTable[i].cx, &reb[0], sizeof(reb));
         (void) fprintf(stderr, ": %s\n", reb);
-        if (xp) {
-            (void) free((FREE_P *) xp);
-            xp = (char *) NULL;
+        if (regex_pattern) {
+            (void) free((FREE_P *) regex_pattern);
+            regex_pattern = (char *) NULL;
         }
         return (1);
     }
@@ -752,7 +752,7 @@ enter_cmd_rx(x)
  * Complete the CommandRegexTable[] table entry.
  */
     CommandRegexTable[i].mc = 0;
-    CommandRegexTable[i].exp = xp;
+    CommandRegexTable[i].exp = regex_pattern;
     NumCommandRegexUsed++;
     return (0);
 }
@@ -837,7 +837,7 @@ enter_fd(f)
         char *f;            /* file descriptor list pointer */
 {
     char c, *cp1, *cp2, *dash;
-    int err, excl, hi, lo;
+    int err, excl, high, low;
     char *fc;
 /*
  *  Check for non-empty list and make a copy.
@@ -875,10 +875,10 @@ enter_fd(f)
             *cp2 = '\0';
         if (cp2 > cp1) {
             if (dash) {
-                if (ckfd_range(cp1, dash, cp2, &lo, &hi))
+                if (ckfd_range(cp1, dash, cp2, &low, &high))
                     err = 1;
                 else {
-                    if (enter_fd_lst((char *) NULL, lo, hi, excl))
+                    if (enter_fd_lst((char *) NULL, low, high, excl))
                         err = 1;
                 }
             } else {
@@ -1027,7 +1027,7 @@ enter_dir(d, descend)
     char *fp = (char *) NULL;
     MALLOC_S fpl = (MALLOC_S) 0;
     MALLOC_S fpli = (MALLOC_S) 0;
-    struct stat sb;
+    struct stat stat_buf;
 /*
  * Check the directory path; reduce symbolic links; stat(2) it; make sure it's
  * really a directory.
@@ -1040,7 +1040,7 @@ enter_dir(d, descend)
     }
     if (!(dn = Readlink(d)))
         return (1);
-    if (statsafely(dn, &sb)) {
+    if (statsafely(dn, &stat_buf)) {
         if (!OptWarnings) {
             en = errno;
             (void) fprintf(stderr, "%s: WARNING: can't stat(", ProgramName);
@@ -1053,7 +1053,7 @@ enter_dir(d, descend)
         }
         return (1);
     }
-    if ((sb.st_mode & S_IFMT) != S_IFDIR) {
+    if ((stat_buf.st_mode & S_IFMT) != S_IFDIR) {
         if (!OptWarnings) {
             (void) fprintf(stderr, "%s: WARNING: not a directory: ", ProgramName);
             safestrprt(dn, stderr, 1);
@@ -1066,10 +1066,10 @@ enter_dir(d, descend)
     }
 
 #if    defined(HASSPECDEVD)
-    (void) HASSPECDEVD(dn, &sb);
+    (void) HASSPECDEVD(dn, &stat_buf);
 #endif    /* defined(HASSPECDEVD) */
 
-    ddev = sb.st_dev;
+    ddev = stat_buf.st_dev;
 /*
  * Stack the directory and record it in SearchFileChain for searching.
  */
@@ -1079,7 +1079,7 @@ enter_dir(d, descend)
     av[0] = (dn == d) ? mkstrcpy(dn, (MALLOC_S *) NULL) : dn;
     av[1] = (char *) NULL;
     dn = (char *) NULL;
-    if (!ck_file_arg(0, 1, av, 1, 1, &sb)) {
+    if (!ck_file_arg(0, 1, av, 1, 1, &stat_buf)) {
         av[0] = (char *) NULL;
         fct++;
     }
@@ -1179,7 +1179,7 @@ enter_dir(d, descend)
              *
              * Stack entries that represent subdirectories.
              */
-            if (lstatsafely(fp, &sb)) {
+            if (lstatsafely(fp, &stat_buf)) {
                 if ((en = errno) != ENOENT) {
                     if (!OptWarnings) {
                         (void) fprintf(stderr,
@@ -1192,7 +1192,7 @@ enter_dir(d, descend)
             }
 
 #if    defined(HASSPECDEVD)
-            (void) HASSPECDEVD(fp, &sb);
+            (void) HASSPECDEVD(fp, &stat_buf);
 #endif    /* defined(HASSPECDEVD) */
 
             if (!(OptCrossover & XO_FILESYS)) {
@@ -1201,10 +1201,10 @@ enter_dir(d, descend)
                  * Unless "-x" or "-x f" was specified, don't cross over file
                  * system mount points.
                  */
-                if (sb.st_dev != ddev)
+                if (stat_buf.st_dev != ddev)
                     continue;
             }
-            if ((sb.st_mode & S_IFMT) == S_IFLNK) {
+            if ((stat_buf.st_mode & S_IFMT) == S_IFLNK) {
 
                 /*
                  * If this is a symbolic link and "-x_ or "-x l" was specified,
@@ -1213,7 +1213,7 @@ enter_dir(d, descend)
                  * Otherwise skip symbolic links.
                  */
                 if (OptCrossover & XO_SYMLINK) {
-                    if (statsafely(fp, &sb)) {
+                    if (statsafely(fp, &stat_buf)) {
                         if ((en = errno) != ENOENT) {
                             if (!OptWarnings) {
                                 (void) fprintf(stderr,
@@ -1233,7 +1233,7 @@ enter_dir(d, descend)
                 av[0] = (char *) NULL;
             }
             av[0] = mkstrcpy(fp, (MALLOC_S *) NULL);
-            if ((sb.st_mode & S_IFMT) == S_IFDIR && descend)
+            if ((stat_buf.st_mode & S_IFMT) == S_IFDIR && descend)
 
                 /*
                  * Stack a subdirectory according to the descend argument.
@@ -1243,7 +1243,7 @@ enter_dir(d, descend)
              * Use ck_file_arg() to record the entry for searching.  Force it
              * to consider the entry a file, not a file system.
              */
-            if (!ck_file_arg(0, 1, av, 1, 1, &sb)) {
+            if (!ck_file_arg(0, 1, av, 1, 1, &stat_buf)) {
                 av[0] = (char *) NULL;
                 fct++;
             }
@@ -1298,8 +1298,8 @@ enter_id(ty, p)
         enum IDType ty;            /* type: PGID or PID */
         char *p;            /* process group ID string pointer */
 {
-    char *cp;
-    int err, i, id, j, mx, n, ni, nx, x;
+    char *char_ptr;
+    int err, i, id, j, mx, id_num, ni, nx, exclude;
     struct int_lst *s;
 
     if (!p) {
@@ -1313,14 +1313,14 @@ enter_id(ty, p)
     switch (ty) {
         case PGID:
             mx = MaxPgidEntries;
-            n = NumPgidSelections;
+            id_num = NumPgidSelections;
             ni = NumPgidInclusions;
             nx = NumPgidExclusions;
             s = SearchPgidList;
             break;
         case PID:
             mx = MaxPidEntries;
-            n = NumPidSelections;
+            id_num = NumPidSelections;
             ni = NumPidInclusions;
             nx = NumPidExclusions;
             s = SearchPidList;
@@ -1334,24 +1334,24 @@ enter_id(ty, p)
 /*
  * Convert and store the ID.
  */
-    for (cp = p, err = 0; *cp;) {
+    for (char_ptr = p, err = 0; *char_ptr;) {
 
         /*
          * Assemble ID.
          */
-        for (i = id = x = 0; *cp && *cp != ','; cp++) {
+        for (i = id = exclude = 0; *char_ptr && *char_ptr != ','; char_ptr++) {
             if (!i) {
                 i = 1;
-                if (*cp == '^') {
-                    x = 1;
+                if (*char_ptr == '^') {
+                    exclude = 1;
                     continue;
                 }
             }
 
 #if    defined(__STDC__)
-            if (!isdigit((unsigned char) *cp))
+            if (!isdigit((unsigned char) *char_ptr))
 #else	/* !defined(__STDC__) */
-                if (!isascii(*cp) || !isdigit((unsigned char) *cp))
+                if (!isascii(*char_ptr) || !isdigit((unsigned char) *char_ptr))
 #endif    /* __STDC__ */
 
             {
@@ -1360,16 +1360,16 @@ enter_id(ty, p)
                 safestrprt(p, stderr, 1);
                 return (1);
             }
-            id = (id * 10) + *cp - '0';
+            id = (id * 10) + *char_ptr - '0';
         }
-        if (*cp)
-            cp++;
+        if (*char_ptr)
+            char_ptr++;
         /*
          * Avoid entering duplicates and conflicts.
          */
-        for (i = j = 0; i < n; i++) {
+        for (i = j = 0; i < id_num; i++) {
             if (id == s[i].i) {
-                if (x == s[i].x) {
+                if (exclude == s[i].x) {
                     j = 1;
                     continue;
                 }
@@ -1387,7 +1387,7 @@ enter_id(ty, p)
         /*
          * Allocate table table space.
          */
-        if (n >= mx) {
+        if (id_num >= mx) {
             mx += IDINCR;
             if (!s)
                 s = (struct int_lst *) malloc(
@@ -1407,10 +1407,10 @@ enter_id(ty, p)
                 Exit(1);
             }
         }
-        s[n].f = 0;
-        s[n].i = id;
-        s[n++].x = x;
-        if (x)
+        s[id_num].f = 0;
+        s[id_num].i = id;
+        s[id_num++].x = exclude;
+        if (exclude)
             nx++;
         else
             ni++;
@@ -1418,20 +1418,20 @@ enter_id(ty, p)
 /*
  * Sort the list by ID for binary search in is_proc_excl().
  */
-    if (n > 1)
-        qsort((void *)s, (size_t)n, sizeof(struct int_lst), cmp_int_lst);
+    if (id_num > 1)
+        qsort((void *)s, (size_t)id_num, sizeof(struct int_lst), cmp_int_lst);
 /*
  * Save variables for the type of ID.
  */
     if (ty == PGID) {
         MaxPgidEntries = mx;
-        NumPgidSelections = n;
+        NumPgidSelections = id_num;
         NumPgidInclusions = ni;
         NumPgidExclusions = nx;
         SearchPgidList = s;
     } else {
         MaxPidEntries = mx;
-        NumPidSelections = NumUnselectedPids = n;
+        NumPidSelections = NumUnselectedPids = id_num;
         NumPidInclusions = ni;
         NumPidExclusions = nx;
         SearchPidList = s;
@@ -1448,23 +1448,23 @@ int
 enter_network_address(na)
         char *na;            /* Internet address string pointer */
 {
-    int ae, i, pr;
-    int ep = -1;
+    int addr_entry, i, protocol;
+    int end_port = -1;
     int ft = 0;
-    struct hostent *he = (struct hostent *) NULL;
+    struct hostent *host_entry = (struct hostent *) NULL;
     char *hn = (char *) NULL;
     MALLOC_S l;
     struct nwad n;
     char *p, *wa;
     int pt = 0;
-    int pu = 0;
+    int port_upper = 0;
     struct servent *se, *se1;
     char *sn = (char *) NULL;
-    int sp = -1;
+    int start_port = -1;
     MALLOC_S snl = 0;
 
 #if    defined(HASIPv6)
-    char *cp;
+    char *char_ptr;
 #endif    /* defined(HASIPv6) */
 
     if (!na) {
@@ -1616,18 +1616,18 @@ enter_network_address(na)
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
             }
-            if (!(cp = strrchr(++wa, ']')))
+            if (!(char_ptr = strrchr(++wa, ']')))
                 goto unacc_address;
-            *cp = '\0';
+            *char_ptr = '\0';
             i = inet_pton(AF_INET6, wa, (void *)&n.a);
-            *cp = ']';
+            *char_ptr = ']';
             if (i != 1)
                 goto unacc_address;
-            for (ae = i = 0; i < MAX_AF_ADDR; i++) {
-                if ((ae |= n.a[i]))
+            for (addr_entry = i = 0; i < MAX_AF_ADDR; i++) {
+                if ((addr_entry |= n.a[i]))
                 break;
             }
-            if (!ae)
+            if (!addr_entry)
                 goto unacc_address;
             if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.a[0])) {
                 if (ft == 6) {
@@ -1642,7 +1642,7 @@ enter_network_address(na)
                 n.af = AF_INET;
             } else
                 n.af = AF_INET6;
-            wa = cp + 1;
+            wa = char_ptr + 1;
 #else	/* !defined(HASIPv6) */
             (void) fprintf(stderr,
                            "%s: unsupported IPv6 address in: -i ", ProgramName);
@@ -1676,17 +1676,17 @@ enter_network_address(na)
                  */
                     if (!ft)
                     n.af = AF_INET6;
-                    if (!(he = lkup_hostnm(hn, &n)) && !ft) {
+                    if (!(host_entry = lkup_hostnm(hn, &n)) && !ft) {
                     n.af = AF_INET;
-                    he = lkup_hostnm(hn, &n);
+                    host_entry = lkup_hostnm(hn, &n);
                     }
 #else	/* !defined(HASIPv6) */
                 if (!ft)
                     n.af = AF_INET;
-                he = lkup_hostnm(hn, &n);
+                host_entry = lkup_hostnm(hn, &n);
 #endif    /* defined(HASIPv6) */
 
-                if (!he) {
+                if (!host_entry) {
                     fprintf(stderr, "%s: unknown host name (%s) in: -i ",
                             ProgramName, hn);
                     safestrprt(na, stderr, 1);
@@ -1719,7 +1719,7 @@ enter_network_address(na)
         goto nwad_exit;
     }
     for (++wa; wa && *wa; wa++) {
-        for (ep = pr = sp = 0; *wa; wa++) {
+        for (end_port = protocol = start_port = 0; *wa; wa++) {
             if (*wa < '0' || *wa > '9') {
 
                 /*
@@ -1779,17 +1779,17 @@ enter_network_address(na)
                     if ((se = getservbyname(sn, "tcp")))
                         pt = (int) ntohs(se->s_port);
                     if ((se1 = getservbyname(sn, "udp")))
-                        pu = (int) ntohs(se1->s_port);
+                        port_upper = (int) ntohs(se1->s_port);
                     if (!se && !se1) {
                         (void) fprintf(stderr,
                                        "%s: unknown service %s in: -i ", ProgramName, sn);
                         safestrprt(na, stderr, 1);
                         goto nwad_exit;
                     }
-                    if (se && se1 && pt != pu) {
+                    if (se && se1 && pt != port_upper) {
                         (void) fprintf(stderr,
                                        "%s: TCP=%d and UDP=%d %s ports conflict;\n",
-                                       ProgramName, pt, pu, sn);
+                                       ProgramName, pt, port_upper, sn);
                         (void) fprintf(stderr,
                                        "      specify \"tcp:%s\" or \"udp:%s\": -i ",
                                        sn, sn);
@@ -1797,14 +1797,14 @@ enter_network_address(na)
                         goto nwad_exit;
                     }
                     if (!se && se1)
-                        pt = pu;
+                        pt = port_upper;
                 }
-                if (pr)
-                    ep = pt;
+                if (protocol)
+                    end_port = pt;
                 else {
-                    sp = pt;
+                    start_port = pt;
                     if (*wa == '-')
-                        pr++;
+                        protocol++;
                 }
             } else {
 
@@ -1813,28 +1813,28 @@ enter_network_address(na)
                  */
                 for (; *wa && *wa != ','; wa++) {
                     if (*wa == '-') {
-                        if (pr)
+                        if (protocol)
                             goto unacc_port;
-                        pr++;
+                        protocol++;
                         break;
                     }
                     if (*wa < '0' || *wa > '9')
                         goto unacc_port;
-                    if (pr)
-                        ep = (ep * 10) + *wa - '0';
+                    if (protocol)
+                        end_port = (end_port * 10) + *wa - '0';
                     else
-                        sp = (sp * 10) + *wa - '0';
+                        start_port = (start_port * 10) + *wa - '0';
                 }
             }
             if (!*wa || *wa == ',')
                 break;
-            if (pr)
+            if (protocol)
                 continue;
             goto unacc_port;
         }
-        if (!pr)
-            ep = sp;
-        if (ep < sp)
+        if (!protocol)
+            end_port = start_port;
+        if (end_port < start_port)
             goto unacc_port;
         /*
          * Enter completed port or port range specification.
@@ -1843,7 +1843,7 @@ enter_network_address(na)
         nwad_enter:
 
         for (i = 1; i;) {
-            if (enter_nwad(&n, sp, ep, na, he))
+            if (enter_nwad(&n, start_port, end_port, na, host_entry))
                 goto nwad_exit;
 
 #if    defined(HASIPv6)
@@ -1855,7 +1855,7 @@ enter_network_address(na)
              */
             if (hn && (n.af == AF_INET6) && (ft != 6)) {
                 n.af = AF_INET;
-                if ((he = lkup_hostnm(hn, &n)))
+                if ((host_entry = lkup_hostnm(hn, &n)))
                 continue;
             }
 #endif    /* defined(HASIPv6) */
@@ -1877,13 +1877,13 @@ enter_network_address(na)
  */
 
 static int
-enter_nwad(n, sp, ep, s, he)
+enter_nwad(n, start_port, end_port, s, host_entry)
         struct nwad *n;            /* pointer to partially completed
 					 * nwad (less port) */
-        int sp;                /* starting port number */
-        int ep;                /* ending port number */
+        int start_port;                /* starting port number */
+        int end_port;                /* ending port number */
         char *s;            /* string that states the address */
-        struct hostent *he;        /* pointer to hostent struct from which
+        struct hostent *host_entry;        /* pointer to hostent struct from which
 					 * network address came */
 {
     int ac;
@@ -1923,7 +1923,7 @@ enter_nwad(n, sp, ep, s, he)
 	    &&    !nc.a[12] && !nc.a[13] && !nc.a[14] && !nc.a[15]))
             #endif    /* defined(HASIPv6) */
 
-            && sp == -1) {
+            && start_port == -1) {
             (void) fprintf(stderr,
                            "%s: incomplete Internet address specification: -i ", ProgramName);
             safestrprt(s, stderr, 1);
@@ -1953,8 +1953,8 @@ enter_nwad(n, sp, ep, s, he)
          * Construct and link the address specification.
          */
         *np = nc;
-        np->sport = sp;
-        np->eport = ep;
+        np->sport = start_port;
+        np->eport = end_port;
         np->f = 0;
         np->next = NetworkAddrList;
         NetworkAddrList = np;
@@ -1963,9 +1963,9 @@ enter_nwad(n, sp, ep, s, he)
          * If the network address came from gethostbyname(), advance to
          * the next address; otherwise quit.
          */
-        if (!he)
+        if (!host_entry)
             break;
-        if (!(ap = (unsigned char *) he->h_addr_list[ac++]))
+        if (!(ap = (unsigned char *) host_entry->h_addr_list[ac++]))
             break;
 
 #if    defined(HASIPv6)
@@ -1973,7 +1973,7 @@ enter_nwad(n, sp, ep, s, he)
         int i;
 
         for (i = 0;
-             (i < (he->h_length - 1)) && (i < (MAX_AF_ADDR - 1));
+             (i < (host_entry->h_length - 1)) && (i < (MAX_AF_ADDR - 1));
              i++)
         {
             nc.a[i] = *ap++;
@@ -2226,8 +2226,8 @@ enter_str_lst(opt, s, lp, incl, excl)
         int *incl;            /* included count */
         int *excl;            /* excluded count */
 {
-    char *cp;
-    short i, x;
+    char *char_ptr;
+    short i, exclude;
     MALLOC_S len;
     struct str_lst *lpt;
 
@@ -2238,13 +2238,13 @@ enter_str_lst(opt, s, lp, incl, excl)
     }
     if (*s == '^') {
         i = 0;
-        x = 1;
+        exclude = 1;
         s++;
     } else {
         i = 1;
-        x = 0;
+        exclude = 0;
     }
-    if (!(cp = mkstrcpy(s, &len))) {
+    if (!(char_ptr = mkstrcpy(s, &len))) {
         (void) fprintf(stderr, "%s: no string copy space: ", ProgramName);
         safestrprt(s, stderr, 1);
         return (1);
@@ -2252,16 +2252,16 @@ enter_str_lst(opt, s, lp, incl, excl)
     if ((lpt = (struct str_lst *) malloc(sizeof(struct str_lst))) == NULL) {
         (void) fprintf(stderr, "%s: no list space: ", ProgramName);
         safestrprt(s, stderr, 1);
-        (void) free((FREE_P *) cp);
+        (void) free((FREE_P *) char_ptr);
         return (1);
     }
     lpt->f = 0;
-    lpt->str = cp;
+    lpt->str = char_ptr;
     lpt->len = (int) len;
-    lpt->x = x;
+    lpt->x = exclude;
     if (i)
         *incl += 1;
-    if (x)
+    if (exclude)
         *excl += 1;
     lpt->next = *lp;
     *lp = lpt;
@@ -2427,7 +2427,7 @@ isIPv4addr(hn, a, al)
         unsigned char *a;        /* address receptor */
         int al;                /* address receptor length */
 {
-    int dc = 0;            /* dot count */
+    int dot_count = 0;            /* dot count */
     int i;                /* temorary index */
     int ov[MIN_AF_ADDR];        /* octet values */
     int ovx = 0;            /* ov[] index */
@@ -2451,7 +2451,7 @@ isIPv4addr(hn, a, al)
              * Count a dot.  Make sure a preceding octet value has been
              * assembled.  Don't assemble more than MIN_AF_ADDR octets.
              */
-            dc++;
+            dot_count++;
             if ((ov[ovx] < 0) || (ov[ovx] > 255))
                 return ((char *) NULL);
             if (++ovx > (MIN_AF_ADDR - 1))
@@ -2478,7 +2478,7 @@ isIPv4addr(hn, a, al)
 /*
  * Make sure there were three dots and four non-null octets.
  */
-    if ((dc != 3)
+    if ((dot_count != 3)
         || (ovx != (MIN_AF_ADDR - 1))
         || (ov[ovx] < 0) || (ov[ovx] > 255))
         return ((char *) NULL);

@@ -232,23 +232,23 @@ clr_sect()
  */
 
 void
-crc(b, l, s)
-    char *b;			/* block address */
-    int  l;				/* length */
-    unsigned *s;			/* sum */
+crc(block, len, sumptr)
+    char *block;			/* block address */
+    int  len;				/* length */
+    unsigned *sumptr;			/* sum */
 {
     char *cp;			/* character pointer */
     char *lm;			/* character limit pointer */
     unsigned sum;			/* check sum */
 
-    cp = b;
-    lm = cp + l;
-    sum = *s;
+    cp = block;
+    lm = cp + len;
+    sum = *sumptr;
     do {
         sum ^= ((int) *cp++) & 0xff;
         sum = (sum >> 8) ^ crctbl[sum & 0xff];
     } while (cp < lm);
-    *s = sum;
+    *sumptr = sum;
 }
 
 
@@ -634,24 +634,24 @@ dcpath(rw, npw)
  */
 
 int
-open_dcache(m, r, s)
-    int m;			/* mode: 1 = read; 2 = write */
-    int r;			/* create DevCachePath[] if 0, reuse if 1 */
-    struct stat *s;		/* stat() receiver */
+open_dcache(mode, reuse, stat_buf)
+    int mode;			/* mode: 1 = read; 2 = write */
+    int reuse;			/* create DevCachePath[] if 0, reuse if 1 */
+    struct stat *stat_buf;		/* stat() receiver */
 {
     char buf[128];
     char *w = (char *)NULL;
 /*
  * Get the device cache file paths.
  */
-    if (!r) {
-        if ((DevCachePathIndex = dcpath(m, 1)) < 0)
+    if (!reuse) {
+        if ((DevCachePathIndex = dcpath(mode, 1)) < 0)
         return(1);
     }
 /*
  * Switch to the requested open() action.
  */
-    switch (m) {
+    switch (mode) {
     case 1:
 
     /*
@@ -678,7 +678,7 @@ cant_open:
             ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
         return(1);
         }
-        if (stat(DevCachePath[DevCachePathIndex], s) != 0) {
+        if (stat(DevCachePath[DevCachePathIndex], stat_buf) != 0) {
 
 cant_stat:
         if (!OptWarnings)
@@ -690,13 +690,13 @@ close_exit:
         DevCacheFd = -1;
         return(1);
         }
-        if ((int)(s->st_mode & 07777) != ((DevCachePathIndex == 2) ? 0644 : 0600)) {
+        if ((int)(stat_buf->st_mode & 07777) != ((DevCachePathIndex == 2) ? 0644 : 0600)) {
         (void) snpf(buf, sizeof(buf), "doesn't have %04o modes",
                 (DevCachePathIndex == 2) ? 0644 : 0600);
         w = buf;
-        } else if ((s->st_mode & S_IFMT) != S_IFREG)
+        } else if ((stat_buf->st_mode & S_IFMT) != S_IFREG)
         w = "isn't a regular file";
-        else if (!s->st_size)
+        else if (!stat_buf->st_size)
         w = "is empty";
         if (w) {
         if (!OptWarnings)
@@ -745,7 +745,7 @@ close_exit:
         (void) fprintf(stderr,
             "%s: WARNING: created device cache file: %s\n",
             ProgramName, DevCachePath[DevCachePathIndex]);
-        if (stat(DevCachePath[DevCachePathIndex], s) != 0) {
+        if (stat(DevCachePath[DevCachePathIndex], stat_buf) != 0) {
         (void) unlink(DevCachePath[DevCachePathIndex]);
         goto cant_stat;
         }
@@ -756,7 +756,7 @@ close_exit:
      * Oops!
      */
         (void) fprintf(stderr, "%s: internal error: open_dcache=%d\n",
-        ProgramName, m);
+        ProgramName, mode);
         Exit(1);
     }
     return(1);

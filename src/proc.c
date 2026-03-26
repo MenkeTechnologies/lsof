@@ -40,7 +40,7 @@ static char copyright[] =
  */
 
 _PROTOTYPE(static int is_file_sel, (struct lproc *lp, struct lfile *lf));
-_PROTOTYPE(static struct int_lst *find_int_lst, (struct int_lst *list, int n, int val));
+_PROTOTYPE(static struct int_lst *find_int_lst, (struct int_lst *list, int num_entries, int val));
 
 
 /*
@@ -52,15 +52,15 @@ add_nma(cp, len)
         char *cp;            /* string to add */
         int len;            /* string length */
 {
-    int nl;
+    int name_len;
 
     if (!cp || !len)
         return;
     if (CurrentLocalFile->nma) {
         char *tmp;
-        nl = (int) strlen(CurrentLocalFile->nma);
+        name_len = (int) strlen(CurrentLocalFile->nma);
         tmp = (char *) realloc((MALLOC_P *) CurrentLocalFile->nma,
-                               (MALLOC_S)(len + nl + 2));
+                               (MALLOC_S)(len + name_len + 2));
         if (tmp)
             CurrentLocalFile->nma = tmp;
         else {
@@ -68,7 +68,7 @@ add_nma(cp, len)
             CurrentLocalFile->nma = (char *) NULL;
         }
     } else {
-        nl = 0;
+        name_len = 0;
         CurrentLocalFile->nma = (char *) malloc((MALLOC_S)(len + 1));
     }
     if (!CurrentLocalFile->nma) {
@@ -76,10 +76,10 @@ add_nma(cp, len)
                        ProgramName, (long) CurrentLocalProc->pid, CurrentLocalFile->fd);
         Exit(1);
     }
-    if (nl) {
-        CurrentLocalFile->nma[nl] = ' ';
-        (void) strncpy(&CurrentLocalFile->nma[nl + 1], cp, len);
-        CurrentLocalFile->nma[nl + 1 + len] = '\0';
+    if (name_len) {
+        CurrentLocalFile->nma[name_len] = ' ';
+        (void) strncpy(&CurrentLocalFile->nma[name_len + 1], cp, len);
+        CurrentLocalFile->nma[name_len + 1 + len] = '\0';
     } else {
         (void) strncpy(CurrentLocalFile->nma, cp, len);
         CurrentLocalFile->nma[len] = '\0';
@@ -88,7 +88,7 @@ add_nma(cp, len)
 
 
 #if    defined(HASFSTRUCT)
-_PROTOTYPE(static char *alloc_fflbuf,(char **bp, int *al, int lr));
+_PROTOTYPE(static char *alloc_fflbuf,(char **buf_ptr, int *alloc_len, int len_required));
 
 
 /*
@@ -96,27 +96,27 @@ _PROTOTYPE(static char *alloc_fflbuf,(char **bp, int *al, int lr));
  */
 
 static char *
-alloc_fflbuf(bp, al, lr)
-    char **bp;			/* current buffer pointer */
-    int *al;			/* current allocated length */
-    int lr;				/* length required */
+alloc_fflbuf(buf_ptr, alloc_len, len_required)
+    char **buf_ptr;			/* current buffer pointer */
+    int *alloc_len;			/* current allocated length */
+    int len_required;			/* length required */
 {
-    int sz;
+    int alloc_size;
 
-    sz = (int)(lr + 1);		/* allocate '\0' space */
-    if (*bp && (sz <= *al))
-        return(*bp);
-    if (*bp)
-        *bp = (char *)realloc((MALLOC_P *)*bp, (MALLOC_S)sz);
+    alloc_size = (int)(len_required + 1);		/* allocate '\0' space */
+    if (*buf_ptr && (alloc_size <= *alloc_len))
+        return(*buf_ptr);
+    if (*buf_ptr)
+        *buf_ptr = (char *)realloc((MALLOC_P *)*buf_ptr, (MALLOC_S)alloc_size);
     else
-        *bp = (char *)malloc((MALLOC_S)sz);
-    if (!*bp) {
+        *buf_ptr = (char *)malloc((MALLOC_S)alloc_size);
+    if (!*buf_ptr) {
         (void) fprintf(stderr, "%s: no space (%d) for print flags\n",
-        ProgramName, sz);
+        ProgramName, alloc_size);
         Exit(1);
     }
-    *al = sz;
-    return(*bp);
+    *alloc_len = alloc_size;
+    return(*buf_ptr);
 }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -126,8 +126,8 @@ alloc_fflbuf(bp, al, lr)
  */
 
 void
-alloc_lfile(nm, num)
-        char *nm;            /* file descriptor name (may be NULL) */
+alloc_lfile(name, num)
+        char *name;            /* file descriptor name (may be NULL) */
         int num;            /* file descriptor number -- -1 if
 					 * none */
 {
@@ -215,8 +215,8 @@ alloc_lfile(nm, num)
     else
         CurrentLocalFile->sf = 0;
     CurrentLocalFile->iproto[0] = CurrentLocalFile->type[0] = '\0';
-    if (nm) {
-        (void) strncpy(CurrentLocalFile->fd, nm, FDLEN - 1);
+    if (name) {
+        (void) strncpy(CurrentLocalFile->fd, name, FDLEN - 1);
         CurrentLocalFile->fd[FDLEN - 1] = '\0';
     } else if (num >= 0) {
         if (num < 10000)
@@ -252,9 +252,9 @@ alloc_lfile(nm, num)
 /*
  * See if the file descriptor has been selected.
  */
-    if (!FdList || (!nm && num < 0))
+    if (!FdList || (!name && num < 0))
         return;
-    fds = ck_fd_status(nm, num);
+    fds = ck_fd_status(name, num);
     switch (FdListType) {
         case 0:            /* inclusion list */
             if (fds == 2)
@@ -281,7 +281,7 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
         int pss;            /* process select state */
         int sf;                /* process select flags */
 {
-    static int sz = 0;
+    static int size = 0;
 
     if (!LocalProcTable) {
         if (!(LocalProcTable = (struct lproc *) malloc(
@@ -291,16 +291,16 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
                            ProgramName, LPROCINCR);
             Exit(1);
         }
-        sz = LPROCINCR;
-    } else if ((NumLocalProcs + 1) > sz) {
+        size = LPROCINCR;
+    } else if ((NumLocalProcs + 1) > size) {
         struct lproc *tmp;
-        sz += LPROCINCR;
+        size += LPROCINCR;
         tmp = (struct lproc *) realloc((MALLOC_P *) LocalProcTable,
-                                       (MALLOC_S)(sz * sizeof(struct lproc)));
+                                       (MALLOC_S)(size * sizeof(struct lproc)));
         if (!tmp) {
             (void) fprintf(stderr,
                            "%s: no realloc space for %d local proc structures\n",
-                           ProgramName, sz);
+                           ProgramName, size);
             (void) free((FREE_P *) LocalProcTable);
             LocalProcTable = (struct lproc *) NULL;
             Exit(1);
@@ -357,17 +357,17 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
  */
 
 extern int
-ck_fd_status(nm, num)
-        char *nm;            /* file descriptor name (may be NULL) */
+ck_fd_status(name, num)
+        char *name;            /* file descriptor name (may be NULL) */
         int num;            /* file descriptor number -- -1 if
 					 * none */
 {
     char *cp;
     struct fd_lst *fp;
 
-    if (!(fp = FdList) || (!nm && num < 0))
+    if (!(fp = FdList) || (!name && num < 0))
         return (0);
-    if ((cp = nm)) {
+    if ((cp = name)) {
         while (*cp && *cp == ' ')
             cp++;
     }
@@ -434,51 +434,51 @@ comppid(a1, a2)
  */
 
 void
-ent_inaddr(la, lp, fa, fp, af)
+ent_inaddr(la, local_port, fa, foreign_port, addr_family)
         unsigned char *la;        /* local Internet address */
-        int lp;                /* local port */
+        int local_port;                /* local port */
         unsigned char *fa;        /* foreign Internet address -- may
 					 * be NULL to indicate no foreign
 					 * address is known */
-        int fp;                /* foreign port */
-        int af;                /* address family -- e.g, AF_INET,
+        int foreign_port;                /* foreign port */
+        int addr_family;                /* address family -- e.g, AF_INET,
 					 * AF_INET */
 {
-    int m;
+    int match;
 
     if (la) {
-        CurrentLocalFile->li[0].af = af;
+        CurrentLocalFile->li[0].af = addr_family;
 
 #if    defined(HASIPv6)
-        if (af == AF_INET6)
+        if (addr_family == AF_INET6)
         CurrentLocalFile->li[0].ia.a6 = *(struct in6_addr *)la;
         else
 #endif    /* defined(HASIPv6) */
 
         CurrentLocalFile->li[0].ia.a4 = *(struct in_addr *) la;
-        CurrentLocalFile->li[0].p = lp;
+        CurrentLocalFile->li[0].p = local_port;
     } else
         CurrentLocalFile->li[0].af = 0;
     if (fa) {
-        CurrentLocalFile->li[1].af = af;
+        CurrentLocalFile->li[1].af = addr_family;
 
 #if    defined(HASIPv6)
-        if (af == AF_INET6)
+        if (addr_family == AF_INET6)
         CurrentLocalFile->li[1].ia.a6 = *(struct in6_addr *)fa;
         else
 #endif    /* defined(HASIPv6) */
 
         CurrentLocalFile->li[1].ia.a4 = *(struct in_addr *) fa;
-        CurrentLocalFile->li[1].p = fp;
+        CurrentLocalFile->li[1].p = foreign_port;
     } else
         CurrentLocalFile->li[1].af = 0;
 /*
  * If network address matching has been selected, check both addresses.
  */
     if ((SelectionFlags & SELNA) && NetworkAddrList) {
-        m = (fa && is_nw_addr(fa, fp, af)) ? 1 : 0;
-        m |= (la && is_nw_addr(la, lp, af)) ? 1 : 0;
-        if (m)
+        match = (fa && is_nw_addr(fa, foreign_port, addr_family)) ? 1 : 0;
+        match |= (la && is_nw_addr(la, local_port, addr_family)) ? 1 : 0;
+        if (match)
             CurrentLocalFile->sf |= SELNA;
     }
 }
@@ -586,10 +586,10 @@ free_lproc(lp)
  */
 
 int
-is_cmd_excl(cmd, pss, sf)
+is_cmd_excl(cmd, pss, select_flags)
         char *cmd;            /* command name */
         short *pss;            /* process state */
-        short *sf;            /* process select flags */
+        short *select_flags;            /* process select flags */
 {
     int i;
     struct str_lst *sp;
@@ -613,7 +613,7 @@ is_cmd_excl(cmd, pss, sf)
         if (!sp->x && !strncmp(sp->str, cmd, sp->len)) {
             sp->f = 1;
             *pss |= PS_PRI;
-            *sf |= SELCMD;
+            *select_flags |= SELCMD;
             return (0);
         }
     }
@@ -625,7 +625,7 @@ is_cmd_excl(cmd, pss, sf)
         if (!regexec(&CommandRegexTable[i].cx, cmd, 0, NULL, 0)) {
             CommandRegexTable[i].mc = 1;
             *pss |= PS_PRI;
-            *sf |= SELCMD;
+            *select_flags |= SELCMD;
             return (0);
         }
     }
@@ -675,21 +675,21 @@ is_file_sel(lp, lf)
  */
 
 static struct int_lst *
-find_int_lst(list, n, val)
+find_int_lst(list, num_entries, val)
 	struct int_lst *list;		/* sorted int_lst array */
-	int n;				/* array length */
+	int num_entries;			/* array length */
 	int val;			/* value to find */
 {
-    int lo = 0, hi = n - 1, mid;
+    int low = 0, high = num_entries - 1, midpoint;
 
-    while (lo <= hi) {
-	mid = (lo + hi) >> 1;
-	if (list[mid].i == val)
-	    return &list[mid];
-	if (list[mid].i < val)
-	    lo = mid + 1;
+    while (low <= high) {
+	midpoint = (low + high) >> 1;
+	if (list[midpoint].i == val)
+	    return &list[midpoint];
+	if (list[midpoint].i < val)
+	    low = midpoint + 1;
 	else
-	    hi = mid - 1;
+	    high = midpoint - 1;
     }
     return (struct int_lst *)NULL;
 }
@@ -702,16 +702,16 @@ find_int_lst(list, n, val)
 int
 
 #if    defined(HASTASKS)
-is_proc_excl(pid, pgid, uid, pss, sf, tid)
+is_proc_excl(pid, pgid, uid, pss, select_flags, tid)
 #else	/* !defined(HASTASKS) */
-is_proc_excl(pid, pgid, uid, pss, sf)
+is_proc_excl(pid, pgid, uid, pss, select_flags)
 #endif    /* defined(HASTASKS) */
 
         int pid;            /* Process ID */
         int pgid;            /* process group ID */
         UID_ARG uid;            /* User ID */
         short *pss;            /* process select state for lproc */
-        short *sf;            /* select flags for lproc */
+        short *select_flags;            /* select flags for lproc */
 
 #if    defined(HASTASKS)
 int tid;			/* task ID (not a task if zero) */
@@ -720,7 +720,7 @@ int tid;			/* task ID (not a task if zero) */
 {
     int i, j;
 
-    *pss = *sf = 0;
+    *pss = *select_flags = 0;
 
 #if    defined(HASSECURITY)
     /*
@@ -777,9 +777,9 @@ int tid;			/* task ID (not a task if zero) */
         *pss = PS_PRI;
 
 #if    defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
-        *sf = SELALL & ~(SELNA | SELNET);
+        *select_flags = SELALL & ~(SELNA | SELNET);
 #else	/* !defined(HASSECURITY) || !defined(HASNOSOCKSECURITY) */
-        *sf = SELALL;
+        *select_flags = SELALL;
 #endif    /* defined(HASSECURITY) && defined(HASNOSOCKSECURITY) */
 
         return (0);
@@ -793,11 +793,11 @@ int tid;			/* task ID (not a task if zero) */
         if (match && !match->x) {
             match->f = 1;
             *pss = PS_PRI;
-            *sf = SELPGID;
+            *select_flags = SELPGID;
             if (SelectionFlags == SELPGID)
                 return (0);
         }
-        if ((SelectionFlags == SELPGID) && !*sf)
+        if ((SelectionFlags == SELPGID) && !*select_flags)
             return (1);
     }
 /*
@@ -809,11 +809,11 @@ int tid;			/* task ID (not a task if zero) */
         if (match && !match->x) {
             match->f = 1;
             *pss = PS_PRI;
-            *sf |= SELPID;
+            *select_flags |= SELPID;
             if (SelectionFlags == SELPID)
                 return (0);
         }
-        if ((SelectionFlags == SELPID) && !*sf)
+        if ((SelectionFlags == SELPID) && !*select_flags)
             return (1);
     }
 /*
@@ -827,14 +827,14 @@ int tid;			/* task ID (not a task if zero) */
             if (SearchUidList[i].uid == (uid_t) uid) {
                 SearchUidList[i].f = 1;
                 *pss = PS_PRI;
-                *sf |= SELUID;
+                *select_flags |= SELUID;
                 if (SelectionFlags == SELUID)
                     return (0);
                 break;
             }
             j++;
         }
-        if (SelectionFlags == SELUID && (*sf & SELUID) == 0)
+        if (SelectionFlags == SELUID && (*select_flags & SELUID) == 0)
             return (1);
     }
 
@@ -845,9 +845,9 @@ int tid;			/* task ID (not a task if zero) */
      * This is a task and tasks are selected.
      */
         *pss = PS_PRI;
-        *sf |= SELTASK;
+        *select_flags |= SELTASK;
         if ((SelectionFlags == SELTASK)
-        ||  (OptAndSelection && ((*sf & SelectionFlags) == SelectionFlags)))
+        ||  (OptAndSelection && ((*select_flags & SelectionFlags) == SelectionFlags)))
         return(0);
     }
 #endif    /* defined(HASTASKS) */
@@ -861,7 +861,7 @@ int tid;			/* task ID (not a task if zero) */
  *
  *	Otherwise, it's not excluded by the tests of this function.
  */
-    if (!*sf)
+    if (!*select_flags)
         return ((OptAndSelection && (SelectionFlags & (SELPGID | SELPID | SELUID | SELTASK)))
                 ? 1 : 0);
 /*
@@ -877,7 +877,7 @@ int tid;			/* task ID (not a task if zero) */
  */
     if (SelectionFlags & (SELPGID | SELPID | SELUID | SELTASK)) {
         if (OptAndSelection)
-            return (((SelectionFlags & (SELPGID | SELPID | SELUID | SELTASK)) != *sf)
+            return (((SelectionFlags & (SELPGID | SELPID | SELUID | SELTASK)) != *select_flags)
                     ? 1 : 0);
         return (0);
     }
@@ -928,66 +928,66 @@ print_fflags(ffg, pof)
     long ffg;		/* file structure's flags value */
     long pof;		/* process open files flags value */
 {
-    int al, ct, fx;
-    static int bl = 0;
-    static char *bp = (char *)NULL;
+    int alloc_len, count, file_flags;
+    static int buf_len = 0;
+    static char *buf_ptr = (char *)NULL;
     char *sep;
     int sepl;
     struct pff_tab *tp;
-    long wf;
+    long work_flags;
     char xbuf[64];
 /*
  * Reduce the supplied flags according to the definitions in Pff_tab[] and
  * Pof_tab[].
  */
-    for (ct = fx = 0; fx < 2; fx++) {
-        if (fx == 0) {
+    for (count = file_flags = 0; file_flags < 2; file_flags++) {
+        if (file_flags == 0) {
         sep = "";
         sepl = 0;
         tp = Pff_tab;
-        wf = ffg;
+        work_flags = ffg;
         } else {
         sep = ";";
         sepl = 1;
         tp = Pof_tab;
-        wf = pof;
+        work_flags = pof;
         }
-        for (; wf && !OptFileStructFlagHex; ct += al ) {
+        for (; work_flags && !OptFileStructFlagHex; count += alloc_len ) {
         while (tp->nm) {
-            if (wf & tp->val)
+            if (work_flags & tp->val)
             break;
             tp++;
         }
         if (!tp->nm)
             break;
-        al = (int)strlen(tp->nm) + sepl;
-        bp = alloc_fflbuf(&bp, &bl, al + ct);
-        (void) snpf(bp + ct, al + 1, "%s%s", sep, tp->nm);
+        alloc_len = (int)strlen(tp->nm) + sepl;
+        buf_ptr = alloc_fflbuf(&buf_ptr, &buf_len, alloc_len + count);
+        (void) snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, tp->nm);
         sep = ",";
         sepl = 1;
-        wf &= ~(tp->val);
+        work_flags &= ~(tp->val);
         }
     /*
      * If flag bits remain, print them in hex.  If hex output was
      * specified with +fG, print all flag values, including zero,
      * in hex.
      */
-        if (wf || OptFileStructFlagHex) {
-        (void) snpf(xbuf, sizeof(xbuf), "0x%lx", wf);
-        al = (int)strlen(xbuf) + sepl;
-        bp = alloc_fflbuf(&bp, &bl, al + ct);
-        (void) snpf(bp + ct, al + 1, "%s%s", sep, xbuf);
-        ct += al;
+        if (work_flags || OptFileStructFlagHex) {
+        (void) snpf(xbuf, sizeof(xbuf), "0x%lx", work_flags);
+        alloc_len = (int)strlen(xbuf) + sepl;
+        buf_ptr = alloc_fflbuf(&buf_ptr, &buf_len, alloc_len + count);
+        (void) snpf(buf_ptr + count, alloc_len + 1, "%s%s", sep, xbuf);
+        count += alloc_len;
         }
     }
 /*
  * Make sure there is at least a NUL terminated reply.
  */
-    if (!bp) {
-        bp = alloc_fflbuf(&bp, &bl, 0);
-        *bp = '\0';
+    if (!buf_ptr) {
+        buf_ptr = alloc_fflbuf(&buf_ptr, &buf_len, 0);
+        *buf_ptr = '\0';
     }
-    return(bp);
+    return(buf_ptr);
 }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -999,9 +999,9 @@ print_fflags(ffg, pof)
 int
 print_proc() {
     char buf[128], *cp;
-    int lc, len, st, ty;
+    int line_count, len, status, type;
     int rv = 0;
-    unsigned long ul;
+    unsigned long ulong_val;
 /*
  * If nothing in the process has been selected, skip it.
  */
@@ -1076,8 +1076,8 @@ print_proc() {
         if (FieldSelection[LSOF_FIX_UID].st)
             (void) printf("%c%d%c", LSOF_FID_UID, (int) CurrentLocalProc->uid, Terminator);
         if (FieldSelection[LSOF_FIX_LOGIN].st) {
-            cp = printuid((UID_ARG) CurrentLocalProc->uid, &ty);
-            if (ty == 0)
+            cp = printuid((UID_ARG) CurrentLocalProc->uid, &type);
+            if (type == 0)
                 (void) printf("%c%s%c", LSOF_FID_LOGIN, cp, Terminator);
         }
         if (Terminator == '\0')
@@ -1101,28 +1101,28 @@ print_proc() {
         /*
          * Print selected fields.
          */
-        lc = st = 0;
+        line_count = status = 0;
         if (FieldSelection[LSOF_FIX_FILE_DESC].st) {
             for (cp = CurrentLocalFile->fd; *cp == ' '; cp++);
             if (*cp) {
                 (void) printf("%c%s%c", LSOF_FID_FILE_DESC, cp, Terminator);
-                lc++;
+                line_count++;
             }
         }
         if (FieldSelection[LSOF_FIX_ACCESS].st) {
             (void) printf("%c%c%c",
                           LSOF_FID_ACCESS, CurrentLocalFile->access, Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_LOCK].st) {
             (void) printf("%c%c%c", LSOF_FID_LOCK, CurrentLocalFile->lock, Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_TYPE].st) {
             for (cp = CurrentLocalFile->type; *cp == ' '; cp++);
             if (*cp) {
                 (void) printf("%c%s%c", LSOF_FID_TYPE, cp, Terminator);
-                lc++;
+                line_count++;
             }
         }
 
@@ -1131,24 +1131,24 @@ print_proc() {
         &&  (CurrentLocalFile->fsv & FSV_FILE_ADDR)) {
         (void) printf("%c%s%c", LSOF_FID_FILE_STRUCT_ADDR,
             print_kptr(CurrentLocalFile->fsa, (char *)NULL, 0), Terminator);
-        lc++;
+        line_count++;
         }
         if (FieldSelection[LSOF_FIX_FILE_STRUCT_COUNT].st && (OptFileStructValues & FSV_FILE_COUNT)
         &&  (CurrentLocalFile->fsv & FSV_FILE_COUNT)) {
         (void) printf("%c%ld%c", LSOF_FID_FILE_STRUCT_COUNT, CurrentLocalFile->fct, Terminator);
-        lc++;
+        line_count++;
         }
         if (FieldSelection[LSOF_FIX_FILE_FLAGS].st && (OptFileStructValues & FSV_FILE_FLAGS)
         &&  (CurrentLocalFile->fsv & FSV_FILE_FLAGS) && (OptFileStructFlagHex || CurrentLocalFile->ffg || CurrentLocalFile->pof)) {
         (void) printf("%c%s%c", LSOF_FID_FILE_FLAGS,
             print_fflags(CurrentLocalFile->ffg, CurrentLocalFile->pof), Terminator);
-        lc++;
+        line_count++;
         }
         if (FieldSelection[LSOF_FIX_NODE_ID].st && (OptFileStructValues & FSV_NODE_ID)
         &&  (CurrentLocalFile->fsv & FSV_NODE_ID)) {
         (void) printf("%c%s%c", LSOF_FID_NODE_ID,
             print_kptr(CurrentLocalFile->fna, (char *)NULL, 0), Terminator);
-        lc++;
+        line_count++;
         }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -1156,24 +1156,24 @@ print_proc() {
             for (cp = CurrentLocalFile->dev_ch; *cp == ' '; cp++);
             if (*cp) {
                 (void) printf("%c%s%c", LSOF_FID_DEV_CHAR, cp, Terminator);
-                lc++;
+                line_count++;
             }
         }
         if (FieldSelection[LSOF_FIX_DEV_NUM].st && CurrentLocalFile->dev_def) {
             if (sizeof(unsigned long) > sizeof(dev_t))
-                ul = (unsigned long) ((unsigned int) CurrentLocalFile->dev);
+                ulong_val = (unsigned long) ((unsigned int) CurrentLocalFile->dev);
             else
-                ul = (unsigned long) CurrentLocalFile->dev;
-            (void) printf("%c0x%lx%c", LSOF_FID_DEV_NUM, ul, Terminator);
-            lc++;
+                ulong_val = (unsigned long) CurrentLocalFile->dev;
+            (void) printf("%c0x%lx%c", LSOF_FID_DEV_NUM, ulong_val, Terminator);
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_RDEV].st && CurrentLocalFile->rdev_def) {
             if (sizeof(unsigned long) > sizeof(dev_t))
-                ul = (unsigned long) ((unsigned int) CurrentLocalFile->rdev);
+                ulong_val = (unsigned long) ((unsigned int) CurrentLocalFile->rdev);
             else
-                ul = (unsigned long) CurrentLocalFile->rdev;
-            (void) printf("%c0x%lx%c", LSOF_FID_RDEV, ul, Terminator);
-            lc++;
+                ulong_val = (unsigned long) CurrentLocalFile->rdev;
+            (void) printf("%c0x%lx%c", LSOF_FID_RDEV, ulong_val, Terminator);
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_SIZE].st && CurrentLocalFile->sz_def) {
             putchar(LSOF_FID_SIZE);
@@ -1187,7 +1187,7 @@ print_proc() {
 
             (void) printf("%s", cp);
             putchar(Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_OFFSET].st && CurrentLocalFile->off_def) {
             putchar(LSOF_FID_OFFSET);
@@ -1212,23 +1212,23 @@ print_proc() {
             }
             (void) printf("%s", cp);
             putchar(Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_INODE].st && CurrentLocalFile->inp_ty == 1) {
             putchar(LSOF_FID_INODE);
             (void) printf(InodeFormatDecimal, CurrentLocalFile->inode);
             putchar(Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_NLINK].st && CurrentLocalFile->nlink_def) {
             (void) printf("%c%ld%c", LSOF_FID_NLINK, CurrentLocalFile->nlink, Terminator);
-            lc++;
+            line_count++;
         }
         if (FieldSelection[LSOF_FIX_PROTO].st && CurrentLocalFile->inp_ty == 2) {
             for (cp = CurrentLocalFile->iproto; *cp == ' '; cp++);
             if (*cp) {
                 (void) printf("%c%s%c", LSOF_FID_PROTO, cp, Terminator);
-                lc++;
+                line_count++;
             }
         }
         if (FieldSelection[LSOF_FIX_STREAM].st && CurrentLocalFile->nm && CurrentLocalFile->is_stream) {
@@ -1237,21 +1237,21 @@ print_proc() {
                 putchar(LSOF_FID_STREAM);
                 printname(0);
                 putchar(Terminator);
-                lc++;
-                st++;
+                line_count++;
+                status++;
             }
         }
-        if (st == 0 && FieldSelection[LSOF_FIX_NAME].st) {
+        if (status == 0 && FieldSelection[LSOF_FIX_NAME].st) {
             putchar(LSOF_FID_NAME);
             printname(0);
             putchar(Terminator);
-            lc++;
+            line_count++;
         }
         if (CurrentLocalFile->lts.type >= 0 && FieldSelection[LSOF_FIX_TCP_TPI_INFO].st) {
             print_tcptpi(0);
-            lc++;
+            line_count++;
         }
-        if (Terminator == '\0' && lc)
+        if (Terminator == '\0' && line_count)
             putchar('\n');
     }
     return (rv);

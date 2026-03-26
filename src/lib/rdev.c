@@ -433,10 +433,10 @@ rereaddev()
  */
 
 static int
-rmdupdev(dp, n, nm)
-    struct l_dev ***dp;	/* device table pointers address */
-    int n;			/* number of pointers */
-    char *nm;		/* device table name for error message */
+rmdupdev(dev_pp, count, name)
+    struct l_dev ***dev_pp;	/* device table pointers address */
+    int count;			/* number of pointers */
+    char *name;		/* device table name for error message */
 {
 
 # if	defined(HAS_STD_CLONE) && HAS_STD_CLONE==1
@@ -446,8 +446,8 @@ rmdupdev(dp, n, nm)
     int i, j, k;
     struct l_dev **p;
 
-    for (i = j = 0, p = *dp; i < n ;) {
-        for (k = i + 1; k < n; k++) {
+    for (i = j = 0, p = *dev_pp; i < count ;) {
+        for (k = i + 1; k < count; k++) {
         if (p[i]->rdev != p[k]->rdev || p[i]->inode != p[k]->inode)
             break;
 
@@ -477,13 +477,13 @@ rmdupdev(dp, n, nm)
         j++;
         i = k;
     }
-    if (n == j)
-        return(n);
-    if (!(*dp = (struct l_dev **)realloc((MALLOC_P *)*dp,
+    if (count == j)
+        return(count);
+    if (!(*dev_pp = (struct l_dev **)realloc((MALLOC_P *)*dev_pp,
             (MALLOC_S)(j * sizeof(struct l_dev *)))))
     {
         (void) fprintf(stderr, "%s: can't realloc %s device pointers\n",
-        ProgramName, nm);
+        ProgramName, name);
         Exit(1);
     }
     return(j);
@@ -498,20 +498,20 @@ rmdupdev(dp, n, nm)
  */
 
 int
-vfy_dev(dp)
-    struct l_dev *dp;		/* device table pointer */
+vfy_dev(dev_entry)
+    struct l_dev *dev_entry;		/* device table pointer */
 {
     struct stat sb;
 
-    if (!DevCacheUnsafe || dp->v)
+    if (!DevCacheUnsafe || dev_entry->v)
         return(1);
-    if (RDEV_STATFN(dp->name, &sb) != 0
-    ||  dp->rdev != RDEV_EXPDEV(sb.st_rdev)
-    ||  dp->inode != sb.st_ino) {
+    if (RDEV_STATFN(dev_entry->name, &sb) != 0
+    ||  dev_entry->rdev != RDEV_EXPDEV(sb.st_rdev)
+    ||  dev_entry->inode != sb.st_ino) {
        (void) rereaddev();
        return(0);
     }
-    dp->v = 1;
+    dev_entry->v = 1;
     return(1);
 }
 # endif	/* defined(HASDCACHE) */

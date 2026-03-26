@@ -40,8 +40,8 @@ static char copyright[] =
  */
 
 char *
-print_kptr(kp, buf, bufl)
-        KA_T kp;            /* kernel pointer address */
+print_kptr(kern_ptr, buf, bufl)
+        KA_T kern_ptr;            /* kernel pointer address */
         char *buf;            /* optional destination buffer */
         size_t bufl;            /* size of buf[] */
 {
@@ -49,7 +49,7 @@ print_kptr(kp, buf, bufl)
 
     (void) snpf(buf ? buf : dbuf,
                 buf ? bufl : sizeof(dbuf),
-                KA_T_FMT_X, kp);
+                KA_T_FMT_X, kern_ptr);
     return (buf ? buf : dbuf);
 }
 
@@ -60,13 +60,13 @@ print_kptr(kp, buf, bufl)
  */
 
 int
-readcdrnode(ca, c)
-    KA_T ca;			/* cdrnode kernel address */
-    struct cdrnode *c;		/* cdrnode buffer */
+readcdrnode(cdr_addr, cdr_buf)
+    KA_T cdr_addr;			/* cdrnode kernel address */
+    struct cdrnode *cdr_buf;		/* cdrnode buffer */
 {
-    if (kread((KA_T)ca, (char *)c, sizeof(struct cdrnode))) {
+    if (kread((KA_T)cdr_addr, (char *)cdr_buf, sizeof(struct cdrnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read cdrnode at %s",
-        print_kptr(ca, (char *)NULL, 0));
+        print_kptr(cdr_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -80,13 +80,13 @@ readcdrnode(ca, c)
  */
 
 int
-readfifonode(fa, f)
-    KA_T fa;			/* fifonode kernel address */
-    struct fifonode *f;		/* fifonode buffer */
+readfifonode(fifo_addr, fifo_buf)
+    KA_T fifo_addr;			/* fifonode kernel address */
+    struct fifonode *fifo_buf;		/* fifonode buffer */
 {
-    if (kread((KA_T)fa, (char *)f, sizeof(struct fifonode))) {
+    if (kread((KA_T)fifo_addr, (char *)fifo_buf, sizeof(struct fifonode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read fifonode at %s",
-        print_kptr(fa, (char *)NULL, 0));
+        print_kptr(fifo_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -100,13 +100,13 @@ readfifonode(fa, f)
  */
 
 int
-readgnode(ga, g)
-    KA_T ga;			/* gnode kernel address */
-    struct gnode *g;		/* gnode buffer */
+readgnode(gnode_addr, gnode_buf)
+    KA_T gnode_addr;			/* gnode kernel address */
+    struct gnode *gnode_buf;		/* gnode buffer */
 {
-    if (kread((KA_T)ga, (char *)g, sizeof(struct gnode))) {
+    if (kread((KA_T)gnode_addr, (char *)gnode_buf, sizeof(struct gnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read gnode at %s",
-        print_kptr(ga, (char *)NULL, 0));
+        print_kptr(gnode_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -120,13 +120,13 @@ readgnode(ga, g)
  */
 
 int
-readhsnode(ha, h)
-    KA_T ha;			/* hsnode kernel address */
-    struct hsnode *h;		/* hsnode buffer */
+readhsnode(hs_addr, hs_buf)
+    KA_T hs_addr;			/* hsnode kernel address */
+    struct hsnode *hs_buf;		/* hsnode buffer */
 {
-    if (kread((KA_T)ha, (char *)h, sizeof(struct hsnode))) {
+    if (kread((KA_T)hs_addr, (char *)hs_buf, sizeof(struct hsnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read hsnode at %s",
-        print_kptr(ha, (char *)NULL, 0));
+        print_kptr(hs_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -140,13 +140,13 @@ readhsnode(ha, h)
  */
 
 int
-readinode(ia, i)
-    KA_T ia;			/* inode kernel address */
-    struct inode *i;		/* inode buffer */
+readinode(inode_addr, inode_buf)
+    KA_T inode_addr;			/* inode kernel address */
+    struct inode *inode_buf;		/* inode buffer */
 {
-    if (kread((KA_T)ia, (char *)i, sizeof(struct inode))) {
+    if (kread((KA_T)inode_addr, (char *)inode_buf, sizeof(struct inode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read inode at %s",
-        print_kptr(ia, (char *)NULL, 0));
+        print_kptr(inode_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -160,13 +160,13 @@ readinode(ia, i)
  */
 
 int
-readpipenode(pa, p)
-    KA_T pa;			/* pipe node kernel address */
-    struct pipenode *p;		/* pipe node buffer */
+readpipenode(pipe_addr, pipe_buf)
+    KA_T pipe_addr;			/* pipe node kernel address */
+    struct pipenode *pipe_buf;		/* pipe node buffer */
 {
-    if (kread((KA_T)pa, (char *)p, sizeof(struct pipenode))) {
+    if (kread((KA_T)pipe_addr, (char *)pipe_buf, sizeof(struct pipenode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read pipenode at %s",
-        print_kptr(pa, (char *)NULL, 0));
+        print_kptr(pipe_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -180,13 +180,13 @@ readpipenode(pa, p)
  */
 
 int
-readrnode(ra, r)
-    KA_T ra;			/* rnode kernel space address */
-    struct rnode *r;		/* rnode buffer pointer */
+readrnode(rnode_addr, rnode_buf)
+    KA_T rnode_addr;			/* rnode kernel space address */
+    struct rnode *rnode_buf;		/* rnode buffer pointer */
 {
-    if (kread((KA_T)ra, (char *)r, sizeof(struct rnode))) {
+    if (kread((KA_T)rnode_addr, (char *)rnode_buf, sizeof(struct rnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read rnode at %s",
-        print_kptr(ra, (char *)NULL, 0));
+        print_kptr(rnode_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -200,13 +200,13 @@ readrnode(ra, r)
  */
 
 int
-readsnode(sa, s)
-    KA_T sa;			/* snode kernel space address */
-    struct snode *s;		/* snode buffer pointer */
+readsnode(snode_addr, snode_buf)
+    KA_T snode_addr;			/* snode kernel space address */
+    struct snode *snode_buf;		/* snode buffer pointer */
 {
-    if (kread((KA_T)sa, (char *)s, sizeof(struct snode))) {
+    if (kread((KA_T)snode_addr, (char *)snode_buf, sizeof(struct snode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read snode at %s",
-        print_kptr(sa, (char *)NULL, 0));
+        print_kptr(snode_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -220,13 +220,13 @@ readsnode(sa, s)
  */
 
 int
-readtnode(ta, t)
-    KA_T ta;			/* tmpnode kernel space address */
-    struct tmpnode *t;		/* tmpnode buffer pointer */
+readtnode(tmp_addr, tmp_buf)
+    KA_T tmp_addr;			/* tmpnode kernel space address */
+    struct tmpnode *tmp_buf;		/* tmpnode buffer pointer */
 {
-    if (kread((KA_T)ta, (char *)t, sizeof(struct tmpnode))) {
+    if (kread((KA_T)tmp_addr, (char *)tmp_buf, sizeof(struct tmpnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read tmpnode at %s",
-        print_kptr(ta, (char *)NULL, 0));
+        print_kptr(tmp_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);
@@ -240,13 +240,13 @@ readtnode(ta, t)
  */
 
 int
-readvnode(va, v)
-    KA_T va;			/* vnode kernel space address */
-    struct vnode *v;		/* vnode buffer pointer */
+readvnode(vnode_addr, vnode_buf)
+    KA_T vnode_addr;			/* vnode kernel space address */
+    struct vnode *vnode_buf;		/* vnode buffer pointer */
 {
-    if (kread((KA_T)va, (char *)v, sizeof(struct vnode))) {
+    if (kread((KA_T)vnode_addr, (char *)vnode_buf, sizeof(struct vnode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read vnode at %s",
-        print_kptr(va, (char *)NULL, 0));
+        print_kptr(vnode_addr, (char *)NULL, 0));
         return(1);
     }
     return(0);

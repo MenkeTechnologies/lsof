@@ -48,9 +48,9 @@ static int GOx1 = 1;            /* first opt[][] index */
 static int GOx2 = 0;            /* second opt[][] index */
 
 
-_PROTOTYPE(static int GetOpt, (int ct, char *opt[], char *rules, int *err));
+_PROTOTYPE(static int GetOpt, (int opt_count, char *opt[], char *rules, int *err));
 
-_PROTOTYPE(static char *sv_fmt_str, (char *f));
+_PROTOTYPE(static char *sv_fmt_str, (char *fmt_str));
 
 
 /*
@@ -62,23 +62,23 @@ main(argc, argv)
         int argc;
         char *argv[];
 {
-    int ad, c, i, n, rv, se1, se2, ss;
-    char *cp;
+    int alt_dev, opt_char, i, num_parsed, return_val, stat_errno1, stat_errno2, stat_status;
+    char *char_ptr;
     int err = 0;
-    int ev = 0;
-    int fh = 0;
+    int exit_val = 0;
+    int field_help = 0;
     char *fmtr = (char *) NULL;
-    long l;
+    long long_val;
     MALLOC_S len;
-    struct lfile *lf;
-    struct nwad *np, *npn;
+    struct lfile *saved_lfile;
+    struct nwad *net_addr_ptr, *net_addr_next;
     char options[128];
-    int rc = 0;
+    int repeat_cond = 0;
     struct stat sb;
-    struct sfile *sfp;
-    struct lproc **slp = (struct lproc **) NULL;
-    int sp = 0;
-    struct str_lst *str, *strt;
+    struct sfile *search_file_ptr;
+    struct lproc **sorted_procs = (struct lproc **) NULL;
+    int sorted_alloc = 0;
+    struct str_lst *str_entry, *str_test;
     int version = 0;
     int xover = 0;
 
@@ -116,7 +116,7 @@ main(argc, argv)
  *
  * Make sure umask allows lsof to define its own file permissions.
  */
-    for (i = 3, n = GET_MAX_FD(); i < n; i++)
+    for (i = 3, num_parsed = GET_MAX_FD(); i < num_parsed; i++)
         (void) close(i);
     while (((i = open("/dev/null", O_RDWR, 0)) >= 0) && (i < 2));
     if (i < 0)
@@ -226,12 +226,12 @@ main(argc, argv)
 /*
  * Loop through options.
  */
-    while ((c = GetOpt(argc, argv, options, &rv)) != EOF) {
-        if (rv) {
+    while ((opt_char = GetOpt(argc, argv, options, &return_val)) != EOF) {
+        if (return_val) {
             err = 1;
             continue;
         }
-        switch (c) {
+        switch (opt_char) {
             case 'a':
                 OptAndSelection = 1;
                 break;
@@ -480,7 +480,7 @@ main(argc, argv)
                     break;
                 }
                 if (strcmp(GOv, "?") == 0) {
-                    fh = 1;
+                    field_help = 1;
                     break;
                 }
                 for (; *GOv; GOv++) {
@@ -589,26 +589,26 @@ main(argc, argv)
                     }
                     break;
                 }
-                for (cp = GOv, l = 0l, n = 0; *cp; cp++) {
-                    if (!isdigit((unsigned char) *cp))
+                for (char_ptr = GOv, long_val = 0l, num_parsed = 0; *char_ptr; char_ptr++) {
+                    if (!isdigit((unsigned char) *char_ptr))
                         break;
-                    l = (l * 10l) + ((long) *cp - (long) '0');
-                    n++;
+                    long_val = (long_val * 10l) + ((long) *char_ptr - (long) '0');
+                    num_parsed++;
                 }
-                if (n) {
+                if (num_parsed) {
                     if (GOp != '+') {
                         (void) fprintf(stderr,
                                        "%s: no number may follow -L\n", ProgramName);
                         err = 1;
                     } else {
-                        LinkCountThreshold = l;
+                        LinkCountThreshold = long_val;
                         SelectionFlags |= SELNLINK;
                     }
                 } else
                     LinkCountThreshold = 0l;
-                if (*cp) {
+                if (*char_ptr) {
                     GOx1 = GObk[0];
-                    GOx2 = GObk[1] + n;
+                    GOx2 = GObk[1] + num_parsed;
                 }
                 break;
 
@@ -678,19 +678,19 @@ main(argc, argv)
                     }
                     break;
                 }
-                for (cp = GOv, i = n = 0; *cp; cp++) {
-                    if (!isdigit((unsigned char) *cp))
+                for (char_ptr = GOv, i = num_parsed = 0; *char_ptr; char_ptr++) {
+                    if (!isdigit((unsigned char) *char_ptr))
                         break;
-                    i = (i * 10) + ((int) *cp - '0');
-                    n++;
+                    i = (i * 10) + ((int) *char_ptr - '0');
+                    num_parsed++;
                 }
-                if (n)
+                if (num_parsed)
                     OffsetDecDigitLimit = i;
                 else
                     OptOffset = 1;
-                if (*cp) {
+                if (*char_ptr) {
                     GOx1 = GObk[0];
-                    GOx2 = GObk[1] + n;
+                    GOx2 = GObk[1] + num_parsed;
                 }
                 break;
             case 'O':
@@ -705,7 +705,7 @@ main(argc, argv)
                 break;
             case 'r':
                 if (GOp == '+')
-                    ev = rc = 1;
+                    exit_val = repeat_cond = 1;
                 if (!GOv || *GOv == '-' || *GOv == '+') {
                     RepeatTime = RPTTM;
                     if (GOv) {
@@ -714,23 +714,23 @@ main(argc, argv)
                     }
                     break;
                 }
-                for (cp = GOv, i = n = 0; *cp; cp++) {
-                    if (!isdigit((unsigned char) *cp))
+                for (char_ptr = GOv, i = num_parsed = 0; *char_ptr; char_ptr++) {
+                    if (!isdigit((unsigned char) *char_ptr))
                         break;
-                    i = (i * 10) + ((int) *cp - '0');
-                    n++;
+                    i = (i * 10) + ((int) *char_ptr - '0');
+                    num_parsed++;
                 }
-                if (n)
+                if (num_parsed)
                     RepeatTime = i;
                 else
                     RepeatTime = RPTTM;
-                if (!*cp)
+                if (!*char_ptr)
                     break;
-                while (*cp && (*cp == ' '))
-                    cp++;
-                if (*cp != LSOF_FID_MARK) {
+                while (*char_ptr && (*char_ptr == ' '))
+                    char_ptr++;
+                if (*char_ptr != LSOF_FID_MARK) {
                     GOx1 = GObk[0];
-                    GOx2 = GObk[1] + n;
+                    GOx2 = GObk[1] + num_parsed;
                     break;
                 }
 
@@ -739,18 +739,18 @@ main(argc, argv)
             /*
              * Collect the strftime(3) format and test it.
              */
-            cp++;
-            if ((fmtl = strlen(cp) + 1) < 1) {
+            char_ptr++;
+            if ((fmtl = strlen(char_ptr) + 1) < 1) {
                 (void) fprintf(stderr, "%s: <fmt> too short: \"%s\"\n",
-                ProgramName, cp);
+                ProgramName, char_ptr);
                 err = 1;
             } else {
-                fmt = cp;
+                fmt = char_ptr;
                 fmtl = (fmtl * 8) + 1;
                 if (!(fmtr = (char *)malloc((MALLOC_S)fmtl))) {
                 (void) fprintf(stderr,
                     "%s: no space (%d) for <fmt> result: \"%s\"\n",
-                    ProgramName, (int)fmtl, cp);
+                    ProgramName, (int)fmtl, char_ptr);
                     Exit(1);
                 }
                 if (util_strftime(fmtr, fmtl - 1, fmt) < 1) {
@@ -762,7 +762,7 @@ main(argc, argv)
 
 #else	/* !defined(HAS_STRFTIME) */
                 (void) fprintf(stderr, "%s: m<fmt> not supported: \"%s\"\n",
-                               ProgramName, cp);
+                               ProgramName, char_ptr);
                 err = 1;
 #endif    /* defined(HAS_STRFTIME) */
 
@@ -801,19 +801,19 @@ main(argc, argv)
                     }
                     break;
                 }
-                for (cp = GOv, i = n = 0; *cp; cp++) {
-                    if (!isdigit((unsigned char) *cp))
+                for (char_ptr = GOv, i = num_parsed = 0; *char_ptr; char_ptr++) {
+                    if (!isdigit((unsigned char) *char_ptr))
                         break;
-                    i = (i * 10) + ((int) *cp - '0');
-                    n++;
+                    i = (i * 10) + ((int) *char_ptr - '0');
+                    num_parsed++;
                 }
-                if (n)
+                if (num_parsed)
                     TimeoutLimit = i;
                 else
                     TimeoutLimit = TMLIMIT;
-                if (*cp) {
+                if (*char_ptr) {
                     GOx1 = GObk[0];
-                    GOx2 = GObk[1] + n;
+                    GOx2 = GObk[1] + num_parsed;
                 }
                 if (TimeoutLimit < TMLIMMIN) {
                     (void) fprintf(stderr,
@@ -956,7 +956,7 @@ main(argc, argv)
 #endif    /* defined(HASSELINUX) */
 
             default:
-                (void) fprintf(stderr, "%s: unknown option (%c)\n", ProgramName, c);
+                (void) fprintf(stderr, "%s: unknown option (%c)\n", ProgramName, opt_char);
                 err = 1;
         }
     }
@@ -968,14 +968,14 @@ main(argc, argv)
         /*
          * Check for command inclusion/exclusion conflicts.
          */
-        for (str = CommandNameList; str; str = str->next) {
-            if (str->x) {
-                for (strt = CommandNameList; strt; strt = strt->next) {
-                    if (!strt->x) {
-                        if (!strcmp(str->str, strt->str)) {
+        for (str_entry = CommandNameList; str_entry; str_entry = str_entry->next) {
+            if (str_entry->x) {
+                for (str_test = CommandNameList; str_test; str_test = str_test->next) {
+                    if (!str_test->x) {
+                        if (!strcmp(str_entry->str, str_test->str)) {
                             (void) fprintf(stderr,
                                            "%s: -c^%s and -c%s conflict.\n",
-                                           ProgramName, str->str, strt->str);
+                                           ProgramName, str_entry->str, str_test->str);
                             err++;
                         }
                     }
@@ -1035,16 +1035,16 @@ main(argc, argv)
          * The field output marker format can't contain "%n" new line
          * requests.
          */
-        for (cp = strchr(fmt, '%'); cp; cp = strchr(cp, '%')) {
-            if (*++cp  == 'n') {
+        for (char_ptr = strchr(fmt, '%'); char_ptr; char_ptr = strchr(char_ptr, '%')) {
+            if (*++char_ptr  == 'n') {
             (void) fprintf(stderr,
                 "%s: %%n illegal in -r m<fmt> when -F has", ProgramName);
             (void) fprintf(stderr,
                 " been specified: \"%s\"\n", fmt);
             err++;
             break;
-            } else if (*cp == '%')
-            cp++;
+            } else if (*char_ptr == '%')
+            char_ptr++;
         }
         }
 #endif    /* defined(HAS_STRFTIME) */
@@ -1083,8 +1083,8 @@ main(argc, argv)
     }
 #endif    /* defined(HASEOPT) */
 
-    if (DevCacheHelp || err || OptHelp || fh || version)
-        usage(err ? 1 : 0, fh, version);
+    if (DevCacheHelp || err || OptHelp || field_help || version)
+        usage(err ? 1 : 0, field_help, version);
 /*
  * Reduce the size of SearchUidList[], if necessary.
  */
@@ -1152,22 +1152,22 @@ main(argc, argv)
  * Get the device for DEVDEV_PATH.
  */
     if (stat(DEVDEV_PATH, &sb)) {
-        se1 = errno;
-        if ((ad = strcmp(DEVDEV_PATH, "/dev"))) {
-            if ((ss = stat("/dev", &sb)))
-                se2 = errno;
+        stat_errno1 = errno;
+        if ((alt_dev = strcmp(DEVDEV_PATH, "/dev"))) {
+            if ((stat_status = stat("/dev", &sb)))
+                stat_errno2 = errno;
             else
-                se2 = 0;
+                stat_errno2 = 0;
         } else {
-            se2 = 0;
-            ss = 1;
+            stat_errno2 = 0;
+            stat_status = 1;
         }
-        if (ss) {
+        if (stat_status) {
             (void) fprintf(stderr, "%s: can't stat(%s): %s\n", ProgramName,
-                           DEVDEV_PATH, strerror(se1));
-            if (ad) {
+                           DEVDEV_PATH, strerror(stat_errno1));
+            if (alt_dev) {
                 (void) fprintf(stderr, "%s: can't stat(/dev): %s\n", ProgramName,
-                               strerror(se2));
+                               strerror(stat_errno2));
             }
             Exit(1);
         }
@@ -1245,33 +1245,33 @@ main(argc, argv)
          * If the local process table has more than one entry, sort it by PID.
          */
         if (NumLocalProcs > 1) {
-            if (NumLocalProcs > sp) {
+            if (NumLocalProcs > sorted_alloc) {
                 len = (MALLOC_S)(NumLocalProcs * sizeof(struct lproc *));
-                sp = NumLocalProcs;
-                if (!slp)
-                    slp = (struct lproc **) malloc(len);
+                sorted_alloc = NumLocalProcs;
+                if (!sorted_procs)
+                    sorted_procs = (struct lproc **) malloc(len);
                 else {
-                    struct lproc **tmp = (struct lproc **) realloc((MALLOC_P *) slp, len);
+                    struct lproc **tmp = (struct lproc **) realloc((MALLOC_P *) sorted_procs, len);
                     if (!tmp) {
-                        (void) free((FREE_P *) slp);
-                        slp = (struct lproc **) NULL;
+                        (void) free((FREE_P *) sorted_procs);
+                        sorted_procs = (struct lproc **) NULL;
                     } else
-                        slp = tmp;
+                        sorted_procs = tmp;
                 }
-                if (!slp) {
+                if (!sorted_procs) {
                     (void) fprintf(stderr,
                                    "%s: no space for %d sort pointers\n", ProgramName, NumLocalProcs);
                     Exit(1);
                 }
             }
             for (i = 0; i < NumLocalProcs; i++) {
-                slp[i] = &LocalProcTable[i];
+                sorted_procs[i] = &LocalProcTable[i];
             }
-            (void) qsort((QSORT_P *) slp, (size_t) NumLocalProcs,
+            (void) qsort((QSORT_P *) sorted_procs, (size_t) NumLocalProcs,
                          (size_t)
             sizeof(struct lproc *), comppid);
         }
-        if ((n = NumLocalProcs)) {
+        if ((num_parsed = NumLocalProcs)) {
 
 #if    defined(HASNCACHE)
             /*
@@ -1287,18 +1287,18 @@ main(argc, argv)
              * malloc()'d area, and since CurrentLocalFile is used throughout the print
              * process.
              */
-            for (lf = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
-                for (i = n = 0; i < NumLocalProcs; i++) {
-                    CurrentLocalProc = (NumLocalProcs > 1) ? slp[i] : &LocalProcTable[i];
+            for (saved_lfile = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
+                for (i = num_parsed = 0; i < NumLocalProcs; i++) {
+                    CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
                     if (CurrentLocalProc->pss) {
                         if (print_proc())
-                            n++;
+                            num_parsed++;
                     }
                     if (RepeatTime && PrintPass)
                         (void) free_lproc(CurrentLocalProc);
                 }
             }
-            CurrentLocalFile = lf;
+            CurrentLocalFile = saved_lfile;
         }
         /*
          * If a repeat time is set, sleep for the specified time.
@@ -1306,11 +1306,11 @@ main(argc, argv)
          * If conditional repeat mode is in effect, see if it's time to exit.
          */
         if (RepeatTime) {
-            if (rc) {
-                if (!n)
+            if (repeat_cond) {
+                if (!num_parsed)
                     break;
                 else
-                    ev = 0;
+                    exit_val = 0;
             }
 
 #if    defined(HAS_STRFTIME)
@@ -1339,12 +1339,12 @@ main(argc, argv)
 
 #if    defined(HAS_STRFTIME)
                 if (fmtr)
-                cp = fmtr;
+                char_ptr = fmtr;
                 else
 #endif    /* defined(HAS_STRFTIME) */
 
-                cp = "=======";
-                puts(cp);
+                char_ptr = "=======";
+                puts(char_ptr);
             }
             (void) fflush(stdout);
             (void) childx();
@@ -1358,18 +1358,18 @@ main(argc, argv)
  * was; one, if not.  If -V was specified, report what was not displayed.
  */
     (void) childx();
-    rv = 0;
-    for (str = CommandNameList; str; str = str->next) {
+    return_val = 0;
+    for (str_entry = CommandNameList; str_entry; str_entry = str_entry->next) {
 
         /*
          * Check command specifications.
          */
-        if (str->f)
+        if (str_entry->f)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose) {
             (void) printf("%s: command not located: ", ProgramName);
-            safestrprt(str->str, stdout, 1);
+            safestrprt(str_entry->str, stdout, 1);
         }
     }
     for (i = 0; i < NumCommandRegexUsed; i++) {
@@ -1379,24 +1379,24 @@ main(argc, argv)
          */
         if (CommandRegexTable[i].mc)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose) {
             (void) printf("%s: no command found for regex: ", ProgramName);
             safestrprt(CommandRegexTable[i].exp, stdout, 1);
         }
     }
-    for (sfp = SearchFileChain; sfp; sfp = sfp->next) {
+    for (search_file_ptr = SearchFileChain; search_file_ptr; search_file_ptr = search_file_ptr->next) {
 
         /*
          * Check file specifications.
          */
-        if (sfp->f)
+        if (search_file_ptr->f)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose) {
             (void) printf("%s: no file%s use located: ", ProgramName,
-                          sfp->type ? "" : " system");
-            safestrprt(sfp->aname, stdout, 1);
+                          search_file_ptr->type ? "" : " system");
+            safestrprt(search_file_ptr->aname, stdout, 1);
         }
     }
 
@@ -1405,7 +1405,7 @@ main(argc, argv)
      * Report on proc file system search results.
      */
         if (ProcFsSearching && !ProcFsFound) {
-        rv = 1;
+        return_val = 1;
         if (OptVerbose) {
             (void) printf("%s: no file system use located: ", ProgramName);
             safestrprt(Mtprocfs ? Mtprocfs->dir : HASPROCFS, stdout, 1);
@@ -1416,7 +1416,7 @@ main(argc, argv)
 
         for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
             if (!pfi->f) {
-            rv = 1;
+            return_val = 1;
             if (OptVerbose) {
                 (void) printf("%s: no file use located: ", ProgramName);
                 safestrprt(pfi->nm, stdout, 1);
@@ -1426,7 +1426,7 @@ main(argc, argv)
         }
 #endif    /* defined(HASPROCFS) */
 
-    if ((np = NetworkAddrList)) {
+    if ((net_addr_ptr = NetworkAddrList)) {
 
         /*
          * Check Internet address specifications.
@@ -1436,34 +1436,34 @@ main(argc, argv)
          * argument was found, report only the first failure.
          *
          */
-        for (; np; np = np->next) {
-            if (!(cp = np->arg))
+        for (; net_addr_ptr; net_addr_ptr = net_addr_ptr->next) {
+            if (!(char_ptr = net_addr_ptr->arg))
                 continue;
-            for (npn = np->next; npn; npn = npn->next) {
-                if (!npn->arg)
+            for (net_addr_next = net_addr_ptr->next; net_addr_next; net_addr_next = net_addr_next->next) {
+                if (!net_addr_next->arg)
                     continue;
-                if (!strcmp(cp, npn->arg)) {
+                if (!strcmp(char_ptr, net_addr_next->arg)) {
 
                     /*
                      * If either of the duplicate specifications was found,
                      * mark them both found.  If neither was found, mark all
                      * but the first one found.
                      */
-                    if (np->f)
-                        npn->f = np->f;
-                    else if (npn->f)
-                        np->f = npn->f;
+                    if (net_addr_ptr->f)
+                        net_addr_next->f = net_addr_ptr->f;
+                    else if (net_addr_next->f)
+                        net_addr_ptr->f = net_addr_next->f;
                     else
-                        npn->f = 1;
+                        net_addr_next->f = 1;
                 }
             }
         }
-        for (np = NetworkAddrList; np; np = np->next) {
-            if (!np->f && (cp = np->arg)) {
-                rv = 1;
+        for (net_addr_ptr = NetworkAddrList; net_addr_ptr; net_addr_ptr = net_addr_ptr->next) {
+            if (!net_addr_ptr->f && (char_ptr = net_addr_ptr->arg)) {
+                return_val = 1;
                 if (OptVerbose) {
                     (void) printf("%s: Internet address not located: ", ProgramName);
-                    safestrprt(cp ? cp : "(unknown)", stdout, 1);
+                    safestrprt(char_ptr ? char_ptr : "(unknown)", stdout, 1);
                 }
             }
         }
@@ -1473,7 +1473,7 @@ main(argc, argv)
         /*
          * Report no Internet files located.
          */
-        rv = 1;
+        return_val = 1;
         if (OptVerbose)
             (void) printf("%s: no Internet files located\n", ProgramName);
     }
@@ -1486,7 +1486,7 @@ main(argc, argv)
      */
         for (i = 0; i < TcpNumStates; i++) {
         if (TcpStateInclude[i] == 1) {
-            rv = 1;
+            return_val = 1;
             if (OptVerbose)
             (void) printf("%s: TCP state not located: %s\n",
                 ProgramName, TcpStateNames[i]);
@@ -1500,7 +1500,7 @@ main(argc, argv)
      */
         for (i = 0; i < UdpNumStates; i++) {
         if (UdpStateInclude[i] == 1) {
-            rv = 1;
+            return_val = 1;
             if (OptVerbose)
             (void) printf("%s: UDP state not located: %s\n",
                 ProgramName, UdpStateNames[i]);
@@ -1514,7 +1514,7 @@ main(argc, argv)
         /*
          * Report no NFS files located.
          */
-        rv = 1;
+        return_val = 1;
         if (OptVerbose)
             (void) printf("%s: no NFS files located\n", ProgramName);
     }
@@ -1525,7 +1525,7 @@ main(argc, argv)
          */
         if (SearchPidList[i].f || SearchPidList[i].x)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose)
             (void) printf("%s: process ID not located: %d\n",
                           ProgramName, SearchPidList[i].i);
@@ -1537,7 +1537,7 @@ main(argc, argv)
     /*
      * Report no tasks located.
      */
-        rv = 1;
+        return_val = 1;
         if (OptVerbose)
         (void) printf("%s: no tasks located\n", ProgramName);
     }
@@ -1552,7 +1552,7 @@ main(argc, argv)
         for (i = 0; i < HASHZONE; i++) {
         for (zp = ZoneArg[i]; zp; zp = zp->next) {
             if (!zp->f) {
-            rv = 1;
+            return_val = 1;
             if (OptVerbose) {
                 (void) printf("%s: zone not located: ", ProgramName);
                 safestrprt(zp->zn, stdout, 1);
@@ -1571,7 +1571,7 @@ main(argc, argv)
      */
         for (cntxp = ContextArgList; cntxp; cntxp = cntxp->next) {
         if (!cntxp->f) {
-            rv = 1;
+            return_val = 1;
             if (OptVerbose) {
             (void) printf("%s: context not located: ", ProgramName);
             safestrprt(cntxp->cntx, stdout, 1);
@@ -1588,7 +1588,7 @@ main(argc, argv)
          */
         if (SearchPgidList[i].f || SearchPgidList[i].x)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose)
             (void) printf("%s: process group ID not located: %d\n",
                           ProgramName, SearchPgidList[i].i);
@@ -1600,7 +1600,7 @@ main(argc, argv)
          */
         if (SearchUidList[i].excl || SearchUidList[i].f)
             continue;
-        rv = 1;
+        return_val = 1;
         if (OptVerbose) {
             if (SearchUidList[i].lnm) {
                 (void) printf("%s: login name (UID %lu) not located: ",
@@ -1611,12 +1611,12 @@ main(argc, argv)
                               (unsigned long) SearchUidList[i].uid);
         }
     }
-    if (!rv && rc)
-        rv = ev;
-    if (!rv && PathStatErrorCount)
-        rv = 1;
-    Exit(rv);
-    return (rv);        /* to make code analyzers happy */
+    if (!return_val && repeat_cond)
+        return_val = exit_val;
+    if (!return_val && PathStatErrorCount)
+        return_val = 1;
+    Exit(return_val);
+    return (return_val);        /* to make code analyzers happy */
 }
 
 
@@ -1653,7 +1653,7 @@ GetOpt(opt_count, opt, rules, err)
          *	Next option has nothing but `-' or `+';
          *	Next option is ``--'' or ``++''.
          */
-        if (GOx1 >= ct
+        if (GOx1 >= opt_count
             || (opt[GOx1][0] != '-' && opt[GOx1][0] != '+')
             || !opt[GOx1][1])
             return (EOF);
@@ -1670,12 +1670,12 @@ GetOpt(opt_count, opt, rules, err)
  * Check for a rule on this option character.
  */
     *err = 0;
-    if ((c = opt[GOx1][GOx2]) == ':') {
+    if ((opt_char = opt[GOx1][GOx2]) == ':') {
         (void) fprintf(stderr,
                        "%s: colon is an illegal option character.\n", ProgramName);
         *err = 1;
-    } else if (!(cp = strchr(rules, c))) {
-        (void) fprintf(stderr, "%s: illegal option character: %c\n", ProgramName, c);
+    } else if (!(rule_ptr = strchr(rules, opt_char))) {
+        (void) fprintf(stderr, "%s: illegal option character: %c\n", ProgramName, opt_char);
         *err = 2;
     }
     if (*err) {
@@ -1691,9 +1691,9 @@ GetOpt(opt_count, opt, rules, err)
             GOx1++;
             GOx2 = 0;
         }
-        return (c);
+        return (opt_char);
     }
-    if (*(cp + 1) == ':') {
+    if (*(rule_ptr + 1) == ':') {
 
         /*
          * The option may have a following value.  The caller decides
@@ -1716,7 +1716,7 @@ GetOpt(opt_count, opt, rules, err)
             GObk[0] = GOx1;
             GObk[1] = ++GOx2;
             GOv = &opt[GOx1++][GOx2];
-        } else if (++GOx1 >= ct)
+        } else if (++GOx1 >= opt_count)
             GOv = (char *) NULL;
         else {
             GObk[0] = GOx1;
@@ -1744,7 +1744,7 @@ GetOpt(opt_count, opt, rules, err)
 /*
  * Return the option character.
  */
-    return (c);
+    return (opt_char);
 }
 
 

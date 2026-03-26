@@ -49,9 +49,9 @@ static char copyright[] =
  * Local function prototypes
  */
 
-_PROTOTYPE(static char *isnullstr, (char *s));
+_PROTOTYPE(static char *isnullstr, (char *str));
 
-_PROTOTYPE(static int print_in_col, (int col, char *cp));
+_PROTOTYPE(static int print_in_col, (int col, char *char_ptr));
 
 _PROTOTYPE(static void report_HASDCACHE, (int type, char *ttl, char *det));
 
@@ -68,15 +68,15 @@ _PROTOTYPE(static void report_WARNDEVACCESS, (char *pfx, char *verb,
  */
 
 static char *
-isnullstr(s)
-        char *s;            /* string pointer */
+isnullstr(str)
+        char *str;            /* string pointer */
 {
-    if (!s)
+    if (!str)
         return ((char *) NULL);
-    while (*s) {
-        if (*s != ' ')
-            return (s);
-        s++;
+    while (*str) {
+        if (*str != ' ')
+            return (str);
+        str++;
     }
     return ((char *) NULL);
 }
@@ -87,20 +87,20 @@ isnullstr(s)
  */
 
 static int
-print_in_col(col, cp)
+print_in_col(col, char_ptr)
         int col;                /* column number */
-        char *cp;                /* what to print */
+        char *char_ptr;                /* what to print */
 {
-    if (cp && *cp) {
+    if (char_ptr && *char_ptr) {
         switch (col) {
             case 1:
-                (void) fprintf(stderr, "  %-23.23s", cp);
+                (void) fprintf(stderr, "  %-23.23s", char_ptr);
                 break;
             case 2:
-                (void) fprintf(stderr, "  %-25.25s", cp);
+                (void) fprintf(stderr, "  %-25.25s", char_ptr);
                 break;
             default:
-                (void) fprintf(stderr, "  %s\n", cp);
+                (void) fprintf(stderr, "  %s\n", char_ptr);
                 col = 0;
         }
         col++;
@@ -124,7 +124,7 @@ report_HASDCACHE(type, ttl, det)
 {
 
 #if    defined(HASDCACHE)
-    char *cp;
+    char *cache_path;
     int dx;
 
 # if	defined(WILLDROPGID)
@@ -172,10 +172,10 @@ report_HASDCACHE(type, ttl, det)
             "%sModified personal path environment variable: %s\n",
             det ? det : "",
             HASPERSDCPATH);
-        cp = getenv(HASPERSDCPATH);
+        cache_path = getenv(HASPERSDCPATH);
         (void) fprintf(stderr, "%s%s value: %s\n",
             det ? det : "",
-            HASPERSDCPATH, cp ? cp : "none");
+            HASPERSDCPATH, cache_path ? cache_path : "none");
 #  endif	/* defined(HASPERSDCPATH) */
         (void) fprintf(stderr, "%sPersonal path: %s\n",
             det ? det : "",
@@ -209,10 +209,10 @@ report_HASDCACHE(type, ttl, det)
             "%sModified personal path environment variable: %s\n",
             det ? det : "",
             HASPERSDCPATH);
-        cp = getenv(HASPERSDCPATH);
+        cache_path = getenv(HASPERSDCPATH);
         (void) fprintf(stderr, "%s%s value: %s\n",
             det ? det : "",
-            HASPERSDCPATH, cp ? cp : "none");
+            HASPERSDCPATH, cache_path ? cache_path : "none");
 #  endif	/* defined(HASPERSDCPATH) */
          (void) fprintf(stderr, "%sPersonal path: %s\n",
             det ? det : "",
@@ -226,24 +226,24 @@ report_HASDCACHE(type, ttl, det)
      */
 
 # if	defined(HASENVDC) || defined(HASPERSDC) || defined(HASSYSDC)
-        cp = NULL;
+        cache_path = NULL;
 #  if	defined(HASENVDC)
         if ((dx = dcpath(1, 0)) >= 0)
-        cp = DevCachePath[1];
+        cache_path = DevCachePath[1];
 #  endif	/* defined(HASENVDC) */
 #  if	defined(HASSYSDC)
-        if (!cp)
-        cp = HASSYSDC;
+        if (!cache_path)
+        cache_path = HASSYSDC;
 #  endif	/* defined(HASSYSDC) */
 #  if	defined(HASPERSDC)
-        if (!cp && dx != -1 && (dx = dcpath(1, 0)) >= 0)
-        cp = DevCachePath[3];
+        if (!cache_path && dx != -1 && (dx = dcpath(1, 0)) >= 0)
+        cache_path = DevCachePath[3];
 #  endif	/* defined(HASPERSDC) */
-        if (cp)
+        if (cache_path)
         (void) fprintf(stderr,
             "%s%s is the default device cache file read path.\n",
             ttl ? ttl : "",
-            cp
+            cache_path
         );
 # endif    /* defined(HASENVDC) || defined(HASPERSDC) || defined(HASSYSDC) */
     }
@@ -340,15 +340,15 @@ report_WARNDEVACCESS(pfx, verb, punct)
  */
 
 void
-usage(xv, fh, version)
-        int xv;                /* exit value */
-        int fh;                /* ``-F ?'' status */
+usage(exit_val, field_help, version)
+        int exit_val;                /* exit value */
+        int field_help;                /* ``-F ?'' status */
         int version;            /* ``-v'' status */
 {
-    char buf[MAXPATHLEN + 1], *cp, *cp1, *cp2;
+    char buf[MAXPATHLEN + 1], *str, *str1, *str2;
     int i;
 
-    if (OptHelp || xv) {
+    if (OptHelp || exit_val) {
         (void) fprintf(stderr,
             "\n"
             "\033[36m  ██▓     ██████  ▒█████    █████▒\033[0m\n"
@@ -367,11 +367,11 @@ usage(xv, fh, version)
             ANSI_YELLOW "  USAGE:" ANSI_RESET " %s [OPTION]... [FILE]...\n",
             ProgramName);
     }
-    if (xv && !OptHelp) {
+    if (exit_val && !OptHelp) {
         (void) fprintf(stderr,
             "\n  " ANSI_YELLOW ">>" ANSI_RESET " Try '" ANSI_CYAN "%s -h" ANSI_RESET "' for more information.\n", ProgramName);
-        if (!fh)
-            Exit(xv);
+        if (!field_help)
+            Exit(exit_val);
     }
     if (OptHelp) {
         (void) fprintf(stderr, "\n"
@@ -465,15 +465,15 @@ usage(xv, fh, version)
 
 #if    defined(HASDCACHE)
         if (SetuidRootState)
-            cp = "?|i|r";
+            str = "?|i|r";
 # if	!defined(WILLDROPGID)
         else if (MyRealUid)
-            cp = "?|i|r<path>";
+            str = "?|i|r<path>";
 # endif	/* !defined(WILLDROPGID) */
         else
-            cp = "?|i|b|r|u[path]";
+            str = "?|i|b|r|u[path]";
         (void) fprintf(stderr,
-            ANSI_GREEN "   -D ACTION         " ANSI_RESET "device cache control " ANSI_MAGENTA "(%s)" ANSI_RESET "\n", cp);
+            ANSI_GREEN "   -D ACTION         " ANSI_RESET "device cache control " ANSI_MAGENTA "(%s)" ANSI_RESET "\n", str);
 #endif    /* defined(HASDCACHE) */
 
 #if    defined(HASEOPT)
@@ -620,7 +620,7 @@ usage(xv, fh, version)
 #endif    /* defined(DIALECT_WARNING) */
 
     }
-    if (fh) {
+    if (field_help) {
         (void) fprintf(stderr, "\n%s: output field IDs:\n", ProgramName);
         (void) fprintf(stderr, "  ID    Description\n");
         for (i = 0; FieldSelection[i].nm; i++) {
@@ -685,45 +685,45 @@ usage(xv, fh, version)
         (void) fprintf(stderr, "\n%s %s\n", ProgramName, LSOF_VERSION);
 
 #if    defined(LSOF_CINFO)
-        if ((cp = isnullstr(LSOF_CINFO)))
-            (void) fprintf(stderr, "Configuration: %s\n", cp);
+        if ((str = isnullstr(LSOF_CINFO)))
+            (void) fprintf(stderr, "Configuration: %s\n", str);
 #endif    /* defined(LSOF_CINFO) */
 
-        if ((cp = isnullstr(LSOF_CCDATE)))
-            (void) fprintf(stderr, "Built: %s\n", cp);
-        cp = isnullstr(LSOF_HOST);
-        if (!(cp1 = isnullstr(LSOF_LOGNAME)))
-            cp1 = isnullstr(LSOF_USER);
-        if (cp || cp1) {
-            if (cp && cp1)
-                cp2 = "by and on";
-            else if (cp)
-                cp2 = "on";
+        if ((str = isnullstr(LSOF_CCDATE)))
+            (void) fprintf(stderr, "Built: %s\n", str);
+        str = isnullstr(LSOF_HOST);
+        if (!(str1 = isnullstr(LSOF_LOGNAME)))
+            str1 = isnullstr(LSOF_USER);
+        if (str || str1) {
+            if (str && str1)
+                str2 = "by and on";
+            else if (str)
+                str2 = "on";
             else
-                cp2 = "by";
+                str2 = "by";
             (void) fprintf(stderr, "Built %s: %s%s%s\n",
-                           cp2,
-                           cp1 ? cp1 : "",
-                           (cp && cp1) ? "@" : "",
-                           cp ? cp : ""
+                           str2,
+                           str1 ? str1 : "",
+                           (str && str1) ? "@" : "",
+                           str ? str : ""
             );
         }
 
 #if    defined(LSOF_BLDCMT)
-        if ((cp = isnullstr(LSOF_BLDCMT)))
-            (void) fprintf(stderr, "Comment: %s\n", cp);
+        if ((str = isnullstr(LSOF_BLDCMT)))
+            (void) fprintf(stderr, "Comment: %s\n", str);
 #endif    /* defined(LSOF_BLDCMT) */
 
-        if ((cp = isnullstr(LSOF_CC)))
-            (void) fprintf(stderr, "Compiler: %s\n", cp);
-        if ((cp = isnullstr(LSOF_CCV)))
-            (void) fprintf(stderr, "Compiler version: %s\n", cp);
-        if ((cp = isnullstr(LSOF_CCFLAGS)))
-            (void) fprintf(stderr, "Compiler flags: %s\n", cp);
-        if ((cp = isnullstr(LSOF_LDFLAGS)))
-            (void) fprintf(stderr, "Loader flags: %s\n", cp);
-        if ((cp = isnullstr(LSOF_SYSINFO)))
-            (void) fprintf(stderr, "System info: %s\n", cp);
+        if ((str = isnullstr(LSOF_CC)))
+            (void) fprintf(stderr, "Compiler: %s\n", str);
+        if ((str = isnullstr(LSOF_CCV)))
+            (void) fprintf(stderr, "Compiler version: %s\n", str);
+        if ((str = isnullstr(LSOF_CCFLAGS)))
+            (void) fprintf(stderr, "Compiler flags: %s\n", str);
+        if ((str = isnullstr(LSOF_LDFLAGS)))
+            (void) fprintf(stderr, "Loader flags: %s\n", str);
+        if ((str = isnullstr(LSOF_SYSINFO)))
+            (void) fprintf(stderr, "System info: %s\n", str);
         (void) report_SECURITY("", ".\n");
         (void) report_WARNDEVACCESS("", "are", ".\n");
         (void) report_HASKERNIDCK(" K", "is");
@@ -734,5 +734,5 @@ usage(xv, fh, version)
 
         (void) report_HASDCACHE(1, "", "  ");
     }
-    Exit(xv);
+    Exit(exit_val);
 }

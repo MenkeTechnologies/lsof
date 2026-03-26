@@ -54,10 +54,10 @@ static char copyright[] =
  */
 
 void
-process_file(fp)
-    KA_T fp;			/* kernel file structure address */
+process_file(file_addr)
+    KA_T file_addr;			/* kernel file structure address */
 {
-    struct file f;
+    struct file file_str;
     int flag;
     char tbuf[32];
 
@@ -65,25 +65,25 @@ process_file(fp)
 /*
  * Save file structure address for process_node().
  */
-    FILEPTR = &f;
+    FILEPTR = &file_str;
 #endif	/* defined(FILEPTR) */
 
 /*
  * Read file structure.
  */
-    if (kread((KA_T)fp, (char *)&f, sizeof(f))) {
+    if (kread((KA_T)file_addr, (char *)&file_str, sizeof(file_str))) {
         (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
-        print_kptr(fp, (char *)NULL, 0));
+        print_kptr(file_addr, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
-    CurrentLocalFile->off = (SZOFFTYPE)f.f_offset;
-    if (f.f_count) {
+    CurrentLocalFile->off = (SZOFFTYPE)file_str.f_offset;
+    if (file_str.f_count) {
 
     /*
      * Construct access code.
      */
-        if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
+        if ((flag = (file_str.f_flag & (FREAD | FWRITE))) == FREAD)
         CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
         CurrentLocalFile->access = 'w';
@@ -97,28 +97,28 @@ process_file(fp)
 
 # if	!defined(HASNOFSCOUNT)
         if (OptFileStructValues & FSV_FILE_COUNT) {
-        CurrentLocalFile->fct = (long)f.f_count;
+        CurrentLocalFile->fct = (long)file_str.f_count;
         CurrentLocalFile->fsv |= FSV_FILE_COUNT;
         }
 # endif	/* !defined(HASNOFSCOUNT) */
 
 # if	!defined(HASNOFSADDR)
         if (OptFileStructValues & FSV_FILE_ADDR) {
-        CurrentLocalFile->fsa = fp;
+        CurrentLocalFile->fsa = file_addr;
         CurrentLocalFile->fsv |= FSV_FILE_ADDR;
         }
 # endif	/* !defined(HASNOFSADDR) */
 
 # if	!defined(HASNOFSFLAGS)
         if (OptFileStructValues & FSV_FILE_FLAGS) {
-        CurrentLocalFile->ffg = (long)f.f_flag;
+        CurrentLocalFile->ffg = (long)file_str.f_flag;
         CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
         }
 # endif	/* !defined(HASNOFSFLAGS) */
 
 # if	!defined(HASNOFSNADDR)
         if (OptFileStructValues & FSV_NODE_ID) {
-        CurrentLocalFile->fna = (KA_T)f.f_data;
+        CurrentLocalFile->fna = (KA_T)file_str.f_data;
         CurrentLocalFile->fsv |= FSV_NODE_ID;
         }
 # endif	/* !defined(HASNOFSNADDR) */
@@ -127,14 +127,14 @@ process_file(fp)
     /*
      * Process structure by its type.
      */
-        switch (f.f_type) {
+        switch (file_str.f_type) {
 
 
 #if	defined(DTYPE_PIPE)
         case DTYPE_PIPE:
 # if	defined(HASPIPEFN)
         if (!SelectInetOnly)
-            HASPIPEFN((KA_T)f.f_data);
+            HASPIPEFN((KA_T)file_str.f_data);
 # endif	/* defined(HASPIPEFN) */
         return;
 #endif	/* defined(DTYPE_PIPE) */
@@ -156,46 +156,46 @@ process_file(fp)
 #endif	/* defined(DTYPE_VNODE) */
 
 #if	defined(HASF_VNODE)
-        process_node((KA_T)f.f_vnode);
+        process_node((KA_T)file_str.f_vnode);
 #else	/* !defined(HASF_VNODE) */
-        process_node((KA_T)f.f_data);
+        process_node((KA_T)file_str.f_data);
 #endif	/* defined(HASF_VNODE) */
 
         return;
         case DTYPE_SOCKET:
-        process_socket((KA_T)f.f_data);
+        process_socket((KA_T)file_str.f_data);
         return;
 
 #if	defined(HASKQUEUE)
         case DTYPE_KQUEUE:
-        process_kqueue((KA_T)f.f_data);
+        process_kqueue((KA_T)file_str.f_data);
         return;
 #endif	/* defined(HASKQUEUE) */
 
 #if	defined(HASPSXSEM)
         case DTYPE_PSXSEM:
-        process_psxsem((KA_T)f.f_data);
+        process_psxsem((KA_T)file_str.f_data);
         return;
 #endif	/* defined(HASPSXSEM) */
 
 #if	defined(HASPSXSHM)
         case DTYPE_PSXSHM:
-        process_psxshm((KA_T)f.f_data);
+        process_psxshm((KA_T)file_str.f_data);
         return;
 #endif	/* defined(HASPSXSHM) */
 
 #if	defined(HASPRIVFILETYPE)
         case PRIVFILETYPE:
-        HASPRIVFILETYPE((KA_T)f.f_data);
+        HASPRIVFILETYPE((KA_T)file_str.f_data);
         return;
 #endif	/* defined(HASPRIVFILETYPE) */
 
         default:
-        if (f.f_type || f.f_ops) {
+        if (file_str.f_type || file_str.f_ops) {
             (void) snpf(NameChars, NameCharsLength,
             "%s file struct, ty=%#x, op=%s",
-            print_kptr(fp, tbuf, sizeof(tbuf)), (int)f.f_type,
-            print_kptr((KA_T)f.f_ops, (char *)NULL, 0));
+            print_kptr(file_addr, tbuf, sizeof(tbuf)), (int)file_str.f_type,
+            print_kptr((KA_T)file_str.f_ops, (char *)NULL, 0));
             enter_nm(NameChars);
             return;
         }

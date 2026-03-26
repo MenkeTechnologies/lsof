@@ -59,11 +59,11 @@ char *lkud_d2 = lkud_d1;
  */
 
 struct l_dev *
-lkupbdev(dev, rdev, i, r)
+lkupbdev(dev, rdev, inode_match, rebuild)
     dev_t *dev;			/* pointer to device number */
     dev_t *rdev;			/* pointer to raw device number */
-    int i;				/* inode match status */
-    int r;				/* if 1, rebuild the device cache with
+    int inode_match;				/* inode match status */
+    int rebuild;				/* if 1, rebuild the device cache with
 					 * rereaddev() when no match is found
 					 * and HASDCACHE is defined and
 					 * DevCacheUnsafe is one */
@@ -76,7 +76,7 @@ lkupbdev(dev, rdev, i, r)
     if (*dev != DeviceOfDev)
         return((struct l_dev *)NULL);
     readdev(0);
-    if (i) {
+    if (inode_match) {
         inode = CurrentLocalFile->inode;
         ty = CurrentLocalFile->inp_ty;
     }
@@ -100,7 +100,7 @@ lkupbdev_again:
         else if (*rdev > dp->rdev)
         low = mid + 1;
         else {
-        if ((i == 0) || (ty != 1) || (inode == dp->inode)) {
+        if ((inode_match == 0) || (ty != 1) || (inode == dp->inode)) {
 
 # if	defined(HASDCACHE)
             if (DevCacheUnsafe && !dp->v && !vfy_dev(dp))
@@ -117,7 +117,7 @@ lkupbdev_again:
     }
 
 # if	defined(HASDCACHE)
-    if (DevCacheUnsafe && r) {
+    if (DevCacheUnsafe && rebuild) {
         (void) rereaddev();
         goto lkupbdev_again;
     }
@@ -134,11 +134,11 @@ lkupbdev_again:
  */
 
 struct l_dev *
-lkupdev(dev, rdev, i, r)
+lkupdev(dev, rdev, inode_match, rebuild)
     dev_t *dev;			/* pointer to device number */
     dev_t *rdev;			/* pointer to raw device number */
-    int i;				/* inode match status */
-    int r;				/* if 1, rebuild the device cache with
+    int inode_match;				/* inode match status */
+    int rebuild;				/* if 1, rebuild the device cache with
 					 * rereaddev() when no match is found
 					 * and HASDCACHE is defined and
 					 * DevCacheUnsafe is one */
@@ -151,7 +151,7 @@ lkupdev(dev, rdev, i, r)
     if (*dev != DeviceOfDev)
         return((struct l_dev *)NULL);
     readdev(0);
-    if (i) {
+    if (inode_match) {
         inode = CurrentLocalFile->inode;
         ty = CurrentLocalFile->inp_ty;
     }
@@ -175,7 +175,7 @@ lkupdev_again:
         else if (*rdev > dp->rdev)
         low = mid + 1;
         else {
-        if ((i == 0) || (ty != 1) || (inode == dp->inode)) {
+        if ((inode_match == 0) || (ty != 1) || (inode == dp->inode)) {
 
 # if	defined(HASDCACHE)
             if (DevCacheUnsafe && !dp->v && !vfy_dev(dp))
@@ -192,7 +192,7 @@ lkupdev_again:
     }
 
 # if	defined(HASDCACHE)
-    if (DevCacheUnsafe && r) {
+    if (DevCacheUnsafe && rebuild) {
         (void) rereaddev();
         goto lkupdev_again;
     }
