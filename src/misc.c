@@ -51,7 +51,7 @@ static int dostat(char *path, char *buf, int len);
 
 static int doreadlink(char *path, char *buf, int len);
 
-static int doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln);
+static int doinchild(int (*func)(char *, char *, int), char *func_arg, char *rbuf, int rbln);
 
 #if defined(HASINTSIGNAL)
 static int handleint(int sig);
@@ -208,7 +208,7 @@ int compdev(COMP_P *lhs, COMP_P *rhs) {
  * doinchild() -- do a function in a child process
  */
 
-static int doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln) {
+static int doinchild(int (*func)(char *, char *, int), char *func_arg, char *rbuf, int rbln) {
     int errno_val, return_val;
     /*
  * Check reply buffer size.
@@ -254,7 +254,7 @@ static int doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln) {
 
                 int file_desc, node_desc, r_al, r_rbln;
                 char r_arg[MAXPATHLEN + 1], r_rbuf[MAXPATHLEN + 1];
-                int (*r_fn)();
+                int (*r_fn)(char *, char *, int);
                 /*
                  * Close all open file descriptors except Pipes[0] and
                  * Pipes[3].

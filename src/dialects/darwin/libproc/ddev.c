@@ -154,10 +154,7 @@ int printdevname(dev_t *dev, dev_t *rdev, int f, int nty) {
  * readdev() -- read device names, modes and types
  */
 
-void readdev(skip) int skip; /* skip device cache read if 1 --
-					 * ignored since device cache not
-					 * used */
-{
+void readdev(int skip) {
     DIR *dfp;
     int dnamlen;
     struct dirent *dp;

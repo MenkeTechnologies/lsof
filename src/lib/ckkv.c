@@ -36,12 +36,7 @@
  * ckkv() - check kernel version
  */
 
-void ckkv(dialect, expected_rev, expected_ver, expected_arch) char *dialect; /* dialect */
-char *expected_rev;  /* expected revision; NULL, no test */
-char *expected_ver;  /* expected version; NULL, no test */
-char *expected_arch; /* expected architecture; NULL, no
-					 * test */
-{
+void ckkv(char *dialect, char *expected_rev, char *expected_ver, char *expected_arch) {
 
 #if defined(HASKERNIDCK)
     struct utsname u;
