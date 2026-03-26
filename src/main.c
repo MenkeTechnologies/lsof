@@ -1244,19 +1244,40 @@ int main(int argc, char *argv[]) {
              * CurrentLocalFile contents must be preserved, since they may point to a
              * malloc()'d area, and since CurrentLocalFile is used throughout the print
              * process.
+             *
+             * If stdout is a TTY and we're not in repeat mode, pipe output
+             * through less(1) so it pages when longer than a screenful.
              */
-            for (saved_lfile = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
-                for (i = num_parsed = 0; i < NumLocalProcs; i++) {
-                    CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
-                    if (CurrentLocalProc->sel_state) {
-                        if (print_proc())
-                            num_parsed++;
+            {
+                FILE *pager_fp = NULL;
+                FILE *saved_stdout = NULL;
+
+                if (CyberpunkTTY && !RepeatTime && !OptFieldOutput && !OptTerse) {
+                    pager_fp = popen("less -RFX", "w");
+                    if (pager_fp) {
+                        saved_stdout = stdout;
+                        stdout = pager_fp;
                     }
-                    if (RepeatTime && PrintPass)
-                        free_lproc(CurrentLocalProc);
+                }
+
+                for (saved_lfile = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
+                    for (i = num_parsed = 0; i < NumLocalProcs; i++) {
+                        CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
+                        if (CurrentLocalProc->sel_state) {
+                            if (print_proc())
+                                num_parsed++;
+                        }
+                        if (RepeatTime && PrintPass)
+                            free_lproc(CurrentLocalProc);
+                    }
+                }
+                CurrentLocalFile = saved_lfile;
+
+                if (pager_fp) {
+                    stdout = saved_stdout;
+                    pclose(pager_fp);
                 }
             }
-            CurrentLocalFile = saved_lfile;
         }
         /*
          * If a repeat time is set, sleep for the specified time.
