@@ -127,20 +127,21 @@ lsof ships with a unit test suite and an integration test suite. Run them with:
 make check
 ```
 
-This builds and executes `check_unit` (51 unit tests) and `check_integration` (13 integration tests), writing results to `check_unit.log` and `check_integration.log` in the build directory.
+This builds and executes `check_unit` (102 unit tests) and `check_integration` (13 integration tests), writing results to `check_unit.log` and `check_integration.log` in the build directory.
 
 ### Unit tests (`test/test_unit.c`)
 
 Tests core algorithms in isolation — no kernel access or lsof binary required:
 
-- **Field ID constants** — uniqueness, sequential indices, correct character mappings
-- **x2dev()** — hex string to device number conversion (prefix handling, delimiters, edge cases)
-- **HASHPORT** — port hash macro range, distribution, determinism
-- **safestrlen()** — safe string length with unprintable character expansion
-- **compdev()** — device table comparator and qsort integration
-- **comppid()** — PID comparator and sorting
-- **safepup()** — unprintable character formatting (control chars, escape sequences, high bytes)
+- **Field ID constants** — uniqueness, sequential indices, correct character mappings, printable ASCII validation, name string verification, total count
+- **x2dev()** — hex string to device number conversion (prefix handling, delimiters, edge cases, leading zeros, boundary values, null terminators)
+- **HASHPORT** — port hash macro range, distribution, determinism, adjacent port divergence, max port, common port validation
+- **safestrlen()** — safe string length with unprintable character expansion, full printable ASCII range, multiple control chars, mixed content
+- **compdev()** — device table comparator, qsort integration, null names, stability, multi-key sort order (rdev, inode, name)
+- **comppid()** — PID comparator, sorting, negative PIDs, duplicate handling
+- **safepup()** — unprintable character formatting (control chars, escape sequences, high bytes, DEL, printable range verification)
 - **Flag constants** — XO_* crossover flags, FSV_* file struct value flags
+- **Memory safety** — safe realloc patterns, leak detection for process tables, host cache, regex tables, PID/UID arrays, directory stacks, state tables, service names, FD lists, efsys paths, network addresses
 
 ### Integration tests (`test/test_integration.c`)
 
@@ -166,6 +167,8 @@ This builds and runs `benchmark_core`, writing results to `benchmark_core.log` i
 
 ### Benchmarks (`bench/bench_core.c`)
 
+65 benchmarks covering core operations, optimization comparisons, and system call overhead.
+
 | Category | What it measures |
 |---|---|
 | **x2dev** | Hex parsing — short, prefixed, and long strings |
@@ -173,9 +176,31 @@ This builds and runs `benchmark_core`, writing results to `benchmark_core.log` i
 | **safestrlen** | Safe string length — short, escaped, long paths, binary data |
 | **compdev sort** | Device table sorting via qsort — 100 and 1000 elements |
 | **safepup** | Unprintable char formatting — control chars and high bytes |
-| **I/O** | open/close, stat, getpid syscall overhead |
-| **String ops** | strlen, strcmp, snprintf, isprint scanning |
+| **I/O** | open/close, stat, lstat, getpid, pipe, readdir |
+| **String ops** | strlen, strcmp, strncmp, strcasecmp, snprintf, isprint scanning |
 | **Socket** | TCP socket create/close cycle |
+| **Memory** | malloc/free (small/medium), realloc growth, safe realloc pattern |
+| **String copy** | mkstrcpy — short, path-length, and NULL source |
+| **Data structures** | Linked list traversal (100/1000), hash lookup hit/miss |
+| **Search** | PID sort (qsort), PID binary search, field ID lookup |
+| **Matching** | Regex match, strncmp prefix, FD status check (numeric/named) |
+| **UID** | getpwuid cached lookup |
+
+### Optimization comparisons
+
+The benchmark suite includes head-to-head comparisons that measure the impact of optimizations applied to the codebase. Reference numbers from Apple M-series (single core):
+
+| Comparison | Before | After | Speedup |
+|---|---|---|---|
+| Character classification: `isprint()` vs lookup table | 11.1 ns/op | 0.2 ns/op | **55x** |
+| Safe string length: per-char `isprint` vs `explen[]` table | 19.4 ns/op | 0.2 ns/op | **97x** |
+| Integer formatting: `snprintf("%d")` vs manual digit extraction | 25.3 ns/op | 1.7 ns/op | **15x** |
+| Hex validation: branch chain vs `cls[]` table | 4.3 ns/op | 3.9 ns/op | **1.1x** |
+| PID scan (100 entries): linear vs `bsearch` | 23.1 ns/op | 9.7 ns/op | **2.4x** |
+| PID scan (1000 entries): linear vs `bsearch` | 189.8 ns/op | 19.0 ns/op | **10x** |
+| Command matching: `regexec` vs `strncmp` | 30.8 ns/op | 1.7 ns/op | **18x** |
+| Protocol compare: `strncasecmp` vs manual lowercase | 2.9 ns/op | 0.4 ns/op | **7x** |
+| Iteration (1000): contiguous array vs pointer chasing | 24.7 ns/op | 723.1 ns/op | **29x** (array) |
 
 ---
 

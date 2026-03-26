@@ -1,7 +1,7 @@
 #define LSOF_BLDCMT ""
 #define LSOF_CC "/usr/bin/cc"
 #define LSOF_CCV "17.0.0.17000604"
-#define LSOF_CCDATE "2026-03-25T22:01:48"
+#define LSOF_CCDATE "2026-03-25T22:02:54"
 #define LSOF_CCFLAGS ""
 #define LSOF_CINFO ""
 #define LSOF_HOST ""
