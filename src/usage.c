@@ -43,8 +43,6 @@
 
 static char *isnullstr(char *str);
 
-static int print_in_col(int col, char *char_ptr);
-
 static void report_HASDCACHE(int type, char *ttl, char *det);
 
 static void report_HASKERNIDCK(char *pfx, char *verb);
@@ -71,29 +69,6 @@ isnullstr(char *str)
     return (NULL);
 }
 
-/*
- * print_in_col() -- print character string in help column
- */
-
-static int
-print_in_col(int col, char *char_ptr)
-{
-    if (char_ptr && *char_ptr) {
-        switch (col) {
-            case 1:
-                fprintf(stderr, "  %-23.23s", char_ptr);
-                break;
-            case 2:
-                fprintf(stderr, "  %-25.25s", char_ptr);
-                break;
-            default:
-                fprintf(stderr, "  %s\n", char_ptr);
-                col = 0;
-        }
-        col++;
-    }
-    return (col);
-}
 
 /*
  * report_HASDCACHE() -- report device cache file state

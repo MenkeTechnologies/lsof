@@ -351,7 +351,7 @@ gethostnm(unsigned char *inet_addr, int addr_family)
     static int hcx = 0;
     char *hn, *np;
     struct hostent *host_entry = NULL;
-    int i, j;
+    int i;
     MALLOC_S len;
     static int nhc = 0;
 /*
