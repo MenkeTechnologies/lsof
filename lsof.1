@@ -1,0 +1,462 @@
+.\" lsof.1 - man page for lsof v5.0
+.TH LSOF 1 "2026-03-26" "lsof 5.0" "System Diagnostic Tools"
+.SH NAME
+lsof \- list open files
+.SH SYNOPSIS
+.B lsof
+.RI [ OPTION ]...\&
+.RI [ FILE ]...\&
+.SH DESCRIPTION
+.B lsof
+(List System Open Files) is a diagnostic tool that maps the topology between
+processes and the files they hold open: regular files, directories, sockets,
+pipes, devices, streams \(em anything the kernel touches.
+.PP
+If a process has a file descriptor,
+.B lsof
+sees it.
+.PP
+.B lsof
+interfaces directly with kernel data structures.
+Each target OS is a
+.IR dialect " \(em"
+a bespoke adapter wired into the machine layer.
+.SH OPTIONS
+.SS Selection
+.TP
+.BR \-? ", " \-h
+Display help.
+.TP
+.B \-a
+AND selections (default: OR).
+.TP
+.BI \-c " COMMAND"
+Select by command name (prefix, ^exclude, /regex/).
+.TP
+.BI +c " WIDTH"
+Set COMMAND column width.
+.TP
+.BI \-d " FD"
+Select by file descriptor set.
+.TP
+.BI \-g " [PGID]"
+Exclude (^) or select process group IDs.
+.TP
+.BI \-p " PID"
+Select by PID (comma-separated, ^excludes).
+.TP
+.BI \-u " USER"
+Select by login name or UID (comma-separated, ^excludes).
+.TP
+.BI \-x " [fl]"
+Cross over +d|+D file systems
+.RB ( f )
+or symbolic links
+.RB ( l ).
+.SS Network
+.TP
+.BI \-i " [ADDR]"
+Select IPv4/6 files.
+Address format:
+.RI [ 46 ][ proto ][ @host|addr ][: svc|port ].
+.TP
+.B \-n
+Inhibit host name resolution.
+.TP
+.B \-N
+Select NFS files.
+.TP
+.B \-P
+Inhibit port number to name conversion.
+.TP
+.BI \-s " [PROTO:STATE]"
+Exclude (^) or select protocol states by name.
+On systems without TCP/UDP state support, display file size instead.
+.TP
+.BI \-T " [LEVEL]"
+Disable or select TCP/TPI info.
+.TP
+.B \-U
+Select UNIX domain socket files.
+.TP
+.BR +M " | " \-M
+Enable (+) or disable (\-) portmap registration reporting.
+.SS Files & Directories
+.TP
+.BI +d " DIR"
+List open files in
+.IR DIR .
+.TP
+.BI +D " DIR"
+Recursively list open files in
+.IR DIR
+(slow).
+.TP
+.BR +f " | " \-f
++filesystem or \-file names.
+.TP
+.BI +f " [cfgGn]"
+File struct info: count, addr, flags, node (where supported).
+.TP
+.BI +L " [COUNT]" " | " \-L " [COUNT]"
+List (+) or suppress (\-) link counts < COUNT.
+.TP
+.BI \-D " ACTION"
+Device cache control
+.RI ( ?|i|b|r|u[path] ).
+.TP
+.BI +e " PATH" " | " \-e " PATH"
+Exempt filesystem (risky).
+.SS Display
+.TP
+.BI \-F " [FIELDS]"
+Select output fields for machine-readable mode.
+Use
+.B \-F \&?
+for a list of available field IDs.
+Fields include:
+.B p
+(PID),
+.B c
+(command),
+.B f
+(fd),
+.B n
+(name), and others.
+.TP
+.B \-l
+Display UID numbers instead of login names.
+.TP
+.BI \-o " [DIGITS]"
+Display file offset (0t format).
+.TP
+.B \-R
+List parent PID (where supported).
+.TP
+.B \-t
+Terse output (PID only).
+.TP
+.B \-v
+Display version information.
+.TP
+.B \-V
+Verbose search.
+.TP
+.BR +w " | " \-w
+Enable (+) or suppress (\-) warnings.
+.SS System
+.TP
+.B \-b
+Avoid kernel blocks.
+.TP
+.B \-O
+Avoid overhead of extra processing (risky).
+.TP
+.BI \-S " [SECONDS]"
+stat(2) timeout.
+.TP
+.BI +r " [SECONDS]" " | " \-r " [SECONDS]"
+Repeat mode: + until no files, \- forever.
+Optional suffix:
+.BI m fmt
+for
+.BR strftime (3)
+markers.
+.TP
+.B \-C
+Disable kernel name cache (where supported).
+.TP
+.BI \-k " FILE"
+Kernel symbols file (where supported).
+.TP
+.B \-K
+List tasks/threads (where supported).
+.TP
+.BI \-m " FILE"
+Kernel memory file (where supported).
+.TP
+.BI +m " [FILE]"
+Use or create mount supplement (where supported).
+.TP
+.BI \-z " [ZONE]"
+Select by zone name (where supported).
+.TP
+.BI \-Z " [CONTEXT]"
+Select by security context (where supported).
+.TP
+.B \-\-
+End option processing.
+.SH EXAMPLES
+List all open files:
+.PP
+.RS
+.B lsof
+.RE
+.PP
+Who's holding port 8080:
+.PP
+.RS
+.B lsof \-i :8080
+.RE
+.PP
+What files does PID 1337 have open:
+.PP
+.RS
+.B lsof \-p 1337
+.RE
+.PP
+All network connections \(em TCP & UDP:
+.PP
+.RS
+.B lsof \-i
+.RE
+.PP
+Find who's using a specific file:
+.PP
+.RS
+.B lsof /var/log/syslog
+.RE
+.PP
+Trace a user's open files:
+.PP
+.RS
+.B lsof \-u neo
+.RE
+.PP
+Emit parseable field output:
+.PP
+.RS
+.B lsof \-F pcfn
+.RE
+.SH FIELD OUTPUT
+When invoked with
+.BR \-F ,
+.B lsof
+produces machine-readable output.
+Each field is preceded by a single-character ID:
+.B p
+(PID),
+.B c
+(command name),
+.B f
+(file descriptor),
+.B n
+(file name), among others.
+Use
+.B lsof \-F \&?
+for the full list of field IDs available on your system.
+.SH SUPPORTED DIALECTS
+.B lsof
+interfaces directly with kernel data structures.
+Each target OS is a dialect \(em a bespoke adapter wired into the machine layer.
+.PP
+.TS
+l l.
+Dialect	Platform
+_
+linux	Linux
+darwin/libproc	Apple macOS / Darwin
+freebsd	FreeBSD
+n+obsd	NetBSD / OpenBSD
+n+os	NEXTSTEP / OpenStep
+sun	Solaris / SunOS
+aix	IBM AIX
+du	DEC/Compaq/HP Tru64 UNIX
+hpux/pstat	HP-UX
+osr	SCO OpenServer
+uw	SCO UnixWare
+.TE
+.SH ARCHITECTURE
+.nf
+src/
+\(lq\(lq *.c              Core engine \(em parser, formatter,
+\(bv                     process walker, file examiner
+\(lq\(lq lib/             Shared library modules
+\(ga\(lq dialects/        Per-OS kernel interface adapters
+    \(lq\(lq linux/
+    \(lq\(lq darwin/libproc/
+    \(lq\(lq freebsd/
+    \(lq\(lq n+obsd/
+    \(lq\(lq n+os/
+    \(lq\(lq sun/
+    \(lq\(lq aix/
+    \(lq\(lq du/
+    \(lq\(lq hpux/pstat/
+    \(lq\(lq osr/
+    \(ga\(lq uw/
+test/                Unit and integration test suites
+bench/               Performance benchmarks
+.fi
+.PP
+Each dialect provides three key headers \(em
+.IR machine.h ,
+.IR dlsof.h ,
+.IR dproto.h
+\(em that wire the core engine into the target OS kernel.
+.SH PERFORMANCE
+The core engine is tuned for speed where it matters:
+.IP \(bu 2
+.B "Compiler optimization:"
+\-O2 on all targets.
+.IP \(bu 2
+.B "Lookup tables:"
+character classification via precomputed
+.IR explen[] ,
+.IR printable[] ,
+.IR cls[] ,
+and
+.IR hv[]
+tables \(em up to 97x faster than per-character library calls.
+.IP \(bu 2
+.B "Binary search:"
+PID and PGID selection lists are sorted at entry and searched via
+O(log\ n) binary search \(em 2.4x faster at 100 entries, 10x at 1000.
+.IP \(bu 2
+.B "Manual formatting:"
+field output and path construction bypass
+.BR snprintf (3)
+for 9\(en15x throughput.
+.IP \(bu 2
+.B "Hash tables:"
+port cache, host cache, device lookup, and file name matching all use
+power-of-2 hash tables with polynomial hashing.
+.PP
+Run
+.B make bench
+to see all 101 benchmarks on your hardware.
+.SH TESTING
+.B lsof
+ships with a unit test suite and an integration test suite:
+.PP
+.RS
+.B make check
+.RE
+.PP
+This builds and executes
+.B check_unit
+(102 unit tests) and
+.B check_integration
+(13 integration tests), writing results to
+.I check_unit.log
+and
+.I check_integration.log
+in the build directory.
+.SS Unit tests (test/test_unit.c)
+Tests core algorithms in isolation \(em no kernel access or
+lsof binary required:
+.IP \(bu 2
+Field ID constants \(em uniqueness, sequential indices, character mappings
+.IP \(bu 2
+.BR x2dev ()
+\(em hex string to device number conversion
+.IP \(bu 2
+HASHPORT \(em port hash macro range, distribution, determinism
+.IP \(bu 2
+.BR safestrlen ()
+\(em safe string length with unprintable character expansion
+.IP \(bu 2
+.BR compdev ()
+\(em device table comparator, multi-key sort order
+.IP \(bu 2
+.BR comppid ()
+\(em PID comparator, sorting, negative PIDs
+.IP \(bu 2
+.BR safepup ()
+\(em unprintable character formatting
+.IP \(bu 2
+Flag constants \(em XO_* crossover flags, FSV_* file struct value flags
+.IP \(bu 2
+Memory safety \(em safe realloc patterns, leak detection
+.SS Integration tests (test/test_integration.c)
+Invokes the lsof binary and validates output:
+.IP \(bu 2
+Binary discovery and help/version flags
+.IP \(bu 2
+PID-based lookup and field output format (\-F)
+.IP \(bu 2
+Open file detection, CWD detection
+.IP \(bu 2
+TCP and UNIX socket detection
+.IP \(bu 2
+Invalid PID handling, AND selection (\-a), FD selection (\-d)
+.SH BENCHMARKS
+Measure performance of core operations:
+.PP
+.RS
+.B make bench
+.RE
+.PP
+This builds and runs
+.BR benchmark_core ,
+writing results to
+.I benchmark_core.log
+in the build directory.
+101 benchmarks covering core operations, optimization comparisons, and
+system call overhead.
+.PP
+.TS
+l l.
+Category	What it measures
+_
+x2dev	Hex parsing \(em short, prefixed, long strings
+HASHPORT	Port hashing \(em full range and common ports
+hashbyname	Name hashing \(em short names, paths, long paths
+safestrlen	Safe string length \(em short, escaped, long paths
+compdev sort	Device table sorting via qsort
+safepup	Unprintable char formatting
+safestrprt	Safe string printing
+mkstrcat	String concatenation
+I/O	open/close, stat, readdir, readlink, access, etc.
+String ops	strlen, strcmp, strncmp, snprintf, isprint, strtol
+Socket	TCP/UNIX socket create/close
+Memory	malloc/free, realloc, memset/memcpy
+Search	PID sort, binary search, field ID lookup
+Matching	Regex match, strncmp prefix, FD status check
+Path building	snprintf vs manual construction
+Field output	snprintf vs manual lsof \-F formatting
+.TE
+.SS Optimization comparisons
+Head-to-head comparisons measuring optimization impact.
+Reference numbers from Apple M-series (single core):
+.PP
+.TS
+l l l l.
+Comparison	Before	After	Speedup
+_
+isprint() vs lookup table	11.1 ns/op	0.2 ns/op	55x
+safestrlen: isprint vs explen[]	19.4 ns/op	0.2 ns/op	97x
+Integer: snprintf vs manual	25.3 ns/op	1.7 ns/op	15x
+PID scan (100): linear vs bsearch	23.1 ns/op	9.7 ns/op	2.4x
+PID scan (1000): linear vs bsearch	189.8 ns/op	19.0 ns/op	10x
+Regex vs strncmp	30.8 ns/op	1.7 ns/op	18x
+Field output: snprintf vs manual	74.7 ns/op	4.9 ns/op	15x
+Path building: snprintf vs manual	45.9 ns/op	4.9 ns/op	9x
+.TE
+.SH BUILDING FROM SOURCE
+.SS CMake (recommended)
+.RS
+.nf
+mkdir build && cd build
+cmake ..
+make
+sudo make install
+.fi
+.RE
+.PP
+Installs to
+.I /usr/local/sbin/lsof
+by default.
+To change the prefix:
+.PP
+.RS
+.B cmake \-DCMAKE_INSTALL_PREFIX=/usr ..
+.RE
+.SH CREDITS
+Originally written by
+.B Victor A. Abell
+at Purdue University.
+Maintained by the open-source community.
+.SH LICENSE
+.B lsof
+is distributed under a permissive license.
+See individual source files for details.

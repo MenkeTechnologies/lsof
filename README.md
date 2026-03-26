@@ -87,6 +87,20 @@ lsof -u neo
 
 ---
 
+## // PERFORMANCE
+
+The core engine is tuned for speed where it matters:
+
+- **Compiler optimization**: `-O2` on all targets
+- **Lookup tables**: character classification via precomputed `explen[]`, `printable[]`, `cls[]`, and `hv[]` tables — up to **97x** faster than per-character library calls
+- **Binary search**: PID and PGID selection lists are sorted at entry and searched via O(log n) binary search — **2.4x** faster at 100 entries, **10x** at 1000
+- **Manual formatting**: field output and path construction bypass `snprintf` for **9–15x** throughput
+- **Hash tables**: port cache, host cache, device lookup, and file name matching all use power-of-2 hash tables with polynomial hashing
+
+Run `make bench` to see all 101 benchmarks on your hardware.
+
+---
+
 ## // ARCHITECTURE
 
 ```

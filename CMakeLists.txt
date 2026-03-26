@@ -145,6 +145,7 @@ set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
 # ===== Linux Packaging (CPack) =====
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh install-start)")
 install(TARGETS lsof RUNTIME DESTINATION sbin)
+install(FILES ${PROJECT_SOURCE_DIR}/lsof.1 DESTINATION share/man/man1)
 install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh install-end)")
 
