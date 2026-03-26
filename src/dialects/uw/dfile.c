@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -54,8 +48,7 @@ get_max_fd() {
  */
 
 void
-process_file(fp)
-        KA_T fp;            /* kernel file structure address */
+process_file(KA_T fp)
 {
     struct file f;
     int flag;
@@ -167,8 +160,7 @@ static short CIMap[] = {
  */
 
 int
-strcasecmp(s1, s2)
-        char *s1, *s2;
+strcasecmp(char * s1, char *s2)
 {
     short *mp = CIMap;
     unsigned char *cp1 = (unsigned char *) s1;
@@ -189,9 +181,7 @@ strcasecmp(s1, s2)
  */
 
 int
-strncasecmp(s1, s2, n)
-        char *s1, *s2;
-        int n;
+strncasecmp(char * s1, char *s2, int n)
 {
     short *mp = CIMap;
     unsigned char *cp1, *cp2;

@@ -28,12 +28,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #include <sys/fs/bfs.h>
@@ -109,9 +103,7 @@ static unsigned char Dos2Unix[] = {    /* derived from tounix[] in
  */
 
 int
-readbfslino(v, i)
-        struct vnode *v;        /* containing vnode */
-        struct l_ino *i;        /* local inode information */
+readbfslino(struct vnode * v, struct l_ino * i)
 {
     struct inode b;
     struct vfs kv;
@@ -143,9 +135,7 @@ readbfslino(v, i)
  */
 
 int
-readcdfslino(v, i)
-    struct vnode *v;		/* containing vnode */
-    struct l_ino *i;		/* local inode information */
+readcdfslino(struct vnode * v, struct l_ino * i)
 {
     cdfs_inode_t ci;
     TYPELOGSECSHIFT lss;
@@ -198,9 +188,7 @@ readcdfslino(v, i)
 
 
 int
-readdosfslino(v, i)
-    struct vnode *v;		/* containing vnode */
-    struct l_ino *i;		/* local inode information */
+readdosfslino(struct vnode * v, struct l_ino * i)
 {
     struct dosfs_inode {
         int pad1[19];

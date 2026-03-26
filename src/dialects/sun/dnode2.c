@@ -29,12 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    defined(HASVXFS)
@@ -126,10 +120,7 @@ access_vxfs_ioffsets()
  */
 
 static char *
-add2em(em, fmt, arg)
-    char *em;			/* current error message */
-    char *fmt;			/* message format */
-    char *arg;			/* format's single string argument */
+add2em(char * em, char * fmt, char * arg)
 {
     MALLOC_S al, eml, nl;
     char msg[1024];
@@ -168,12 +159,7 @@ add2em(em, fmt, arg)
  */
 
 static char *
-ckptr(em, ptr, len, slen, nm)
-    char *em;			/* pointer to previous error message */
-    char *ptr;			/* pointer to check */
-    int len;			/* pointer's value length */
-    int slen;			/* value's storage length */
-    char *nm;			/* element name */
+ckptr(char * em, char * ptr, int len, int slen, char * nm)
 {
 
 #if	defined(_LP64)
@@ -208,17 +194,7 @@ ckptr(em, ptr, len, slen, nm)
  */
 
 static char *
-getioffs(vx, vxl, dev, devl, ino, inol, nl, nll, sz, szl)
-    char **vx;		/* pointer to allocated vx_inode space */
-    int *vxl;		/* sizeof(*vx) */
-    char **dev;		/* pointer to device number element of *vx */
-    int *devl;		/* sizeof(*dev) */
-    char **ino;		/* pointer to node number element of *vx */
-    int *inol;		/* sizeof(*ino) */
-    char **nl;		/* pointer to nlink element of *vx */
-    int *nll;		/* sizeof(*nl) */
-    char **sz;		/* pointer to size element of *vx */
-    int *szl;		/* sizeof(*sz) */
+getioffs(char ** vx, int * vxl, char ** dev, int * devl, char ** ino, int * inol, char ** nl, int * nll, char ** sz, int * szl)
 {
     char *tv;
     int tvl;
@@ -262,8 +238,7 @@ getioffs(vx, vxl, dev, devl, ino, inol, nl, nll, sz, szl)
  */
 
 int
-print_vxfs_rnl_path(lf)
-    struct lfile *lf;		/* file whose name is to be printed */
+print_vxfs_rnl_path(struct lfile * lf)
 {
     char **bp = (char **)NULL;
     int i, j, n, p;
@@ -355,13 +330,7 @@ print_vxfs_rnl_path(lf)
  */
 
 int
-read_vxnode(va, v, vfs, fx, li, vnops)
-    KA_T va;			/* containing vnode's address */
-    struct vnode *v;		/* containing vnode */
-    struct l_vfs *vfs;		/* local vfs structure */
-    int fx;				/* file system index (-1 if none) */
-    struct l_ino *li;		/* local inode value receiver */
-    KA_T *vnops;			/* table of VxFS v_op values */
+read_vxnode(KA_T va, struct vnode * v, struct l_vfs * vfs, int fx, struct l_ino * li, KA_T * vnops)
 {
     struct vnode cv;
     char tbuf[32];

@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -61,11 +56,7 @@ _PROTOTYPE(static void read_proc, (void));
  */
 
 void
-ckkv(d, er, ev, ea)
-        char *d;            /* dialect */
-        char *er;            /* expected release */
-        char *ev;            /* expected version */
-        char *ea;            /* expected architecture */
+ckkv(char * d, char * er, char * ev, char * ea)
 {
 
 #if    defined(HASKERNIDCK)
@@ -404,10 +395,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -423,8 +411,7 @@ kread(addr, buf, len)
  */
 
 static void
-process_map(map)
-        caddr_t map;
+process_map(caddr_t map)
 {
     int i, j, n, ne;
 

@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -84,10 +78,7 @@ _PROTOTYPE(static int ckstate, (KA_T
  */
 
 static int
-ckstate(ta, t, fam)
-        KA_T ta;            /* TCP control block address */
-        struct tcpcb *t;        /* TCP control block receptor */
-        int fam;            /* protocol family */
+ckstate(KA_T ta, struct tcpcb * t, int fam)
 {
     int tsnx;
 /*
@@ -146,8 +137,7 @@ ckstate(ta, t, fam)
  */
 
 void
-process_socket(sa)
-        KA_T sa;            /* socket address in kernel */
+process_socket(KA_T sa)
 {
     struct domain d;
     unsigned char *fa = (unsigned char *) NULL;

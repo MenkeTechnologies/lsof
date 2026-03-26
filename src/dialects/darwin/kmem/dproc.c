@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 #include <mach/mach_traps.h>
@@ -104,9 +99,7 @@ static KA_T *Vp = NULL;            /* vnode address cache */
  */
 
 static void
-enter_vn_text(va, n)
-        KA_T va;            /* vnode address */
-        int *n;                /* Vp[] entries in use */
+enter_vn_text(KA_T va, int * n)
 {
     int i;
 /*
@@ -329,8 +322,7 @@ gather_proc_info() {
 
 #if    DARWINV >= 700
 static char *
-getcmdnm(pid)
-    pid_t pid;			/* process ID */
+getcmdnm(pid_t pid)
 {
     static int am;
     static char *ap = (char *)NULL;
@@ -469,8 +461,7 @@ get_kernel_access() {
  */
 
 static pid_t
-get_parent_pid(kpa)
-        KA_T kpa;            /* kernel parent process address */
+get_parent_pid(KA_T kpa)
 {
     struct phash *ph;
 
@@ -499,10 +490,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -526,8 +514,7 @@ kread(addr, buf, len)
  */
 
 static void
-process_map(pid)
-        pid_t pid;            /* process id */
+process_map(pid_t pid)
 {
     vm_address_t address = 0;
     mach_msg_type_number_t count;

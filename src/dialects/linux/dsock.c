@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -280,8 +274,7 @@ build_IPstates() {
  */
 
 static struct ax25sin *
-check_ax25(i)
-        INODETYPE i;            /* socket file's inode number */
+check_ax25(INODETYPE i)
 {
     struct ax25sin *ap;
     int h;
@@ -300,8 +293,7 @@ check_ax25(i)
  */
 
 static struct ipxsin *
-check_ipx(i)
-        INODETYPE i;            /* socket file's inode number */
+check_ipx(INODETYPE i)
 {
     int h;
     struct ipxsin *ip;
@@ -320,8 +312,7 @@ check_ipx(i)
  */
 
 static struct nlksin *
-check_netlink(i)
-        INODETYPE i;            /* socket file's inode number */
+check_netlink(INODETYPE i)
 {
     int h;
     struct nlksin *lp;
@@ -340,8 +331,7 @@ check_netlink(i)
  */
 
 static struct packin *
-check_pack(i)
-        INODETYPE i;            /* packet file's inode number */
+check_pack(INODETYPE i)
 {
     int h;
     struct packin *pp;
@@ -361,8 +351,7 @@ check_pack(i)
  */
 
 static struct rawsin *
-check_raw(i)
-        INODETYPE i;            /* socket file's inode number */
+check_raw(INODETYPE i)
 {
     int h;
     struct rawsin *rp;
@@ -381,9 +370,7 @@ check_raw(i)
  */
 
 static struct tcp_udp *
-check_tcpudp(i, p)
-        INODETYPE i;            /* socket file's inode number */
-        char **p;            /* protocol return */
+check_tcpudp(INODETYPE i, char ** p)
 {
     int h;
     struct tcp_udp *tp;
@@ -417,8 +404,7 @@ check_tcpudp(i, p)
  */
 
 static struct rawsin *
-check_raw6(i)
-    INODETYPE i;			/* socket file's inode number */
+check_raw6(INODETYPE i)
 {
     int h;
     struct rawsin *rp;
@@ -437,9 +423,7 @@ check_raw6(i)
  */
 
 static struct tcp_udp6 *
-check_tcpudp6(i, p)
-    INODETYPE i;			/* socket file's inode number */
-    char **p;			/* protocol return */
+check_tcpudp6(INODETYPE i, char ** p)
 {
     int h;
     struct tcp_udp6 *tp6;
@@ -473,8 +457,7 @@ check_tcpudp6(i, p)
  */
 
 static struct uxsin *
-check_unix(i)
-        INODETYPE i;            /* socket file's inode number */
+check_unix(INODETYPE i)
 {
     int h;
     struct uxsin *up;
@@ -493,8 +476,7 @@ check_unix(i)
  */
 
 static void
-get_ax25(p)
-        char *p;            /* /proc/net/ipx path */
+get_ax25(char * p)
 {
     struct ax25sin *ap, *np;
     FILE *as;
@@ -668,8 +650,7 @@ get_ax25(p)
  */
 
 static void
-get_ipx(p)
-        char *p;            /* /proc/net/ipx path */
+get_ipx(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp, *la, *ra;
     int fl = 1;
@@ -826,8 +807,7 @@ get_ipx(p)
  */
 
 static void
-get_netlink(p)
-        char *p;            /* /proc/net/netlink path */
+get_netlink(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp;
     int fr = 1;
@@ -929,8 +909,7 @@ get_netlink(p)
  */
 
 static void
-get_pack(p)
-        char *p;            /* /proc/net/raw path */
+get_pack(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp;
     int fl = 1;
@@ -1040,8 +1019,7 @@ get_pack(p)
  */
 
 static void
-get_raw(p)
-        char *p;            /* /proc/net/raw path */
+get_raw(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp, *la, *ra, *sp;
     int h;
@@ -1359,8 +1337,7 @@ get_tcpudp(p, pr, clr)
  */
 
 static void
-get_raw6(p)
-    char *p;			/* /proc/net/raw path */
+get_raw6(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp, *la, *ra, *sp;
     int h;
@@ -1509,10 +1486,7 @@ get_raw6(p)
  */
 
 static void
-get_tcpudp6(p, pr, clr)
-    char *p;			/* /proc/net/{tcp,udp} path */
-    int pr;				/* protocol: 0 = TCP, 1 = UDP */
-    int clr;			/* 1 == clear the table */
+get_tcpudp6(char * p, int pr, int clr)
 {
     char buf[MAXPATHLEN], *ep, **fp;
     struct in6_addr faddr, laddr;
@@ -1687,8 +1661,7 @@ get_tcpudp6(p, pr, clr)
  */
 
 static void
-get_unix(p)
-        char *p;            /* /proc/net/unix path */
+get_unix(char * p)
 {
     char buf[MAXPATHLEN], *ep, **fp, *path, *pcb;
     int fl = 1;
@@ -1840,9 +1813,7 @@ get_unix(p)
  */
 
 static int
-net6a2in6(as, ad)
-    char *as;			/* address source */
-    struct in6_addr *ad;		/* address destination */
+net6a2in6(char * as, struct in6_addr * ad)
 {
     char buf[9], *ep;
     int i;
@@ -1871,8 +1842,7 @@ net6a2in6(as, ad)
  */
 
 static void
-print_ax25info(ap)
-        struct ax25sin *ap;        /* AX25 socket info */
+print_ax25info(struct ax25sin * ap)
 {
     char *cp, pbuf[1024];
     int ds;
@@ -1924,8 +1894,7 @@ print_ax25info(ap)
  */
 
 static void
-print_ipxinfo(ip)
-        struct ipxsin *ip;        /* IPX socket info */
+print_ipxinfo(struct ipxsin * ip)
 {
     char *cp, pbuf[256];
     MALLOC_S pl;
@@ -1951,8 +1920,7 @@ print_ipxinfo(ip)
  */
 
 void
-print_tcptpi(nl)
-        int nl;                /* 1 == '\n' required */
+print_tcptpi(int nl)
 {
     char buf[128];
     char *cp = (char *) NULL;
@@ -3141,9 +3109,7 @@ process_proc_sock(p, s, ss, l, lss)
  */
 
 void
-set_net_paths(p, pl)
-        char *p;            /* path to /proc/net/ */
-        int pl;                /* strlen(p) */
+set_net_paths(char * p, int pl)
 {
     int pathl;
 

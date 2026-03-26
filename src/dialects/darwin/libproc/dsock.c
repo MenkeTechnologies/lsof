@@ -30,13 +30,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005 Apple Computer, Inc.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -53,8 +46,7 @@ static char copyright[] =
  */
 
 static void
-process_socket_common(si)
-        struct socket_fdinfo *si;
+process_socket_common(struct socket_fdinfo * si)
 {
     unsigned char *fa = (unsigned char *) NULL;
     int fam, fp, lp, unl;
@@ -384,9 +376,7 @@ process_socket_common(si)
 
 
 void
-process_socket(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_socket(int pid, int32_t fd)
 {
     int nb;
     struct socket_fdinfo si;

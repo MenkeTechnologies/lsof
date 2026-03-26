@@ -27,12 +27,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -44,9 +38,7 @@ static char copyright[] =
  */
 
 extern struct hostent *
-gethostbyname2(nm, prot)
-    char *nm;			/* host name */
-    int prot;			/* protocol -- AF_INET or AF_INET6 */
+gethostbyname2(char * nm, int prot)
 {
     int err;
     static struct hostent *hep = (struct hostent *)NULL;
@@ -71,8 +63,7 @@ gethostbyname2(nm, prot)
  */
 
 int
-print_advfs_path(lf)
-    struct lfile *lf;		/* file whose name is to be printed */
+print_advfs_path(struct lfile * lf)
 {
     char buf[MAXPATHLEN+1];
     mlBfTagT t2pb;
@@ -98,9 +89,7 @@ print_advfs_path(lf)
  */
 
 char *
-print_dev(lf, dev)
-        struct lfile *lf;        /* file whose device is to be printed */
-        dev_t *dev;            /* device to be printed */
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
 

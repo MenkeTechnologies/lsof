@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -111,8 +105,7 @@ struct pshmnode {
  */
 
 int
-print_v_path(lf)
-    struct lfile *lf;
+print_v_path(struct lfile * lf)
 {
     if (lf->V_path) {
         safestrprt(lf->V_path, stdout, 0);
@@ -129,8 +122,7 @@ print_v_path(lf)
  */
 
 void
-process_kqueue(ka)
-    KA_T ka;			/* kqueue file structure address */
+process_kqueue(KA_T ka)
 {
     struct kqueue kq;		/* kqueue structure */
 
@@ -151,8 +143,7 @@ process_kqueue(ka)
  */
 
 void
-process_pipe(pa)
-    KA_T pa;			/* pipe structure address */
+process_pipe(KA_T pa)
 {
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PIPE");
     enter_dev_ch(print_kptr(pa, (char *)NULL, 0));
@@ -167,8 +158,7 @@ process_pipe(pa)
  */
 
 void
-process_psxsem(pa)
-    KA_T pa;			/* psxsem file structure address */
+process_psxsem(KA_T pa)
 {
     struct pseminfo pi;
      struct psemnode pn;
@@ -196,8 +186,7 @@ process_psxsem(pa)
  */
 
 void
-process_psxshm(pa)
-    KA_T pa;			/* psxshm file structure address */
+process_psxshm(KA_T pa)
 {
     struct pshminfo pi;
     struct pshmnode pn;
@@ -244,8 +233,7 @@ process_psxshm(pa)
  */
 
 void
-process_file(fp)
-        KA_T fp;            /* kernel file structure address */
+process_file(KA_T fp)
 {
 
 #if    DARWINV < 800

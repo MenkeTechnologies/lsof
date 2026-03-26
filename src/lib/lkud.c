@@ -40,11 +40,6 @@
 
 #if    defined(HASBLKDEV) || defined(USE_LIB_LKUPDEV)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 #else	/* !defined(HASBLKDEV) && !defined(USE_LIB_LKUPDEV) */

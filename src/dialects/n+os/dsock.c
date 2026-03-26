@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -40,8 +34,7 @@ static char copyright[] =
  */
 
 void
-process_socket(sa)
-        KA_T sa;            /* socket address in kernel */
+process_socket(KA_T sa)
 {
     struct domain d;
     char *ep;

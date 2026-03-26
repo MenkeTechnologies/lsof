@@ -28,12 +28,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    defined(HASVXFS)
@@ -76,9 +70,7 @@ struct vx_inode{
  */
 
 int
-readvxfslino(v, i)
-        struct vnode *v;        /* containing vnode */
-        struct l_ino *i;        /* local inode information */
+readvxfslino(struct vnode * v, struct l_ino * i)
 {
 
 #if    defined(HASVXFS)

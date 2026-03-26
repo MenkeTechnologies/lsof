@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1999 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -133,9 +127,7 @@ _PROTOTYPE(static void ncache_size,(void));
  */
 
 extern struct hostent *
-gethostbyname2(nm, prot)
-    char *nm; 			/* host name */
-    int prot;			/* protocol -- AF_INET or AF_INET6 */
+gethostbyname2(char * nm, int prot)
 {
     int err;
 
@@ -175,8 +167,7 @@ get_max_fd() {
  */
 
 static struct l_nc *
-ncache_addr(ps)
-    struct psfileid *ps;		/* parent's psfileid */
+ncache_addr(struct psfileid * ps)
 {
     struct l_nc **hp, *lc;
 
@@ -264,8 +255,7 @@ ncache_free()
  */
 
 static int
-ncache_isroot(ps)
-    struct psfileid *ps;		/* psfileid */
+ncache_isroot(struct psfileid * ps)
 {
     if (!ps->psf_fsid.psfs_id && !ps->psf_fsid.psfs_type
     &&  ps->psf_fileid == -1)
@@ -309,9 +299,7 @@ ncache_load()
  */
 
 struct l_fic *
-ncache_loadfs(fsid, fh)
-    struct psfsid *fsid;		/* ID of file system to add */
-    struct l_fic **fh;		/* Ncfsid hash bucket */
+ncache_loadfs(struct psfsid * fsid, struct l_fic ** fh)
 {
     char *cp;
     struct l_fic *f;
@@ -418,10 +406,7 @@ ncache_loadfs(fsid, fh)
  */
 
 char *
-ncache_lookup(buf, blen, fp)
-    char *buf;			/* receiving name buffer */
-    int blen;			/* receiving buffer length */
-    int *fp;			/* full path reply */
+ncache_lookup(char * buf, int blen, int * fp)
 {
     char *cp = buf;
     int ef;
@@ -617,9 +602,7 @@ ncache_size()
  */
 
 char *
-print_dev(lf, dev)
-        struct lfile *lf;        /* file whose device is to be printed */
-        dev_t *dev;            /* device to be printed */
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
 
@@ -634,11 +617,7 @@ print_dev(lf, dev)
  */
 
 void
-process_finfo(pd, opfid, psfid, na)
-        struct pst_filedetails *pd;    /* file details */
-        struct pst_fid *opfid;        /* opaque file ID for this file */
-        struct psfileid *psfid;        /* PSTAT file ID for this file */
-        KA_T na;            /* node address */
+process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfileid * psfid, KA_T na)
 {
     char *cp, buf[32];
     dev_t dev;

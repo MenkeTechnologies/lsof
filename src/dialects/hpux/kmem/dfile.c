@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _TIME_T
 typedef int time_t;
@@ -71,9 +66,7 @@ get_max_fd() {
  */
 
 char *
-print_dev(lf, dev)
-        struct lfile *lf;        /* file whose device is to be printed */
-        dev_t *dev;            /* device to be printed */
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
 
@@ -88,8 +81,7 @@ print_dev(lf, dev)
  */
 
 void
-process_file(fp)
-        KA_T fp;            /* kernel file structure address */
+process_file(KA_T fp)
 {
     struct file f;
     int flag;
@@ -177,11 +169,7 @@ process_file(fp)
  */
 
 int
-read_mi(sh, ip, pcb, pn)
-    KA_T sh;			/* stream head address */
-    KA_T *ip;			/* returned IP q_ptr */
-    KA_T *pcb;			/* returned TCP or UDP q_ptr */
-    char **pn;			/* returned protocol name */
+read_mi(KA_T sh, KA_T * ip, KA_T * pcb, char ** pn)
 {
     struct l_dev *dp;
     char *ep = NameChars;

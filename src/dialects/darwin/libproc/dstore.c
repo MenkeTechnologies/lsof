@@ -30,13 +30,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005 Apple Computer, Inc.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 

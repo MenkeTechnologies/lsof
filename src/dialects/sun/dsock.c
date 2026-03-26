@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    solaris >= 110000
@@ -372,8 +366,7 @@ build_IPstates() {
  */
 
 void
-print_tcptpi(nl)
-        int nl;                /* 1 == '\n' required */
+print_tcptpi(int nl)
 {
     char *cp = (char *) NULL;
     char sbuf[128];
@@ -703,10 +696,7 @@ print_tcptpi(nl)
 # endif	/* defined(HAS_CONN_NEW) */
 
 int
-process_VSOCK(va, v, so)
-    KA_T va;			/* containing vnode address */
-    struct vnode *v;		/* pointer to containing vnode */
-    struct sonode *so;		/* pointer to socket's sonode */
+process_VSOCK(KA_T va, struct vnode * v, struct sonode * so)
 {
     int af;				/* address family */
     struct conn_s cs;		/* connection info */
@@ -1158,9 +1148,7 @@ process_VSOCK(va, v, so)
  */
 
 void
-process_socket(sa, ty)
-        KA_T sa;            /* stream's data address in kernel */
-        char *ty;            /* socket type name */
+process_socket(KA_T sa, char * ty)
 {
     int af;
     unsigned char *fa = (unsigned char *) NULL;
@@ -1889,9 +1877,7 @@ read_rts_t(va, ph, ra, rt)
  */
 
 static int
-read_udp_t(ua, uc)
-    KA_T ua;			/* ucp_t kernel address */
-    udp_t *uc;			/* receiving udp_t structure */
+read_udp_t(KA_T ua, udp_t * uc)
 {
     (void) CTF_init(&IRU_ctfs, IRU_MOD_FORMAT, IRU_requests);
     if (!ua
@@ -1926,8 +1912,7 @@ read_udp_t(ua, uc)
 
 static void
 
-save_TCP_size(tc)
-        tcp_t *tc;            /* pointer to TCP control structure */
+save_TCP_size(tcp_t * tc)
 {
     int rq, sq;
 

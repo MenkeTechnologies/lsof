@@ -28,13 +28,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2003 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #if    defined(HAS_JFS2)
 #define	_H_JFS_INO				/* prevent <jfs_ino.h> */
 #define	_H_JFS_INODE				/* prevent <jfs_inode.h> */

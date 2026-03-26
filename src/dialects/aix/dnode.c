@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -119,8 +113,7 @@ struct rnode {
  */
 
 char
-isglocked(ga)
-        struct gnode *ga;        /* local gnode address */
+isglocked(struct gnode * ga)
 {
 
     struct filock *cfp, f, *ffp;
@@ -178,8 +171,7 @@ isglocked(ga)
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     struct cdrnode c;
     dev_t dev, rdev;
@@ -1247,9 +1239,7 @@ process_shmt(sa)
  */
 
 int
-readlino(ga, li)
-        struct gnode *ga;            /* gnode address */
-        struct l_ino *li;            /* local inode receiver */
+readlino(struct gnode * ga, struct l_ino * li)
 {
     struct inode i;                /* "regular" inode */
 

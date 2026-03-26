@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -202,8 +196,7 @@ get_fields(ln, sep, fr, eb, en)
  */
 
 void
-get_locks(p)
-        char *p;                /* /proc lock path */
+get_locks(char * p)
 {
     unsigned long bp, ep;
     char buf[MAXPATHLEN], *ec, **fp;

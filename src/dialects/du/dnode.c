@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -183,8 +177,7 @@ clr_flinfo() {
  */
 
 static void
-get_proc_sz(pn)
-        struct procnode *pn;        /* pointer to procnode */
+get_proc_sz(struct procnode * pn)
 {
     struct vm_map m;
     struct proc *p;
@@ -229,8 +222,7 @@ get_proc_sz(pn)
  */
 
 static char
-isvlocked(vp)
-        struct vnode *vp;        /* vnode's kernel address */
+isvlocked(struct vnode * vp)
 {
     struct l_flinfo *fp;
     int i, l;
@@ -369,8 +361,7 @@ load_flinfo() {
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     struct advfsnode *a = (struct advfsnode *) NULL;
     struct cdnode *c = (struct cdnode *) NULL;
@@ -976,9 +967,7 @@ process_node(va)
  */
 
 static int
-readvnode(va, v)
-        KA_T va;            /* vnode kernel space address */
-        struct vnode *v;        /* vnode buffer pointer */
+readvnode(KA_T va, struct vnode * v)
 {
 
     if (kread((KA_T) va, (char *) v, sizeof(struct vnode) - 1 + Vnmxp)) {

@@ -27,11 +27,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -100,9 +95,7 @@ static KA_T *Vp = NULL;            /* vnode address cache */
  */
 
 static void
-enter_vn_text(va, n)
-        KA_T va;            /* vnode address */
-        int *n;                /* number of vnodes in vp[] */
+enter_vn_text(KA_T va, int * n)
 {
     int i;
 
@@ -622,10 +615,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -934,8 +924,7 @@ read_proc() {
  */
 
 static KA_T
-vpo2vp(vpo)
-    struct vm_ubc_object *vpo;	/* pointer to local vm_ubc_object */
+vpo2vp(struct vm_ubc_object * vpo)
 {
     struct advfsbfs {		/* This structure is referenced in
 					 * vm_ubc.h (as msfsbfs), but never
@@ -1026,8 +1015,7 @@ _PROTOTYPE(static int ncache_isroot,(KA_T na, char *cp));
  */
 
 static struct l_nch *
-ncache_addr(id)
-    unsigned long id;		/* node's capability ID */
+ncache_addr(unsigned long id)
 {
     register struct l_nch *hp;
 
@@ -1044,9 +1032,7 @@ ncache_addr(id)
  */
 
 static int
-ncache_ckrootid(na, id)
-    KA_T na;			/* vnode address */
-    unsigned long id;		/* root ID to check */
+ncache_ckrootid(KA_T na, unsigned long id)
 {
 
 #if	defined(ADVFSV)
@@ -1217,9 +1203,7 @@ ncache_ckrootid(na, id)
  */
 
 static int
-ncache_isroot(na, cp)
-    KA_T na;				/* vnode address */
-    char *cp;				/* partial path */
+ncache_isroot(KA_T na, char * cp)
 {
     char buf[MAXPATHLEN];
     int i;
@@ -1516,10 +1500,7 @@ ncache_load()
  */
 
 char *
-ncache_lookup(buf, blen, fp)
-    char *buf;			/* receiving name buffer */
-    int blen;			/* receiving buffer length */
-    int *fp;			/* full path reply */
+ncache_lookup(char * buf, int blen, int * fp)
 {
     char *cp = buf;
     struct l_nch *lc;

@@ -31,11 +31,6 @@
 
 #if    defined(USE_LIB_PRINTDEVNAME)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 #else	/* !defined(USE_LIB_PRINTDEVNAME) */
@@ -70,11 +65,7 @@ char *pdvn_d2 = pdvn_d1;
  */
 
 int
-printdevname(dev, rdev, force, nty)
-    dev_t *dev;			/* device */
-    dev_t *rdev;			/* raw device */
-    int force;				/* 1 = print trailing '\n' */
-    int nty;			/* node type: N_BLK or N_CHR */
+printdevname(dev_t * dev, dev_t * rdev, int force, int nty)
 {
 
 #  if	defined(HAS_STD_CLONE)

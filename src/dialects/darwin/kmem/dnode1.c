@@ -29,11 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 #if    defined(HAS9660FS)
@@ -77,13 +72,7 @@ struct vop_unlock_args	 { int dummy; };
  */
 
 int
-read_iso_node(v, d, dd, ino, nl, sz)
-    struct vnode *v;		/* containing vnode */
-    dev_t *d;			/* returned device number */
-    int *dd;			/* returned device-defined flag */
-    INODETYPE *ino;			/* returned inode number */
-    long *nl;			/* returned number of links */
-    SZOFFTYPE *sz;			/* returned size */
+read_iso_node(struct vnode * v, dev_t * d, int * dd, INODETYPE * ino, long * nl, SZOFFTYPE * sz)
 {
 
     struct iso_node i;

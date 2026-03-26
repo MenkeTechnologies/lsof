@@ -31,11 +31,6 @@
 
 #if    defined(USE_LIB_PRINT_TCPTPI)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #define	TCPSTATES			/* activate tcpstates[] */
 #include "../lsof.h"
 
@@ -63,8 +58,7 @@ build_IPstates()
  */
 
 void
-print_tcptpi(newline)
-    int newline;			/* 1 == '\n' required */
+print_tcptpi(int newline)
 {
     int print_state = 0;
     int state;

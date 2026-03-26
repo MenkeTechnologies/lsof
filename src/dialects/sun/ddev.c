@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -64,9 +58,7 @@ _PROTOTYPE(static int rmdupdev, (struct l_dev ***dp, int n, int ty));
  */
 
 static void
-make_devtp(s, p)
-        struct stat *s;            /* device lstat() buffer */
-        char *p;            /* device path name */
+make_devtp(struct stat * s, char * p)
 {
 
 /*
@@ -106,11 +98,7 @@ make_devtp(s, p)
  */
 
 int
-printdevname(dev, rdev, f, nty)
-        dev_t *dev;            /* device */
-        dev_t *rdev;            /* raw device */
-        int f;                /* 1 = print trailing '\n' */
-        int nty;            /* node type: N_BLK or N_CHR */
+printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
 {
     struct clone *c;
     struct l_dev *dp;
@@ -393,8 +381,7 @@ read_clone() {
  */
 
 void
-readdev(skip)
-        int skip;            /* skip device cache read if 1 */
+readdev(int skip)
 {
 
 #if    defined(HASDCACHE)
@@ -690,8 +677,7 @@ clr_sect() {
  */
 
 int
-rw_clone_sect(m)
-    int m;				/* mode: 1 = read; 2 = write */
+rw_clone_sect(int m)
 {
     char buf[MAXPATHLEN*2], *cp;
     struct clone *c;
@@ -872,8 +858,7 @@ rereaddev()
  */
 
 int
-rw_pseudo_sect(m)
-    int m;				/* mode: 1 = read; 2 = write */
+rw_pseudo_sect(int m)
 {
     char buf[MAXPATHLEN*2], *cp;
     struct pseudo *p;
@@ -1027,8 +1012,7 @@ bad_pseudo_sect:
  */
 
 int
-vfy_dev(dp)
-    struct l_dev *dp;		/* device table pointer */
+vfy_dev(struct l_dev * dp)
 {
     struct stat sb;
 
@@ -1057,10 +1041,7 @@ vfy_dev(dp)
  */
 
 static int
-rmdupdev(dp, n, ty)
-        struct l_dev ***dp;    /* device table pointers address */
-        int n;            /* number of pointers */
-        int ty;            /* type: 0 = block, 1 = char */
+rmdupdev(struct l_dev *** dp, int n, int ty)
 {
     struct clone *c, *cp;
     struct l_dev **d;

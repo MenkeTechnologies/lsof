@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -63,8 +57,7 @@ _PROTOTYPE(static void getmemsz,(pid_t pid));
  */
 
 static void
-getmemsz(pid)
-    pid_t pid;
+getmemsz(pid_t pid)
 {
     int n;
     struct vmspace vm;
@@ -103,9 +96,7 @@ getmemsz(pid)
  */
 
 static int
-lkup_dev_tty(dr, ir)
-    dev_t *dr;			/* place to return device number */
-    INODETYPE *ir;			/* place to return inode number */
+lkup_dev_tty(dev_t * dr, INODETYPE * ir)
 {
     int i;
 
@@ -153,8 +144,7 @@ lkup_dev_tty_again:
  */
 
 void
-process_kqueue(ka)
-    KA_T ka;			/* kqueue file structure address */
+process_kqueue(KA_T ka)
 {
 
 # if	defined(OPENBSDV)
@@ -181,8 +171,7 @@ process_kqueue(ka)
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     dev_t dev, rdev;
     unsigned char devs;
@@ -1408,8 +1397,7 @@ process_node(va)
  */
 
 void
-process_pipe(pa)
-    KA_T pa;			/* pipe structure kernel address */
+process_pipe(KA_T pa)
 {
     char *ep;
     struct pipe p;

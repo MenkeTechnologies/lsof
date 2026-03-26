@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 _PROTOTYPE(static void get_kernel_access, (void));
@@ -234,11 +228,7 @@ static KA_T Uo;				/* user area VM offset */
  */
 
 void
-ckkv(d, er, ev, ea)
-        char *d;            /* dialect */
-        char *er;            /* expected release */
-        char *ev;            /* expected version */
-        char *ea;            /* expected architecture */
+ckkv(char * d, char * er, char * ev, char * ea)
 {
 
 #if    defined(HASKERNIDCK)
@@ -923,10 +913,7 @@ get_kernel_access() {
  */
 
 static struct le *
-getle(a, sid, err)
-        KA_T a;                /* loader entry kernel address */
-        KA_T sid;            /* user structure segment ID */
-        char **err;            /* error message (if return is NULL) */
+getle(KA_T a, KA_T sid, char ** err)
 {
     static struct le le;
 
@@ -971,9 +958,7 @@ getle(a, sid, err)
  */
 
 static void
-getlenm(le, sid)
-    struct le *le;			/* loader entry structure */
-    KA_T sid;			/* segment ID */
+getlenm(struct le * le, KA_T sid)
 {
     char buf[LIBNMLN];
     int i;
@@ -1146,10 +1131,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -1170,11 +1152,7 @@ kread(addr, buf, len)
  */
 
 int
-kreadx(addr, buf, len, sid)
-        KA_T addr;            /* kernel address */
-        char *buf;            /* destination buffer */
-        int len;            /* length */
-        KA_T sid;            /* segment ID */
+kreadx(KA_T addr, char * buf, int len, KA_T sid)
 {
     int br;
 
@@ -1216,8 +1194,7 @@ lowpgsp(sig)
  */
 
 static void
-process_text(sid)
-        KA_T sid;            /* user area segment ID */
+process_text(KA_T sid)
 {
     char *err, fd[8];
     static struct file **f = (struct file **) NULL;
@@ -1340,8 +1317,7 @@ process_text(sid)
  */
 
 static void
-process_text(pid)
-    pid_t pid;			/* process PID */
+process_text(pid_t pid)
 {
     char buf[MAXPATHLEN+1], fd[8], *nm, *pp;
     size_t bufl = sizeof(buf);

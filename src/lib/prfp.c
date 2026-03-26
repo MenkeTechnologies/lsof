@@ -31,11 +31,6 @@
 
 #if    defined(USE_LIB_PROCESS_FILE)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 
@@ -54,8 +49,7 @@ static char copyright[] =
  */
 
 void
-process_file(file_addr)
-    KA_T file_addr;			/* kernel file structure address */
+process_file(KA_T file_addr)
 {
     struct file file_str;
     int flag;

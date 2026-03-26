@@ -29,13 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005-2007 Apple Inc.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -44,8 +37,7 @@ static char copyright[] =
  */
 
 void
-enter_file_info(pfi)
-        struct proc_fileinfo *pfi;    /* pointer to process file info */
+enter_file_info(struct proc_fileinfo * pfi)
 {
     int f;
 /*
@@ -79,8 +71,7 @@ enter_file_info(pfi)
  */
 
 void
-enter_vnode_info(vip)
-        struct vnode_info_path *vip;    /* pointer to vnode info with path */
+enter_vnode_info(struct vnode_info_path * vip)
 {
     char buf[32], *cp;
     dev_t dev = 0;
@@ -202,8 +193,7 @@ enter_vnode_info(vip)
  */
 
 void
-err2nm(pfx)
-        char *pfx;            /* NameChars message prefix */
+err2nm(char * pfx)
 {
     char *sfx;
 
@@ -238,8 +228,7 @@ err2nm(pfx)
  * print_nm() -- print Name column
  */
 void
-print_nm(lf)
-        struct lfile *lf;
+print_nm(struct lfile * lf)
 {
     printname(0);
     putchar('\n');
@@ -251,8 +240,7 @@ print_nm(lf)
  */
 
 int
-print_v_path(lf)
-        struct lfile *lf;
+print_v_path(struct lfile * lf)
 {
     if (lf->V_path) {
         safestrprt(lf->V_path, stdout, 0);
@@ -267,9 +255,7 @@ print_v_path(lf)
  */
 
 void
-process_atalk(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_atalk(int pid, int32_t fd)
 {
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ATALK");
     return;
@@ -281,9 +267,7 @@ process_atalk(pid, fd)
  */
 
 void
-process_fsevents(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_fsevents(int pid, int32_t fd)
 {
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "FSEVENTS");
 }
@@ -294,9 +278,7 @@ process_fsevents(pid, fd)
  */
 
 void
-process_kqueue(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_kqueue(int pid, int32_t fd)
 {
     struct kqueue_fdinfo kq;
     int nb;
@@ -337,8 +319,7 @@ process_kqueue(pid, fd)
  */
 
 static void
-process_pipe_common(pi)
-        struct pipe_fdinfo *pi;
+process_pipe_common(struct pipe_fdinfo * pi)
 {
     char dev_ch[32], *ep;
     size_t sz;
@@ -380,9 +361,7 @@ process_pipe_common(pi)
 
 
 void
-process_pipe(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_pipe(int pid, int32_t fd)
 {
     int nb;
     struct pipe_fdinfo pi;
@@ -412,9 +391,7 @@ process_pipe(pid, fd)
  */
 
 void
-process_psem(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_psem(int pid, int32_t fd)
 {
     int nb;
     struct psem_fdinfo ps;
@@ -461,8 +438,7 @@ process_psem(pid, fd)
  */
 
 static void
-process_pshm_common(ps)
-        struct pshm_fdinfo *ps;
+process_pshm_common(struct pshm_fdinfo * ps)
 {
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PSXSHM");
 /*
@@ -495,9 +471,7 @@ process_pshm_common(ps)
 
 
 void
-process_pshm(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_pshm(int pid, int32_t fd)
 {
     int nb;
     struct pshm_fdinfo ps;
@@ -527,8 +501,7 @@ process_pshm(pid, fd)
  */
 
 static void
-process_vnode_common(vi)
-        struct vnode_fdinfowithpath *vi;
+process_vnode_common(struct vnode_fdinfowithpath * vi)
 {
 /*
  * Enter the file and vnode information.
@@ -539,9 +512,7 @@ process_vnode_common(vi)
 
 
 void
-process_vnode(pid, fd)
-        int pid;            /* PID */
-        int32_t fd;            /* FD */
+process_vnode(int pid, int32_t fd)
 {
     int nb;
     struct vnode_fdinfowithpath vi;

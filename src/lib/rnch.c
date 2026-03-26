@@ -31,11 +31,6 @@
 
 #if    defined(HASNCACHE) && defined(USE_LIB_RNCH)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 
@@ -228,9 +223,7 @@ ncache_addr(vnode_ptr)
  */
 
 static int
-ncache_isroot(va, cp)
-    KA_T va;			/* kernel vnode address */
-    char *cp;			/* partial path */
+ncache_isroot(KA_T va, char * cp)
 {
     char buf[MAXPATHLEN];
     int i;
@@ -717,10 +710,7 @@ no_local_space:
  */
 
 char *
-ncache_lookup(buf, blen, full_path)
-    char *buf;			/* receiving name buffer */
-    int blen;			/* receiving buffer length */
-    int *full_path;			/* full path reply */
+ncache_lookup(char * buf, int blen, int * full_path)
 {
     char *cp = buf;
     struct l_nch *lc;

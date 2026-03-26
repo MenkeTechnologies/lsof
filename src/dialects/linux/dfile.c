@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -44,11 +38,7 @@ static char copyright[] =
  */
 
 int
-printdevname(dev, rdev, f, nty)
-        dev_t *dev;            /* device */
-        dev_t *rdev;                    /* raw device */
-        int f;                          /* 1 = follow with '\n' */
-        int nty;            /* node type: N_BLK or N_chr */
+printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
 {
     char buf[128];
 

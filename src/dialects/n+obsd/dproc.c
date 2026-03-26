@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -57,11 +52,7 @@ static KA_T *Vp = NULL;            /* vnode address cache */
  */
 
 void
-ckkv(d, er, ev, ea)
-        char *d;            /* dialect */
-        char *er;            /* expected release */
-        char *ev;            /* expected version */
-        char *ea;            /* expected architecture */
+ckkv(char * d, char * er, char * ev, char * ea)
 {
 
 #if    defined(HASKERNIDCK)
@@ -99,9 +90,7 @@ ckkv(d, er, ev, ea)
  */
 
 static void
-enter_vn_text(va, n)
-        KA_T va;            /* vnode address */
-        int *n;                /* Vp[] entries in use */
+enter_vn_text(KA_T va, int * n)
 {
     int i;
 /*
@@ -489,10 +478,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -505,8 +491,7 @@ kread(addr, buf, len)
  * process_text() - process text information
  */
 void
-process_text(vm)
-        KA_T vm;                /* kernel vm space pointer */
+process_text(KA_T vm)
 {
     int i, j;
     KA_T ka;

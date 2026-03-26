@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _INO_T
 typedef int ino_t;
@@ -64,8 +59,7 @@ typedef int time_t;
  */
 
 void
-print_tcptpi(nl)
-    int nl;				/* 1 == '\n' required */
+print_tcptpi(int nl)
 {
     char *cp = (char *)NULL;
     char  sbuf[128];
@@ -412,8 +406,7 @@ print_tcptpi(nl)
  */
 
 void
-process_lla(la)
-    KA_T la;			/* link level CB address in kernel */
+process_lla(KA_T la)
 {
     char *ep;
     struct lla_cb lcb;
@@ -472,8 +465,7 @@ process_lla(la)
  */
 
 void
-process_socket(sa)
-        KA_T sa;            /* socket address in kernel */
+process_socket(KA_T sa)
 {
     unsigned char *fa = (unsigned char *) NULL;
     char *ep, tbuf[32];
@@ -925,11 +917,7 @@ process_socket(sa)
  */
 
 void
-process_stream_sock(ip, pcb, pn, vt)
-    KA_T ip;			/* IP module's q_ptr */
-    KA_T pcb;			/* protocol's q_ptr */
-    char *pn;			/* protocol name */
-    enum vtype vt;			/* vnode type */
+process_stream_sock(KA_T ip, KA_T pcb, char * pn, enum vtype vt)
 {
     unsigned char *fa = (unsigned char *)NULL;
     char *ep;

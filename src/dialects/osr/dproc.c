@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1995 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -76,11 +71,7 @@ _PROTOTYPE(static void readfsinfo, (void));
  */
 
 static void
-Ckkv(d, er, ev, ea)
-        char *d;            /* dialect */
-        char *er;            /* expected release */
-        char *ev;            /* expected version */
-        char *ea;            /* expected architecture */
+Ckkv(char * d, char * er, char * ev, char * ea)
 {
 
 #if    defined(HASKERNIDCK)
@@ -728,10 +719,7 @@ return(1);
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     int br;
 
@@ -748,8 +736,7 @@ kread(addr, buf, len)
  */
 
 static int
-open_kmem(nx)
-        int nx;                /* no Exit(1) if 1 */
+open_kmem(int nx)
 {
     if (Kd >= 0)
         return (0);
@@ -780,8 +767,7 @@ open_kmem(nx)
  */
 
 static void
-process_text(prp)
-        KA_T prp;            /* process region pointer */
+process_text(KA_T prp)
 {
     int i, j, k;
     struct pregion *p;
@@ -1076,9 +1062,7 @@ _PROTOTYPE(static void SYSV_load,());
  */
 
 static struct lnch *
-DIN_addr(d, i)
-    dev_t *d;			/* device number */
-    unsigned long i;		/* inode number */
+DIN_addr(dev_t * d, unsigned long i)
 {
     struct lnch_hh *hh = DIN_hash(*d, i);
     struct lnch *lc = hh->hp[0];
@@ -1383,11 +1367,7 @@ HTFS_load()
  */
 
 static int
-LNC_enter(le, nm, nl, fs)
-    struct lnch *le;		/* skeleton local entry */
-    char *nm;			/* name */
-    int nl;				/* name length */
-    char *fs;			/* file system name */
+LNC_enter(struct lnch * le, char * nm, int nl, char * fs)
 {
     struct lnch *lc;
     MALLOC_S len;
@@ -1445,8 +1425,7 @@ LNC_enter(le, nm, nl, fs)
  */
 
 static void
-LNC_nosp(len)
-    int len;			/* attempted length */
+LNC_nosp(int len)
 {
     if (!OptWarnings)
         (void) fprintf(stderr,
@@ -1627,10 +1606,7 @@ ncache_load()
  */
 
 char *
-ncache_lookup(buf, blen, fp)
-    char *buf;			/* receiving name buffer */
-    int blen;			/* receiving buffer length */
-    int *fp;			/* full path reply */
+ncache_lookup(char * buf, int blen, int * fp)
 {
     char *cp = buf;
     int nl, rlen;
@@ -1745,8 +1721,7 @@ ncache_lookup(buf, blen, fp)
  */
 
 static struct lnch *
-NFS_addr(r)
-    KA_T r;				/* rnode's address */
+NFS_addr(KA_T r)
 {
     struct lnch_hh *hh = NFS_hash(r);
     struct lnch *lc = hh->hp[1];
@@ -1843,8 +1818,7 @@ NFS_load()
 
 
 static int
-NFS_root(r)
-    KA_T r;			/* node's rnode address */
+NFS_root(KA_T r)
 {
     int i;
     MALLOC_S len;

@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 #if    solaris < 20500
@@ -810,8 +805,7 @@ get_kernel_access() {
  */
 
 int
-enter_zone_arg(zn)
-    char *zn;				/* zone name */
+enter_zone_arg(char * zn)
 {
     int zh;
     znhash_t *zp, *zpn;
@@ -862,8 +856,7 @@ enter_zone_arg(zn)
  */
 
 static int
-hash_zn(zn)
-    char *zn;				/* zone name */
+hash_zn(char * zn)
 {
     register int i, h;
     size_t l;
@@ -908,10 +901,7 @@ initialize() {
  */
 
 int
-kread(addr, buf, len)
-        KA_T addr;            /* kernel memory address */
-        char *buf;            /* buffer to receive data */
-        READLEN_T len;            /* length to read */
+kread(KA_T addr, char * buf, READLEN_T len)
 {
     register int br;
 /*
@@ -1156,8 +1146,7 @@ get_next_seg(avl_tree_t *av, struct seg *s)
 }
 
 static void
-process_text(pa)
-    KA_T pa;			/* address space description pointer */
+process_text(KA_T pa)
 {
     struct as as;
     int i, j, k;
@@ -1230,8 +1219,7 @@ process_text(pa)
 # endif    /* solaris>=20400 */
 
 static void
-process_text(pa)
-        KA_T pa;            /* address space description pointer */
+process_text(KA_T pa)
 {
     struct as as;
     int i, j, k;
@@ -1363,8 +1351,7 @@ readfsinfo() {
  */
 
 static void
-readkam(addr)
-    KA_T addr;			/* kernel virtual address */
+readkam(KA_T addr)
 {
     register int i;
     register kvmhash_t *kp, *kpp;
@@ -1727,8 +1714,7 @@ _PROTOTYPE(static int ncache_isroot,(KA_T va, char *cp));
 
 static struct l_nch *
 
-ncache_addr(v)
-    KA_T v;					/* vnode's address */
+ncache_addr(KA_T v)
 {
     struct l_nch **hp;
 
@@ -1745,9 +1731,7 @@ ncache_addr(v)
  */
 
 static int
-ncache_isroot(va, cp)
-    KA_T va;			/* kernel vnode address */
-    char *cp;			/* partial path */
+ncache_isroot(KA_T va, char * cp)
 {
     char buf[MAXPATHLEN];
     int i;
@@ -2151,10 +2135,7 @@ no_local_space:
  */
 
 char *
-ncache_lookup(buf, blen, fp)
-    char *buf;			/* receiving name buffer */
-    int blen;			/* receiving buffer length */
-    int *fp;			/* full path reply */
+ncache_lookup(char * buf, int blen, int * fp)
 {
     char *cp = buf;
     struct l_nch *lc;

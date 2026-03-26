@@ -29,12 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #if    defined(HASVXFS)
 
 # if	defined(HPUXKERNBITS) && HPUXKERNBITS>=64
@@ -101,13 +95,7 @@ typedef int time_t;
  */
 
 int
-read_vxnode(v, vfs, dev, devs, rdev, rdevs)
-    struct vnode *v;		/* local containing vnode */
-    struct l_vfs *vfs;		/* local vfs structure */
-    dev_t *dev;			/* device number receiver */
-    int *devs;			/* device status receiver */
-    dev_t *rdev;			/* raw device number receiver */
-    int *rdevs;			/* raw device status receiver */
+read_vxnode(struct vnode * v, struct l_vfs * vfs, dev_t * dev, int * devs, dev_t * rdev, int * rdevs)
 {
     struct vx_inode i;
 

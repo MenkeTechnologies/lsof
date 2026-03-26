@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1999 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -125,10 +119,7 @@ build_IPstates() {
  */
 
 static void
-make_sock(f, sh, s)
-    struct pst_fileinfo2 *f;		/* pst_fileinfo2 */
-    struct pst_stream *sh;			/* stream head */
-    struct pst_socket *s;			/* constructed socket */
+make_sock(struct pst_fileinfo2 * f, struct pst_stream * sh, struct pst_socket * s)
 {
     size_t sz;
 /*
@@ -457,8 +448,7 @@ make_sock(f, sh, s)
  */
 
 static void
-printpsproto(p)
-        uint32_t p;            /* protocol number */
+printpsproto(uint32_t p)
 {
     int i;
     static int m = -1;
@@ -546,8 +536,7 @@ printpsproto(p)
  */
 
 void
-print_tcptpi(nl)
-        int nl;                /* 1 == '\n' required */
+print_tcptpi(int nl)
 {
     char *cp = (char *) NULL;
     char sbuf[128];
@@ -1622,8 +1611,7 @@ process_stream(f, ckscko)
  */
 
 struct pst_socket *
-read_sock(f)
-        struct pst_fileinfo2 *f;        /* file information */
+read_sock(struct pst_fileinfo2 * f)
 {
     static struct pst_socket s;
 

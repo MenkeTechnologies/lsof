@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -108,9 +103,7 @@ _PROTOTYPE(static int cmp_cntx_eq,(char *pcntx, char *ucntx));
  */
 
 static int
-cmp_cntx_eq(pcntx, ucntx)
-    char *pcntx;			       /* program context */
-    char *ucntx;			       /* user supplied context */
+cmp_cntx_eq(char * pcntx, char * ucntx)
 {
     return !fnmatch(ucntx, pcntx, 0);
 }
@@ -121,8 +114,7 @@ cmp_cntx_eq(pcntx, ucntx)
  */
 
 int
-enter_cntx_arg(cntx)
-    char *cntx;			       /* context */
+enter_cntx_arg(char * cntx)
 {
     cntxlist_t *cntxp;
 /*
@@ -439,10 +431,7 @@ get_fdinfo(p, fi)
 
 
 static int
-getlinksrc(ln, src, srcl)
-        char *ln;            /* link path */
-        char *src;            /* link source path return address */
-        int srcl;            /* length of src[] */
+getlinksrc(char * ln, char * src, int srcl)
 {
     char *cp;
     int ll;
@@ -549,12 +538,7 @@ initialize() {
  */
 
 int
-make_proc_path(pp, pl, np, nl, sf)
-        char *pp;            /* path prefix -- e.g., /proc/<pid>/ */
-        int pl;                /* strlen(pp) */
-        char **np;            /* malloc'd receiving buffer */
-        int *nl;            /* strlen(*np) */
-        char *sf;            /* suffix of new path */
+make_proc_path(char * pp, int pl, char ** np, int * nl, char * sf)
 {
     char *cp;
     MALLOC_S rl, sl;
@@ -661,10 +645,7 @@ isefsys(path, type, l, rep, lfr)
  */
 
 static int
-nm2id(nm, id, idl)
-        char *nm;            /* pointer to name */
-        int *id;            /* pointer to ID receiver */
-        int *idl;            /* pointer to ID length receiver */
+nm2id(char * nm, int * id, int * idl)
 {
     register int tid, tidl;
 
@@ -764,15 +745,7 @@ open_proc_stream(p, m, buf, sz, act)
  */
 
 static int
-process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
-        char *idp;            /* pointer to ID's path */
-        int idpl;            /* pointer to ID's path length */
-        char *cmd;            /* pointer to ID's command */
-        UID_ARG uid;            /* ID's UID */
-        int pid;            /* ID's PID */
-        int ppid;            /* parent PID */
-        int pgid;            /* parent GID */
-        int tid;            /* task ID, if non-zero */
+process_id(char * idp, int idpl, char * cmd, UID_ARG uid, int pid, int ppid, int pgid, int tid)
 {
     int av;
     static char *dpath = (char *) NULL;
@@ -1149,10 +1122,7 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
  */
 
 static void
-process_proc_map(p, s, ss)
-        char *p;            /* path to process maps file */
-        struct stat *s;            /* executing text file state buffer */
-        int ss;                /* *s status -- i.e., SB_* values */
+process_proc_map(char * p, struct stat * s, int ss)
 {
     char buf[MAXPATHLEN + 1], *ep, fmtbuf[32], **fp, nmabuf[MAXPATHLEN + 1];
     dev_t dev;

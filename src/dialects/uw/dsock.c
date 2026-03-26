@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #define    TCPSTATES        /* activate tcpstates[] */
 
 #include "lsof.h"
@@ -51,8 +45,7 @@ _PROTOTYPE(static struct sockaddr_un *find_unix_sockaddr_un,(KA_T ka));
  */
 
 void
-print_tcptpi(nl)
-        int nl;                /* 1 == '\n' required */
+print_tcptpi(int nl)
 {
     char buf[128];
     char *cp = (char *) NULL;
@@ -757,9 +750,7 @@ print_tcptpi(nl)
  */
 
 void
-process_socket(pr, q)
-        char *pr;            /* protocol name */
-        struct queue *q;        /* queue at end of stream */
+process_socket(char * pr, struct queue * q)
 {
     unsigned char *fa = (unsigned char *) NULL;
     int fp, ipv, lp;
@@ -908,9 +899,7 @@ process_socket(pr, q)
  */
 
 int
-process_unix_sockstr(v, na)
-    struct vnode *v;		/* the stream's vnode */
-    KA_T na;			/* kernel vnode address */
+process_unix_sockstr(struct vnode * v, KA_T na)
 {
     int as;
     char *ep, tbuf[32], tbuf1[32], *ty;
@@ -1089,8 +1078,7 @@ process_unix_sockstr(v, na)
  */
 
 static struct sockaddr_un *
-find_unix_sockaddr_un(ka)
-    KA_T ka;			/* socket's kernel address */
+find_unix_sockaddr_un(KA_T ka)
 {
     static struct soreq *al = (struct soreq *)NULL;
     static int alct = 0;

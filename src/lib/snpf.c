@@ -154,10 +154,6 @@ each of the following conditions is met:
  * supported -- define HAS_NO_LONG_LONG.
  */
 
-# ifndef lint
-static char copyright[] =
-"@(#) Copyright 2000 lsof contributors.\nAll rights reserved.\n";
-# endif /* !defined(lint) */
 
 #include <varargs.h>
 
@@ -252,11 +248,7 @@ snpf(va_alist)
  */
 
 int
-vsnpf(str, count, fmt, args)
-    char *str;			/* result buffer */
-    int count;			/* size of buffer */
-    char *fmt;			/* format */
-    va_list args;			/* variable length argument list */
+vsnpf(char * str, int count, char * fmt, va_list args)
 {
     char *ep = str + count - 1;
 
@@ -274,11 +266,7 @@ vsnpf(str, count, fmt, args)
 
 
 static void
-dopr(buf_ptr, end_ptr, fmt, args)
-    char *buf_ptr;		/* buffer start */
-    char *end_ptr;		/* buffer end (start + length - 1) */
-    char *fmt;			/* format */
-    va_list args;			/* variable length argument list */
+dopr(char * buf_ptr, char * end_ptr, char * fmt, va_list args)
 {
     int ch;
     char ebuf[64];
@@ -513,15 +501,7 @@ nextch:
  */
 
 static void
-fmtllnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
-    char **buf_ptr;		/* current buffer pointer */
-    char *end_ptr;		/* end of buffer (-1) */
-    long long value;		/* number to format */
-    int base;			/* number base */
-    int dosign;			/* sign request */
-    int ljust;			/* left justfication request */
-    int len;			/* length request */
-    int zpad;			/* zero padding request */
+fmtllnum(char ** buf_ptr, char * end_ptr, long long value, int base, int dosign, int ljust, int len, int zpad)
 {
     int signvalue = 0;
     unsigned long long uvalue;
@@ -585,15 +565,7 @@ fmtllnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
  */
 
 static void
-fmtnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
-    char **buf_ptr;		/* current buffer pointer */
-    char *end_ptr;		/* end of buffer (-1) */
-    long value;			/* number to format */
-    int base;			/* number base */
-    int dosign;			/* sign request */
-    int ljust;			/* left justfication request */
-    int len;			/* length request */
-    int zpad;			/* zero padding request */
+fmtnum(char ** buf_ptr, char * end_ptr, long value, int base, int dosign, int ljust, int len, int zpad)
 {
     int signvalue = 0;
     unsigned long uvalue;
@@ -656,14 +628,7 @@ fmtnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
  */
 
 static void
-fmtstr(buf_ptr, end_ptr, value, ljust, len, zpad, maxwidth)
-    char **buf_ptr;		/* current buffer pointer */
-    char *end_ptr;		/* end of buffer (-1) */
-    char *value;			/* string to format */
-    int ljust;			/* left justification request */
-    int len;			/* length request */
-    int zpad;			/* zero padding request */
-    int maxwidth;			/* maximum width request */
+fmtstr(char ** buf_ptr, char * end_ptr, char * value, int ljust, int len, int zpad, int maxwidth)
 {
     int padlen, strlen;     /* amount to pad */
 
@@ -721,10 +686,7 @@ dostr(buf_ptr, end_ptr, str, cut)
  */
 
 static void
-dopr_outch(buf_ptr, end_ptr, ch)
-    char **buf_ptr;		/* current buffer pointer */
-    char *end_ptr;		/* end of buffer (-1) */
-    int ch;				/* character to output */
+dopr_outch(char ** buf_ptr, char * end_ptr, int ch)
 {
     register char *cp = *buf_ptr;
 

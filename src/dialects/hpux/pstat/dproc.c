@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1999 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -527,8 +521,7 @@ initialize() {
  */
 
 static void
-process_text(p)
-        struct pst_status *p;        /* pst_status for process */
+process_text(struct pst_status * p)
 {
     int i, j, nr, ntvu;
     int meme = 0;
@@ -670,13 +663,7 @@ process_text(p)
  */
 
 KA_T
-read_det(ki, hf, lf, hn, ln, pd)
-        struct pst_fid *ki;        /* kernel file ID */
-        uint32_t hf;            /* high file ID bits */
-        uint32_t lf;            /* low file ID bits */
-        uint32_t hn;            /* high node ID bits */
-        uint32_t ln;            /* low node ID bits */
-        struct pst_filedetails *pd;    /* details receiver */
+read_det(struct pst_fid * ki, uint32_t hf, uint32_t lf, uint32_t hn, uint32_t ln, struct pst_filedetails * pd)
 {
     KA_T na;
 
@@ -695,9 +682,7 @@ read_det(ki, hf, lf, hn, ln, pd)
  */
 
 static struct pst_fileinfo2 *
-read_files(p, n)
-        struct pst_status *p;        /* pst_status for the process */
-        int *n;                /* returned fi[] entry count */
+read_files(struct pst_status * p, int * n)
 {
     size_t ec;
     static struct pst_fileinfo2 *fi = (struct pst_fileinfo2 *) NULL;
@@ -749,8 +734,7 @@ read_files(p, n)
  */
 
 static struct pst_status *
-read_proc(n)
-        int *n;                /* returned ps[] entry count */
+read_proc(int * n)
 {
     size_t el;
     int i = 0;
@@ -813,9 +797,7 @@ read_proc(n)
  */
 
 static struct pst_vm_status *
-read_vmreg(p, n)
-        struct pst_status *p;        /* pst_status for process */
-        int *n;                /* returned region count */
+read_vmreg(struct pst_status * p, int * n)
 {
     size_t ec = (size_t) p->pst_pid;
     MALLOC_S nb;

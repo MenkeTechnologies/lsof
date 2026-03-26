@@ -31,11 +31,6 @@
 
 #if    defined(USE_LIB_READDEV)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 
@@ -114,8 +109,7 @@ _PROTOTYPE(static int rmdupdev,(struct l_dev ***dp, int n, char *nm));
  */
 
 void
-readdev(skip)
-    int skip;			/* skip device cache read if 1 */
+readdev(int skip)
 {
 
 # if	defined(HAS_STD_CLONE) && HAS_STD_CLONE==1
@@ -433,10 +427,7 @@ rereaddev()
  */
 
 static int
-rmdupdev(dev_pp, count, name)
-    struct l_dev ***dev_pp;	/* device table pointers address */
-    int count;			/* number of pointers */
-    char *name;		/* device table name for error message */
+rmdupdev(struct l_dev *** dev_pp, int count, char * name)
 {
 
 # if	defined(HAS_STD_CLONE) && HAS_STD_CLONE==1
@@ -498,8 +489,7 @@ rmdupdev(dev_pp, count, name)
  */
 
 int
-vfy_dev(dev_entry)
-    struct l_dev *dev_entry;		/* device table pointer */
+vfy_dev(struct l_dev * dev_entry)
 {
     struct stat sb;
 

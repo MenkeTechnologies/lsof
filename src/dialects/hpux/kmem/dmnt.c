@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define	_TIME_T
 typedef	int	time_t;
@@ -145,8 +140,7 @@ completevfs(vfs, dev)
  */
 
 struct l_vfs *
-readvfs(lv)
-        struct vnode *lv;        /* local vnode */
+readvfs(struct vnode * lv)
 {
     struct mount m;
     struct mntinfo mi;

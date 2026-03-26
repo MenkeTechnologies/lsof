@@ -31,11 +31,6 @@
 
 #if    defined(HASDCACHE)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 /*
@@ -232,10 +227,7 @@ clr_sect()
  */
 
 void
-crc(block, len, sumptr)
-    char *block;			/* block address */
-    int  len;				/* length */
-    unsigned *sumptr;			/* sum */
+crc(char * block, int len, unsigned * sumptr)
 {
     char *cp;			/* character pointer */
     char *lm;			/* character limit pointer */
@@ -634,10 +626,7 @@ dcpath(read_write, npw)
  */
 
 int
-open_dcache(mode, reuse, stat_buf)
-    int mode;			/* mode: 1 = read; 2 = write */
-    int reuse;			/* create DevCachePath[] if 0, reuse if 1 */
-    struct stat *stat_buf;		/* stat() receiver */
+open_dcache(int mode, int reuse, struct stat * stat_buf)
 {
     char buf[128];
     char *w = (char *)NULL;
@@ -1132,8 +1121,7 @@ read_dhdr:
  */
 
 static int
-rw_clone_sect(mode)
-    int mode;				/* mode: 1 = read; 2 = write */
+rw_clone_sect(int mode)
 {
     char buf[MAXPATHLEN*2], *cp, *cp1;
     struct clone *c;
@@ -1379,9 +1367,7 @@ write_dcache()
  */
 
 int
-wr2DCfd(buf, cnt)
-    char *buf;			/* buffer */
-    unsigned *cnt;			/* checksum receiver */
+wr2DCfd(char * buf, unsigned * cnt)
 {
     int bl, bw;
 

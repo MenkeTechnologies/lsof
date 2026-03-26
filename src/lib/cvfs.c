@@ -43,11 +43,6 @@
 
 #if    defined(USE_LIB_COMPLETEVFS)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include	"../lsof.h"
 
 
@@ -56,9 +51,7 @@ static char copyright[] =
  */
 
 void
-completevfs(vfs, dev)
-    struct l_vfs *vfs;		/* local vfs structure pointer */
-    dev_t *dev;			/* device */
+completevfs(struct l_vfs * vfs, dev_t * dev)
 {
     struct mounts *mp;
 /*

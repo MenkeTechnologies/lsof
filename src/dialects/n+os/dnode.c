@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -116,8 +110,7 @@ clr_svnc()
  */
 
 static char
-isvlocked(vp)
-    KA_T vp;			/* vnode's kernel address */
+isvlocked(KA_T vp)
 {
     int i;
     struct l_lockf *lp;
@@ -270,8 +263,7 @@ load_svnc()
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     dev_t dev, rdev;
     int devs = 0;

@@ -30,12 +30,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005-2007 Apple Inc.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -98,9 +92,7 @@ static void process_threads(int pid, uint32_t n);
  */
 
 static void
-enter_vn_text(vip, n)
-        struct vnode_info_path *vip;    /* vnode info */
-        int *n;                /* number of vips[] entries in use */
+enter_vn_text(struct vnode_info_path * vip, int * n)
 {
     int i;
 /*
@@ -438,10 +430,7 @@ initialize() {
  */
 
 static void
-process_fds(pid, n, ckscko)
-        int pid;            /* PID of interest */
-        uint32_t n;            /* max FDs */
-        int ckscko;            /* check socket files only */
+process_fds(int pid, uint32_t n, int ckscko)
 {
     int i, isock, nb, nf;
     struct proc_fdinfo *fdp;
@@ -551,8 +540,7 @@ process_fds(pid, n, ckscko)
  */
 
 static void
-process_text(pid)
-        int pid;            /* PID */
+process_text(int pid)
 {
     uint64_t a;
     int i, n, nb;
@@ -607,9 +595,7 @@ process_text(pid)
                      * fd name */
 
 static void
-process_threads(pid, n)
-    int pid;			/* PID */
-    uint32_t n;			/* number of threads */
+process_threads(int pid, uint32_t n)
 {
     int i, nb, nt;
 /*

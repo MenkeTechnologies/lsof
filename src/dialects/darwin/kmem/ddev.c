@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -80,9 +74,7 @@ _PROTOTYPE(static void saveADev, (struct stat *s));
  */
 
 void
-HASSPECDEVD(p, s)
-    char *p;			/* file path */
-    struct stat *s;			/* stat(2) result for file */
+HASSPECDEVD(char * p, struct stat * s)
 {
     int i;
 
@@ -393,10 +385,7 @@ readdev(skip)
  */
 
 static int
-rmdupdev(dp, n, nm)
-        struct l_dev ***dp;    /* device table pointers address */
-        int n;            /* number of pointers */
-        char *nm;        /* device table name for error message */
+rmdupdev(struct l_dev *** dp, int n, char * nm)
 {
     int i, j, k;
     struct l_dev **p;
@@ -428,8 +417,7 @@ rmdupdev(dp, n, nm)
  */
 
 static void
-saveADev(s)
-        struct stat *s;            /* stat(2) buffer for file */
+saveADev(struct stat * s)
 {
     int i;
     MALLOC_S sz;

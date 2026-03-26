@@ -55,11 +55,6 @@
 
 #if    defined(USE_LIB_IS_FILE_NAMED)
 
-# if	!defined(lint)
-static char copyright[] =
-"@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-# endif	/* !defined(lint) */
-
 #include "../lsof.h"
 
 

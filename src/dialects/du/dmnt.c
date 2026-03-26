@@ -27,12 +27,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #undef    KERNEL
@@ -227,8 +221,7 @@ readmnt() {
  */
 
 struct l_vfs *
-readvfs(vm)
-        KA_T vm;        /* mount address in vnode */
+readvfs(KA_T vm)
 {
     struct mount m;
     struct l_vfs *vp;

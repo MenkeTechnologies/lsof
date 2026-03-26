@@ -29,12 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    defined(HAS9660FS)
@@ -70,12 +64,7 @@ static char copyright[] =
  */
 
 int
-read_iso_node(v, d, ino, nl, sz)
-    struct vnode *v;		/* containing vnode */
-    dev_t *d;			/* returned device number */
-    INODETYPE *ino;			/* returned inode number */
-    long *nl;			/* returned link count */
-    SZOFFTYPE *sz;			/* returned size */
+read_iso_node(struct vnode * v, dev_t * d, INODETYPE * ino, long * nl, SZOFFTYPE * sz)
 {
     struct iso_node i;
 

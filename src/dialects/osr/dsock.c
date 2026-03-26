@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1995 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -40,8 +34,7 @@ static char copyright[] =
  */
 
 void
-process_socket(i)
-        struct inode *i;        /* inode pointer */
+process_socket(struct inode * i)
 {
     char *cp;
     struct domain d;
@@ -341,8 +334,7 @@ process_socket(i)
  */
 
 void
-udp_tm(tm)
-        time_t tm;            /* time when packet was sent */
+udp_tm(time_t tm)
 {
     static char buf[32], *cp;
     time_t et, lbolt;

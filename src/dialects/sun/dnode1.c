@@ -26,13 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #if    defined(HAS_AFS)
 #include "lsof.h"
 
@@ -136,8 +129,7 @@ alloc_vcache()
  */
 
 void
-ckAFSsym(nl)
-    struct nlist *nl;		/* copy of NlistTable[] when empty */
+ckAFSsym(struct nlist * nl)
 {
     char *path = AFSAPATHDEF;
     int i;
@@ -191,9 +183,7 @@ ckAFSsym(nl)
  */
 
 static struct volume *
-getvolume(f, vols)
-    struct VenusFid *f;		/* file ID pointer */
-    int *vols;			/* afs_volumes status return */
+getvolume(struct VenusFid * f, int * vols)
 {
     int i;
     static KA_T ka = 0;
@@ -236,8 +226,7 @@ getvolume(f, vols)
  */
 
 int
-hasAFS(vp)
-    struct vnode *vp;		/* vnode pointer */
+hasAFS(struct vnode * vp)
 {
     struct mounts *mp;
     int n;
@@ -301,9 +290,7 @@ hasAFS(vp)
  */
 
 static int
-is_rootFid(vc, rfid)
-    struct vcache *vc;		/* vcache structure */
-    int *rfid;			/* root file ID pointer status return */
+is_rootFid(struct vcache * vc, int * rfid)
 {
     KA_T arFid;
     char *err;
@@ -367,10 +354,7 @@ rfid_unavailable:
  */
 
 int
-readafsnode(va, v, an)
-    KA_T va;			/* kernel vnode address */
-    struct vnode *v;		/* vnode buffer pointer */
-    struct afsnode *an;		/* afsnode recipient */
+readafsnode(KA_T va, struct vnode * v, struct afsnode * an)
 {
     char *cp, tbuf[32];
     KA_T ka;

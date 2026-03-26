@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #if     defined(NETBSDV) && defined(HASSTATVFS)
 /*
  * NetBSD needs the statvfs structure to be defined without the 
@@ -207,8 +201,7 @@ readmnt() {
  */
 
 struct l_vfs *
-readvfs(vm)
-        KA_T vm;            /* kernel mount address from vnode */
+readvfs(KA_T vm)
 {
     struct mount m;
     struct l_vfs *vp;

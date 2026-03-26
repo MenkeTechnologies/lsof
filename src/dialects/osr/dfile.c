@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1995 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -64,9 +59,7 @@ get_max_fd() {
  */
 
 char *
-print_dev(lf, dev)
-        struct lfile *lf;        /* file whose device is to be printed */
-        dev_t *dev;            /* device to be printed */
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
 
@@ -82,8 +75,7 @@ print_dev(lf, dev)
  */
 
 char *
-print_ino(lf)
-        struct lfile *lf;        /* file whose device is to be printed */
+print_ino(struct lfile * lf)
 {
     static char buf[128];
 
@@ -98,8 +90,7 @@ print_ino(lf)
  */
 
 void
-process_file(fp)
-        KA_T fp;        /* kernel file structure address */
+process_file(KA_T fp)
 {
     struct file f;
     int flag;

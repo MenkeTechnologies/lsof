@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 #include <sys/fs/namenode.h>
 
@@ -127,10 +121,7 @@ static int SpDevX = -1;			/* SpDev[] maximum index */
  */
 
 static void
-ent_fa(a1, a2, d)
-        KA_T *a1;            /* first fattach address (NULL OK) */
-        KA_T *a2;            /* second fattach address */
-        char *d;            /* direction ("->" or "<-") */
+ent_fa(KA_T * a1, KA_T * a2, char * d)
 {
     char buf[64], *cp, tbuf[32];
     MALLOC_S len;
@@ -345,9 +336,7 @@ char **mn;			/* pointer to module name receiver */
  */
 
 static struct l_dev *
-findspdev(dev, rdev)
-    dev_t *dev;			/* containing device */
-    dev_t *rdev;			/* raw device */
+findspdev(dev_t * dev, dev_t * rdev)
 {
     int i;
     struct l_dev *dp;
@@ -372,9 +361,7 @@ findspdev(dev, rdev)
  */
 
 static struct l_dev *
-findstrdev(dev, rdev)
-        dev_t *dev;            /* device */
-        dev_t *rdev;            /* raw device */
+findstrdev(dev_t * dev, dev_t * rdev)
 {
     struct clone *c;
     struct l_dev *dp;
@@ -465,11 +452,7 @@ getspdev()
  */
 
 static int
-get_vty(v, va, kv, fx)
-        struct vnode *v;        /* vnode to test */
-        KA_T va;            /* vnode's kernel address */
-        struct vfs *kv;            /* copy of vnode's kernel vfs struct */
-        int *fx;            /* file system type index */
+get_vty(struct vnode * v, KA_T va, struct vfs * kv, int * fx)
 {
     int fxt;
     int nty = N_REGLR;
@@ -538,11 +521,7 @@ get_vty(v, va, kv, fx)
  */
 
 static struct l_dev *
-ismouse(va, i, fx, kv)
-    struct vnode *va;		/* local vnode address */
-    struct l_ino *i;		/* local inode structure */
-    int fx;				/* file system index */
-    struct vfs *kv;			/* copy of kernel VFS structure */
+ismouse(struct vnode * va, struct l_ino * i, int fx, struct vfs * kv)
 {
     struct l_dev *dp;
     int j;
@@ -573,8 +552,7 @@ ismouse(va, i, fx, kv)
  */
 
 static char
-isvlocked(va)
-        struct vnode *va;        /* local vnode address */
+isvlocked(struct vnode * va)
 {
     struct filock f;
     KA_T flf, flp;
@@ -627,8 +605,7 @@ isvlocked(va)
  */
 
 void
-process_node(na)
-        KA_T na;            /* vnode kernel space address */
+process_node(KA_T na)
 {
     char *cp, *ep;
     dev_t dev, rdev;
@@ -1457,10 +1434,7 @@ process_node(na)
  */
 
 static int
-readlino(fx, v, i)
-        int fx;                /* file system index */
-        struct vnode *v;        /* vnode pointing to inode */
-        struct l_ino *i;        /* local inode */
+readlino(int fx, struct vnode * v, struct l_ino * i)
 {
 
 #if    defined(HAS_UW_CFS)

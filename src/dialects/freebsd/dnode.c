@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    defined(HAS_LOCKF_ENTRY)
@@ -56,8 +50,7 @@ _PROTOTYPE(static void get_lock_state, (KA_T
  */
 
 static void
-get_lock_state(f)
-        KA_T f;                /* inode's lock pointer */
+get_lock_state(KA_T f)
 {
     struct lockf lf;        /* lockf structure */
     int lt;                /* lock type */

@@ -29,12 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2008 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #if    defined(HAS_ZFS)
 
 #define _KERNEL
@@ -49,10 +43,7 @@ static char copyright[] =
  */
 
 char *
-readzfsnode(za, zi, vr)
-    KA_T za;			/* ZFS node address */
-    zfs_info_t *zi;			/* return ZFS info structure pointer */
-    int vr;				/* vnode's (v_flag & VROOT) */
+readzfsnode(KA_T za, zfs_info_t * zi, int vr)
 {
     struct znode zn;		/* ZFS node */
 

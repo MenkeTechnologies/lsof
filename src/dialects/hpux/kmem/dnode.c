@@ -26,11 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _INO_T
 typedef int ino_t;
@@ -64,8 +59,7 @@ _PROTOTYPE(static int read_nmn, (KA_T
  */
 
 static void
-enter_nma(b)
-    char *b;			/* addition buffer */
+enter_nma(char * b)
 {
     if (CurrentLocalFile->name_append)
         return;
@@ -80,8 +74,7 @@ enter_nma(b)
  */
 
 static int
-islocked(lp)
-    KA_T lp;			/* local locklist struct pointer */
+islocked(KA_T lp)
 {
     static int ety = -1;
     static unsigned int ei = 0;
@@ -168,8 +161,7 @@ islocked(lp)
  */
 
 static int
-getnodety(v)
-        struct vnode *v;        /* local vnode copy */
+getnodety(struct vnode * v)
 {
 
 #if    defined(HAS_AFS)
@@ -308,9 +300,7 @@ getnodety(v)
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
-
+process_node(KA_T va)
 {
 
 #if    defined(HAS_AFS)
@@ -1064,9 +1054,7 @@ process_node(va)
  */
 
 static int
-readinode(ia, i)
-        KA_T ia;            /* inode kernel address */
-        struct inode *i;        /* inode buffer */
+readinode(KA_T ia, struct inode * i)
 {
     if (kread((KA_T) ia, (char *) i, sizeof(struct inode))) {
         (void) snpf(NameChars, NameCharsLength, "can't read inode at %s",
@@ -1082,10 +1070,7 @@ readinode(ia, i)
  */
 
 static int
-read_nmn(na, ma, m)
-        KA_T na;                        /* containing node's address */
-        KA_T ma;                        /* kernel mvfsnode address */
-        struct mvfsnode *m;             /* mvfsnode receiver */
+read_nmn(KA_T na, KA_T ma, struct mvfsnode * m)
 {
     char tbuf[32];
 

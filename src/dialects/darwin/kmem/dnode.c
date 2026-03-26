@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -298,10 +292,7 @@ getvpath_alloc:
  */
 
 static int
-lkup_dev_tty(dr, rdr, ir)
-        dev_t *dr;            /* place to return device number */
-        dev_t *rdr;            /* place to return raw device number */
-        INODETYPE *ir;            /* place to return inode number */
+lkup_dev_tty(dev_t * dr, dev_t * rdr, INODETYPE * ir)
 {
     int i;
 
@@ -324,8 +315,7 @@ lkup_dev_tty(dr, rdr, ir)
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     dev_t dev = (dev_t) 0;
     dev_t rdev = (dev_t) 0;
@@ -1009,10 +999,7 @@ process_node(va)
  */
 
 static int
-readvname(addr, buf, buflen)
-    KA_T addr;			/* kernel v_path address */
-    char *buf;			/* receiving buffer */
-    int buflen;			/* sizeof(buf) */
+readvname(KA_T addr, char * buf, int buflen)
 {
     int n, rl;
 /*

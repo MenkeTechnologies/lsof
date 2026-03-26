@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef    lint
-static char copyright[] =
-        "@(#) Copyright 1997 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -86,8 +80,7 @@ static mntsup_t **MSHash = (mntsup_t **) NULL;        /* mount supplement
  */
 
 static char *
-cvtoe(os)
-        char *os;            /* original string */
+cvtoe(char * os)
 {
     int c, cl, cx, ol, ox, tx;
     char *cs;
@@ -385,8 +378,7 @@ getmntdev(dn, s, ss)
  */
 
 static int
-hash_mnt(dn)
-    char *dn;			/* mount point directory name */
+hash_mnt(char * dn)
 {
     register int i, h;
     size_t l;

@@ -30,13 +30,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 2005 Apple Computer, Inc.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -88,9 +81,7 @@ static void saveADev(struct stat *s);
  */
 
 void
-HASSPECDEVD(p, s)
-    char *p;			/* file path */
-    struct stat *s;			/* stat(2) result for file */
+HASSPECDEVD(char * p, struct stat * s)
 {
     int i;
 
@@ -118,11 +109,7 @@ HASSPECDEVD(p, s)
  */
 
 int
-printdevname(dev, rdev, f, nty)
-        dev_t *dev;        /* device */
-        dev_t *rdev;        /* raw device */
-        int f;        /* 1 = follow with '\n' */
-        int nty;        /* node type: N_BLK or N_chr */
+printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
 {
     char *cp, *ttl;
     struct l_dev *dp;
@@ -463,10 +450,7 @@ readdev(skip)
  */
 
 static int
-rmdupdev(dp, n, nm)
-        struct l_dev ***dp;    /* device table pointers address */
-        int n;            /* number of pointers */
-        char *nm;        /* device table name for error message */
+rmdupdev(struct l_dev *** dp, int n, char * nm)
 {
     int i, j, k;
     struct l_dev **p;
@@ -498,8 +482,7 @@ rmdupdev(dp, n, nm)
  */
 
 static void
-saveADev(s)
-        struct stat *s;            /* stat(2) buffer for file */
+saveADev(struct stat * s)
 {
     int i;
     MALLOC_S sz;

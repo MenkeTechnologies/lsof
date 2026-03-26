@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -80,8 +74,7 @@ clr_sect()
  */
 
 int
-getchan(p)
-        char *p;            /* file path name */
+getchan(char * p)
 {
     int ch;
     char *s;
@@ -110,11 +103,7 @@ getchan(p)
  */
 
 int
-printdevname(dev, rdev, f, nty)
-        dev_t *dev;            /* device */
-        dev_t *rdev;            /* raw device */
-        int f;                /* 1 = follow with '\n' */
-        int nty;            /* node type: N_BLK or N_CHR */
+printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
 {
     struct l_dev *dp;
 /*
@@ -161,8 +150,7 @@ printdevname(dev, rdev, f, nty)
  */
 
 void
-readdev(skip)
-        int skip;            /* skip device cache read if 1 */
+readdev(int skip)
 {
 
 #if    defined(HASDCACHE)
@@ -493,10 +481,7 @@ rereaddev()
  */
 
 static int
-rmdupdev(dp, n, nm)
-        struct l_dev ***dp;    /* device table pointers address */
-        int n;            /* number of pointers */
-        char *nm;        /* device table name for error message */
+rmdupdev(struct l_dev *** dp, int n, char * nm)
 {
 
 #if    AIXV >= 4140
@@ -559,8 +544,7 @@ rmdupdev(dp, n, nm)
  */
 
 int
-rw_clone_sect(m)
-    int m;				/* mode: 1 = read; 2 = write */
+rw_clone_sect(int m)
 {
     char buf[MAXPATHLEN*2], *cp;
     struct clone *c;
@@ -697,8 +681,7 @@ bad_cached_clone:
  */
 
 int
-vfy_dev(dp)
-    struct l_dev *dp;		/* device table pointer */
+vfy_dev(struct l_dev * dp)
 {
     struct stat sb;
 

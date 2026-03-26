@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1995 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -44,10 +38,7 @@ _PROTOTYPE(static struct l_dev *finddev, (dev_t * dev, dev_t * rdev,
  */
 
 static struct l_dev *
-finddev(dev, rdev, stream)
-        dev_t *dev;            /* device */
-        dev_t *rdev;            /* raw device */
-        int stream;            /* stream if 1 */
+finddev(dev_t * dev, dev_t * rdev, int stream)
 {
     struct clone *c;
     struct l_dev *dp;
@@ -88,8 +79,7 @@ finddev(dev, rdev, stream)
  */
 
 void
-process_node(na)
-        KA_T na;            /* inode kernel space address */
+process_node(KA_T na)
 {
     char *cp, tbuf[32];
     short dl;

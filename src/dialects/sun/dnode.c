@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    solaris >= 110000
@@ -769,11 +763,7 @@ build_Voptab() {
  */
 
 int
-CTF_getmem(f, mod, ty, mem)
-    ctf_file_t *f;			/* CTF file handle */
-    const char *mod;			/* module name */
-    const char *ty;			/* type */
-    CTF_member_t *mem;			/* member table */
+CTF_getmem(ctf_file_t * f, const char * mod, const char * ty, CTF_member_t * mem)
 {
     int err;				/* error flag */
     ctf_id_t id;			/* CTF ID */
@@ -841,10 +831,7 @@ CTF_getmem(f, mod, ty, mem)
  */
 
 void
-CTF_init(i, t, r)
-    int *i;				/* initialization status */
-    char *t;				/* kernel module template */
-    CTF_request_t *r;			/* CTF requests */
+CTF_init(int * i, char * t, CTF_request_t * r)
 {
     int err;				/* error status */
     ctf_file_t *f;			/* CTF file info handle */
@@ -941,11 +928,7 @@ CTF_init(i, t, r)
  */
 
 int
-CTF_memCB(name, id, offset, arg)
-    const char *name;			/* structure member name */
-    ctf_id_t id;			/* CTF ID */
-    ulong_t offset;			/* member offset */
-    void *arg;				/* member table */
+CTF_memCB(const char * name, ctf_id_t id, ulong_t offset, void * arg)
 {
     CTF_member_t *mp;
 /*
@@ -967,11 +950,7 @@ CTF_memCB(name, id, offset, arg)
  */
 
 static char *
-ent_fa(a1, a2, d, len)
-        KA_T *a1;                /* first fattach address (NULL OK) */
-        KA_T *a2;                /* second fattach address */
-        char *d;                /* direction ("->" or "<-") */
-        int *len;                /* returned description length */
+ent_fa(KA_T * a1, KA_T * a2, char * d, int * len)
 {
     static char buf[1024];
     size_t bufl = sizeof(buf);
@@ -1011,8 +990,7 @@ ent_fa(a1, a2, d, len)
  */
 
 static int
-is_socket(v)
-        struct vnode *v;            /* vnode pointer */
+is_socket(struct vnode * v)
 {
     char *cp, *ep, *pf;
     int i, j, len, n, pfl;
@@ -1104,8 +1082,7 @@ is_socket(v)
  */
 
 static char
-isvlocked(va)
-        struct vnode *va;        /* local vnode address */
+isvlocked(struct vnode * va)
 {
 
 #if    solaris < 20500
@@ -1285,8 +1262,7 @@ finddev(dev, rdev, flags)
  */
 
 static int
-idoorkeep(d)
-	struct door_node *d;		/* door's node */
+idoorkeep(struct door_node * d)
 {
 	char buf[1024];
 	size_t bufl = sizeof(buf);
@@ -1324,8 +1300,7 @@ idoorkeep(d)
  */
 
 void
-process_node(va)
-        KA_T va;            /* vnode kernel space address */
+process_node(KA_T va)
 {
     struct cnode cn;
     dev_t dev, rdev, trdev;
@@ -3916,14 +3891,7 @@ process_node(va)
  */
 
 static int
-read_cni(s, rv, v, rs, di, din, dinl)
-        struct snode *s;        /* starting snode */
-        struct vnode *rv;        /* "real" vnode receiver */
-        struct vnode *v;        /* starting vnode */
-        struct snode *rs;        /* "real" snode receiver */
-        struct dev_info *di;        /* dev_info structure receiver */
-        char *din;            /* device info name receiver */
-        int dinl;            /* sizeof(*din) */
+read_cni(struct snode * s, struct vnode * rv, struct vnode * v, struct snode * rs, struct dev_info * di, char * din, int dinl)
 {
     char tbuf[32];
 
@@ -3955,9 +3923,7 @@ read_cni(s, rv, v, rs, di, din, dinl)
  */
 
 static int
-readinode(ia, i)
-        KA_T ia;            /* inode kernel address */
-        struct inode *i;        /* inode buffer */
+readinode(KA_T ia, struct inode * i)
 {
     if (kread((KA_T) ia, (char *) i, sizeof(struct inode))) {
         (void) snpf(NameChars, NameCharsLength - 1, "can't read inode at %s",
@@ -3976,10 +3942,7 @@ readinode(ia, i)
  */
 
 static int
-read_ndn(na, da, dn)
-	KA_T na;			/* containing vnode's address */
-	KA_T da;			/* door node's address */
-	struct door_node *dn;		/* door node receiver */
+read_ndn(KA_T na, KA_T da, struct door_node * dn)
 {
 	char tbuf[32];
 
@@ -4002,13 +3965,7 @@ read_ndn(na, da, dn)
  */
 
 static void
-read_mi(s, rdev, so, so_st, so_ad, sdp)
-        KA_T s;                /* kernel stream pointer address */
-        dev_t *rdev;            /* raw device pointer */
-        caddr_t so;            /* so_so return (Solaris) */
-        int *so_st;            /* so_so status */
-        KA_T *so_ad;            /* so_so addresses */
-        struct l_dev **sdp;        /* returned device pointer */
+read_mi(KA_T s, dev_t * rdev, caddr_t so, int * so_st, KA_T * so_ad, struct l_dev ** sdp)
 {
     struct l_dev *dp;
     int i, j, k, nl;
@@ -4159,10 +4116,7 @@ read_nan(na, aa, rn)
  */
 
 static int
-read_ncn(na, ca, cn)
-        KA_T na;            /* containing node's address */
-        KA_T ca;            /* cache node address */
-        struct cnode *cn;        /* cache node receiver */
+read_ncn(KA_T na, KA_T ca, struct cnode * cn)
 {
     char tbuf[32];
 
@@ -4185,11 +4139,7 @@ read_ncn(na, ca, cn)
  */
 
 static int
-read_nctfsn(ty, na, ca, cn)
-	int ty;				/* node type -- i.e., N_CTFS* */
-	KA_T na;			/* containing node's address */
-	KA_T ca;			/* cache node address */
-	char *cn;			/* CTFS node receiver */
+read_nctfsn(int ty, KA_T na, KA_T ca, char * cn)
 {
 	char *cp, *nm, tbuf[32];
 	READLEN_T sz;
@@ -4265,10 +4215,7 @@ read_nctfsn(ty, na, ca, cn)
  */
 
 static int
-read_nfn(na, fa, f)
-        KA_T na;            /* containing node's address */
-        KA_T fa;            /* fifonode address */
-        struct fifonode *f;        /* fifonode receiver */
+read_nfn(KA_T na, KA_T fa, struct fifonode * f)
 {
     char tbuf[32];
 
@@ -4290,10 +4237,7 @@ read_nfn(na, fa, f)
  */
 
 static int
-read_nhn(na, ha, h)
-        KA_T na;            /* containing node's address */
-        KA_T ha;            /* hsnode address */
-        struct hsnode *h;        /* hsnode receiver */
+read_nhn(KA_T na, KA_T ha, struct hsnode * h)
 {
     char tbuf[32];
 
@@ -4315,10 +4259,7 @@ read_nhn(na, ha, h)
  */
 
 static int
-read_nin(na, ia, i)
-        KA_T na;            /* containing node's address */
-        KA_T ia;            /* kernel inode address */
-        struct inode *i;        /* inode receiver */
+read_nin(KA_T na, KA_T ia, struct inode * i)
 {
     char tbuf[32];
 
@@ -4340,10 +4281,7 @@ read_nin(na, ia, i)
  */
 
 static int
-read_nln(na, la, ln)
-        KA_T na;            /* containing node's address */
-        KA_T la;            /* loopback node address */
-        struct lnode *ln;        /* loopback node receiver */
+read_nln(KA_T na, KA_T la, struct lnode * ln)
 {
     char tbuf[32];
 
@@ -4365,10 +4303,7 @@ read_nln(na, la, ln)
  */
 
 static int
-read_nnn(na, nna, nn)
-        KA_T na;            /* containing node's address */
-        KA_T nna;            /* namenode address */
-        struct namenode *nn;        /* namenode receiver */
+read_nnn(KA_T na, KA_T nna, struct namenode * nn)
 {
     char tbuf[32];
 
@@ -4390,10 +4325,7 @@ read_nnn(na, nna, nn)
  */
 
 static int
-read_nmn(na, ma, m)
-        KA_T na;            /* containing node's address */
-        KA_T ma;            /* kernel mvfsnode address */
-        struct mvfsnode *m;        /* mvfsnode receiver */
+read_nmn(KA_T na, KA_T ma, struct mvfsnode * m)
 {
     char tbuf[32];
 
@@ -4416,10 +4348,7 @@ read_nmn(na, ma, m)
  */
 
 static int
-read_npi(na, v, pids)
-	KA_T na;			/* containing node's address */
-	struct vnode *v;		/* containing vnode */
-	struct pid *pids;		/* pid structure receiver */
+read_npi(KA_T na, struct vnode * v, struct pid * pids)
 {
 	struct as as;
 	struct proc p;
@@ -4766,10 +4695,7 @@ read_npi(na, v, pids)
  */
 
 static int
-read_npn(na, pa, p)
-        KA_T na;            /* containing node's address */
-        KA_T pa;            /* pcnode address */
-        struct pcnode *p;        /* pcnode receiver */
+read_npn(KA_T na, KA_T pa, struct pcnode * p)
 {
     char tbuf[32];
 
@@ -4792,10 +4718,7 @@ read_npn(na, pa, p)
  */
 
 static int
-read_nprtn(na, pa, p)
-	KA_T na;			/* containing node's address */
-	KA_T pa;			/* port node address */
-	port_t *p;			/* port node receiver */
+read_nprtn(KA_T na, KA_T pa, port_t * p)
 {
 	char tbuf[32];
 
@@ -4818,10 +4741,7 @@ read_nprtn(na, pa, p)
  */
 
 static int
-read_nrn(na, ra, r)
-        KA_T na;            /* containing node's address */
-        KA_T ra;            /* rnode address */
-        struct rnode *r;        /* rnode receiver */
+read_nrn(KA_T na, KA_T ra, struct rnode * r)
 {
     char tbuf[32];
 
@@ -4843,10 +4763,7 @@ read_nrn(na, ra, r)
  */
 
 static int
-read_nrn4(na, ra, r)
-	KA_T na;			/* containing node's address */
-	KA_T ra;			/* rnode address */
-	struct rnode4 *r;		/* rnode receiver */
+read_nrn4(KA_T na, KA_T ra, struct rnode4 * r)
 {
 	char tbuf[32];
 
@@ -4872,11 +4789,7 @@ read_nrn4(na, ra, r)
  */
 
 static int
-read_nsdn(na, sa, sdn, sdva)
-	KA_T na;			/* containing node's adress */
-	KA_T sa;			/* sdev_node address */
-	struct sdev_node *sdn;		/* sdev_node receiver */
-	struct vattr *sdva;		/* sdev_node's vattr receiver */
+read_nsdn(KA_T na, KA_T sa, struct sdev_node * sdn, struct vattr * sdva)
 {
 	KA_T va;
 	char tbuf[32], tbuf1[32];
@@ -4913,11 +4826,7 @@ read_nsdn(na, sa, sdn, sdva)
  */
 
 static int
-read_nson(na, sa, sn)
-	KA_T na;			/* containing node's address */
-	KA_T sa;			/* sonode address */
-	struct sonode *sn;		/* sonode receiver */
-
+read_nson(KA_T na, KA_T sa, struct sonode * sn)
 {
 	char tbuf[32];
 
@@ -4940,10 +4849,7 @@ read_nson(na, sa, sn)
  */
 
 static int
-read_nsn(na, sa, s)
-        KA_T na;            /* containing node's address */
-        KA_T sa;            /* snode address */
-        struct snode *s;        /* snode receiver */
+read_nsn(KA_T na, KA_T sa, struct snode * s)
 {
     char tbuf[32];
 
@@ -4966,9 +4872,7 @@ read_nsn(na, sa, s)
  */
 
 static int
-read_nsti(so, stpi)
-	struct sonode *so;		/* socket's sonode */
-	sotpi_info_t *stpi;		/* local socket info receiver */
+read_nsti(struct sonode * so, sotpi_info_t * stpi)
 {
 	char tbuf[32];
 
@@ -5000,10 +4904,7 @@ read_nsti(so, stpi)
  */
 
 static int
-read_ntn(na, ta, t)
-        KA_T na;            /* containing node's address */
-        KA_T ta;            /* tmpnode address */
-        struct tmpnode *t;        /* tmpnode receiver */
+read_ntn(KA_T na, KA_T ta, struct tmpnode * t)
 {
     char tbuf[32];
 
@@ -5026,9 +4927,7 @@ read_ntn(na, ta, t)
  */
 
 static int
-read_nusa(so, ua)
-	struct soaddr *so;		/* kernel socket info structure */
-	struct sockaddr_un *ua;		/* local sockaddr_un address */
+read_nusa(struct soaddr * so, struct sockaddr_un * ua)
 {
 	KA_T a;
 	int len;
@@ -5056,10 +4955,7 @@ read_nusa(so, ua)
  */
 
 static int
-read_nvn(na, va, v)
-        KA_T na;            /* node's address */
-        KA_T va;            /* vnode address */
-        struct vnode *v;        /* vnode receiver */
+read_nvn(KA_T na, KA_T va, struct vnode * v)
 {
     char tbuf[32];
 
@@ -5082,10 +4978,7 @@ read_nvn(na, va, v)
  */
 
 static int
-read_nzn(na, nza, zn)
-	KA_T na;			/* containing node's address */
-	KA_T nza;			/* znode address */
-	znode_t *zn;			/* znode receiver */
+read_nzn(KA_T na, KA_T nza, znode_t * zn)
 {
 	int err = 0;			/* error flag */
 	CTF_member_t *mp;		/* member pointer */
@@ -5152,10 +5045,7 @@ read_nzn(na, nza, zn)
  */
 
 static int
-read_nznp(nza, nzpa, zp)
-	KA_T nza;			/* containing znode's address */
-	KA_T nzpa;			/* persistent znode address */
-	znode_phys_t *zp;		/* persistent znode receiver */
+read_nznp(KA_T nza, KA_T nzpa, znode_phys_t * zp)
 {
 	char tbuf[32];
 
@@ -5181,10 +5071,7 @@ read_nznp(nza, nzpa, zp)
  */
 
 static int
-read_nzvfs(nza, nzva, zv)
-	KA_T nza;			/* containing znode's address */
-	KA_T nzva;			/* associated vfs address */
-	zfsvfs_t *zv;			/* associated vfs receiver */
+read_nzvfs(KA_T nza, KA_T nzva, zfsvfs_t * zv)
 {
 	char tbuf[32];
 
@@ -5211,10 +5098,7 @@ read_nzvfs(nza, nzva, zv)
  */
 
 static void
-savesockmod(so, sop, so_st)
-        struct so_so *so;        /* new so_so structure pointer */
-        struct so_so *sop;        /* previous so_so structure pointer */
-        int *so_st;            /* status of *sop (0 if not loaded) */
+savesockmod(struct so_so * so, struct so_so * sop, int * so_st)
 {
 
 #if    solaris < 20500
@@ -5374,9 +5258,7 @@ savesockmod(so, sop, so_st)
  */
 
 int
-vop2ty(vp, fx)
-        struct vnode *vp;        /* local vnode pointer */
-        int fx;                /* file system index (-1 if none) */
+vop2ty(struct vnode * vp, int fx)
 {
     int h;
     register int i;

@@ -27,11 +27,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
 #include "lsof.h"
 
 
@@ -85,11 +80,7 @@ clr_sect()
  */
 
 int
-printdevname(dev, rdev, f, nty)
-        dev_t *dev;            /* device */
-        dev_t *rdev;            /* raw device */
-        int f;                /* 1 = follow with '\n' */
-        int nty;            /* node type: N_BLK or N_CHR */
+printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
 {
     struct clone *c;
     struct l_dev *dp;
@@ -187,8 +178,7 @@ printdevname(dev, rdev, f, nty)
  */
 
 void
-readdev(skip)
-        int skip;            /* skip device cache read if 1 */
+readdev(int skip)
 {
 #if    defined(HASDCACHE)
     int dcrd;
@@ -547,8 +537,7 @@ readdev(skip)
  */
 
 int
-CloseDir(dirp)
-    register DIR *dirp;
+CloseDir(register DIR * dirp)
 {
     return(closedir(dirp));
 }
@@ -559,8 +548,7 @@ CloseDir(dirp)
  */
 
 DIR *
-OpenDir(dir)
-    char *dir;
+OpenDir(char * dir)
 {
     DIR *dirp;
 
@@ -595,8 +583,7 @@ OpenDir(dir)
  */
 
 extern struct DIRTYPE *
-ReadDir(dirp)
-    register DIR *dirp;
+ReadDir(register DIR * dirp)
 {
     register struct DIRTYPE *dp;
 
@@ -667,10 +654,7 @@ rereaddev()
  */
 
 static int
-rmdupdev(dp, n, nm)
-        struct l_dev ***dp;    /* device table pointers address */
-        int n;            /* number of pointers */
-        char *nm;        /* device table name for error message */
+rmdupdev(struct l_dev *** dp, int n, char * nm)
 {
     struct clone *c, *cp;
     int i, j, k;
@@ -722,8 +706,7 @@ rmdupdev(dp, n, nm)
  */
 
 int
-vfy_dev(dp)
-    struct l_dev *dp;		/* device table pointer */
+vfy_dev(struct l_dev * dp)
 {
     struct stat sb;
 

@@ -29,12 +29,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1996 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 #if    !defined(DYNAMIC_STACK_TRACE)
@@ -68,9 +62,7 @@ static char copyright[] =
  */
 
 int
-reads5lino(v, i)
-        struct vnode *v;        /* containing vnode */
-        struct l_ino *i;        /* local inode information */
+reads5lino(struct vnode * v, struct l_ino * i)
 {
     struct inode s5i;
 

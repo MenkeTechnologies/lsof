@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -412,10 +406,7 @@ is_file_named(p, ty, ch, ic)
  */
 
 char *
-print_dev(lf, dev)
-        struct lfile *lf;        /* file whose device to be printed */
-        dev_t *dev;            /* pointer to device to be printed */
-
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
     int maj = GET_MAJ_DEV(*dev);
@@ -438,8 +429,7 @@ print_dev(lf, dev)
  */
 
 struct l_vfs *
-readvfs(vn)
-        struct vnode *vn;        /* vnode */
+readvfs(struct vnode * vn)
 {
     struct gfs g;
     void *mp;

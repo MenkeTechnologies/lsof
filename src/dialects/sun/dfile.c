@@ -26,12 +26,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-#ifndef lint
-static char copyright[] =
-        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
-#endif
-
-
 #include "lsof.h"
 
 
@@ -374,9 +368,7 @@ is_file_named(p, nt, vt, ps)
  */
 
 char *
-print_dev(lf, dev)
-    struct lfile *lf;		/* file whose device is to be printed */
-    dev_t *dev;			/* device to be printed */
+print_dev(struct lfile * lf, dev_t * dev)
 {
     static char buf[128];
 /*
@@ -414,8 +406,7 @@ print_dev(lf, dev)
  */
 
 extern int
-print_v_path(lf)
-    struct lfile *lf;		/* local file structure */
+print_v_path(struct lfile * lf)
 {
     char buf[MAXPATHLEN+1];
     unsigned char del = 0;
@@ -511,10 +502,7 @@ print_v_path(lf)
  */
 
 extern void
-read_v_path(ka, rb, rbl)
-    KA_T ka;			/* kernel path address */
-    char *rb;			/* receiving buffer */
-    size_t rbl;			/* receiving buffer length */
+read_v_path(KA_T ka, char * rb, size_t rbl)
 {
     char *ba;
     size_t rl, tl;
@@ -568,8 +556,7 @@ read_v_path(ka, rb, rbl)
  */
 
 void
-process_file(fp)
-        KA_T fp;        /* kernel file structure address */
+process_file(KA_T fp)
 {
     struct file f;
     int flag;
@@ -638,9 +625,7 @@ process_file(fp)
  */
 
 extern struct hostent *
-gethostbyname2(nm, prot)
-    const char *nm; 		/* host name */
-    int prot;			/* protocol -- AF_INET or AF_INET6 */
+gethostbyname2(const char * nm, int prot)
 {
     int err;
     static struct hostent *hep = (struct hostent *)NULL;
