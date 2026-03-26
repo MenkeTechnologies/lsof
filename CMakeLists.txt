@@ -76,16 +76,16 @@ file(GLOB LIB_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.c)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-add_executable(lsof ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
-target_compile_options(lsof PRIVATE
+add_executable(lsof5 ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
+target_compile_options(lsof5 PRIVATE
     -O2 -Wno-deprecated-non-prototype
 )
 
 # --- Cyberpunk build banners ---
 add_custom_target(build-banner
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-start)
-add_dependencies(lsof build-banner)
-add_custom_command(TARGET lsof POST_BUILD
+add_dependencies(lsof5 build-banner)
+add_custom_command(TARGET lsof5 POST_BUILD
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-end)
 
 add_custom_target(cyberpunk-clean
@@ -132,7 +132,7 @@ add_executable(check_integration test/test_integration.c)
 target_include_directories(check_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
 target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(check_integration PRIVATE
-    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof"
+    LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
 )
 add_test(NAME check_integration COMMAND check_integration)
 
@@ -186,13 +186,13 @@ endforeach()
 
 # 'make clean' also removes the lsof binary from the source root if present
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
-    "${PROJECT_SOURCE_DIR}/lsof"
+    "${PROJECT_SOURCE_DIR}/lsof5"
     "${PROJECT_SOURCE_DIR}/benchmark_core"
 )
 
 # ===== Linux Packaging (CPack) =====
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-start)")
-install(TARGETS lsof RUNTIME DESTINATION sbin)
+install(TARGETS lsof5 RUNTIME DESTINATION sbin)
 install(FILES ${PROJECT_SOURCE_DIR}/lsof.1 DESTINATION share/man/man1)
 install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-end)")
