@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lsof C)
 
-set(LSOF_VERSION "5.2")
+set(LSOF_VERSION "5.3")
 set(CMAKE_C_STANDARD 11)
 
 # Detect dialect based on platform
