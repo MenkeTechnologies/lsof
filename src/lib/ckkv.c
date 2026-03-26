@@ -45,11 +45,11 @@ static char copyright[] =
  */
 
 void
-ckkv(d, er, ev, ea)
-    char *d;			/* dialect */
-    char *er;			/* expected revision; NULL, no test */
-    char *ev;			/* expected version; NULL, no test */
-    char *ea;			/* expected architecture; NULL, no
+ckkv(dialect, expected_rev, expected_ver, expected_arch)
+    char *dialect;			/* dialect */
+    char *expected_rev;			/* expected revision; NULL, no test */
+    char *expected_ver;			/* expected version; NULL, no test */
+    char *expected_arch;		/* expected architecture; NULL, no
 					 * test */
 {
 
@@ -66,20 +66,20 @@ ckkv(d, er, ev, ea)
         ProgramName, strerror(errno));
         Exit(1);
     }
-    if (er && strcmp(er, u.release)) {
+    if (expected_rev && strcmp(expected_rev, u.release)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s release %s; this is %s.\n",
-        ProgramName, d, er, u.release);
+        ProgramName, dialect, expected_rev, u.release);
     }
-    if (ev && strcmp(ev, u.version)) {
+    if (expected_ver && strcmp(expected_ver, u.version)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s version %s; this is %s.\n",
-        ProgramName, d, ev, u.version);
+        ProgramName, dialect, expected_ver, u.version);
     }
-    if (ea && strcmp(ea, u.machine)) {
+    if (expected_arch && strcmp(expected_arch, u.machine)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s architecture %s; this is %s.\n",
-        ProgramName, d, ea, u.machine);
+        ProgramName, dialect, expected_arch, u.machine);
     }
 # endif	/* defined(HASKERNIDCK) */
 

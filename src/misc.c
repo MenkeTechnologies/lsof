@@ -60,7 +60,7 @@ _PROTOTYPE(static int dostat, (char *path, char *buf, int len));
 
 _PROTOTYPE(static int doreadlink, (char *path, char *buf, int len));
 
-_PROTOTYPE(static int doinchild, (int (*fn)(), char *fp, char *rbuf, int rbln));
+_PROTOTYPE(static int doinchild, (int (*func)(), char *func_arg, char *rbuf, int rbln));
 
 #if    defined(HASINTSIGNAL)
 _PROTOTYPE(static int handleint,(int sig));
@@ -214,11 +214,11 @@ closePipes() {
  */
 
 int
-compdev(a1, a2)
-        COMP_P *a1, *a2;
+compdev(lhs, rhs)
+        COMP_P *lhs, *rhs;
 {
-    struct l_dev **p1 = (struct l_dev **) a1;
-    struct l_dev **p2 = (struct l_dev **) a2;
+    struct l_dev **p1 = (struct l_dev **) lhs;
+    struct l_dev **p2 = (struct l_dev **) rhs;
 
     if ((dev_t)((*p1)->rdev) < (dev_t)((*p2)->rdev))
         return (-1);
@@ -237,9 +237,9 @@ compdev(a1, a2)
  */
 
 static int
-doinchild(fn, fp, rbuf, rbln)
-        int (*fn)();            /* function to perform */
-        char *fp;            /* function parameter */
+doinchild(func, func_arg, rbuf, rbln)
+        int (*func)();            /* function to perform */
+        char *func_arg;            /* function parameter */
         char *rbuf;            /* response buffer */
         int rbln;            /* response buffer length */
 {
@@ -358,12 +358,12 @@ doinchild(fn, fp, rbuf, rbln)
         /*
          * Send a function to the child and wait for the response.
          */
-        len = strlen(fp) + 1;
+        len = strlen(func_arg) + 1;
         (void) signal(SIGALRM, handleint);
         (void) alarm(TimeoutLimit);
-        if (write(Pipes[1], (char *) &fn, sizeof(fn)) != sizeof(fn)
+        if (write(Pipes[1], (char *) &func, sizeof(func)) != sizeof(func)
             || write(Pipes[1], (char *) &len, sizeof(len)) != sizeof(len)
-            || write(Pipes[1], fp, len) != len
+            || write(Pipes[1], func_arg, len) != len
             || write(Pipes[1], (char *) &rbln, sizeof(rbln)) != sizeof(rbln)
             || read(Pipes[2], (char *) &return_val, sizeof(return_val)) != sizeof(return_val)
             || read(Pipes[2], (char *) &errno_val, sizeof(errno_val)) != sizeof(errno_val)
@@ -381,7 +381,7 @@ doinchild(fn, fp, rbuf, rbln)
          */
         (void) signal(SIGALRM, handleint);
         (void) alarm(TimeoutLimit);
-        return_val = fn(fp, rbuf, rbln);
+        return_val = func(func_arg, rbuf, rbln);
         errno_val = errno;
     }
 /*
@@ -491,9 +491,9 @@ enter_dev_ch(msg)
  */
 
 void
-enter_IPstate(ty, nm, state_num)
-        char *ty;            /* type -- TCP or UDP */
-        char *nm;            /* state name (may be NULL) */
+enter_IPstate(type, name, state_num)
+        char *type;            /* type -- TCP or UDP */
+        char *name;            /* state name (may be NULL) */
         int state_num;                /* state number */
 {
 
@@ -507,25 +507,25 @@ enter_IPstate(ty, nm, state_num)
 /*
  * Check the type name and set the type index.
  */
-    if (!ty) {
+    if (!type) {
         (void) fprintf(stderr,
                        "%s: no type specified to enter_IPstate()\n", ProgramName);
         Exit(1);
     }
-    if (!strcmp(ty, "TCP"))
+    if (!strcmp(type, "TCP"))
         tx = 0;
-    else if (!strcmp(ty, "UDP"))
+    else if (!strcmp(type, "UDP"))
         tx = 1;
     else {
         (void) fprintf(stderr, "%s: unknown type for enter_IPstate: %s\n",
-                       ProgramName, ty);
+                       ProgramName, type);
         Exit(1);
     }
 /*
  * If the name argument is NULL, reduce the allocated table to its minimum
  * size.
  */
-    if (!nm) {
+    if (!name) {
         if (tx) {
             if (UdpStateNames) {
                 if (!UdpNumStates) {
@@ -574,18 +574,18 @@ enter_IPstate(ty, nm, state_num)
 /*
  * Check the name and number.
  */
-    if ((len = (size_t) strlen(nm)) < 1) {
+    if ((len = (size_t) strlen(name)) < 1) {
         (void) fprintf(stderr,
-                       "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, ty, nm, state_num);
+                       "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, type, name, state_num);
         Exit(1);
     }
 /*
  * Make a copy of the name.
  */
-    if (!(char_ptr = mkstrcpy(nm, (MALLOC_S *) NULL))) {
+    if (!(char_ptr = mkstrcpy(name, (MALLOC_S *) NULL))) {
         (void) fprintf(stderr,
                        "%s: enter_IPstate(): no %s space for %s\n",
-                       ProgramName, ty, nm);
+                       ProgramName, type, name);
         Exit(1);
     }
 /*
@@ -677,7 +677,7 @@ enter_IPstate(ty, nm, state_num)
 
                 no_IP_space:
 
-                (void) fprintf(stderr, "%s: no %s state space\n", ProgramName, ty);
+                (void) fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
                 Exit(1);
             }
             UdpNumStates = new_num;
@@ -720,9 +720,9 @@ enter_IPstate(ty, nm, state_num)
 
             (void) fprintf(stderr,
                            "%s: duplicate %s state %d (already %s): %s\n",
-                           ProgramName, ty, state_num,
+                           ProgramName, type, state_num,
                            tx ? UdpStateNames[state_num + UdpStateOffset] : TcpStateNames[state_num + TcpStateOffset],
-                           nm);
+                           name);
             Exit(1);
         }
         UdpStateNames[state_num + UdpStateOffset] = char_ptr;
@@ -786,11 +786,11 @@ Exit(exit_val)
  */
 
 int
-get_Nl_value(nickname, drv, v)
+get_Nl_value(nickname, drv, value)
     char *nickname;			/* nickname of requested entry */
     struct drive_Nl *drv;		/* drive_Nl table that built NlistTable
 					 * (if NULL, use Build_Nl) */
-    KA_T *v;			/* returned value (if NULL,
+    KA_T *value;			/* returned value (if NULL,
 					 * return nothing) */
 {
     int i;
@@ -801,8 +801,8 @@ get_Nl_value(nickname, drv, v)
         drv = Build_Nl;
     for (i = 0; drv->nn; drv++, i++) {
         if (strcmp(drv->nn, nickname) == 0) {
-        if (v)
-            *v = (KA_T)NlistTable[i].n_value;
+        if (value)
+            *value = (KA_T)NlistTable[i].n_value;
         return(i);
         }
     }
@@ -835,14 +835,14 @@ handleint(sig)
  */
 
 int
-hashbyname(nm, mod)
-        char *nm;            /* pointer to NUL-terminated name */
+hashbyname(name, mod)
+        char *name;            /* pointer to NUL-terminated name */
         int mod;            /* hash modulus */
 {
     int i, j;
 
-    for (i = j = 0; *nm; nm++) {
-        i ^= (int) *nm << j;
+    for (i = j = 0; *name; name++) {
+        i ^= (int) *name << j;
         if (++j > 7)
             j = 0;
     }
@@ -855,8 +855,8 @@ hashbyname(nm, mod)
  */
 
 int
-is_nw_addr(ia, port, addr_family)
-        unsigned char *ia;        /* Internet address */
+is_nw_addr(inet_addr, port, addr_family)
+        unsigned char *inet_addr;        /* Internet address */
         int port;                /* port */
         int addr_family;                /* address family -- e.g., AF_INET,
 					 * AF_INET6 */
@@ -879,14 +879,14 @@ is_nw_addr(ia, port, addr_family)
         ||  node->a[11] || node->a[10] || node->a[9]  || node->a[8]
         ||  node->a[7]  || node->a[6]  || node->a[5]  || node->a[4]
         ||  node->a[3]  || node->a[2]  || node->a[1]  || node->a[0]) {
-            if (ia[15] != node->a[15] || ia[14] != node->a[14]
-            ||  ia[13] != node->a[13] || ia[12] != node->a[12]
-            ||  ia[11] != node->a[11] || ia[10] != node->a[10]
-            ||  ia[9]  != node->a[9]  || ia[8]  != node->a[8]
-            ||  ia[7]  != node->a[7]  || ia[6]  != node->a[6]
-            ||  ia[5]  != node->a[5]  || ia[4]  != node->a[4]
-            ||  ia[3]  != node->a[3]  || ia[2]  != node->a[2]
-            ||  ia[1]  != node->a[1]  || ia[0]  != node->a[0])
+            if (inet_addr[15] != node->a[15] || inet_addr[14] != node->a[14]
+            ||  inet_addr[13] != node->a[13] || inet_addr[12] != node->a[12]
+            ||  inet_addr[11] != node->a[11] || inet_addr[10] != node->a[10]
+            ||  inet_addr[9]  != node->a[9]  || inet_addr[8]  != node->a[8]
+            ||  inet_addr[7]  != node->a[7]  || inet_addr[6]  != node->a[6]
+            ||  inet_addr[5]  != node->a[5]  || inet_addr[4]  != node->a[4]
+            ||  inet_addr[3]  != node->a[3]  || inet_addr[2]  != node->a[2]
+            ||  inet_addr[1]  != node->a[1]  || inet_addr[0]  != node->a[0])
             continue;
         }
         } else if (addr_family == AF_INET)
@@ -894,8 +894,8 @@ is_nw_addr(ia, port, addr_family)
 
         {
             if (node->a[3] || node->a[2] || node->a[1] || node->a[0]) {
-                if (ia[3] != node->a[3] || ia[2] != node->a[2]
-                    || ia[1] != node->a[1] || ia[0] != node->a[0])
+                if (inet_addr[3] != node->a[3] || inet_addr[2] != node->a[2]
+                    || inet_addr[1] != node->a[1] || inet_addr[0] != node->a[0])
                     continue;
             }
         }
@@ -954,46 +954,46 @@ mkstrcpy(src, rlp)
  */
 
 char *
-mkstrcat(s1, l1, s2, l2, s3, l3, clp)
-        char *s1;            /* source string 1 */
-        int l1;                /* length of string 1 (-1 if none) */
-        char *s2;            /* source string 2 */
-        int l2;                /* length of string 2 (-1 if none) */
-        char *s3;            /* source string 3 (optional) */
-        int l3;            /* length of string 3 (-1 if none) */
+mkstrcat(str1, len1, str2, len2, str3, len3, clp)
+        char *str1;            /* source string 1 */
+        int len1;                /* length of string 1 (-1 if none) */
+        char *str2;            /* source string 2 */
+        int len2;                /* length of string 2 (-1 if none) */
+        char *str3;            /* source string 3 (optional) */
+        int len3;            /* length of string 3 (-1 if none) */
         MALLOC_S *clp;            /* pointer to return of copy length
 					 * (optional) */
 {
-    MALLOC_S cat_len, len1, len2, len3;
+    MALLOC_S cat_len, slen1, slen2, slen3;
     char *char_ptr;
 
-    if (s1)
-        len1 = (MALLOC_S)((l1 >= 0) ? l1 : strlen(s1));
+    if (str1)
+        slen1 = (MALLOC_S)((len1 >= 0) ? len1 : strlen(str1));
     else
-        len1 = (MALLOC_S) 0;
-    if (s2)
-        len2 = (MALLOC_S)((l2 >= 0) ? l2 : strlen(s2));
+        slen1 = (MALLOC_S) 0;
+    if (str2)
+        slen2 = (MALLOC_S)((len2 >= 0) ? len2 : strlen(str2));
     else
-        len2 = (MALLOC_S) 0;
-    if (s3)
-        len3 = (MALLOC_S)((l3 >= 0) ? l3 : strlen(s3));
+        slen2 = (MALLOC_S) 0;
+    if (str3)
+        slen3 = (MALLOC_S)((len3 >= 0) ? len3 : strlen(str3));
     else
-        len3 = (MALLOC_S) 0;
-    cat_len = len1 + len2 + len3;
+        slen3 = (MALLOC_S) 0;
+    cat_len = slen1 + slen2 + slen3;
     if ((char_ptr = (char *) malloc(cat_len + 1))) {
         char *text_ptr = char_ptr;
 
-        if (s1 && len1) {
-            (void) strncpy(text_ptr, s1, len1);
-            text_ptr += len1;
+        if (str1 && slen1) {
+            (void) strncpy(text_ptr, str1, slen1);
+            text_ptr += slen1;
         }
-        if (s2 && len2) {
-            (void) strncpy(text_ptr, s2, len2);
-            text_ptr += len2;
+        if (str2 && slen2) {
+            (void) strncpy(text_ptr, str2, slen2);
+            text_ptr += slen2;
         }
-        if (s3 && len3) {
-            (void) strncpy(text_ptr, s3, len3);
-            text_ptr += len3;
+        if (str3 && slen3) {
+            (void) strncpy(text_ptr, str3, slen3);
+            text_ptr += slen3;
         }
         *text_ptr = '\0';
     }
@@ -1399,8 +1399,8 @@ safepup(ch, char_len)
  */
 
 int
-safestrlen(sp, flags)
-        char *sp;            /* string pointer */
+safestrlen(str, flags)
+        char *str;            /* string pointer */
         int flags;            /* flags:
 					 *   bit 0: 0 (0) = no NL
 					 *	    1 (1) = add trailing NL
@@ -1412,7 +1412,7 @@ safestrlen(sp, flags)
     int len = 0;
 
     unprintable_ch = (flags & 2) ? ' ' : '\0';
-    if (sp) {
+    if (str) {
     /*
      * Use a lookup table for character expansion length to avoid
      * per-character isprint() calls:
@@ -1444,8 +1444,8 @@ safestrlen(sp, flags)
             /* 0xff -> 2 */
             2,
         };
-        for (; *sp; sp++) {
-            unsigned char ch = (unsigned char)*sp;
+        for (; *str; str++) {
+            unsigned char ch = (unsigned char)*str;
             if (ch == (unsigned char)unprintable_ch)
                 len += (ch < 0x20 || ch == 0xff) ? 2 : 4;
             else
@@ -1462,9 +1462,9 @@ safestrlen(sp, flags)
  */
 
 void
-safestrprt(sp, fs, flags)
-        char *sp;            /* string to print pointer pointer */
-        FILE *fs;            /* destination stream -- e.g., stderr
+safestrprt(str, stream, flags)
+        char *str;            /* string to print pointer pointer */
+        FILE *stream;            /* destination stream -- e.g., stderr
 					 * or stdout */
         int flags;            /* flags:
 					 *   bit 0: 0 (0) = no NL
@@ -1491,8 +1491,8 @@ safestrprt(sp, fs, flags)
 
     ch = (flags & 2) ? ' ' : '\0';
     if (flags & 4)
-        putc('"', fs);
-    if (sp) {
+        putc('"', stream);
+    if (str) {
     /*
      * Use a lookup table to classify printable characters, avoiding
      * per-character isprint() calls.  1 = printable (0x20-0x7e).
@@ -1516,20 +1516,20 @@ safestrprt(sp, fs, flags)
                             0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
         };
 
-        for (sl = strlen(sp); *sp; sl -= new_line_count, sp += new_line_count) {
+        for (sl = strlen(str); *str; sl -= new_line_count, str += new_line_count) {
 
 #if    defined(HASWIDECHAR)
             if (wcmx > 1) {
-                new_line_count = mblen(sp, sl);
+                new_line_count = mblen(str, sl);
                 if (new_line_count > 1) {
-                if ((mbtowc(&wchar, sp, sl) == new_line_count) && iswprint(wchar)) {
+                if ((mbtowc(&wchar, str, sl) == new_line_count) && iswprint(wchar)) {
                     for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
-                    putc((int)*(sp + total_line_count), fs);
+                    putc((int)*(str + total_line_count), stream);
                     }
                 } else {
                     for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
-                        fputs(safepup((unsigned int)*(sp + total_line_count),
-                              (int *)NULL), fs);
+                        fputs(safepup((unsigned int)*(str + total_line_count),
+                              (int *)NULL), stream);
                     }
                 }
                 continue;
@@ -1541,19 +1541,19 @@ safestrprt(sp, fs, flags)
             new_line_count = 1;
 #endif    /* defined(HASWIDECHAR) */
 
-            if (printable[(unsigned char)*sp] && *sp != ch)
-                putc((int) (*sp & 0xff), fs);
+            if (printable[(unsigned char)*str] && *str != ch)
+                putc((int) (*str & 0xff), stream);
             else {
-                if ((flags & 8) && (*sp == '\n') && !*(sp + 1))
+                if ((flags & 8) && (*str == '\n') && !*(str + 1))
                     break;
-                fputs(safepup((unsigned int) *sp, (int *) NULL), fs);
+                fputs(safepup((unsigned int) *str, (int *) NULL), stream);
             }
         }
     }
     if (flags & 4)
-        putc('"', fs);
+        putc('"', stream);
     if (flags & 1)
-        putc('\n', fs);
+        putc('\n', stream);
 }
 
 
@@ -1563,11 +1563,11 @@ safestrprt(sp, fs, flags)
  */
 
 void
-safestrprtn(sp, len, fs, flags)
-        char *sp;            /* string to print pointer pointer */
+safestrprtn(str, len, stream, flags)
+        char *str;            /* string to print pointer pointer */
         int len;            /* safe number of characters to
 					 * print */
-        FILE *fs;            /* destination stream -- e.g., stderr
+        FILE *stream;            /* destination stream -- e.g., stderr
 					 * or stdout */
         int flags;            /* flags:
 					 *   bit 0: 0 (0) = no NL
@@ -1586,8 +1586,8 @@ safestrprtn(sp, len, fs, flags)
     int char_len, i;
 
     if (flags & 4)
-        putc('"', fs);
-    if (sp) {
+        putc('"', stream);
+    if (str) {
     /*
      * Use a lookup table for printable classification (matches safestrprt).
      */
@@ -1610,28 +1610,28 @@ safestrprtn(sp, len, fs, flags)
                             0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
         };
         ch = (flags & 2) ? ' ' : '\0';
-        for (i = 0; i < len && *sp; sp++) {
-            if (printable[(unsigned char)*sp] && *sp != ch) {
-                putc((int) (*sp & 0xff), fs);
+        for (i = 0; i < len && *str; str++) {
+            if (printable[(unsigned char)*str] && *str != ch) {
+                putc((int) (*str & 0xff), stream);
                 i++;
             } else {
-                if ((flags & 8) && (*sp == '\n') && !*(sp + 1))
+                if ((flags & 8) && (*str == '\n') && !*(str + 1))
                     break;
-                uchar_ptr = safepup((unsigned int) *sp, &char_len);
+                uchar_ptr = safepup((unsigned int) *str, &char_len);
                 if ((i + char_len) > len)
                     break;
-                fputs(uchar_ptr, fs);
+                fputs(uchar_ptr, stream);
                 i += char_len;
             }
         }
     } else
         i = 0;
     for (; i < len; i++)
-        putc(' ', fs);
+        putc(' ', stream);
     if (flags & 4)
-        putc('"', fs);
+        putc('"', stream);
     if (flags & 1)
-        putc('\n', fs);
+        putc('\n', stream);
 }
 
 
@@ -1705,9 +1705,9 @@ stkdir(path)
  */
 
 char *
-x2dev(s, d)
-        char *s;            /* ASCII string */
-        dev_t *d;            /* device receptacle */
+x2dev(hex_str, dev_ptr)
+        char *hex_str;            /* ASCII string */
+        dev_t *dev_ptr;            /* device receptacle */
 {
     char *cp, *cp1;
     int num;
@@ -1720,8 +1720,8 @@ x2dev(s, d)
  * -- e.g., because of sign extension -- ignore excess leading hex 0xf digits,
  * but return an error if an excess leading digit isn't 0xf.
  */
-    if (strncasecmp(s, "0x", 2) == 0)
-        s += 2;
+    if (strncasecmp(hex_str, "0x", 2) == 0)
+        hex_str += 2;
     {
     /*
      * Classify characters via lookup table to avoid per-character branching.
@@ -1732,7 +1732,7 @@ x2dev(s, d)
             ['8']=1,['9']=1,['a']=1,['b']=1,['c']=1,['d']=1,['e']=1,['f']=1,
             ['A']=1,['B']=1,['C']=1,['D']=1,['E']=1,['F']=1,[' ']=2,[',']=2,
         };
-        for (cp = s, num = 0; *cp; cp++, num++) {
+        for (cp = hex_str, num = 0; *cp; cp++, num++) {
             unsigned char c = cls[(unsigned char)*cp];
             if (c == 1) continue;
             if (c == 2) break;
@@ -1742,9 +1742,9 @@ x2dev(s, d)
     if (!num)
         return ((char *) NULL);
     if (num > (2 * (int) sizeof(dev_t))) {
-        cp1 = s;
-        s += (num - (2 * sizeof(dev_t)));
-        while (cp1 < s) {
+        cp1 = hex_str;
+        hex_str += (num - (2 * sizeof(dev_t)));
+        while (cp1 < hex_str) {
             if (*cp1 != 'f' && *cp1 != 'F')
                 return ((char *) NULL);
             cp1++;
@@ -1763,10 +1763,10 @@ x2dev(s, d)
             ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
             ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
         };
-        for (result = 0; s < cp; s++) {
-            result = (result << 4) | (hv[(unsigned char)*s] & 0xf);
+        for (result = 0; hex_str < cp; hex_str++) {
+            result = (result << 4) | (hv[(unsigned char)*hex_str] & 0xf);
         }
     }
-    *d = result;
-    return (s);
+    *dev_ptr = result;
+    return (hex_str);
 }

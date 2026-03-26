@@ -197,19 +197,19 @@ static char copyright[] =
  * Local function prototypes
  */
 
-_PROTOTYPE(static void dopr,(char *bp, char *ep, char *fmt, va_list args));
-_PROTOTYPE(static void dopr_outch,(char **bp, char *ep, int c));
-_PROTOTYPE(static void dostr,(char **bp, char *ep, char *str, int));
+_PROTOTYPE(static void dopr,(char *buf_ptr, char *end_ptr, char *fmt, va_list args));
+_PROTOTYPE(static void dopr_outch,(char **buf_ptr, char *end_ptr, int ch));
+_PROTOTYPE(static void dostr,(char **buf_ptr, char *end_ptr, char *str, int));
 
 # if	!defined(HAS_NO_LONG_LONG)
-_PROTOTYPE(static void fmtllnum,(char **bp, char *ep, long long value,
+_PROTOTYPE(static void fmtllnum,(char **buf_ptr, char *end_ptr, long long value,
                  int base, int dosign, int ljust, int len,
                  int zpad));
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
-_PROTOTYPE(static void fmtnum,(char **bp, char *ep, long value, int base,
+_PROTOTYPE(static void fmtnum,(char **buf_ptr, char *end_ptr, long value, int base,
                    int dosign, int ljust, int len, int zpad));
-_PROTOTYPE(static void fmtstr,(char **bp, char *ep, char *value, int ljust,
+_PROTOTYPE(static void fmtstr,(char **buf_ptr, char *end_ptr, char *value, int ljust,
                    int len, int zpad,
                    int maxwidth));
 
@@ -274,9 +274,9 @@ vsnpf(str, count, fmt, args)
 
 
 static void
-dopr(bp, ep, fmt, args)
-    char *bp;			/* buffer start */
-    char *ep;			/* buffer end (start + length - 1) */
+dopr(buf_ptr, end_ptr, fmt, args)
+    char *buf_ptr;		/* buffer start */
+    char *end_ptr;		/* buffer end (start + length - 1) */
     char *fmt;			/* format */
     va_list args;			/* variable length argument list */
 {
@@ -310,7 +310,7 @@ nextch:
         ch = *fmt++;
         switch (ch) {
         case '\0':
-            dostr(&bp, ep, "**end of format**" , 0);
+            dostr(&buf_ptr, end_ptr, "**end of format**" , 0);
             return;
         case '-':
             ljust = 1;
@@ -358,11 +358,11 @@ nextch:
 
 # if	!defined(HAS_NO_LONG_LONG)
             llvalue = va_arg(args, long long);
-            (void) fmtllnum(&bp,ep,llvalue,10,0,ljust,len,zpad);
+            (void) fmtllnum(&buf_ptr,end_ptr,llvalue,10,0,ljust,len,zpad);
 # else	/* defined(HAS_NO_LONG_LONG) */
             (void) strncpy(ebuf, "ll is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
             break;
@@ -371,7 +371,7 @@ nextch:
             value = va_arg(args, long);
             else
             value = va_arg(args, int);
-            (void) fmtnum(&bp, ep, value, 10,0, ljust, len, zpad);
+            (void) fmtnum(&buf_ptr, end_ptr, value, 10,0, ljust, len, zpad);
             break;
         case 'o':
         case 'O':
@@ -379,11 +379,11 @@ nextch:
 
 # if	!defined(HAS_NO_LONG_LONG)
             llvalue = va_arg(args, long long);
-            (void) fmtllnum(&bp,ep,llvalue,8,0,ljust,len,zpad);
+            (void) fmtllnum(&buf_ptr,end_ptr,llvalue,8,0,ljust,len,zpad);
 # else	/* defined(HAS_NO_LONG_LONG) */
             (void) strncpy(ebuf, "ll is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
             break;
@@ -392,7 +392,7 @@ nextch:
             value = va_arg(args, long);
             else
             value = va_arg(args, int);
-            (void) fmtnum(&bp, ep, value, 8,0, ljust, len, zpad);
+            (void) fmtnum(&buf_ptr, end_ptr, value, 8,0, ljust, len, zpad);
             break;
         case 'd':
         case 'D':
@@ -400,11 +400,11 @@ nextch:
 
 # if	!defined(HAS_NO_LONG_LONG)
             llvalue = va_arg(args, long long);
-            (void) fmtllnum(&bp,ep,llvalue,10,1,ljust,len,zpad);
+            (void) fmtllnum(&buf_ptr,end_ptr,llvalue,10,1,ljust,len,zpad);
 # else	/* defined(HAS_NO_LONG_LONG) */
             (void) strncpy(ebuf, "ll is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
             break;
@@ -413,7 +413,7 @@ nextch:
             value = va_arg(args, long);
             else
             value = va_arg(args, int);
-            (void) fmtnum(&bp, ep, value, 10,1, ljust, len, zpad);
+            (void) fmtnum(&buf_ptr, end_ptr, value, 10,1, ljust, len, zpad);
             break;
         case 'x':
             if (longlongflag) {
@@ -421,15 +421,15 @@ nextch:
 # if	!defined(HAS_NO_LONG_LONG)
             llvalue = va_arg(args, long long);
             if (zxflag && llvalue) {
-                (void) dostr(&bp, ep, "0x", 0);
+                (void) dostr(&buf_ptr, end_ptr, "0x", 0);
                 if (len >= 2)
                 len -= 2;
             }
-            (void) fmtllnum(&bp,ep,llvalue,16,0,ljust,len,zpad);
+            (void) fmtllnum(&buf_ptr,end_ptr,llvalue,16,0,ljust,len,zpad);
 # else	/* defined(HAS_NO_LONG_LONG) */
             (void) strncpy(ebuf, "ll is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
             break;
@@ -439,11 +439,11 @@ nextch:
             else
             value = va_arg(args, int);
             if (zxflag && value) {
-            (void) dostr(&bp, ep, "0x", 0);
+            (void) dostr(&buf_ptr, end_ptr, "0x", 0);
             if (len >= 2)
                 len -= 2;
             }
-            (void) fmtnum(&bp, ep, value, 16,0, ljust, len, zpad);
+            (void) fmtnum(&buf_ptr, end_ptr, value, 16,0, ljust, len, zpad);
             break;
         case 'X':
             if (longlongflag) {
@@ -451,15 +451,15 @@ nextch:
 # if	!defined(HAS_NO_LONG_LONG)
             llvalue = va_arg(args, long long);
             if (zxflag && llvalue) {
-                (void) dostr(&bp, ep, "0x", 0);
+                (void) dostr(&buf_ptr, end_ptr, "0x", 0);
                 if (len >= 2)
                 len -= 2;
             }
-            (void) fmtllnum(&bp,ep,llvalue,-16,0,ljust,len,zpad);
+            (void) fmtllnum(&buf_ptr,end_ptr,llvalue,-16,0,ljust,len,zpad);
 # else	/* defined(HAS_NO_LONG_LONG) */
             (void) strncpy(ebuf, "ll is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
 # endif	/* !defined(HAS_NO_LONG_LONG) */
 
             break;
@@ -469,41 +469,41 @@ nextch:
             else
             value = va_arg(args, int);
             if (zxflag && value) {
-            (void) dostr(&bp, ep, "0x", 0);
+            (void) dostr(&buf_ptr, end_ptr, "0x", 0);
             if (len >= 2)
                 len -= 2;
             }
-            (void) fmtnum(&bp, ep, value,-16,0, ljust, len, zpad);
+            (void) fmtnum(&buf_ptr, end_ptr, value,-16,0, ljust, len, zpad);
             break;
         case 's':
             strvalue = va_arg(args, char *);
             if (maxwidth > 0 || !pointflag) {
             if (pointflag && len > maxwidth)
                 len = maxwidth; /* Adjust padding */
-            (void) fmtstr(&bp, ep, strvalue, ljust, len, zpad,
+            (void) fmtstr(&buf_ptr, end_ptr, strvalue, ljust, len, zpad,
                       maxwidth);
             }
             break;
         case 'c':
             ch = va_arg(args, int);
-            dopr_outch(&bp, ep, ch);
+            dopr_outch(&buf_ptr, end_ptr, ch);
             break;
         case '%':
-            (void) dopr_outch(&bp, ep, ch);
+            (void) dopr_outch(&buf_ptr, end_ptr, ch);
             continue;
         default:
             ebuf[0] = ch;
             (void) strncpy(&ebuf[1], " is unsupported", ebufl);
             ebuf[(int)ebufl] = '\0';
-            (void) dostr(&bp, ep, ebuf, 0);
+            (void) dostr(&buf_ptr, end_ptr, ebuf, 0);
         }
         break;
         default:
-        (void) dopr_outch(&bp, ep, ch);
+        (void) dopr_outch(&buf_ptr, end_ptr, ch);
         break;
         }
     }
-    *bp = '\0';
+    *buf_ptr = '\0';
 }
 
 
@@ -513,9 +513,9 @@ nextch:
  */
 
 static void
-fmtllnum(bp, ep, value, base, dosign, ljust, len, zpad)
-    char **bp;			/* current buffer pointer */
-    char *ep;			/* end of buffer (-1) */
+fmtllnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
+    char **buf_ptr;		/* current buffer pointer */
+    char *end_ptr;		/* end of buffer (-1) */
     long long value;		/* number to format */
     int base;			/* number base */
     int dosign;			/* sign request */
@@ -555,25 +555,25 @@ fmtllnum(bp, ep, value, base, dosign, ljust, len, zpad)
         padlen = -padlen;
     if (zpad && padlen > 0) {
         if (signvalue) {
-        (void) dopr_outch(bp, ep, signvalue);
+        (void) dopr_outch(buf_ptr, end_ptr, signvalue);
         --padlen;
         signvalue = 0;
         }
         while (padlen > 0) {
-        (void) dopr_outch(bp, ep, zpad);
+        (void) dopr_outch(buf_ptr, end_ptr, zpad);
         --padlen;
         }
     }
     while (padlen > 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
          --padlen;
     }
     if (signvalue)
-        (void) dopr_outch(bp, ep, signvalue);
+        (void) dopr_outch(buf_ptr, end_ptr, signvalue);
     while (place > 0)
-        (void) dopr_outch(bp, ep, convert[--place]);
+        (void) dopr_outch(buf_ptr, end_ptr, convert[--place]);
     while (padlen < 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
         ++padlen;
     }
 }
@@ -585,9 +585,9 @@ fmtllnum(bp, ep, value, base, dosign, ljust, len, zpad)
  */
 
 static void
-fmtnum(bp, ep, value, base, dosign, ljust, len, zpad)
-    char **bp;			/* current buffer pointer */
-    char *ep;			/* end of buffer (-1) */
+fmtnum(buf_ptr, end_ptr, value, base, dosign, ljust, len, zpad)
+    char **buf_ptr;		/* current buffer pointer */
+    char *end_ptr;		/* end of buffer (-1) */
     long value;			/* number to format */
     int base;			/* number base */
     int dosign;			/* sign request */
@@ -627,25 +627,25 @@ fmtnum(bp, ep, value, base, dosign, ljust, len, zpad)
         padlen = -padlen;
     if (zpad && padlen > 0) {
         if (signvalue) {
-        (void) dopr_outch(bp, ep, signvalue);
+        (void) dopr_outch(buf_ptr, end_ptr, signvalue);
         --padlen;
         signvalue = 0;
         }
         while (padlen > 0) {
-        (void) dopr_outch(bp, ep, zpad);
+        (void) dopr_outch(buf_ptr, end_ptr, zpad);
         --padlen;
         }
     }
     while (padlen > 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
          --padlen;
     }
     if (signvalue)
-        (void) dopr_outch(bp, ep, signvalue);
+        (void) dopr_outch(buf_ptr, end_ptr, signvalue);
     while (place > 0)
-        (void) dopr_outch(bp, ep, convert[--place]);
+        (void) dopr_outch(buf_ptr, end_ptr, convert[--place]);
     while (padlen < 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
         ++padlen;
     }
 }
@@ -656,9 +656,9 @@ fmtnum(bp, ep, value, base, dosign, ljust, len, zpad)
  */
 
 static void
-fmtstr(bp, ep, value, ljust, len, zpad, maxwidth)
-    char **bp;			/* current buffer pointer */
-    char *ep;			/* end of buffer (-1) */
+fmtstr(buf_ptr, end_ptr, value, ljust, len, zpad, maxwidth)
+    char **buf_ptr;		/* current buffer pointer */
+    char *end_ptr;		/* end of buffer (-1) */
     char *value;			/* string to format */
     int ljust;			/* left justification request */
     int len;			/* length request */
@@ -679,12 +679,12 @@ fmtstr(bp, ep, value, ljust, len, zpad, maxwidth)
     if (ljust)
         padlen = -padlen;
     while (padlen > 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
         --padlen;
     }
-    (void) dostr(bp, ep, value, maxwidth);
+    (void) dostr(buf_ptr, end_ptr, value, maxwidth);
     while (padlen < 0) {
-        (void) dopr_outch(bp, ep, ' ');
+        (void) dopr_outch(buf_ptr, end_ptr, ' ');
         ++padlen;
     }
 }
@@ -695,9 +695,9 @@ fmtstr(bp, ep, value, ljust, len, zpad, maxwidth)
  */
 
 static void
-dostr(bp, ep, str, cut)
-    char **bp;			/* current buffer pointer */
-    char *ep;			/* end of buffer (-1) */
+dostr(buf_ptr, end_ptr, str, cut)
+    char **buf_ptr;		/* current buffer pointer */
+    char *end_ptr;		/* end of buffer (-1) */
     char *str;			/* string to output */
     int cut;			/* limit on amount of string to output:
 					 *   0 == no limit */
@@ -708,9 +708,9 @@ dostr(bp, ep, str, cut)
     while (*str) {
         if (f) {
         if (cut-- > 0)
-            (void) dopr_outch(bp, ep, *str);
+            (void) dopr_outch(buf_ptr, end_ptr, *str);
         } else
-        (void) dopr_outch(bp, ep, *str);
+        (void) dopr_outch(buf_ptr, end_ptr, *str);
         str++;
     }
 }
@@ -721,22 +721,22 @@ dostr(bp, ep, str, cut)
  */
 
 static void
-dopr_outch(bp, ep, c)
-    char **bp;			/* current buffer pointer */
-    char *ep;			/* end of buffer (-1) */
-    int c;				/* character to output */
+dopr_outch(buf_ptr, end_ptr, ch)
+    char **buf_ptr;		/* current buffer pointer */
+    char *end_ptr;		/* end of buffer (-1) */
+    int ch;				/* character to output */
 {
-    register char *cp = *bp;
+    register char *cp = *buf_ptr;
 
-    if (iscntrl(c) && c != '\n' && c != '\t') {
-        c = '@' + (c & 0x1F);
-        if (cp < ep)
+    if (iscntrl(ch) && ch != '\n' && ch != '\t') {
+        ch = '@' + (ch & 0x1F);
+        if (cp < end_ptr)
         *cp++ = '^';
         Length++;
     }
-    if (cp < ep)
-        *cp++ = c;
-    *bp = cp;
+    if (cp < end_ptr)
+        *cp++ = ch;
+    *buf_ptr = cp;
     Length++;
 }
 

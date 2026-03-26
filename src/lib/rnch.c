@@ -154,11 +154,11 @@ static int NegVNSt = 0;			/* NegVN status: 0 = not loaded */
 # endif	/* defined(NCACHE_NEGVN) */
 
 # if	defined(NCACHE_NODEID)
-_PROTOTYPE(static struct l_nch *ncache_addr,(unsigned long i, KA_T v));
-#define ncachehash(i,v)		Nchash+(((((int)(v)>>2)+((int)(i)))*31415)&Mch)
+_PROTOTYPE(static struct l_nch *ncache_addr,(unsigned long inode_num, KA_T vnode_ptr));
+#define ncachehash(inode_num,vnode_ptr)		Nchash+(((((int)(vnode_ptr)>>2)+((int)(inode_num)))*31415)&Mch)
 # else	/* !defined(NCACHE_NODEID) */
-_PROTOTYPE(static struct l_nch *ncache_addr,(KA_T v));
-#define ncachehash(v)		Nchash+((((int)(v)>>2)*31415)&Mch)
+_PROTOTYPE(static struct l_nch *ncache_addr,(KA_T vnode_ptr));
+#define ncachehash(vnode_ptr)		Nchash+((((int)(vnode_ptr)>>2)*31415)&Mch)
 # endif	/* defined(NCACHE_NODEID) */
 
 _PROTOTYPE(static int ncache_isroot,(KA_T va, char *cp));
@@ -190,31 +190,31 @@ _PROTOTYPE(static int ncache_isroot,(KA_T va, char *cp));
 static struct l_nch *
 
 # if	defined(NCACHE_NODEID)
-ncache_addr(i, v)
+ncache_addr(inode_num, vnode_ptr)
 # else	/* !defined(NCACHE_NODEID) */
-ncache_addr(v)
+ncache_addr(vnode_ptr)
 # endif	/* defined(NCACHE_NODEID) */
 
 # if	defined(NCACHE_NODEID)
-    unsigned long i;			/* capability ID */
+    unsigned long inode_num;		/* capability ID */
 # endif	/* defined(NCACHE_NODEID) */
 
-    KA_T v;					/* vnode's address */
+    KA_T vnode_ptr;				/* vnode's address */
 {
     struct l_nch **hp;
 
 # if	defined(NCACHE_NODEID)
-    for (hp = ncachehash(i, v); *hp; hp++)
+    for (hp = ncachehash(inode_num, vnode_ptr); *hp; hp++)
 # else	/* !defined(NCACHE_NODEID) */
-    for (hp = ncachehash(v); *hp; hp++)
+    for (hp = ncachehash(vnode_ptr); *hp; hp++)
 # endif	/* defined(NCACHE_NODEID) */
 
     {
 
 # if	defined(NCACHE_NODEID)
-        if ((*hp)->vp == v && (*hp)->id == i)
+        if ((*hp)->vp == vnode_ptr && (*hp)->id == inode_num)
 # else	/* !defined(NCACHE_NODEID) */
-        if ((*hp)->vp == v)
+        if ((*hp)->vp == vnode_ptr)
 # endif	/* defined(NCACHE_NODEID) */
 
         return(*hp);

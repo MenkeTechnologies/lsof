@@ -48,13 +48,13 @@ _PROTOTYPE(static struct int_lst *find_int_lst, (struct int_lst *list, int num_e
  */
 
 void
-add_nma(cp, len)
-        char *cp;            /* string to add */
+add_nma(str, len)
+        char *str;            /* string to add */
         int len;            /* string length */
 {
     int name_len;
 
-    if (!cp || !len)
+    if (!str || !len)
         return;
     if (CurrentLocalFile->nma) {
         char *tmp;
@@ -78,10 +78,10 @@ add_nma(cp, len)
     }
     if (name_len) {
         CurrentLocalFile->nma[name_len] = ' ';
-        (void) strncpy(&CurrentLocalFile->nma[name_len + 1], cp, len);
+        (void) strncpy(&CurrentLocalFile->nma[name_len + 1], str, len);
         CurrentLocalFile->nma[name_len + 1 + len] = '\0';
     } else {
-        (void) strncpy(CurrentLocalFile->nma, cp, len);
+        (void) strncpy(CurrentLocalFile->nma, str, len);
         CurrentLocalFile->nma[len] = '\0';
     }
 }
@@ -272,14 +272,14 @@ alloc_lfile(name, num)
  */
 
 void
-alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
+alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sel_flags)
         int pid;            /* Process ID */
         int pgid;            /* process group ID */
         int ppid;            /* parent process ID */
         UID_ARG uid;            /* User ID */
         char *cmd;            /* command */
         int pss;            /* process select state */
-        int sf;                /* process select flags */
+        int sel_flags;            /* process select flags */
 {
     static int size = 0;
 
@@ -317,7 +317,7 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
     CurrentLocalProc->pgid = pgid;
     CurrentLocalProc->ppid = ppid;
     CurrentLocalProc->file = (struct lfile *) NULL;
-    CurrentLocalProc->sf = (short) sf;
+    CurrentLocalProc->sf = (short) sel_flags;
     CurrentLocalProc->pss = (short) pss;
     CurrentLocalProc->uid = (uid_t) uid;
 /*
@@ -407,11 +407,11 @@ ck_fd_status(name, num)
  */
 
 int
-comppid(a1, a2)
-        COMP_P *a1, *a2;
+comppid(lhs, rhs)
+        COMP_P *lhs, *rhs;
 {
-    struct lproc **p1 = (struct lproc **) a1;
-    struct lproc **p2 = (struct lproc **) a2;
+    struct lproc **p1 = (struct lproc **) lhs;
+    struct lproc **p2 = (struct lproc **) rhs;
 
     if ((*p1)->pid < (*p2)->pid)
         return (-1);
@@ -434,10 +434,10 @@ comppid(a1, a2)
  */
 
 void
-ent_inaddr(la, local_port, fa, foreign_port, addr_family)
-        unsigned char *la;        /* local Internet address */
+ent_inaddr(local_addr, local_port, foreign_addr, foreign_port, addr_family)
+        unsigned char *local_addr;        /* local Internet address */
         int local_port;                /* local port */
-        unsigned char *fa;        /* foreign Internet address -- may
+        unsigned char *foreign_addr;        /* foreign Internet address -- may
 					 * be NULL to indicate no foreign
 					 * address is known */
         int foreign_port;                /* foreign port */
@@ -446,29 +446,29 @@ ent_inaddr(la, local_port, fa, foreign_port, addr_family)
 {
     int match;
 
-    if (la) {
+    if (local_addr) {
         CurrentLocalFile->li[0].af = addr_family;
 
 #if    defined(HASIPv6)
         if (addr_family == AF_INET6)
-        CurrentLocalFile->li[0].ia.a6 = *(struct in6_addr *)la;
+        CurrentLocalFile->li[0].ia.a6 = *(struct in6_addr *)local_addr;
         else
 #endif    /* defined(HASIPv6) */
 
-        CurrentLocalFile->li[0].ia.a4 = *(struct in_addr *) la;
+        CurrentLocalFile->li[0].ia.a4 = *(struct in_addr *) local_addr;
         CurrentLocalFile->li[0].p = local_port;
     } else
         CurrentLocalFile->li[0].af = 0;
-    if (fa) {
+    if (foreign_addr) {
         CurrentLocalFile->li[1].af = addr_family;
 
 #if    defined(HASIPv6)
         if (addr_family == AF_INET6)
-        CurrentLocalFile->li[1].ia.a6 = *(struct in6_addr *)fa;
+        CurrentLocalFile->li[1].ia.a6 = *(struct in6_addr *)foreign_addr;
         else
 #endif    /* defined(HASIPv6) */
 
-        CurrentLocalFile->li[1].ia.a4 = *(struct in_addr *) fa;
+        CurrentLocalFile->li[1].ia.a4 = *(struct in_addr *) foreign_addr;
         CurrentLocalFile->li[1].p = foreign_port;
     } else
         CurrentLocalFile->li[1].af = 0;
@@ -476,8 +476,8 @@ ent_inaddr(la, local_port, fa, foreign_port, addr_family)
  * If network address matching has been selected, check both addresses.
  */
     if ((SelectionFlags & SELNA) && NetworkAddrList) {
-        match = (fa && is_nw_addr(fa, foreign_port, addr_family)) ? 1 : 0;
-        match |= (la && is_nw_addr(la, local_port, addr_family)) ? 1 : 0;
+        match = (foreign_addr && is_nw_addr(foreign_addr, foreign_port, addr_family)) ? 1 : 0;
+        match |= (local_addr && is_nw_addr(local_addr, local_port, addr_family)) ? 1 : 0;
         if (match)
             CurrentLocalFile->sf |= SELNA;
     }
@@ -539,12 +539,12 @@ examine_lproc() {
  */
 
 void
-free_lproc(lp)
-        struct lproc *lp;
+free_lproc(proc)
+        struct lproc *proc;
 {
     struct lfile *lf, *nf;
 
-    for (lf = lp->file; lf; lf = nf) {
+    for (lf = proc->file; lf; lf = nf) {
         if (lf->dev_ch) {
             (void) free((FREE_P *) lf->dev_ch);
             lf->dev_ch = (char *) NULL;
@@ -565,16 +565,16 @@ free_lproc(lp)
         nf = lf->next;
         (void) free((FREE_P *) lf);
     }
-    lp->file = (struct lfile *) NULL;
-    if (lp->cmd) {
-        (void) free((FREE_P *) lp->cmd);
-        lp->cmd = (char *) NULL;
+    proc->file = (struct lfile *) NULL;
+    if (proc->cmd) {
+        (void) free((FREE_P *) proc->cmd);
+        proc->cmd = (char *) NULL;
     }
 
 #if    defined(HASSELINUX)
-    if (lp->cntx) {
-        (void) free((FREE_P *) lp->cntx);
-        lp->cntx = (char *) NULL;
+    if (proc->cntx) {
+        (void) free((FREE_P *) proc->cntx);
+        proc->cntx = (char *) NULL;
     }
 #endif    /* defined(HASSELINUX) */
 
@@ -646,25 +646,25 @@ is_cmd_excl(cmd, pss, select_flags)
  */
 
 static int
-is_file_sel(lp, lf)
-        struct lproc *lp;        /* lproc structure pointer */
-        struct lfile *lf;        /* lfile structure pointer */
+is_file_sel(proc, file)
+        struct lproc *proc;        /* lproc structure pointer */
+        struct lfile *file;        /* lfile structure pointer */
 {
-    if (!lf || !lf->sf)
+    if (!file || !file->sf)
         return (0);
     if (CurrentLocalFile->sf & SELEXCLF)
         return (0);
 
 #if    defined(HASSECURITY) && defined(HASNOSOCKSECURITY)
-    if (MyRealUid && (MyRealUid != lp->uid)) {
-        if (!(lf->sf & (SELNA | SELNET)))
+    if (MyRealUid && (MyRealUid != proc->uid)) {
+        if (!(file->sf & (SELNA | SELNET)))
         return(0);
     }
 #endif    /* defined(HASSECURITY) && defined(HASNOSOCKSECURITY) */
 
     if (SelectAll)
         return (1);
-    if (OptAndSelection && ((lf->sf & SelectionFlags) != SelectionFlags))
+    if (OptAndSelection && ((file->sf & SelectionFlags) != SelectionFlags))
         return (0);
     return (1);
 }

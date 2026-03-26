@@ -167,11 +167,11 @@ static struct l_nch **Nchash = (struct l_nch **)NULL;
                     /* Ncache hash pointers */
 
 # if	defined(NCACHE_NODEID)
-#define ncachehash(i,n)		Nchash+(((((int)(n)>>2)+((int)(i)))*31415)&Mch)
-_PROTOTYPE(static struct l_nch *ncache_addr,(unsigned long i, KA_T na));
+#define ncachehash(inode_num,n)		Nchash+(((((int)(n)>>2)+((int)(inode_num)))*31415)&Mch)
+_PROTOTYPE(static struct l_nch *ncache_addr,(unsigned long inode_num, KA_T node_addr));
 # else	/* !defined(NCACHE_NODEID) */
 #define ncachehash(n)		Nchash+((((int)(n)>>2)*31415)&Mch)
-_PROTOTYPE(static struct l_nch *ncache_addr,(KA_T na));
+_PROTOTYPE(static struct l_nch *ncache_addr,(KA_T node_addr));
 # endif	/* defined(NCACHE_NODEID) */
 
 # if	!defined(NCACHE_NO_ROOT)
@@ -186,28 +186,28 @@ _PROTOTYPE(static int ncache_isroot,(KA_T na, char *cp));
 static struct l_nch *
 
 # if	defined(NCACHE_NODEID)
-ncache_addr(i, na)
-    unsigned long i;		/* node's capability ID */
+ncache_addr(inode_num, node_addr)
+    unsigned long inode_num;	/* node's capability ID */
 # else	/* !defined(NCACHE_NODEID) */
-ncache_addr(na)
+ncache_addr(node_addr)
 # endif	/* defined(NCACHE_NODEID) */
 
-    KA_T na;			/* node's address */
+    KA_T node_addr;		/* node's address */
 {
     struct l_nch **hp;
 
 # if	defined(NCACHE_NODEID)
-    for (hp = ncachehash(i, na); *hp; hp++)
+    for (hp = ncachehash(inode_num, node_addr); *hp; hp++)
 # else	/* !defined(NCACHE_NODEID) */
-    for (hp = ncachehash(na); *hp; hp++)
+    for (hp = ncachehash(node_addr); *hp; hp++)
 # endif	/* defined(NCACHE_NODEID) */
 
     {
 
 # if	defined(NCACHE_NODEID)
-        if ((*hp)->id == i && (*hp)->na == na)
+        if ((*hp)->id == inode_num && (*hp)->na == node_addr)
 # else	/* !defined(NCACHE_NODEID) */
-        if ((*hp)->na == na)
+        if ((*hp)->na == node_addr)
 # endif	/* defined(NCACHE_NODEID) */
 
         return(*hp);

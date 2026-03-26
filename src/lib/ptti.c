@@ -63,8 +63,8 @@ build_IPstates()
  */
 
 void
-print_tcptpi(nl)
-    int nl;				/* 1 == '\n' required */
+print_tcptpi(newline)
+    int newline;			/* 1 == '\n' required */
 {
     int print_state = 0;
     int state;
@@ -1358,7 +1358,7 @@ print_tcptpi(nl)
 
     if (print_state && !OptFieldOutput)
         putchar(')');
-    if (nl)
+    if (newline)
         putchar('\n');
 }
 #else	/* !defined(USE_LIB_PRINT_TCPTPI) */

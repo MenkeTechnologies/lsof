@@ -64,11 +64,11 @@
 # endif    /* gcc && gcc>=2.7 */
 
 
-_PROTOTYPE(extern void add_nma, (char *cp, int len));
+_PROTOTYPE(extern void add_nma, (char *str, int len));
 
 _PROTOTYPE(extern void alloc_lfile, (char *nm, int num));
 
-_PROTOTYPE(extern void alloc_lproc, (int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sf));
+_PROTOTYPE(extern void alloc_lproc, (int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sel_flags));
 
 _PROTOTYPE(extern void build_IPstates, (void));
 
@@ -76,39 +76,39 @@ _PROTOTYPE(extern void childx, (void));
 
 _PROTOTYPE(extern int ck_fd_status, (char *nm, int num));
 
-_PROTOTYPE(extern int ck_file_arg, (int i, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp));
+_PROTOTYPE(extern int ck_file_arg, (int first_arg_idx, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp));
 
-_PROTOTYPE(extern void ckkv, (char *d, char *er, char *ev, char *ea));
+_PROTOTYPE(extern void ckkv, (char *dialect, char *expected_rev, char *expected_ver, char *expected_arch));
 
 _PROTOTYPE(extern void clr_devtab, (void));
 
-_PROTOTYPE(extern int compdev, (COMP_P * a1, COMP_P * a2));
+_PROTOTYPE(extern int compdev, (COMP_P * lhs, COMP_P * rhs));
 
-_PROTOTYPE(extern int comppid, (COMP_P * a1, COMP_P * a2));
+_PROTOTYPE(extern int comppid, (COMP_P * lhs, COMP_P * rhs));
 
 # if    defined(WILLDROPGID)
 _PROTOTYPE(extern void dropgid,(void));
 # endif    /* defined(WILLDROPGID) */
 
-_PROTOTYPE(extern char *endnm, (size_t * sz));
+_PROTOTYPE(extern char *endnm, (size_t * remaining_size));
 
-_PROTOTYPE(extern int enter_cmd_rx, (char *x));
+_PROTOTYPE(extern int enter_cmd_rx, (char *regex_str));
 
 _PROTOTYPE(extern void enter_dev_ch, (char *m));
 
-_PROTOTYPE(extern int enter_dir, (char *d, int descend));
+_PROTOTYPE(extern int enter_dir, (char *dir_path, int descend));
 
 # if    defined(HASEOPT)
-_PROTOTYPE(extern int enter_efsys,(char *e, int rdlnk));
+_PROTOTYPE(extern int enter_efsys,(char *path, int rdlnk));
 # endif    /* defined(HASEOPT) */
 
-_PROTOTYPE(extern int enter_fd, (char *f));
+_PROTOTYPE(extern int enter_fd, (char *fd_str));
 
 _PROTOTYPE(extern int enter_network_address, (char *na));
 
-_PROTOTYPE(extern int enter_id, (enum IDType ty, char *p));
+_PROTOTYPE(extern int enter_id, (enum IDType type, char *id_str));
 
-_PROTOTYPE(extern void enter_IPstate, (char *ty, char *nm, int nr));
+_PROTOTYPE(extern void enter_IPstate, (char *type, char *name, int nr));
 
 _PROTOTYPE(extern void enter_nm, (char *m));
 
@@ -116,12 +116,12 @@ _PROTOTYPE(extern void enter_nm, (char *m));
 _PROTOTYPE(extern int enter_state_spec,(char *ss));
 # endif    /* defined(HASTCPUDPSTATE) */
 
-_PROTOTYPE(extern int enter_str_lst, (char *opt, char *s, struct str_lst **lp,
+_PROTOTYPE(extern int enter_str_lst, (char *opt, char *str_val, struct str_lst **list_ptr,
         int *incl, int *excl));
 
 _PROTOTYPE(extern int enter_uid, (char *us));
 
-_PROTOTYPE(extern void ent_inaddr, (unsigned char *la, int lp, unsigned char *fa, int fp, int af));
+_PROTOTYPE(extern void ent_inaddr, (unsigned char *local_addr, int lp, unsigned char *foreign_addr, int fp, int af));
 
 _PROTOTYPE(extern int examine_lproc, (void));
 
@@ -129,11 +129,11 @@ _PROTOTYPE(extern void Exit, (int xv)) exiting;
 
 _PROTOTYPE(extern void find_ch_ino, (void));
 
-_PROTOTYPE(extern void free_lproc, (struct lproc *lp));
+_PROTOTYPE(extern void free_lproc, (struct lproc *proc));
 
 _PROTOTYPE(extern void gather_proc_info, (void));
 
-_PROTOTYPE(extern char *gethostnm, (unsigned char *ia, int addr_family));
+_PROTOTYPE(extern char *gethostnm, (unsigned char *inet_addr, int addr_family));
 
 # if    !defined(GET_MAX_FD)
 /*
@@ -147,7 +147,7 @@ _PROTOTYPE(extern char *gethostnm, (unsigned char *ia, int addr_family));
 #define    GET_MAX_FD    getdtablesize
 # endif    /* !defined(GET_MAX_FD) */
 
-_PROTOTYPE(extern int hashbyname, (char *nm, int mod));
+_PROTOTYPE(extern int hashbyname, (char *name, int mod));
 
 _PROTOTYPE(extern void hashSfile, (void));
 
@@ -155,7 +155,7 @@ _PROTOTYPE(extern void initialize, (void));
 
 _PROTOTYPE(extern int is_cmd_excl, (char *cmd, short *pss, short *sf));
 
-_PROTOTYPE(extern int is_nw_addr, (unsigned char *ia, int p, int af));
+_PROTOTYPE(extern int is_nw_addr, (unsigned char *inet_addr, int p, int af));
 
 #if    defined(HASTASKS)
 _PROTOTYPE(extern int is_proc_excl,(int pid, int pgid, UID_ARG uid, short *pss, short *sf, int tid));
@@ -184,17 +184,17 @@ _PROTOTYPE(extern int lstatsafely, (char *path, struct stat *buf));
 
 _PROTOTYPE(extern char *mkstrcpy, (char *src, MALLOC_S *rlp));
 
-_PROTOTYPE(extern char *mkstrcat, (char *s1, int l1, char *s2, int l2, char *s3, int l3, MALLOC_S *clp));
+_PROTOTYPE(extern char *mkstrcat, (char *str1, int len1, char *str2, int len2, char *str3, int len3, MALLOC_S *clp));
 
 _PROTOTYPE(extern int printdevname, (dev_t * dev, dev_t * rdev,
-        int f,
+        int force,
         int nty));
 
 _PROTOTYPE(extern void print_file, (void));
 
 _PROTOTYPE(extern void print_init, (void));
 
-_PROTOTYPE(extern void printname, (int nl));
+_PROTOTYPE(extern void printname, (int newline));
 
 _PROTOTYPE(extern char *print_kptr, (KA_T
         kp,
@@ -203,9 +203,9 @@ _PROTOTYPE(extern char *print_kptr, (KA_T
 
 _PROTOTYPE(extern int print_proc, (void));
 
-_PROTOTYPE(extern void printrawaddr, (struct sockaddr *sa));
+_PROTOTYPE(extern void printrawaddr, (struct sockaddr *sock_addr));
 
-_PROTOTYPE(extern void print_tcptpi, (int nl));
+_PROTOTYPE(extern void print_tcptpi, (int newline));
 
 _PROTOTYPE(extern char *printuid, (UID_ARG
         uid,
@@ -229,11 +229,11 @@ _PROTOTYPE(extern struct mounts *readmnt, (void));
 
 _PROTOTYPE(extern void rereaddev, (void));
 
-_PROTOTYPE(extern int safestrlen, (char *sp, int flags));
+_PROTOTYPE(extern int safestrlen, (char *str, int flags));
 
-_PROTOTYPE(extern void safestrprtn, (char *sp, int len, FILE *fs, int flags));
+_PROTOTYPE(extern void safestrprtn, (char *str, int len, FILE *stream, int flags));
 
-_PROTOTYPE(extern void safestrprt, (char *sp, FILE *fs, int flags));
+_PROTOTYPE(extern void safestrprt, (char *str, FILE *stream, int flags));
 
 _PROTOTYPE(extern int statsafely, (char *path, struct stat *buf));
 
@@ -245,7 +245,7 @@ _PROTOTYPE(extern int util_strftime, (char *fmtr, int fmtl, char *fmt));
 
 _PROTOTYPE(extern int vfy_dev, (struct l_dev *dp));
 
-_PROTOTYPE(extern char *x2dev, (char *s, dev_t *d));
+_PROTOTYPE(extern char *x2dev, (char *hex_str, dev_t *dev_ptr));
 
 # if    defined(HASBLKDEV)
 _PROTOTYPE(extern void find_bl_ino,(void));
@@ -261,11 +261,11 @@ _PROTOTYPE(extern int readcdrnode,(KA_T ca, struct cdrnode *c));
 _PROTOTYPE(extern void alloc_dcache,(void));
 _PROTOTYPE(extern void crc,(char *b, int l, unsigned *s));
 _PROTOTYPE(extern void crdbld,(void));
-_PROTOTYPE(extern int ctrl_dcache,(char *p));
-_PROTOTYPE(extern int dcpath,(int rw, int npw));
+_PROTOTYPE(extern int ctrl_dcache,(char *ctrl_char));
+_PROTOTYPE(extern int dcpath,(int read_write, int npw));
 _PROTOTYPE(extern int open_dcache,(int m, int r, struct stat *sb));
 _PROTOTYPE(extern int read_dcache,(void));
-_PROTOTYPE(extern int wr2DCfd,(char *b, unsigned *c));
+_PROTOTYPE(extern int wr2DCfd,(char *buf, unsigned *cnt));
 _PROTOTYPE(extern void write_dcache,(void));
 # endif    /* defined(HASDCACHE) */
 
@@ -300,7 +300,7 @@ _PROTOTYPE(extern char *ncache_lookup,(char *buf, int blen, int *fp));
 
 # if    defined(HASNLIST)
 _PROTOTYPE(extern void build_Nl,(struct drive_Nl *d));
-_PROTOTYPE(extern int get_Nl_value,(char *nn, struct drive_Nl *d, KA_T *v));
+_PROTOTYPE(extern int get_Nl_value,(char *nn, struct drive_Nl *d, KA_T *value));
 # endif    /* defined(HASNLIST) */
 
 # if    defined(HASPIPENODE)
@@ -333,7 +333,7 @@ _PROTOTYPE(extern int HASPRIVNMCACHE,(struct lfile *lf));
 
 # if    !defined(HASPRIVPRIPP)
 
-_PROTOTYPE(extern void printiproto, (int p));
+_PROTOTYPE(extern void printiproto, (int proto));
 
 # endif    /* !defined(HASPRIVPRIPP) */
 

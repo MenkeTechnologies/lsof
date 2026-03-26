@@ -107,7 +107,7 @@ _PROTOTYPE(static void clr_sect,(void));
 #  if	defined(HAS_STD_CLONE) && HAS_STD_CLONE==1
 #define	DCACHE_CLONE		rw_clone_sect
 #define	DCACHE_CLONE_LOCAL	1
-_PROTOTYPE(static int rw_clone_sect,(int m));
+_PROTOTYPE(static int rw_clone_sect,(int mode));
 #  endif	/* defined(HAS_STD_CLONE) && HAS_STD_CLONE==1 */
 # endif	/*!defined(DCACHE_CLONE) */
 
@@ -282,8 +282,8 @@ crcbld()
  */
 
 int
-dcpath(rw, npw)
-    int rw;				/* read (1) or write (2) mode */
+dcpath(read_write, npw)
+    int read_write;			/* read (1) or write (2) mode */
     int npw;			/* inhibit (0) or enable (1) no
 					 * path warning message */
 {
@@ -313,7 +313,7 @@ dcpath(rw, npw)
  * of this process is root, or the mode is read, or the process is neither
  * setuid-root nor setgid.
  */
-    if (MyRealUid == 0 || rw == 1 || (!SetuidRootState && !SetgidState))
+    if (MyRealUid == 0 || read_write == 1 || (!SetuidRootState && !SetgidState))
         DevCachePath[0] = DevCachePathArg;
     else
         DevCachePath[0] = (char *)NULL;
@@ -325,7 +325,7 @@ dcpath(rw, npw)
  * mode is write and the process is setgid.
  */
     if ((cp1 = getenv(HASENVDC)) && (l = strlen(cp1)) > 0
-    &&  !SetuidRootState && MyRealUid && (rw == 1 || !SetgidState)) {
+    &&  !SetuidRootState && MyRealUid && (read_write == 1 || !SetgidState)) {
         if (!(cp2 = mkstrcpy(cp1, (MALLOC_S *)NULL))) {
         (void) fprintf(stderr,
             "%s: no space for device cache path: %s=", ProgramName, HASENVDC);
@@ -348,7 +348,7 @@ dcpath(rw, npw)
  * If HASSYSDC is defined, record the path of the system-wide device
  * cache file, unless the mode is write.
  */
-    if (rw != 2)
+    if (read_write != 2)
         DevCachePath[2] = HASSYSDC;
     else
         DevCachePath[2] = (char *)NULL;
@@ -492,7 +492,7 @@ dcpath(rw, npw)
         &&  (l = strlen(cp2)) > 0
         &&  !SetuidRootState
         &&  MyRealUid
-        &&  (rw == 1 || !SetgidState))
+        &&  (read_write == 1 || !SetgidState))
         {
             if (i && buf[i - 1] == '/' && *cp2 == '/') {
             cp2++;
@@ -1132,15 +1132,15 @@ read_dhdr:
  */
 
 static int
-rw_clone_sect(m)
-    int m;				/* mode: 1 = read; 2 = write */
+rw_clone_sect(mode)
+    int mode;				/* mode: 1 = read; 2 = write */
 {
     char buf[MAXPATHLEN*2], *cp, *cp1;
     struct clone *c;
     struct l_dev *dp;
     int i, j, len, n;
 
-    if (m == 1) {
+    if (mode == 1) {
 
     /*
      * Read the clone section header and validate it.
@@ -1212,7 +1212,7 @@ bad_clone_index:
         Clone = c;
         }
         return(0);
-    } else if (m == 2) {
+    } else if (mode == 2) {
 
     /*
      * Write the clone section header.
@@ -1251,7 +1251,7 @@ bad_clone_index:
  * A shouldn't-happen case: mode neither 1 nor 2.
  */
     (void) fprintf(stderr, "%s: internal rw_clone_sect error: %d\n",
-        ProgramName, m);
+        ProgramName, mode);
     Exit(1);
     return(1);		/* This useless return(1) keeps some
 				 * compilers happy. */
@@ -1379,17 +1379,17 @@ write_dcache()
  */
 
 int
-wr2DCfd(b, c)
-    char *b;			/* buffer */
-    unsigned *c;			/* checksum receiver */
+wr2DCfd(buf, cnt)
+    char *buf;			/* buffer */
+    unsigned *cnt;			/* checksum receiver */
 {
     int bl, bw;
 
-    bl = strlen(b);
-    if (c)
-        (void) crc(b, bl, c);
+    bl = strlen(buf);
+    if (cnt)
+        (void) crc(buf, bl, cnt);
     while (bl > 0) {
-        if ((bw = write(DevCacheFd, b, bl)) < 0) {
+        if ((bw = write(DevCacheFd, buf, bl)) < 0) {
         if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't write to %s: %s\n",
@@ -1399,7 +1399,7 @@ wr2DCfd(b, c)
         DevCacheFd = -1;
         return(1);
         }
-        b += bw;
+        buf += bw;
         bl -= bw;
     }
     return(0);

@@ -70,10 +70,10 @@ char *pdvn_d2 = pdvn_d1;
  */
 
 int
-printdevname(dev, rdev, f, nty)
+printdevname(dev, rdev, force, nty)
     dev_t *dev;			/* device */
     dev_t *rdev;			/* raw device */
-    int f;				/* 1 = print trailing '\n' */
+    int force;				/* 1 = print trailing '\n' */
     int nty;			/* node type: N_BLK or N_CHR */
 {
 
@@ -108,7 +108,7 @@ printdevname_again:
             goto printdevname_again;
 #  endif	/* defined(HASDCACHE) */
 
-            safestrprt(DeviceTable[c->dx].name, stdout, f);
+            safestrprt(DeviceTable[c->dx].name, stdout, force);
             return(1);
         }
         }
@@ -127,7 +127,7 @@ printdevname_again:
 
     dp = lkupdev(dev, rdev, 1, r);
     if (dp) {
-        safestrprt(dp->name, stdout, f);
+        safestrprt(dp->name, stdout, force);
         return(1);
     }
 /*
