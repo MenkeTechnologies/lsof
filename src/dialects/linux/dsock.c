@@ -261,7 +261,7 @@ _PROTOTYPE(static int net6a2in6,(char *as, struct in6_addr *ad));
 
 void
 build_IPstates() {
-    if (!TcpSt) {
+    if (!TcpStateNames) {
         (void) enter_IPstate("TCP", "ESTABLISHED", TCP_ESTABLISHED);
         (void) enter_IPstate("TCP", "SYN_SENT", TCP_SYN_SENT);
         (void) enter_IPstate("TCP", "SYN_RECV", TCP_SYN_RECV);
@@ -533,7 +533,7 @@ get_ax25(p)
         if (!AX25sin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d AX25 hash pointer bytes\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct ax25sin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct ax25sin *)));
             Exit(1);
         }
     }
@@ -605,7 +605,7 @@ get_ax25(p)
             if (!(da = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d destination AX25 addr bytes: %s\n",
-                               Pn, (int) (len + 1), fp[3]);
+                               ProgramName, (int) (len + 1), fp[3]);
                 Exit(1);
             }
             (void) snpf(da, len + 1, "%s", fp[3]);
@@ -620,7 +620,7 @@ get_ax25(p)
             if (!(sa = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d source AX25 address bytes: %s\n",
-                               Pn, (int) (len + 1), fp[2]);
+                               ProgramName, (int) (len + 1), fp[2]);
                 Exit(1);
             }
             (void) snpf(sa, len + 1, "%s", fp[2]);
@@ -635,7 +635,7 @@ get_ax25(p)
             if (!(dev_ch = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d destination AX25 dev bytes: %s\n",
-                               Pn, (int) (len + 1), fp[1]);
+                               ProgramName, (int) (len + 1), fp[1]);
                 Exit(1);
             }
             (void) snpf(dev_ch, len + 1, "%s", fp[1]);
@@ -648,7 +648,7 @@ get_ax25(p)
         if (!(ap = (struct ax25sin *) malloc(sizeof(struct ax25sin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d byte ax25sin structure\n",
-                           Pn, (int) sizeof(struct ax25sin));
+                           ProgramName, (int) sizeof(struct ax25sin));
             Exit(1);
         }
         ap->da = da;
@@ -706,7 +706,7 @@ get_ipx(p)
         if (!Ipxsin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d IPX hash pointer bytes\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct ipxsin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct ipxsin *)));
             Exit(1);
         }
     }
@@ -731,10 +731,10 @@ get_ipx(p)
                 || !fp[4] || strcmp(fp[4], "State")
                 || !fp[5] || strcmp(fp[5], "Uid")
                 || !fp[6] || strcmp(fp[6], "Inode")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -781,7 +781,7 @@ get_ipx(p)
             if (!(la = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d local IPX address bytes: %s\n",
-                               Pn, (int) (len + 1), fp[0]);
+                               ProgramName, (int) (len + 1), fp[0]);
                 Exit(1);
             }
             (void) snpf(la, len + 1, "%s", fp[0]);
@@ -796,7 +796,7 @@ get_ipx(p)
             if (!(ra = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d remote IPX address bytes: %s\n",
-                               Pn, (int) (len + 1), fp[1]);
+                               ProgramName, (int) (len + 1), fp[1]);
                 Exit(1);
             }
             (void) snpf(ra, len + 1, "%s", fp[1]);
@@ -809,7 +809,7 @@ get_ipx(p)
         if (!(ip = (struct ipxsin *) malloc(sizeof(struct ipxsin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d byte ipxsin structure\n",
-                           Pn, (int) sizeof(struct ipxsin));
+                           ProgramName, (int) sizeof(struct ipxsin));
             Exit(1);
         }
         ip->inode = inode;
@@ -857,7 +857,7 @@ get_netlink(p)
         if (!Nlksin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d netlink hash pointer bytes\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct nlksin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct nlksin *)));
             Exit(1);
         }
     }
@@ -877,10 +877,10 @@ get_netlink(p)
              */
             if (!fp[1] || strcmp(fp[1], "Eth")
                 || !fp[9] || strcmp(fp[9], "Inode")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -916,7 +916,7 @@ get_netlink(p)
         if (!(lp = (struct nlksin *) malloc(sizeof(struct nlksin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d byte Netlink structure\n",
-                           Pn, (int) sizeof(struct nlksin));
+                           ProgramName, (int) sizeof(struct nlksin));
             Exit(1);
         }
         lp->inode = inode;
@@ -962,7 +962,7 @@ get_pack(p)
         if (!Packin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d packet hash pointer bytes\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct packin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct packin *)));
             Exit(1);
         }
     }
@@ -983,10 +983,10 @@ get_pack(p)
             if (!fp[2] || strcmp(fp[2], "Type")
                 || !fp[3] || strcmp(fp[3], "Proto")
                 || !fp[8] || strcmp(fp[8], "Inode")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -1026,7 +1026,7 @@ get_pack(p)
         if (!(pp = (struct packin *) malloc(sizeof(struct packin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d byte packet structure\n",
-                           Pn, (int) sizeof(struct packin));
+                           ProgramName, (int) sizeof(struct packin));
             Exit(1);
         }
         pp->inode = inode;
@@ -1077,7 +1077,7 @@ get_raw(p)
         if (!Rawsin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d raw hash pointer bytes\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct rawsin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct rawsin *)));
             Exit(1);
         }
     }
@@ -1099,10 +1099,10 @@ get_raw(p)
                 || !fp[2] || strcmp(fp[2], "rem_address")
                 || !fp[3] || strcmp(fp[3], "st")
                 || !fp[11] || strcmp(fp[11], "inode")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -1135,7 +1135,7 @@ get_raw(p)
             if (!(la = (char *) malloc(lal + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d local raw address bytes: %s\n",
-                               Pn, (int) (lal + 1), fp[1]);
+                               ProgramName, (int) (lal + 1), fp[1]);
                 Exit(1);
             }
             (void) snpf(la, lal + 1, "%s", fp[1]);
@@ -1147,7 +1147,7 @@ get_raw(p)
             if (!(ra = (char *) malloc(ral + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d remote raw address bytes: %s\n",
-                               Pn, (int) (ral + 1), fp[2]);
+                               ProgramName, (int) (ral + 1), fp[2]);
                 Exit(1);
             }
             (void) snpf(ra, ral + 1, "%s", fp[2]);
@@ -1159,7 +1159,7 @@ get_raw(p)
             if (!(sp = (char *) malloc(spl + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d remote raw state bytes: %s\n",
-                               Pn, (int) (spl + 1), fp[2]);
+                               ProgramName, (int) (spl + 1), fp[2]);
                 Exit(1);
             }
             (void) snpf(sp, spl + 1, "%s", fp[3]);
@@ -1171,7 +1171,7 @@ get_raw(p)
         if (!(rp = (struct rawsin *) malloc(sizeof(struct rawsin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d byte rawsin structure\n",
-                           Pn, (int) sizeof(struct rawsin));
+                           ProgramName, (int) sizeof(struct rawsin));
             Exit(1);
         }
         rp->inode = inode;
@@ -1250,7 +1250,7 @@ get_tcpudp(p, pr, clr)
                                                   sizeof(struct tcp_udp *)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for TCP&UDP hash buckets\n",
-                           Pn, (int) (TcpUdp_bucks * sizeof(struct tcp_udp *)));
+                           ProgramName, (int) (TcpUdp_bucks * sizeof(struct tcp_udp *)));
             Exit(1);
         }
     }
@@ -1274,10 +1274,10 @@ get_tcpudp(p, pr, clr)
                 || !fp[4] || strcmp(fp[4], "tx_queue")
                 || !fp[5] || strcmp(fp[5], "rx_queue")
                 || !fp[11] || strcmp(fp[11], "inode")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -1338,7 +1338,7 @@ get_tcpudp(p, pr, clr)
         if (!(tp = (struct tcp_udp *) malloc(sizeof(struct tcp_udp)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for tcp_udp struct\n",
-                           Pn, (int) sizeof(struct tcp_udp));
+                           ProgramName, (int) sizeof(struct tcp_udp));
             Exit(1);
         }
         tp->inode = inode;
@@ -1396,7 +1396,7 @@ get_raw6(p)
         if (!Rawsin6) {
         (void) fprintf(stderr,
             "%s: can't allocate %d raw6 hash pointer bytes\n",
-            Pn, (int)(INOBUCKS * sizeof(struct rawsin *)));
+            ProgramName, (int)(INOBUCKS * sizeof(struct rawsin *)));
         Exit(1);
         }
     }
@@ -1419,10 +1419,10 @@ get_raw6(p)
         ||  !fp[3]  || strcmp(fp[3],  "st")
         ||  !fp[11] || strcmp(fp[11], "inode"))
         {
-            if (!Fwarn) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
                 "%s: WARNING: unsupported format: %s\n",
-                Pn, p);
+                ProgramName, p);
             }
             break;
         }
@@ -1455,7 +1455,7 @@ get_raw6(p)
         if (!(la = (char *)malloc(lal + 1))) {
             (void) fprintf(stderr,
             "%s: can't allocate %d local raw6 address bytes: %s\n",
-            Pn, (int)(lal + 1), fp[1]);
+            ProgramName, (int)(lal + 1), fp[1]);
             Exit(1);
         }
         (void) snpf(la, lal + 1, "%s", fp[1]);
@@ -1467,7 +1467,7 @@ get_raw6(p)
         if (!(ra = (char *)malloc(ral + 1))) {
             (void) fprintf(stderr,
             "%s: can't allocate %d remote raw6 address bytes: %s\n",
-            Pn, (int)(ral + 1), fp[2]);
+            ProgramName, (int)(ral + 1), fp[2]);
             Exit(1);
         }
         (void) snpf(ra, ral + 1, "%s", fp[2]);
@@ -1479,7 +1479,7 @@ get_raw6(p)
         if (!(sp = (char *)malloc(spl + 1))) {
             (void) fprintf(stderr,
             "%s: can't allocate %d remote raw6 state bytes: %s\n",
-            Pn, (int)(spl + 1), fp[2]);
+            ProgramName, (int)(spl + 1), fp[2]);
             Exit(1);
         }
         (void) snpf(sp, spl + 1, "%s", fp[3]);
@@ -1491,7 +1491,7 @@ get_raw6(p)
         if (!(rp = (struct rawsin *)malloc(sizeof(struct rawsin)))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d byte rawsin structure for IPv6\n",
-            Pn, (int)sizeof(struct rawsin));
+            ProgramName, (int)sizeof(struct rawsin));
         Exit(1);
         }
         rp->inode = inode;
@@ -1581,7 +1581,7 @@ get_tcpudp6(p, pr, clr)
         {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for TCP6&UDP6 hash buckets\n",
-            Pn, (int)(TcpUdp6_bucks * sizeof(struct tcp_udp6 *)));
+            ProgramName, (int)(TcpUdp6_bucks * sizeof(struct tcp_udp6 *)));
         Exit(1);
         }
     }
@@ -1606,10 +1606,10 @@ get_tcpudp6(p, pr, clr)
         ||  !fp[5]  || strcmp(fp[5],  "rx_queue")
         ||  !fp[11] || strcmp(fp[11], "inode"))
         {
-            if (!Fwarn) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
                 "%s: WARNING: unsupported format: %s\n",
-                Pn, p);
+                ProgramName, p);
             }
             break;
         }
@@ -1666,7 +1666,7 @@ get_tcpudp6(p, pr, clr)
         if (!(tp6 = (struct tcp_udp6 *)malloc(sizeof(struct tcp_udp6)))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for tcp_udp6 struct\n",
-            Pn, (int)sizeof(struct tcp_udp6));
+            ProgramName, (int)sizeof(struct tcp_udp6));
         Exit(1);
         }
         tp6->inode = inode;
@@ -1723,7 +1723,7 @@ get_unix(p)
         if (!Uxsin) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for Unix socket info\n",
-                           Pn, (int) (INOBUCKS * sizeof(struct uxsin *)));
+                           ProgramName, (int) (INOBUCKS * sizeof(struct uxsin *)));
         }
     }
 /*
@@ -1749,10 +1749,10 @@ get_unix(p)
                 || !fp[6] || strcmp(fp[6], "Inode")
                 || nf < 8
                 || !fp[7] || strcmp(fp[7], "Path")) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: unsupported format: %s\n",
-                                   Pn, p);
+                                   ProgramName, p);
                 }
                 break;
             }
@@ -1781,7 +1781,7 @@ get_unix(p)
             if (!(pcb = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for UNIX PCB: %s\n",
-                               Pn, (int) (len + 1), fp[0]);
+                               ProgramName, (int) (len + 1), fp[0]);
                 Exit(1);
             }
             (void) snpf(pcb, len + 1, "0x%s", fp[0]);
@@ -1790,7 +1790,7 @@ get_unix(p)
             if (!(path = (char *) malloc(len + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for UNIX path \"%s\"\n",
-                               Pn, (int) (len + 1), fp[7]);
+                               ProgramName, (int) (len + 1), fp[7]);
                 Exit(1);
             }
             (void) snpf(path, len + 1, "%s", fp[7]);
@@ -1803,7 +1803,7 @@ get_unix(p)
         if (!(up = (struct uxsin *) malloc(sizeof(struct uxsin)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for uxsin struct\n",
-                           Pn, (int) sizeof(struct uxsin));
+                           ProgramName, (int) sizeof(struct uxsin));
             Exit(1);
         }
         up->inode = inode;
@@ -1882,7 +1882,7 @@ print_ax25info(ap)
     int ds;
     MALLOC_S pl = (MALLOC_S) 0;
 
-    if (Lf->nma)
+    if (CurrentLocalFile->nma)
         return;
     if (ap->sa) {
         ds = (ap->da && strcmp(ap->da, "*")) ? 1 : 0;
@@ -1915,11 +1915,11 @@ print_ax25info(ap)
     if (!(cp = (char *) malloc(pl + 1))) {
         (void) fprintf(stderr,
                        "%s: can't allocate %d bytes for AX25 sock state, PID: %d\n",
-                       Pn, (int) (pl + 1), Lp->pid);
+                       ProgramName, (int) (pl + 1), CurrentLocalProc->pid);
         Exit(1);
     }
     (void) snpf(cp, pl + 1, "%s", pbuf);
-    Lf->nma = cp;
+    CurrentLocalFile->nma = cp;
 }
 
 
@@ -1934,7 +1934,7 @@ print_ipxinfo(ip)
     char *cp, pbuf[256];
     MALLOC_S pl;
 
-    if (Lf->nma)
+    if (CurrentLocalFile->nma)
         return;
     (void) snpf(pbuf, sizeof(pbuf), "(Tx=%lx Rx=%lx State=%02x)",
                 ip->txq, ip->rxq, ip->state);
@@ -1942,11 +1942,11 @@ print_ipxinfo(ip)
     if (!(cp = (char *) malloc(pl + 1))) {
         (void) fprintf(stderr,
                        "%s: can't allocate %d bytes for IPX sock state, PID: %d\n",
-                       Pn, (int) (pl + 1), Lp->pid);
+                       ProgramName, (int) (pl + 1), CurrentLocalProc->pid);
         Exit(1);
     }
     (void) snpf(cp, pl + 1, "%s", pbuf);
-    Lf->nma = cp;
+    CurrentLocalFile->nma = cp;
 }
 
 
@@ -1963,18 +1963,18 @@ print_tcptpi(nl)
     int ps = 0;
     int s;
 
-    if ((Ftcptpi & TCPTPI_STATE) && Lf->lts.type == 0) {
-        if (!TcpSt)
+    if ((OptTcpTpiInfo & TCPTPI_STATE) && CurrentLocalFile->lts.type == 0) {
+        if (!TcpStateNames)
             (void) build_IPstates();
-        if ((s = Lf->lts.state.i + TcpStOff) < 0 || s >= TcpNstates) {
+        if ((s = CurrentLocalFile->lts.state.i + TcpStateOffset) < 0 || s >= TcpNumStates) {
             (void) snpf(buf, sizeof(buf), "UNKNOWN_TCP_STATE_%d",
-                        Lf->lts.state.i);
+                        CurrentLocalFile->lts.state.i);
             cp = buf;
         } else
-            cp = TcpSt[s];
+            cp = TcpStateNames[s];
         if (cp) {
-            if (Ffield)
-                (void) printf("%cST=%s%c", LSOF_FID_TCPTPI, cp, Terminator);
+            if (OptFieldOutput)
+                (void) printf("%cST=%s%c", LSOF_FID_TCP_TPI_INFO, cp, Terminator);
             else {
                 putchar('(');
                 (void) fputs(cp, stdout);
@@ -1984,32 +1984,32 @@ print_tcptpi(nl)
     }
 
 # if    defined(HASTCPTPIQ)
-    if (Ftcptpi & TCPTPI_QUEUES) {
-        if (Lf->lts.rqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_QUEUES) {
+        if (CurrentLocalFile->lts.rqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", Lf->lts.rq);
-        if (Ffield)
+        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.sqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.sqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", Lf->lts.sq);
-        if (Ffield)
+        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
@@ -2017,39 +2017,39 @@ print_tcptpi(nl)
 # endif    /* defined(HASTCPTPIQ) */
 
 # if    defined(HASTCPTPIW)
-    if (Ftcptpi & TCPTPI_WINDOWS) {
-        if (Lf->lts.rws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
+        if (CurrentLocalFile->lts.rws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", Lf->lts.rw);
-        if (Ffield)
+        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.wws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.wws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", Lf->lts.ww);
-        if (Ffield)
+        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
     }
 # endif    /* defined(HASTCPTPIW) */
 
-    if (!Ffield && ps)
+    if (!OptFieldOutput && ps)
         putchar(')');
     if (nl)
         putchar('\n');
@@ -2090,10 +2090,10 @@ process_proc_sock(p, s, ss, l, lss)
 /*
  * Enter offset, if possible.
  */
-    if (Foffset || !Fsize) {
+    if (OptOffset || !OptSize) {
         if (l && (lss & SB_SIZE) && OffType) {
-            Lf->off = (SZOFFTYPE) l->st_size;
-            Lf->off_def = 1;
+            CurrentLocalFile->off = (SZOFFTYPE) l->st_size;
+            CurrentLocalFile->off_def = 1;
         }
     }
 /*
@@ -2115,11 +2115,11 @@ process_proc_sock(p, s, ss, l, lss)
          * save the destination and source addresses; save the send and receive
          * queue sizes; and save the connection state.
          */
-        (void) snpf(Lf->type, sizeof(Lf->type), "ax25");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ax25");
         if (ap->dev_ch)
             (void) enter_dev_ch(ap->dev_ch);
-        Lf->inode = ap->inode;
-        Lf->inp_ty = 1;
+        CurrentLocalFile->inode = ap->inode;
+        CurrentLocalFile->inp_ty = 1;
         print_ax25info(ap);
         return;
     }
@@ -2138,17 +2138,17 @@ process_proc_sock(p, s, ss, l, lss)
          * Set the type to "ipx"; enter the inode and device numbers; store
          * the addresses, queue sizes, and state in the NAME column.
          */
-        (void) snpf(Lf->type, sizeof(Lf->type), "ipx");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ipx");
         if (ss & SB_INO) {
-            Lf->inode = (INODETYPE) s->st_ino;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+            CurrentLocalFile->inp_ty = 1;
         }
         if (ss & SB_DEV) {
-            Lf->dev = s->st_dev;
-            Lf->dev_def = 1;
+            CurrentLocalFile->dev = s->st_dev;
+            CurrentLocalFile->dev_def = 1;
         }
-        cp = Namech;
-        nl = Namechl;
+        cp = NameChars;
+        nl = NameCharsLength;
         *cp = '\0';
         if (ip->la && nl) {
 
@@ -2180,8 +2180,8 @@ process_proc_sock(p, s, ss, l, lss)
             }
         }
         (void) print_ipxinfo(ip);
-        if (Namech[0])
-            enter_nm(Namech);
+        if (NameChars[0])
+            enter_nm(NameChars);
         return;
     }
     if (Rawpath) {
@@ -2199,13 +2199,13 @@ process_proc_sock(p, s, ss, l, lss)
          * Set the type to "raw"; enter the inode number; store the local
          * address, remote address, and state in the NAME column.
          */
-        (void) snpf(Lf->type, sizeof(Lf->type), "raw");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "raw");
         if (ss & SB_INO) {
-            Lf->inode = (INODETYPE) s->st_ino;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+            CurrentLocalFile->inp_ty = 1;
         }
-        cp = Namech;
-        nl = Namechl - 2;
+        cp = NameChars;
+        nl = NameCharsLength - 2;
         *cp = '\0';
         if (rp->la && rp->lal) {
 
@@ -2237,16 +2237,16 @@ process_proc_sock(p, s, ss, l, lss)
              * form "st=x...x".
              */
 
-            if (nl > (len = ((cp == Namech) ? 0 : 1) + 3 + rp->spl)) {
+            if (nl > (len = ((cp == NameChars) ? 0 : 1) + 3 + rp->spl)) {
                 (void) snpf(cp, nl, "%sst=%s",
-                            (cp == Namech) ? "" : " ", rp->sp);
+                            (cp == NameChars) ? "" : " ", rp->sp);
                 cp += len;
                 *cp = '\0';
                 nl -= len;
             }
         }
-        if (Namech[0])
-            enter_nm(Namech);
+        if (NameChars[0])
+            enter_nm(NameChars);
         return;
     }
     if (Nlkpath) {
@@ -2264,7 +2264,7 @@ process_proc_sock(p, s, ss, l, lss)
          * column.  Save the inode number.
          */
 
-        (void) snpf(Lf->type, sizeof(Lf->type), "netlink");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "netlink");
         switch (np->pr) {
 
 #if    defined(NETLINK_ROUTE)
@@ -2382,15 +2382,15 @@ process_proc_sock(p, s, ss, l, lss)
 #endif    /* defined(NETLINK_ECRYPTFS) */
 
             default:
-                snpf(Namech, Namechl, "unknown protocol: %d", np->pr);
+                snpf(NameChars, NameCharsLength, "unknown protocol: %d", np->pr);
                 cp = (char *) NULL;
         }
         if (cp)
-            (void) snpf(Namech, Namechl, "%s", cp);
-        Lf->inode = (INODETYPE) s->st_ino;
-        Lf->inp_ty = 1;
-        if (Namech[0])
-            enter_nm(Namech);
+            (void) snpf(NameChars, NameCharsLength, "%s", cp);
+        CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+        CurrentLocalFile->inp_ty = 1;
+        if (NameChars[0])
+            enter_nm(NameChars);
         return;
     }
     if (Packpath) {
@@ -2409,7 +2409,7 @@ process_proc_sock(p, s, ss, l, lss)
          * column.  Put the protocol name in the NODE column and the inode
          * number in the DEVICE column.
          */
-        (void) snpf(Lf->type, sizeof(Lf->type), "pack");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "pack");
         switch (pp->ty) {
 
 #if    defined(SOCK_STREAM)
@@ -2449,11 +2449,11 @@ process_proc_sock(p, s, ss, l, lss)
 #endif    /* defined(SOCK_PACKET) */
 
             default:
-                snpf(Namech, Namechl, "unknown type: %d", pp->ty);
+                snpf(NameChars, NameCharsLength, "unknown type: %d", pp->ty);
                 cp = (char *) NULL;
         }
         if (cp)
-            (void) snpf(Namech, Namechl, "type=SOCK_%s", cp);
+            (void) snpf(NameChars, NameCharsLength, "type=SOCK_%s", cp);
         switch (pp->pr) {
 
 #if    defined(ETH_P_LOOP)
@@ -2761,16 +2761,16 @@ process_proc_sock(p, s, ss, l, lss)
                 tbuf[sizeof(tbuf) - 1] = '\0';
                 cp = tbuf;
         }
-        (void) snpf(Lf->iproto, sizeof(Lf->iproto), "%.*s", IPROTOL - 1, cp);
-        Lf->inp_ty = 2;
+        (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%.*s", IPROTOL - 1, cp);
+        CurrentLocalFile->inp_ty = 2;
         if (ss & SB_INO) {
-            (void) snpf(tbuf, sizeof(tbuf), InodeFmt_d,
+            (void) snpf(tbuf, sizeof(tbuf), InodeFormatDecimal,
                         (INODETYPE) s->st_ino);
             tbuf[sizeof(tbuf) - 1] = '\0';
             enter_dev_ch(tbuf);
         }
-        if (Namech[0])
-            enter_nm(Namech);
+        if (NameChars[0])
+            enter_nm(NameChars);
         return;
     }
     if (UNIXpath) {
@@ -2788,18 +2788,18 @@ process_proc_sock(p, s, ss, l, lss)
          * Set the type to "unix"; enter the PCB address in the DEVICE column;
          * enter the inode number; and save the optional path.
          */
-        if (Funix)
-            Lf->sf |= SELUNX;
-        (void) snpf(Lf->type, sizeof(Lf->type), "unix");
+        if (OptUnixSocket)
+            CurrentLocalFile->sf |= SELUNX;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
         if (up->pcb)
             enter_dev_ch(up->pcb);
         if (ss & SB_INO) {
-            Lf->inode = (INODETYPE) s->st_ino;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+            CurrentLocalFile->inp_ty = 1;
         }
         path = up->path ? up->path : p;
         (void) enter_nm(path);
-        if (Sfile) {
+        if (SearchFileChain) {
 
             /*
              * See if this UNIX domain socket was specified as a search
@@ -2817,7 +2817,7 @@ process_proc_sock(p, s, ss, l, lss)
                  * a device and node number search.
                  *
                  * Note: that requires the saving, temporary modification and
-                 *	 restoration of some *Lf values.
+                 *	 restoration of some *CurrentLocalFile values.
                  */
                 unsigned char sv_dev_def;    /* saved dev_def */
                 unsigned char sv_inp_ty;    /* saved inp_ty */
@@ -2826,26 +2826,26 @@ process_proc_sock(p, s, ss, l, lss)
                 INODETYPE sv_inode;        /* saved inode */
                 dev_t sv_rdev;        /* saved rdev */
 
-                sv_dev_def = Lf->dev_def;
-                sv_dev = Lf->dev;
-                sv_inode = Lf->inode;
-                sv_inp_ty = Lf->inp_ty;
-                sv_rdev_def = Lf->rdev_def;
-                sv_rdev = Lf->rdev;
-                Lf->dev_def = Lf->inp_ty = Lf->rdev_def = 1;
-                Lf->dev = up->sb_dev;
-                Lf->inode = up->sb_ino;
-                Lf->rdev = up->sb_rdev;
+                sv_dev_def = CurrentLocalFile->dev_def;
+                sv_dev = CurrentLocalFile->dev;
+                sv_inode = CurrentLocalFile->inode;
+                sv_inp_ty = CurrentLocalFile->inp_ty;
+                sv_rdev_def = CurrentLocalFile->rdev_def;
+                sv_rdev = CurrentLocalFile->rdev;
+                CurrentLocalFile->dev_def = CurrentLocalFile->inp_ty = CurrentLocalFile->rdev_def = 1;
+                CurrentLocalFile->dev = up->sb_dev;
+                CurrentLocalFile->inode = up->sb_ino;
+                CurrentLocalFile->rdev = up->sb_rdev;
                 if (is_file_named((char *) NULL, 0)) {
                     f = 1;
-                    Lf->sf |= SELNM;
+                    CurrentLocalFile->sf |= SELNM;
                 }
-                Lf->dev_def = sv_dev_def;
-                Lf->dev = sv_dev;
-                Lf->inode = sv_inode;
-                Lf->inp_ty = sv_inp_ty;
-                Lf->rdev_def = sv_rdev_def;
-                Lf->rdev = sv_rdev;
+                CurrentLocalFile->dev_def = sv_dev_def;
+                CurrentLocalFile->dev = sv_dev;
+                CurrentLocalFile->inode = sv_inode;
+                CurrentLocalFile->inp_ty = sv_inp_ty;
+                CurrentLocalFile->rdev_def = sv_rdev_def;
+                CurrentLocalFile->rdev = sv_rdev;
             }
             if (!f && (ss & SB_MODE)) {
 
@@ -2855,7 +2855,7 @@ process_proc_sock(p, s, ss, l, lss)
                  */
                 if (is_file_named(path,
                                   ((s->st_mode & S_IFMT) == S_IFCHR)) ? 1 : 0) {
-                    Lf->sf |= SELNM;
+                    CurrentLocalFile->sf |= SELNM;
                 }
             }
         }
@@ -2864,12 +2864,12 @@ process_proc_sock(p, s, ss, l, lss)
 
 #if    defined(HASIPv6)
     if (Raw6path) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
         (void) get_raw6(Raw6path);
         (void) free((FREE_P *)Raw6path);
         Raw6path = (char *)NULL;
     }
-    if (!Fxopt && (ss & SB_INO)
+    if (!OptCrossoverExt && (ss & SB_INO)
     &&  (rp = check_raw6((INODETYPE)s->st_ino))
     ) {
 
@@ -2879,12 +2879,12 @@ process_proc_sock(p, s, ss, l, lss)
      * Set the type to "raw6"; enter the inode number; store the local
      * address, remote address, and state in the NAME column.
      */
-        (void) snpf(Lf->type, sizeof(Lf->type), "raw6");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "raw6");
         if (ss & SB_INO) {
-        Lf->inode = (INODETYPE)s->st_ino;
-        Lf->inp_ty = 1;
+        CurrentLocalFile->inode = (INODETYPE)s->st_ino;
+        CurrentLocalFile->inp_ty = 1;
         }
-        cp = Namech;
+        cp = NameChars;
         nl = MAXPATHLEN - 2;
         if (rp->la && rp->lal) {
 
@@ -2916,37 +2916,37 @@ process_proc_sock(p, s, ss, l, lss)
          * form "st=x...x".
          */
 
-        if (nl > (len = ((cp == Namech) ? 0 : 1) + 3 + rp->spl)) {
+        if (nl > (len = ((cp == NameChars) ? 0 : 1) + 3 + rp->spl)) {
             (void) snpf(cp, nl, "%sst=%s",
-            (cp == Namech) ? "" : " ", rp->sp);
+            (cp == NameChars) ? "" : " ", rp->sp);
             cp += len;
             *cp = '\0';
             nl -= len;
         }
         }
-        if (Namech[0])
-        enter_nm(Namech);
+        if (NameChars[0])
+        enter_nm(NameChars);
         return;
     }
     if (TCP6path) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
         (void) get_tcpudp6(TCP6path, 0, 1);
         (void) free((FREE_P *)TCP6path);
         TCP6path = (char *)NULL;
     }
     if (UDP6path) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
         (void) get_tcpudp6(UDP6path, 1, 0);
         (void) free((FREE_P *)UDP6path);
         UDP6path = (char *)NULL;
     }
     if (UDPLITE6path) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
         (void) get_tcpudp6(UDPLITE6path, 2, 0);
         (void) free((FREE_P *)UDPLITE6path);
         UDPLITE6path = (char *)NULL;
     }
-    if (!Fxopt && (ss & SB_INO)
+    if (!OptCrossoverExt && (ss & SB_INO)
     &&  (tp6 = check_tcpudp6((INODETYPE)s->st_ino, &pr))
     ) {
 
@@ -2958,40 +2958,40 @@ process_proc_sock(p, s, ss, l, lss)
      * and foreign IPv6 addresses; save the type and protocol; and
      * (optionally) save the queue sizes.
      */
-        i = tp6->state + TcpStOff;
-        if (TcpStXn) {
+        i = tp6->state + TcpStateOffset;
+        if (TcpStateExcludeCount) {
 
         /*
          * Check for state exclusion.
          */
-        if (i >= 0 && i < TcpNstates) {
-            if (TcpStX[i]) {
-            Lf->sf |= SELEXCLF;
+        if (i >= 0 && i < TcpNumStates) {
+            if (TcpStateExclude[i]) {
+            CurrentLocalFile->sf |= SELEXCLF;
             return;
             }
         }
         }
-        if (TcpStIn) {
+        if (TcpStateIncludeCount) {
 
         /*
          * Check for state inclusion.
          */
-        if (i >= 0 && i < TcpNstates) {
-            if (TcpStI[i])
-            TcpStI[i] = 2;
+        if (i >= 0 && i < TcpNumStates) {
+            if (TcpStateInclude[i])
+            TcpStateInclude[i] = 2;
             else {
-            Lf->sf |= SELEXCLF;
+            CurrentLocalFile->sf |= SELEXCLF;
             return;
            }
         }
         }
-        if (Fnet && (FnetTy != 4))
-        Lf->sf |= SELNET;
-        (void) snpf(Lf->type, sizeof(Lf->type), "IPv6");
-        (void) snpf(Lf->iproto, sizeof(Lf->iproto), "%.*s", IPROTOL-1, pr);
-        Lf->inp_ty = 2;
+        if (OptNetwork && (OptNetworkType != 4))
+        CurrentLocalFile->sf |= SELNET;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "IPv6");
+        (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%.*s", IPROTOL-1, pr);
+        CurrentLocalFile->inp_ty = 2;
         if (ss && SB_INO) {
-        (void) snpf(tbuf, sizeof(tbuf), InodeFmt_d,
+        (void) snpf(tbuf, sizeof(tbuf), InodeFormatDecimal,
             (INODETYPE)s->st_ino);
         tbuf[sizeof(tbuf) - 1] = '\0';
         enter_dev_ch(tbuf);
@@ -3014,13 +3014,13 @@ process_proc_sock(p, s, ss, l, lss)
             la += 12;
         }
         ent_inaddr(la, tp6->lport, fa, tp6->fport, af);
-        Lf->lts.type = tp6->proto;
-        Lf->lts.state.i = tp6->state;
+        CurrentLocalFile->lts.type = tp6->proto;
+        CurrentLocalFile->lts.state.i = tp6->state;
 
 #if     defined(HASTCPTPIQ)
-        Lf->lts.rq = tp6->rxq;
-        Lf->lts.sq = tp6->txq;
-        Lf->lts.rqs = Lf->lts.sqs = 1;
+        CurrentLocalFile->lts.rq = tp6->rxq;
+        CurrentLocalFile->lts.sq = tp6->txq;
+        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
 #endif  /* defined(HASTCPTPIQ) */
 
         return;
@@ -3028,24 +3028,24 @@ process_proc_sock(p, s, ss, l, lss)
 #endif    /* defined(HASIPv6) */
 
     if (TCPpath) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
             (void) get_tcpudp(TCPpath, 0, 1);
         (void) free((FREE_P *) TCPpath);
         TCPpath = (char *) NULL;
     }
     if (UDPpath) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
             (void) get_tcpudp(UDPpath, 1, 0);
         (void) free((FREE_P *) UDPpath);
         UDPpath = (char *) NULL;
     }
     if (UDPLITEpath) {
-        if (!Fxopt)
+        if (!OptCrossoverExt)
             (void) get_tcpudp(UDPLITEpath, 2, 0);
         (void) free((FREE_P *) UDPLITEpath);
         UDPLITEpath = (char *) NULL;
     }
-    if (!Fxopt && (ss & SB_INO)
+    if (!OptCrossoverExt && (ss & SB_INO)
         && (tp = check_tcpudp((INODETYPE) s->st_ino, &pr))
             ) {
 
@@ -3057,46 +3057,46 @@ process_proc_sock(p, s, ss, l, lss)
          * save the local and foreign IPv4 addresses; save the type and
          * protocol; and (optionally) save the queue sizes.
          */
-        i = tp->state + TcpStOff;
-        if (TcpStXn) {
+        i = tp->state + TcpStateOffset;
+        if (TcpStateExcludeCount) {
 
             /*
              * Check for state exclusion.
              */
-            if (i >= 0 && i < TcpNstates) {
-                if (TcpStX[i]) {
-                    Lf->sf |= SELEXCLF;
+            if (i >= 0 && i < TcpNumStates) {
+                if (TcpStateExclude[i]) {
+                    CurrentLocalFile->sf |= SELEXCLF;
                     return;
                 }
             }
         }
-        if (TcpStIn) {
+        if (TcpStateIncludeCount) {
 
             /*
              * Check for state inclusion.
              */
-            if (i >= 0 && i < TcpNstates) {
-                if (TcpStI[i])
-                    TcpStI[i] = 2;
+            if (i >= 0 && i < TcpNumStates) {
+                if (TcpStateInclude[i])
+                    TcpStateInclude[i] = 2;
                 else {
-                    Lf->sf |= SELEXCLF;
+                    CurrentLocalFile->sf |= SELEXCLF;
                     return;
                 }
             }
         }
-        if (Fnet && (FnetTy != 6))
-            Lf->sf |= SELNET;
+        if (OptNetwork && (OptNetworkType != 6))
+            CurrentLocalFile->sf |= SELNET;
 
 #if    defined(HASIPv6)
-        (void) snpf(Lf->type, sizeof(Lf->type), "IPv4");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "IPv4");
 #else	/* !defined(HASIPv6) */
-        (void) snpf(Lf->type, sizeof(Lf->type), "inet");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
 #endif    /* defined(HASIPv6) */
 
-        (void) snpf(Lf->iproto, sizeof(Lf->iproto), "%.*s", IPROTOL - 1, pr);
-        Lf->inp_ty = 2;
+        (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%.*s", IPROTOL - 1, pr);
+        CurrentLocalFile->inp_ty = 2;
         if (ss & SB_INO) {
-            (void) snpf(tbuf, sizeof(tbuf), InodeFmt_d,
+            (void) snpf(tbuf, sizeof(tbuf), InodeFormatDecimal,
                         (INODETYPE) s->st_ino);
             tbuf[sizeof(tbuf) - 1] = '\0';
             enter_dev_ch(tbuf);
@@ -3112,13 +3112,13 @@ process_proc_sock(p, s, ss, l, lss)
         } else
             la = (unsigned char *) NULL;
         ent_inaddr(la, tp->lport, fa, tp->fport, AF_INET);
-        Lf->lts.type = tp->proto;
-        Lf->lts.state.i = tp->state;
+        CurrentLocalFile->lts.type = tp->proto;
+        CurrentLocalFile->lts.state.i = tp->state;
 
 #if     defined(HASTCPTPIQ)
-        Lf->lts.rq = tp->rxq;
-        Lf->lts.sq = tp->txq;
-        Lf->lts.rqs = Lf->lts.sqs = 1;
+        CurrentLocalFile->lts.rq = tp->rxq;
+        CurrentLocalFile->lts.sq = tp->txq;
+        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
 #endif  /* defined(HASTCPTPIQ) */
 
         return;
@@ -3126,16 +3126,16 @@ process_proc_sock(p, s, ss, l, lss)
 /*
  * The socket's protocol can't be identified.
  */
-    (void) snpf(Lf->type, sizeof(Lf->type), "sock");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "sock");
     if (ss & SB_INO) {
-        Lf->inode = (INODETYPE) s->st_ino;
-        Lf->inp_ty = 1;
+        CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+        CurrentLocalFile->inp_ty = 1;
     }
     if (ss & SB_DEV) {
-        Lf->dev = s->st_dev;
-        Lf->dev_def = 1;
+        CurrentLocalFile->dev = s->st_dev;
+        CurrentLocalFile->dev_def = 1;
     }
-    enter_nm(Fxopt ? "can't identify protocol (-X specified)"
+    enter_nm(OptCrossoverExt ? "can't identify protocol (-X specified)"
                    : "can't identify protocol");
 }
 

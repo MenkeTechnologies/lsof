@@ -106,7 +106,7 @@ cvtoe(os)
     if (!(cs = (char *) malloc(ol + 1))) {
         (void) fprintf(stderr,
                        "%s: can't allocate %d bytes for octal-escaping.\n",
-                       Pn, ol + 1);
+                       ProgramName, ol + 1);
         Exit(1);
     }
 /*
@@ -156,7 +156,7 @@ cvtoe(os)
             if (!(cs = (char *) realloc(cs, cl + 1))) {
                 (void) fprintf(stderr,
                                "%s: can't realloc %d bytes for octal-escaping.\n",
-                               Pn, cl + 1);
+                               ProgramName, cl + 1);
                 Exit(1);
             }
         }
@@ -205,9 +205,9 @@ getmntdev(dn, s, ss)
         int ln = 0;
         size_t sz;
 
-        if ((MntSup != 2) || !MntSupP)
+        if ((MountSupplementState != 2) || !MountSupplementPath)
         return(0);
-        if (!is_readable(MntSupP, 1)) {
+        if (!is_readable(MountSupplementPath, 1)) {
 
         /*
          * The mount supplement file isn't readable.
@@ -215,14 +215,14 @@ getmntdev(dn, s, ss)
         err = 1;
         return(0);
         }
-        if (!(fs = open_proc_stream(MntSupP, "r", &vbuf, &vsz, 0))) {
+        if (!(fs = open_proc_stream(MountSupplementPath, "r", &vbuf, &vsz, 0))) {
 
         /*
          * The mount supplement file can't be opened for reading.
          */
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, "%s: can't open(%s): %s\n",
-            Pn, MntSupP, strerror(errno));
+            ProgramName, MountSupplementPath, strerror(errno));
         err = 1;
         return(0);
         }
@@ -240,10 +240,10 @@ getmntdev(dn, s, ss)
          * The mount supplement line doesn't begin with the absolute
          * path character '/'.
          */
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: %s line %d: no path: \"%s\"\n",
-                Pn, MntSupP, ln, buf);
+                ProgramName, MountSupplementPath, ln, buf);
             err = 1;
             continue;
         }
@@ -253,10 +253,10 @@ getmntdev(dn, s, ss)
          * The path on the mount supplement line isn't followed by
          * " 0x".
          */
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: %s line %d: no device: \"%s\"\n",
-                Pn, MntSupP, ln, buf);
+                ProgramName, MountSupplementPath, ln, buf);
             err = 1;
             continue;
         }
@@ -280,10 +280,10 @@ getmntdev(dn, s, ss)
         /*
          * The device number couldn't be assembled.
          */
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: %s line %d: illegal device: \"%s\"\n",
-                Pn, MntSupP, ln, buf);
+                ProgramName, MountSupplementPath, ln, buf);
             err = 1;
             continue;
         }
@@ -297,7 +297,7 @@ getmntdev(dn, s, ss)
             ) {
             (void) fprintf(stderr,
                 "%s: no space for mount supplement hash buckets\n",
-                Pn);
+                ProgramName);
             Exit(1);
             }
         }
@@ -316,7 +316,7 @@ getmntdev(dn, s, ss)
             if (mp->dev != dev) {
             (void) fprintf(stderr,
                 "%s: %s line %d path duplicate of %d: \"%s\"\n",
-                Pn, MntSupP, ln, mp->ln, buf);
+                ProgramName, MountSupplementPath, ln, mp->ln, buf);
             err = 1;
             }
             continue;
@@ -327,13 +327,13 @@ getmntdev(dn, s, ss)
         if (!(mpn = (mntsup_t *)malloc(sizeof(mntsup_t)))) {
             (void) fprintf(stderr,
             "%s: no space for mount supplement entry: %d \"%s\"\n",
-            Pn, ln, buf);
+            ProgramName, ln, buf);
             Exit(1);
         }
         if (!(mpn->dn = (char *)malloc(sz + 1))) {
             (void) fprintf(stderr,
             "%s: no space for mount supplement path: %d \"%s\"\n",
-            Pn, ln, buf);
+            ProgramName, ln, buf);
             Exit(1);
         }
         (void) strcpy(mpn->dn, path);
@@ -343,9 +343,9 @@ getmntdev(dn, s, ss)
         MSHash[h] = mpn;
         }
         if (ferror(fs)) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, "%s: error reading %s\n",
-            Pn, MntSupP);
+            ProgramName, MountSupplementPath);
         err = 1;
         }
         (void) fclose(fs);
@@ -475,7 +475,7 @@ readmnt() {
         fp1 = (char *) NULL;
 
 #if    defined(HASEOPT)
-        if (Efsysl) {
+        if (ExcludedFileSysList) {
 
         /*
          * If there is an -e file system list, check it to decide if a stat()
@@ -483,7 +483,7 @@ readmnt() {
          */
             efsys_list_t *ep;
 
-            for (ignrdl = ignstat = 0, ep = Efsysl; ep; ep = ep->next) {
+            for (ignrdl = ignstat = 0, ep = ExcludedFileSysList; ep; ep = ep->next) {
             if (!strcmp(dn, ep->path)) {
                 ignrdl = ep->rdlnk;
                 ignstat = 1;
@@ -501,7 +501,7 @@ readmnt() {
          */
         if (!ignrdl) {
             if (!(ln = Readlink(dn))) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
                                    "      Output information may be incomplete.\n");
                 }
@@ -535,9 +535,9 @@ readmnt() {
             fr = 1;
         else {
             if ((fr = statsafely(dn, &sb))) {
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr, "%s: WARNING: can't stat() ",
-                                   Pn);
+                                   ProgramName);
                     safestrprt(fp[2], stderr, 0);
                     (void) fprintf(stderr, " file system ");
                     safestrprt(dn, stderr, 1);
@@ -555,12 +555,12 @@ readmnt() {
          * If the stat() failed or wasn't called, check the mount
          * supplement table, if possible.
          */
-        if ((MntSup == 2) && MntSupP) {
+        if ((MountSupplementState == 2) && MountSupplementPath) {
             ds = 0;
             if (getmntdev(dn, &sb, &ds) || !(ds & SB_DEV)) {
             (void) fprintf(stderr,
                 "%s: assuming dev=%#lx for %s from %s\n",
-                Pn, (long)sb.st_dev, dn, MntSupP);
+                ProgramName, (long)sb.st_dev, dn, MountSupplementPath);
             }
         } else {
             if (!ignstat)
@@ -581,7 +581,7 @@ readmnt() {
          */
         if (!(mp = (struct mounts *) malloc(sizeof(struct mounts)))) {
             (void) fprintf(stderr,
-                           "%s: can't allocate mounts struct for: ", Pn);
+                           "%s: can't allocate mounts struct for: ", ProgramName);
             safestrprt(dn, stderr, 1);
             Exit(1);
         }
@@ -604,7 +604,7 @@ readmnt() {
          * If support for the mount supplement file is defined and if the
          * +m option was supplied, print mount supplement information.
          */
-            if (MntSup == 1) {
+            if (MountSupplementState == 1) {
             if (mp->dev)
                 (void) printf("%s %#lx\n", mp->dir, (long)mp->dev);
             else
@@ -626,7 +626,7 @@ readmnt() {
         if (ignrdl || (*dn != '/')) {
             if (!(ln = mkstrcpy(dn, (MALLOC_S *) NULL))) {
                 (void) fprintf(stderr,
-                               "%s: can't allocate space for: ", Pn);
+                               "%s: can't allocate space for: ", ProgramName);
                 safestrprt(dn, stderr, 1);
                 Exit(1);
             }

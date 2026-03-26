@@ -65,29 +65,29 @@
 #define    LSOF_FIX_CMD        1
 #define    LSOF_FNM_CMD        "command name"
 
-#define    LSOF_FID_CT        'C'
-#define    LSOF_FIX_CT        2
-#define    LSOF_FNM_CT        "file struct share count"
+#define    LSOF_FID_FILE_STRUCT_COUNT        'C'
+#define    LSOF_FIX_FILE_STRUCT_COUNT        2
+#define    LSOF_FNM_FILE_STRUCT_COUNT        "file struct share count"
 
-#define    LSOF_FID_DEVCH        'd'
-#define    LSOF_FIX_DEVCH        3
-#define    LSOF_FNM_DEVCH        "device character code"
+#define    LSOF_FID_DEV_CHAR        'd'
+#define    LSOF_FIX_DEV_CHAR        3
+#define    LSOF_FNM_DEV_CHAR        "device character code"
 
-#define    LSOF_FID_DEVN        'D'
-#define    LSOF_FIX_DEVN        4
-#define    LSOF_FNM_DEVN        "major/minor device number as 0x<hex>"
+#define    LSOF_FID_DEV_NUM        'D'
+#define    LSOF_FIX_DEV_NUM        4
+#define    LSOF_FNM_DEV_NUM        "major/minor device number as 0x<hex>"
 
-#define    LSOF_FID_FD        'f'
-#define    LSOF_FIX_FD        5
-#define    LSOF_FNM_FD        "file descriptor"
+#define    LSOF_FID_FILE_DESC        'f'
+#define    LSOF_FIX_FILE_DESC        5
+#define    LSOF_FNM_FILE_DESC        "file descriptor"
 
-#define    LSOF_FID_FA        'F'
-#define    LSOF_FIX_FA        6
-#define    LSOF_FNM_FA        "file struct address as 0x<hex>"
+#define    LSOF_FID_FILE_STRUCT_ADDR        'F'
+#define    LSOF_FIX_FILE_STRUCT_ADDR        6
+#define    LSOF_FNM_FILE_STRUCT_ADDR        "file struct address as 0x<hex>"
 
-#define    LSOF_FID_FG        'G'
-#define    LSOF_FIX_FG        7
-#define    LSOF_FNM_FG        "file flaGs"
+#define    LSOF_FID_FILE_FLAGS        'G'
+#define    LSOF_FIX_FILE_FLAGS        7
+#define    LSOF_FNM_FILE_FLAGS        "file flaGs"
 
 #define    LSOF_FID_INODE        'i'
 #define    LSOF_FIX_INODE        8
@@ -117,9 +117,9 @@
 #define    LSOF_FIX_NAME        14
 #define    LSOF_FNM_NAME        "comment, name, Internet addresses"
 
-#define    LSOF_FID_NI        'N'
-#define    LSOF_FIX_NI        15
-#define    LSOF_FNM_NI        "file struct node ID as 0x<hex>"
+#define    LSOF_FID_NODE_ID        'N'
+#define    LSOF_FIX_NODE_ID        15
+#define    LSOF_FNM_NODE_ID        "file struct node ID as 0x<hex>"
 
 #define    LSOF_FID_OFFSET        'o'
 #define    LSOF_FIX_OFFSET        16
@@ -157,9 +157,9 @@
 #define    LSOF_FIX_TYPE        24
 #define    LSOF_FNM_TYPE        "file type"
 
-#define    LSOF_FID_TCPTPI        'T'
-#define    LSOF_FIX_TCPTPI        25
-#define    LSOF_FNM_TCPTPI        "TCP/TPI info"
+#define    LSOF_FID_TCP_TPI_INFO        'T'
+#define    LSOF_FIX_TCP_TPI_INFO        25
+#define    LSOF_FNM_TCP_TPI_INFO        "TCP/TPI info"
 
 #define    LSOF_FID_UID        'u'
 #define    LSOF_FIX_UID        26
@@ -169,9 +169,9 @@
 #define    LSOF_FIX_ZONE        27
 #define    LSOF_FNM_ZONE        "zone name"
 
-#define    LSOF_FID_CNTX        'Z'
-#define    LSOF_FIX_CNTX        28
-#define    LSOF_FNM_CNTX        "security context"
+#define    LSOF_FID_SEC_CONTEXT        'Z'
+#define    LSOF_FIX_SEC_CONTEXT        28
+#define    LSOF_FNM_SEC_CONTEXT        "security context"
 
 #define    LSOF_FID_TERM        '0'
 #define    LSOF_FIX_TERM        29

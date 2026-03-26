@@ -180,7 +180,7 @@ close_kvm() {
         return;
     if (Kd) {
         if (kvm_close(Kd) != 0) {
-            (void) fprintf(stderr, "%s: kvm_close failed\n", Pn);
+            (void) fprintf(stderr, "%s: kvm_close failed\n", ProgramName);
             Exit(1);
         }
         Kd = (kvm_t *) NULL;
@@ -287,12 +287,12 @@ gather_proc_info() {
  * conditional skipping of regular file; i.e., regular files will be skipped
  * unless they belong to a process selected by one of the specified options.
  */
-    if (Selflags & SELNW) {
+    if (SelectionFlags & SELNW) {
 
         /*
          * Some network files selection options have been specified.
          */
-        if (Fand || !(Selflags & ~SELNW)) {
+        if (OptAndSelection || !(SelectionFlags & ~SELNW)) {
 
             /*
              * Selection ANDing or only network file options have been
@@ -312,7 +312,7 @@ gather_proc_info() {
              * If only ORed process selection options have been specified,
              * enable conditional file skipping and socket file only checking.
              */
-            if ((Selflags & SELFILE) || !(Selflags & SELPROC))
+            if ((SelectionFlags & SELFILE) || !(SelectionFlags & SELPROC))
                 cckreg = ckscko = 0;
             else
                 cckreg = ckscko = 1;
@@ -338,7 +338,7 @@ gather_proc_info() {
          * Get the process ID.
          */
 
-        if (Fpgid)
+        if (OptProcessGroup)
             pgid = Pgid[px];
         else
             pgid = 0;
@@ -365,7 +365,7 @@ gather_proc_info() {
         /*
          * If the -z (zone) option was specified, get the zone name.
          */
-            if (Fzone) {
+            if (OptZone) {
             zn[0] = zn[sizeof(zn) - 1] = '\0';
             if (p->p_zone
             && !kread((KA_T)p->p_zone, (char *)&z, sizeof(z)))
@@ -397,7 +397,7 @@ gather_proc_info() {
         }
         alloc_lproc(pid, pgid, (int) p->p_ppid, (UID_ARG) uid, u->u_comm,
                     (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
 
 #if    defined(HASZONES)
         /*
@@ -407,7 +407,7 @@ gather_proc_info() {
          *	o Skip processes excluded by zone name.
          *	o Save zone name.
          */
-            if (Fzone && zn[0]) {
+            if (OptZone && zn[0]) {
             zh = hash_zn(zn);
             if (ZoneArg) {
 
@@ -421,8 +421,8 @@ gather_proc_info() {
                 if (!zp)
                 continue;
                 zp->f = 1;
-                Lp->pss |= PS_PRI;
-                Lp->sf |= SELZONE;
+                CurrentLocalProc->pss |= PS_PRI;
+                CurrentLocalProc->sf |= SELZONE;
             }
             /*
              * Make sure the zone name is cached, then save a pointer to it in
@@ -433,7 +433,7 @@ gather_proc_info() {
                                 sizeof(znhash_t *))))
                 {
                 (void) fprintf(stderr,
-                    "%s: no space for zone name hash\n", Pn);
+                    "%s: no space for zone name hash\n", ProgramName);
                 Exit(1);
                 }
             }
@@ -449,19 +449,19 @@ gather_proc_info() {
                 if (!(zp = (znhash_t *)malloc((MALLOC_S)sizeof(znhash_t))))
                 {
                 (void) fprintf(stderr,
-                    "%s: no zone name cache space: %s\n", Pn, zn);
+                    "%s: no zone name cache space: %s\n", ProgramName, zn);
                 Exit(1);
                 }
                 if (!(zp->zn = mkstrcpy(zn, (MALLOC_S *)NULL))) {
                 (void) fprintf(stderr,
                     "%s: no zone name space at PID %d: %s\n",
-                    Pn, (int)Lp->pid, zn);
+                    ProgramName, (int)CurrentLocalProc->pid, zn);
                 Exit(1);
                 }
                 zp->next = ZoneNm[zh];
                 ZoneNm[zh] = zp;
             }
-            Lp->zn = zp->zn;
+            CurrentLocalProc->zn = zp->zn;
             }
 #endif    /* defined(HASZONES) */
 
@@ -480,7 +480,7 @@ gather_proc_info() {
 #endif    /* defined(FILEPTR) */
 
             process_node((KA_T) u->u_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -494,7 +494,7 @@ gather_proc_info() {
 #endif    /* defined(FILEPTR) */
 
             process_node((KA_T) u->u_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -558,11 +558,11 @@ gather_proc_info() {
             process_file((KA_T)uf[j-1].uf_ofile);
 #endif    /* solaris <20400 */
 
-            if (Lf->sf) {
+            if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                if (Fsv & FSV_FG)
-                Lf->pof = pofv;
+                if (OptFileStructValues & FSV_FILE_FLAGS)
+                CurrentLocalFile->pof = pofv;
 #endif    /* defined(HASFSTRUCT) */
 
                 link_lfile();
@@ -615,7 +615,7 @@ get_kernel_access() {
 
             if (sysinfo(SI_ISALIST, isa, (long)sizeof(isa)) < 0) {
             (void) fprintf(stderr, "%s: can't get ISA list: %s\n",
-                Pn, strerror(errno));
+                ProgramName, strerror(errno));
             Exit(1);
             }
             for (cp = isa; *cp;) {
@@ -630,7 +630,7 @@ get_kernel_access() {
             if (kbits != xkbits) {
             (void) fprintf(stderr,
                 "%s: FATAL: lsof was compiled for a %d bit kernel,\n",
-                Pn, (int)xkbits);
+                ProgramName, (int)xkbits);
             (void) fprintf(stderr,
                 "      but this machine has booted a %d bit kernel.\n",
                 (int)kbits);
@@ -642,30 +642,30 @@ get_kernel_access() {
 /*
  * Get kernel symbols.
  */
-    if (Nmlst && !is_readable(Nmlst, 1))
+    if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
         Exit(1);
     (void) build_Nl(Drive_Nl);
 
 #if    defined(HAS_AFS)
-    if (!Nmlst) {
+    if (!NamelistFilePath) {
 
     /*
      * If AFS is defined and we're getting kernel symbol values from
-     * from N_UNIX, make a copy of Nl[] for possible use with the AFS
+     * from N_UNIX, make a copy of NlistTable[] for possible use with the AFS
      * modload file.
      */
-        if (!(nl = (struct nlist *)malloc(Nll))) {
-        (void) fprintf(stderr, "%s: no space (%d) for Nl[] copy\n",
-            Pn, Nll);
+        if (!(nl = (struct nlist *)malloc(NlistLength))) {
+        (void) fprintf(stderr, "%s: no space (%d) for NlistTable[] copy\n",
+            ProgramName, NlistLength);
         Exit(1);
         }
-        (void) memcpy((void *)nl, (void *)Nl, (size_t)Nll);
+        (void) memcpy((void *)nl, (void *)NlistTable, (size_t)NlistLength);
     }
 #endif    /* defined(HAS_AFS) */
 
-    if (nlist(Nmlst ? Nmlst : N_UNIX, Nl) < 0) {
+    if (nlist(NamelistFilePath ? NamelistFilePath : N_UNIX, NlistTable) < 0) {
         (void) fprintf(stderr, "%s: can't read namelist from %s\n",
-                       Pn, Nmlst ? Nmlst : N_UNIX);
+                       ProgramName, NamelistFilePath ? NamelistFilePath : N_UNIX);
         Exit(1);
     }
 
@@ -701,18 +701,18 @@ get_kernel_access() {
      * If the VXFS utility library is being used, attempt to get the VXFS inode
      * offsets before setgid permission is surrendered.
      */
-        if (access_vxfs_ioffsets() && !Fwarn) {
+        if (access_vxfs_ioffsets() && !OptWarnings) {
 
         /*
          * Warn that the VxFS offsets are unavailable.
          */
             (void) fprintf(stderr,
-            "%s: WARNING: vxfsu_get_ioffsets() returned an error.\n", Pn);
+            "%s: WARNING: vxfsu_get_ioffsets() returned an error.\n", ProgramName);
             (void) fprintf(stderr,
             "%s: WARNING: Thus, no vx_inode information is available\n",
-            Pn);
+            ProgramName);
             (void) fprintf(stderr,
-            "%s: WARNING: for display or selection of VxFS files.\n", Pn);
+            "%s: WARNING: for display or selection of VxFS files.\n", ProgramName);
         }
 #endif    /* defined(HASVXFSUTIL) */
 
@@ -724,7 +724,7 @@ get_kernel_access() {
      */
         if (!Memory && !HasALLKMEM) {
             Savedgid = getegid();
-            if (Setgid)
+            if (SetgidState)
             Switchgid = 1;
         }
     /*
@@ -755,7 +755,7 @@ get_kernel_access() {
         ||  kread((KA_T)v, (char *)&Kb, sizeof(Kb))) {
             (void) fprintf(stderr,
             "%s: can't read kernel base address from %s\n",
-            Pn, print_kptr(v, (char *)NULL, 0));
+            ProgramName, print_kptr(v, (char *)NULL, 0));
             Exit(1);
         }
 #endif    /* solaris>=20500 */
@@ -825,7 +825,7 @@ enter_zone_arg(zn)
     if (!ZoneArg) {
         if (!(ZoneArg = (znhash_t **)calloc(HASHZONE, sizeof(znhash_t *))))
         {
-        (void) fprintf(stderr, "%s: no space for zone arg hash\n", Pn);
+        (void) fprintf(stderr, "%s: no space for zone arg hash\n", ProgramName);
         Exit(1);
         }
     }
@@ -842,15 +842,15 @@ enter_zone_arg(zn)
     /*
      * Process a duplicate.
      */
-        if (!Fwarn)
-        (void) fprintf(stderr, "%s: duplicate zone name: %s\n", Pn, zn);
+        if (!OptWarnings)
+        (void) fprintf(stderr, "%s: duplicate zone name: %s\n", ProgramName, zn);
         return(1);
     }
 /*
  * Create a new hash entry and link it to its bucket.
  */
     if (!(zpn = (znhash_t *)malloc((MALLOC_S)sizeof(znhash_t)))) {
-        (void) fprintf(stderr, "%s no hash space for zone: %s\n", Pn, zn);
+        (void) fprintf(stderr, "%s no hash space for zone: %s\n", ProgramName, zn);
         Exit(1);
     }
     zpn->f = 0;
@@ -985,7 +985,7 @@ kread(addr, buf, len)
                 if ((pa = kvm_physaddr(Kd, Kas, va)) == KAERR)
                 return(1);
                 if (!(kp = (kvmhash_t *)malloc(sizeof(kvmhash_t)))) {
-                (void) fprintf(stderr, "%s: no kvmhash_t space\n", Pn);
+                (void) fprintf(stderr, "%s: no kvmhash_t space\n", ProgramName);
                 Exit(1);
                 }
                 kp->nxt = KVMhb[h];
@@ -1049,11 +1049,11 @@ open_kvm() {
         (void) restoregid();
 #endif    /* defined(WILLDROPGID) */
 
-    if (!(Kd = kvm_open(Nmlst, Memory, NULL, O_RDONLY, Pn))) {
+    if (!(Kd = kvm_open(NamelistFilePath, Memory, NULL, O_RDONLY, ProgramName))) {
         (void) fprintf(stderr,
                        "%s: kvm_open(namelist=%s, corefile=%s): %s\n",
-                       Pn,
-                       Nmlst ? Nmlst : "default",
+                       ProgramName,
+                       NamelistFilePath ? NamelistFilePath : "default",
                        Memory ? Memory : "default",
                        strerror(errno));
         Exit(1);
@@ -1061,7 +1061,7 @@ open_kvm() {
 
 #if    solaris >= 20501 && solaris < 70000
     if ((Kmd = open((Memory ? Memory : KMEM), O_RDONLY)) < 0) {
-        (void) fprintf(stderr, "%s: open(\"/dev/mem\"): %s\n", Pn,
+        (void) fprintf(stderr, "%s: open(\"/dev/mem\"): %s\n", ProgramName,
         strerror(errno));
         Exit(1);
     }
@@ -1174,10 +1174,10 @@ process_text(pa)
  */
     if (kread((KA_T)pa, (char *)&as, sizeof(as))) {
         alloc_lfile(" txt", -1);
-        (void) snpf(Namech, Namechl, "can't read text segment list (%s)",
+        (void) snpf(NameChars, NameCharsLength, "can't read text segment list (%s)",
         print_kptr(pa, (char *)NULL, 0));
-        enter_nm(Namech);
-        if (Lf->sf)
+        enter_nm(NameChars);
+        if (CurrentLocalFile->sf)
         link_lfile();
         return;
     }
@@ -1217,7 +1217,7 @@ process_text(pa)
 # endif	/* defined(FILEPTR) */
 
             process_node((KA_T)vn.vp);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
             }
         }
@@ -1247,10 +1247,10 @@ process_text(pa)
  */
     if (kread((KA_T) pa, (char *) &as, sizeof(as))) {
         alloc_lfile(" txt", -1);
-        (void) snpf(Namech, Namechl, "can't read text segment list (%s)",
+        (void) snpf(NameChars, NameCharsLength, "can't read text segment list (%s)",
                     print_kptr(pa, (char *) NULL, 0));
-        enter_nm(Namech);
-        if (Lf->sf)
+        enter_nm(NameChars);
+        if (CurrentLocalFile->sf)
             link_lfile();
         return;
     }
@@ -1290,7 +1290,7 @@ process_text(pa)
 # endif    /* defined(FILEPTR) */
 
                     process_node((KA_T) vn.vp);
-                    if (Lf->sf)
+                    if (CurrentLocalFile->sf)
                         link_lfile();
                 }
             }
@@ -1324,19 +1324,19 @@ readfsinfo() {
 
     if ((Fsinfomax = sysfs(GETNFSTYP)) == -1) {
         (void) fprintf(stderr, "%s: sysfs(GETNFSTYP) error: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         Exit(1);
     }
     if (Fsinfomax == 0)
         return;
     if (!(Fsinfo = (char **) malloc((MALLOC_S)(Fsinfomax * sizeof(char *))))) {
-        (void) fprintf(stderr, "%s: no space for sysfs info\n", Pn);
+        (void) fprintf(stderr, "%s: no space for sysfs info\n", ProgramName);
         Exit(1);
     }
     for (i = 1; i <= Fsinfomax; i++) {
         if (sysfs(GETFSTYP, i, buf) == -1) {
             (void) fprintf(stderr, "%s: sysfs(GETFSTYP) error: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             Exit(1);
         }
         if (buf[0] == '\0') {
@@ -1347,7 +1347,7 @@ readfsinfo() {
         len = strlen(buf) + 1;
         if (!(Fsinfo[i - 1] = (char *) malloc((MALLOC_S) len))) {
             (void) fprintf(stderr,
-                           "%s: no space for file system entry %s\n", Pn, buf);
+                           "%s: no space for file system entry %s\n", ProgramName, buf);
             Exit(1);
         }
         (void) snpf(Fsinfo[i - 1], len, "%s", buf);
@@ -1392,7 +1392,7 @@ readkam(addr)
         {
              (void) fprintf(stderr,
             "%s: no space (%d) for KVM hash buckets\n",
-            Pn, (int)(KVMHASHBN * sizeof(kvmhash_t *)));
+            ProgramName, (int)(KVMHASHBN * sizeof(kvmhash_t *)));
             Exit(1);
         }
         } else if (!addr) {
@@ -1452,20 +1452,20 @@ read_proc() {
             else
                 P = (struct proc *) malloc(len);
             if (!P) {
-                (void) fprintf(stderr, "%s: no proc table space\n", Pn);
+                (void) fprintf(stderr, "%s: no proc table space\n", ProgramName);
                 Exit(1);
             }
             /*
              * Pre-allocate PGID and PID number space.
              */
             len = (MALLOC_S)(n * sizeof(int));
-            if (Fpgid) {
+            if (OptProcessGroup) {
                 if (Pgid)
                     Pgid = (int *) realloc((MALLOC_P *) Pgid, len);
                 else
                     Pgid = (int *) malloc(len);
                 if (!Pgid) {
-                    (void) fprintf(stderr, "%s: no PGID table space\n", Pn);
+                    (void) fprintf(stderr, "%s: no PGID table space\n", ProgramName);
                     Exit(1);
                 }
             }
@@ -1474,7 +1474,7 @@ read_proc() {
             else
                 Pid = (int *) malloc(len);
             if (!Pid) {
-                (void) fprintf(stderr, "%s: no PID table space\n", Pn);
+                (void) fprintf(stderr, "%s: no PID table space\n", ProgramName);
                 Exit(1);
             }
             Npa = n;
@@ -1487,7 +1487,7 @@ read_proc() {
              */
             if (!PrAct || kread(PrAct, (char *) &paf, sizeof(pa))) {
                 (void) fprintf(stderr, "%s: can't read practive from %s\n",
-                               Pn, print_kptr(PrAct, (char *) NULL, 0));
+                               ProgramName, print_kptr(PrAct, (char *) NULL, 0));
                 Exit(1);
             }
             ct = 1;
@@ -1500,7 +1500,7 @@ read_proc() {
              * Prepare for a proc table scan via the kvm_*proc() functions.
              */
             if (kvm_setproc(Kd) != 0) {
-                (void) fprintf(stderr, "%s: kvm_setproc: %s\n", Pn,
+                (void) fprintf(stderr, "%s: kvm_setproc: %s\n", ProgramName,
                                strerror(errno));
                 Exit(1);
             }
@@ -1519,23 +1519,23 @@ read_proc() {
                 len = (MALLOC_S)(Npa * sizeof(struct proc));
                 if (!(P = (struct proc *) realloc((MALLOC_P *) P, len))) {
                     (void) fprintf(stderr,
-                                   "%s: no more (%d) proc space\n", Pn, Npa);
+                                   "%s: no more (%d) proc space\n", ProgramName, Npa);
                     Exit(1);
                 }
                 /*
                  * Expand the PGID and PID tables.
                  */
                 len = (MALLOC_S)(Npa * sizeof(int));
-                if (Fpgid) {
+                if (OptProcessGroup) {
                     if (!(Pgid = (int *) realloc((MALLOC_P *) Pgid, len))) {
                         (void) fprintf(stderr,
-                                       "%s: no more (%d) PGID space\n", Pn, Npa);
+                                       "%s: no more (%d) PGID space\n", ProgramName, Npa);
                         Exit(1);
                     }
                 }
                 if (!(Pid = (int *) realloc((MALLOC_P *) Pid, len))) {
                     (void) fprintf(stderr,
-                                   "%s: no more (%d) PID space\n", Pn, Npa);
+                                   "%s: no more (%d) PID space\n", ProgramName, Npa);
                     Exit(1);
                 }
             }
@@ -1587,7 +1587,7 @@ read_proc() {
             /*
              * Read Solaris PGID and PID numbers.
              */
-            if (Fpgid) {
+            if (OptProcessGroup) {
                 if (!p->p_pgidp
                     || kread((KA_T) p->p_pgidp, (char *) &pg, sizeof(pg)))
                     continue;
@@ -1598,7 +1598,7 @@ read_proc() {
             /*
              * Save the PGID and PID numbers in local tables.
              */
-            if (Fpgid)
+            if (OptProcessGroup)
                 Pgid[Np] = (int) pg.pid_id;
             Pid[Np] = (int) pids.pid_id;
             /*
@@ -1627,10 +1627,10 @@ read_proc() {
  * Quit if no proc structures were stored in the local table.
  */
     if (try >= PROCTRYLM) {
-        (void) fprintf(stderr, "%s: can't read proc table\n", Pn);
+        (void) fprintf(stderr, "%s: can't read proc table\n", ProgramName);
         Exit(1);
     }
-    if (Np < Npa && !RptTm) {
+    if (Np < Npa && !RepeatTime) {
 
         /*
          * Reduce the local proc structure table size to its minimum if
@@ -1639,7 +1639,7 @@ read_proc() {
         len = (MALLOC_S)(Np * sizeof(struct proc));
         if (!(P = (struct proc *) realloc((MALLOC_P *) P, len))) {
             (void) fprintf(stderr, "%s: can't reduce proc table to %d\n",
-                           Pn, Np);
+                           ProgramName, Np);
             Exit(1);
         }
         /*
@@ -1647,16 +1647,16 @@ read_proc() {
          * not in repeat mode.
          */
         len = (MALLOC_S)(Np * sizeof(int));
-        if (Fpgid) {
+        if (OptProcessGroup) {
             if (!(Pgid = (int *) realloc((MALLOC_P *) Pgid, len))) {
                 (void) fprintf(stderr,
-                               "%s: can't reduce PGID table to %d\n", Pn, Np);
+                               "%s: can't reduce PGID table to %d\n", ProgramName, Np);
                 Exit(1);
             }
         }
         if (!(Pid = (int *) realloc((MALLOC_P *) Pid, len))) {
             (void) fprintf(stderr,
-                           "%s: can't reduce PID table to %d\n", Pn, Np);
+                           "%s: can't reduce PID table to %d\n", ProgramName, Np);
             Exit(1);
         }
         Npa = Np;
@@ -1672,14 +1672,14 @@ read_proc() {
 void
 restoregid()
 {
-    if (Switchgid == 2 && !Setgid) {
+    if (Switchgid == 2 && !SetgidState) {
         if (setgid(Savedgid) != 0) {
         (void) fprintf(stderr,
             "%s: can't set effective GID to %d: %s\n",
-            Pn, (int)Savedgid, strerror(errno));
+            ProgramName, (int)Savedgid, strerror(errno));
         Exit(1);
         }
-        Setgid = 1;
+        SetgidState = 1;
     }
 }
 #endif    /* defined(WILLDROPGID) */
@@ -1787,25 +1787,25 @@ ncache_isroot(va, cp)
     /*
      * The vnode tests failed.  Try the inode tests.
      */
-        if (Lf->inp_ty != 1 || !Lf->inode
-        ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
+        if (CurrentLocalFile->inp_ty != 1 || !CurrentLocalFile->inode
+        ||  !CurrentLocalFile->fsdir || (len = strlen(CurrentLocalFile->fsdir)) < 1)
         return(0);
         if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
         return(0);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (strcmp(Lf->fsdir, mtp->dir) == 0)
+        if (strcmp(CurrentLocalFile->fsdir, mtp->dir) == 0)
             break;
         }
         if (!mtp)
         return(0);
-        (void) strcpy(buf, Lf->fsdir);
+        (void) strcpy(buf, CurrentLocalFile->fsdir);
         if (buf[len - 1] != '/')
         buf[len++] = '/';
         (void) strcpy(&buf[len], cp);
         if (statsafely(buf, &sb) != 0
-        ||  (INODETYPE)sb.st_ino != Lf->inode)
+        ||  (INODETYPE)sb.st_ino != CurrentLocalFile->inode)
         return(0);
     }
 /*
@@ -1820,7 +1820,7 @@ ncache_isroot(va, cp)
         vc = (KA_T *)realloc(vc, len);
         if (!vc) {
         (void) fprintf(stderr, "%s: no space for root vnode table\n",
-            Pn);
+            ProgramName);
         Exit(1);
         }
     }
@@ -1850,7 +1850,7 @@ ncache_load()
     KA_T v;
     static int xn = 0;
 
-    if (!Fncache)
+    if (!OptNameCache)
         return;
     if (Ncfirst) {
 
@@ -1866,17 +1866,17 @@ ncache_load()
         ||  !v
         ||  kread((KA_T)v, (char *)&Nch, sizeof(Nch)))
         {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't read DNLC hash size: %s\n",
-            Pn, print_kptr(v, (char *)NULL, 0));
+            ProgramName, print_kptr(v, (char *)NULL, 0));
         iNch = Nch = 0;
         return;
         }
         if ((iNch = Nch) < 1) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: WARNING: DNLC hash size: %d\n", Pn, Nch);
+            "%s: WARNING: DNLC hash size: %d\n", ProgramName, Nch);
         iNch = Nch = 0;
         return;
         }
@@ -1895,9 +1895,9 @@ ncache_load()
         || kread(v, (char *)&kha, sizeof(kha))
         || !kha
         ) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: WARNING: no DNLC hash address\n", Pn);
+            "%s: WARNING: no DNLC hash address\n", ProgramName);
         iNch = Nch = 0;
         return;
         }
@@ -1907,7 +1907,7 @@ ncache_load()
         len = Nch * sizeof(nc_hash_t);
         if (!(khl = (nc_hash_t *)malloc((MALLOC_S)len))) {
         (void) fprintf(stderr,
-            "%s: can't allocate DNLC hash space: %d\n", Pn, len);
+            "%s: can't allocate DNLC hash space: %d\n", ProgramName, len);
         Exit(1);
         }
     /*
@@ -1918,7 +1918,7 @@ ncache_load()
         if (!(nc = (ncache_t *)malloc((MALLOC_S)(sizeof(ncache_t) + XNC))))
         {
         (void) fprintf(stderr,
-            "%s: can't allocate DNLC ncache_t space\n", Pn);
+            "%s: can't allocate DNLC ncache_t space\n", ProgramName);
         Exit(1);
         }
         nmo = offsetof(struct ncache, name);
@@ -1933,9 +1933,9 @@ ncache_load()
         || (i < 1)
         ) {
         i = 16;
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
-            "%s: can't read DNLC average hash bucket size,", Pn);
+            "%s: can't read DNLC average hash bucket size,", ProgramName);
             (void) fprintf(stderr, " using %d\n", i);
         }
         }
@@ -1945,7 +1945,7 @@ ncache_load()
 no_local_space:
 
         (void) fprintf(stderr,
-            "%s: no space for %d byte local name cache\n", Pn, len);
+            "%s: no space for %d byte local name cache\n", ProgramName, len);
         Exit(1);
         }
     } else {
@@ -1978,10 +1978,10 @@ no_local_space:
  * Read the kernel's DNLC hash.
  */
     if (kread(kha, (char *)khl, (Nch * sizeof(nc_hash_t)))) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't read DNLC hash: %s\n",
-            Pn, print_kptr(kha, (char *)NULL, 0));
+            ProgramName, print_kptr(kha, (char *)NULL, 0));
         iNch = Nch = 0;
         return;
     }
@@ -2026,7 +2026,7 @@ no_local_space:
                     (sizeof(ncache_t) + xn)))
             ) {
                 (void) fprintf(stderr,
-                "%s: can't extend DNLC ncache_t buffer\n", Pn);
+                "%s: can't extend DNLC ncache_t buffer\n", ProgramName);
                 Exit(1);
             }
             }
@@ -2042,7 +2042,7 @@ no_local_space:
         if (!(cp = (char *)malloc(len + 1))) {
             (void) fprintf(stderr,
             "%s: can't allocate %d bytes for name cache name\n",
-            Pn, len + 1);
+            ProgramName, len + 1);
             Exit(1);
         }
         (void) strncpy(cp, nc->name, len);
@@ -2057,7 +2057,7 @@ no_local_space:
                    (MALLOC_S)(Nla * sizeof(struct l_nch))))
             ) {
             (void) fprintf(stderr,
-                "%s: can't enlarge local name cache\n", Pn);
+                "%s: can't enlarge local name cache\n", ProgramName);
             Exit(1);
             }
             lc = &Ncache[n];
@@ -2082,7 +2082,7 @@ no_local_space:
     /*
      * No DNLC entries were located, an unexpected result.
      */
-        if (!RptTm && Ncache) {
+        if (!RepeatTime && Ncache) {
 
         /*
          * If not in repeat mode, free the space that has been malloc'd
@@ -2095,13 +2095,13 @@ no_local_space:
     /*
      * Issue a warning and disable furthe DNLC processing.
      */
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: unusable local name cache size: %d\n", Pn, n);
+            "%s: WARNING: unusable local name cache size: %d\n", ProgramName, n);
         iNch = Nch = 0;
         return;
     }
-    if ((Nlu < Nla) && !RptTm) {
+    if ((Nlu < Nla) && !RepeatTime) {
         len = Nlu * sizeof(struct l_nch);
         if (!(Ncache = (struct l_nch *)realloc(Ncache, len)))
         goto no_local_space;
@@ -2119,7 +2119,7 @@ no_local_space:
     {
         (void) fprintf(stderr,
         "%s: no space for %d name cache hash pointers\n",
-        Pn, Nhl + Nlu);
+        ProgramName, Nhl + Nlu);
         Exit(1);
     }
     for (i = 0, lc = Ncache; i < Nlu; i++, lc++) {
@@ -2174,27 +2174,27 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-    if (Lf->inp_ty == 1 && Lf->fs_ino && Lf->inode == Lf->fs_ino)
+    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino && CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
         return(cp);
 # endif	/* defined(HASFSINO) */
 
 /*
  * Look up the name cache entry for the node address.
  */
-    if (!Nlu || !(lc = ncache_addr(Lf->na))) {
+    if (!Nlu || !(lc = ncache_addr(CurrentLocalFile->na))) {
 
     /*
      * If the node has no cache entry, see if it's the mount
      * point of a known file system.
      */
-        if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
+        if (!CurrentLocalFile->fsdir || !CurrentLocalFile->dev_def || CurrentLocalFile->inp_ty != 1)
         return((char *)NULL);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (Lf->dev == mtp->dev
-        &&  mtp->inode == Lf->inode
-        &&  strcmp(mtp->dir, Lf->fsdir) == 0)
+        if (CurrentLocalFile->dev == mtp->dev
+        &&  mtp->inode == CurrentLocalFile->inode
+        &&  strcmp(mtp->dir, CurrentLocalFile->fsdir) == 0)
             return(cp);
         }
         return((char *)NULL);

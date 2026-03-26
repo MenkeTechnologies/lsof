@@ -159,7 +159,7 @@ typedef struct pad_mutex {
 
 /*
  * HASBLKDEV is defined for those dialects that want block device information
- * recorded in BDevtp[].
+ * recorded in BlockDeviceTable[].
  */
 
 #define    HASBLKDEV    1
@@ -317,7 +317,7 @@ typedef struct pad_mutex {
 # if    solaris >= 10000 && defined(HAS_V_PATH)
 #define	HASLFILEADD	KA_T V_path;
 #define	CLRLFILEADD(lf)	(lf)->V_path = (KA_T)NULL;
-#define SETLFILEADD Lf->V_path = (KA_T)NULL;
+#define SETLFILEADD CurrentLocalFile->V_path = (KA_T)NULL;
 # endif    /* solaris>=10000 && defined(HAS_V_PATH) */
 
 
@@ -580,7 +580,7 @@ typedef struct pad_mutex {
  * of a successful stat(2) of a file name argument.
  *
  * For example, HASSPECDEVD() for Darwin makes sure that st_dev is set to
- * what stat("/dev") returns -- i.e., what's in DevDev.
+ * what stat("/dev") returns -- i.e., what's in DeviceOfDev.
  *
  * The function takes two arguments:
  *

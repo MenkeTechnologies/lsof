@@ -72,7 +72,7 @@ static char *rcsid = "$Id: isfn.c,v 1.10 2008/10/21 16:12:36 abe Exp $";
  */
 
 struct hsfile {
-    struct sfile *s;		/* the Sfile table address */
+    struct sfile *s;		/* the SearchFileChain table address */
     struct hsfile *next;		/* the next hash bucket entry */
 };
 
@@ -105,32 +105,32 @@ static int HbyNmCt = 0;			/* HbyNm entry count */
  */
 
 # if	defined(HAVECLONEMAJ)
-#define	SFCDHASH	1024		/* Sfile hash by clone device (power
+#define	SFCDHASH	1024		/* SearchFileChain hash by clone device (power
                      * of 2!) */
 # endif	/* defined(HAVECLONEMAJ) */
 
-#define	SFDIHASH	4094		/* Sfile hash by (device,inode) number
+#define	SFDIHASH	4094		/* SearchFileChain hash by (device,inode) number
                      * pair bucket count (power of 2!) */
-#define	SFFSHASH	1024		/* Sfile hash by file system device
+#define	SFFSHASH	1024		/* SearchFileChain hash by file system device
                      * number bucket count (power of 2!) */
 #define SFHASHDEVINO(maj, min, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
-                    /* hash for Sfile by major device,
+                    /* hash for SearchFileChain by major device,
                      * minor device, and inode, modulo mod
                      * (mod must be a power of 2) */
-#define	SFRDHASH	1024		/* Sfile hash by raw device number
+#define	SFRDHASH	1024		/* SearchFileChain hash by raw device number
                      * bucket count (power of 2!) */
 #define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+((int)(rmaj+1)*(int)(rmin+1))+ino)*31415)&(mod-1)))
-                    /* hash for Sfile by major device,
+                    /* hash for SearchFileChain by major device,
                      * minor device, major raw device,
                      * minor raw device, and inode, modulo
                      * mod (mod must be a power of 2) */
-#define	SFNMHASH	4096		/* Sfile hash by name bucket count
+#define	SFNMHASH	4096		/* SearchFileChain hash by name bucket count
                      * (must be a power of 2!) */
 
 
 
 /*
- * hashSfile() - hash Sfile entries for use in is_file_named() searches
+ * hashSfile() - hash SearchFileChain entries for use in is_file_named() searches
  */
 
 void
@@ -145,7 +145,7 @@ hashSfile()
  * Do nothing if there are no file search arguments cached or if the
  * hashes have already been constructed.
  */
-    if (!Sfile || hs)
+    if (!SearchFileChain || hs)
         return;
 /*
  * Allocate hash buckets by (device,inode), file system device, and file name.
@@ -158,7 +158,7 @@ hashSfile()
         {
         (void) fprintf(stderr,
             "%s: can't allocate space for %d clone hash buckets\n",
-            Pn, SFCDHASH);
+            ProgramName, SFCDHASH);
         Exit(1);
         }
         sfplm++;
@@ -170,7 +170,7 @@ hashSfile()
     {
         (void) fprintf(stderr,
         "%s: can't allocate space for %d (dev,ino) hash buckets\n",
-        Pn, SFDIHASH);
+        ProgramName, SFDIHASH);
         Exit(1);
     }
     if (!(HbyFrd = (struct hsfile *)calloc((MALLOC_S)SFRDHASH,
@@ -178,7 +178,7 @@ hashSfile()
     {
         (void) fprintf(stderr,
         "%s: can't allocate space for %d rdev hash buckets\n",
-        Pn, SFRDHASH);
+        ProgramName, SFRDHASH);
         Exit(1);
     }
     if (!(HbyFsd = (struct hsfile *)calloc((MALLOC_S)SFFSHASH,
@@ -186,7 +186,7 @@ hashSfile()
     {
         (void) fprintf(stderr,
         "%s: can't allocate space for %d file sys hash buckets\n",
-        Pn, SFFSHASH);
+        ProgramName, SFFSHASH);
         Exit(1);
     }
     if (!(HbyNm = (struct hsfile *)calloc((MALLOC_S)SFNMHASH,
@@ -194,15 +194,15 @@ hashSfile()
     {
         (void) fprintf(stderr,
         "%s: can't allocate space for %d name hash buckets\n",
-        Pn, SFNMHASH);
+        ProgramName, SFNMHASH);
         Exit(1);
     }
     hs++;
 /*
- * Scan the Sfile chain, building file, file system, raw device, and file
+ * Scan the SearchFileChain chain, building file, file system, raw device, and file
  * name hash bucket chains.
  */
-    for (s = Sfile; s; s = s->next) {
+    for (s = SearchFileChain; s; s = s->next) {
         for (i = 0; i < sfplm; i++) {
         if (i == 0) {
             if (!s->aname)
@@ -258,7 +258,7 @@ hashSfile()
             {
             (void) fprintf(stderr,
                 "%s: can't allocate hsfile bucket for: %s\n",
-                Pn, s->aname);
+                ProgramName, s->aname);
             Exit(1);
             }
             sn->s = s;
@@ -277,7 +277,7 @@ hashSfile()
 int
 is_file_named(p, cd)
     char *p;			/* path name; NULL = search by device
-					 * and inode (from *Lf) */
+					 * and inode (from *CurrentLocalFile) */
     int cd;				/* character or block type file --
 					 * VCHR or VBLK vnode, or S_IFCHR
 					 * or S_IFBLK inode */
@@ -303,15 +303,15 @@ is_file_named(p, cd)
 /*
  * If this is a stream, check for a clone device match.
  */
-    if (!f && HbyCdCt && Lf->is_stream && Lf->dev_def && Lf->rdev_def
-    &&  (Lf->dev == DevDev))
+    if (!f && HbyCdCt && CurrentLocalFile->is_stream && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
+    &&  (CurrentLocalFile->dev == DeviceOfDev))
     {
-        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(Lf->rdev), 0,
+        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(CurrentLocalFile->rdev), 0,
                       SFCDHASH)];
          sh;
          sh = sh->next)
         {
-        if ((s = sh->s) && (GET_MAJ_DEV(Lf->rdev)
+        if ((s = sh->s) && (GET_MAJ_DEV(CurrentLocalFile->rdev)
         ==		    GET_MIN_DEV(s->rdev))) {
             f = 3;
             break;
@@ -323,18 +323,18 @@ is_file_named(p, cd)
 /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && Lf->dev_def
-    && (Lf->inp_ty == 1 || Lf->inp_ty == 3))
+    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
+    && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
     {
-        for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(Lf->dev),
-                       GET_MIN_DEV(Lf->dev),
-                       Lf->inode,
+        for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
+                       GET_MIN_DEV(CurrentLocalFile->dev),
+                       CurrentLocalFile->inode,
                        SFDIHASH)];
          sh;
          sh = sh->next)
         {
-        if ((s = sh->s) && (Lf->dev == s->dev)
-        &&  (Lf->inode == s->i)) {
+        if ((s = sh->s) && (CurrentLocalFile->dev == s->dev)
+        &&  (CurrentLocalFile->inode == s->i)) {
             f = 1;
             break;
         }
@@ -343,14 +343,14 @@ is_file_named(p, cd)
 /*
  * Check for a file system match.
  */
-    if (!f && HbyFsdCt && Lf->dev_def) {
-        for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(Lf->dev),
-                           GET_MIN_DEV(Lf->dev), 0,
+    if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
+        for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
+                           GET_MIN_DEV(CurrentLocalFile->dev), 0,
                        SFFSHASH)];
          sh;
          sh = sh->next)
         {
-        if ((s = sh->s) && (s->dev == Lf->dev)) {
+        if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)) {
             f = 1;
             break;
         }
@@ -360,20 +360,20 @@ is_file_named(p, cd)
  * Check for a character or block device match.
  */
     if (!f && HbyFrdCt && cd
-    &&  Lf->dev_def && (Lf->dev == DevDev)
-    &&  Lf->rdev_def
-    && (Lf->inp_ty == 1 || Lf->inp_ty == 3))
+    &&  CurrentLocalFile->dev_def && (CurrentLocalFile->dev == DeviceOfDev)
+    &&  CurrentLocalFile->rdev_def
+    && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
     {
-        for (sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(Lf->dev),
-                      GET_MIN_DEV(Lf->dev),
-                      GET_MAJ_DEV(Lf->rdev),
-                      GET_MIN_DEV(Lf->rdev),
-                      Lf->inode, SFRDHASH)];
+        for (sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(CurrentLocalFile->dev),
+                      GET_MIN_DEV(CurrentLocalFile->dev),
+                      GET_MAJ_DEV(CurrentLocalFile->rdev),
+                      GET_MIN_DEV(CurrentLocalFile->rdev),
+                      CurrentLocalFile->inode, SFRDHASH)];
          sh;
          sh = sh->next)
         {
-        if ((s = sh->s) && (s->dev == Lf->dev)
-        &&  (s->rdev == Lf->rdev) && (s->i == Lf->inode))
+        if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)
+        &&  (s->rdev == CurrentLocalFile->rdev) && (s->i == CurrentLocalFile->inode))
         {
             f = 1;
             break;
@@ -391,9 +391,9 @@ is_file_named(p, cd)
 
         /*
          * If the search argument isn't a file system, propagate it
-         * to Namech[]; otherwise, let printname() compose the name.
+         * to NameChars[]; otherwise, let printname() compose the name.
          */
-        (void) snpf(Namech, Namechl, "%s", s->name);
+        (void) snpf(NameChars, NameCharsLength, "%s", s->name);
         if (s->devnm) {
             ep = endnm(&sz);
             (void) snpf(ep, sz, " (%s)", s->devnm);
@@ -401,7 +401,7 @@ is_file_named(p, cd)
         }
         break;
     case 2:
-        (void) strcpy(Namech, p);
+        (void) strcpy(NameChars, p);
         break;
 
 # if	defined(HAVECLONEMAJ)

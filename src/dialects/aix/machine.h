@@ -128,7 +128,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 
 /*
  * HASBLKDEV is defined for those dialects that want block device information
- * recorded in BDevtp[].
+ * recorded in BlockDeviceTable[].
  */
 
 #define    HASBLKDEV    1
@@ -277,7 +277,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
 
 /* #define HASLFILEADD int ... */
 /* #define CLRLFILEADD(lf)	(lf)->... = (type)NULL;	*/
-/* #define SETLFILEADD Lf->... */
+/* #define SETLFILEADD CurrentLocalFile->... */
 
 
 /*
@@ -525,7 +525,7 @@ typedef	long long	aligned_offset_t  __attribute__ ((aligned (8)));
  * of a successful stat(2) of a file name argument.
  *
  * For example, HASSPECDEVD() for Darwin makes sure that st_dev is set to
- * what stat("/dev") returns -- i.e., what's in DevDev.
+ * what stat("/dev") returns -- i.e., what's in DeviceOfDev.
  *
  * The function takes two arguments:
  *

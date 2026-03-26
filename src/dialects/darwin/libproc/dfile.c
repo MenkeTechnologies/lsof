@@ -57,23 +57,23 @@ enter_file_info(pfi)
  */
     f = pfi->fi_openflags & (FREAD | FWRITE);
     if (f == FREAD)
-        Lf->access = 'r';
+        CurrentLocalFile->access = 'r';
     else if (f == FWRITE)
-        Lf->access = 'w';
+        CurrentLocalFile->access = 'w';
     else if (f == (FREAD | FWRITE))
-        Lf->access = 'u';
+        CurrentLocalFile->access = 'u';
 /*
  * Save the offset / size
  */
-    Lf->off = (SZOFFTYPE) pfi->fi_offset;
-    if (Foffset)
-        Lf->off_def = 1;
+    CurrentLocalFile->off = (SZOFFTYPE) pfi->fi_offset;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
 /*
  * Save file structure information as requested.
  */
-    if (Fsv & FSV_FG) {
-        Lf->ffg = (long) pfi->fi_openflags;
-        Lf->fsv |= FSV_FG;
+    if (OptFileStructValues & FSV_FILE_FLAGS) {
+        CurrentLocalFile->ffg = (long) pfi->fi_openflags;
+        CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
     }
 }
 
@@ -96,68 +96,68 @@ enter_vnode_info(vip)
     switch ((int) (vip->vip_vi.vi_stat.vst_mode & S_IFMT)) {
         case S_IFIFO:
             cp = "FIFO";
-            Ntype = N_FIFO;
+            NodeType = N_FIFO;
             break;
         case S_IFCHR:
             cp = "CHR";
-            Ntype = N_CHR;
+            NodeType = N_CHR;
             break;
         case S_IFDIR:
             cp = "DIR";
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
             break;
         case S_IFBLK:
             cp = "BLK";
-            Ntype = N_BLK;
+            NodeType = N_BLK;
             break;
         case S_IFREG:
             cp = "REG";
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
             break;
         default:
             (void) snpf(buf, sizeof(buf), "%04o",
                         (((vip->vip_vi.vi_stat.vst_mode & S_IFMT) >> 12) & 0xfff));
             cp = buf;
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
     }
-    if (!Lf->type[0])
-        (void) snpf(Lf->type, sizeof(Lf->type), "%s", cp);
-    Lf->ntype = Ntype;
+    if (!CurrentLocalFile->type[0])
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", cp);
+    CurrentLocalFile->ntype = NodeType;
 /*
  * Save device number and path
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_FIFO:
             break;
         case N_CHR:
         case N_BLK:
-            Lf->rdev = vip->vip_vi.vi_stat.vst_rdev;
-            Lf->rdev_def = 1;
+            CurrentLocalFile->rdev = vip->vip_vi.vi_stat.vst_rdev;
+            CurrentLocalFile->rdev_def = 1;
             /* fall through */
         default:
-            Lf->dev = dev = vip->vip_vi.vi_stat.vst_dev;
-            Lf->dev_def = devs = 1;
+            CurrentLocalFile->dev = dev = vip->vip_vi.vi_stat.vst_dev;
+            CurrentLocalFile->dev_def = devs = 1;
     }
 /*
  * Save path name.
  */
     vip->vip_path[sizeof(vip->vip_path) - 1] = '\0';
     if (vip->vip_path[0] != '\0') {
-        Lf->V_path = mkstrcpy(vip->vip_path, (MALLOC_S *) NULL);
+        CurrentLocalFile->V_path = mkstrcpy(vip->vip_path, (MALLOC_S *) NULL);
     }
 /*
  * Save node number.
  */
-    Lf->inode = (INODETYPE) vip->vip_vi.vi_stat.vst_ino;
-    Lf->inp_ty = 1;
+    CurrentLocalFile->inode = (INODETYPE) vip->vip_vi.vi_stat.vst_ino;
+    CurrentLocalFile->inp_ty = 1;
 /*
  * Save link count, as requested.
  */
-    if (Fnlink) {
-        Lf->nlink = vip->vip_vi.vi_stat.vst_nlink;
-        Lf->nlink_def = 1;
-        if (Nlink && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+    if (OptLinkCount) {
+        CurrentLocalFile->nlink = vip->vip_vi.vi_stat.vst_nlink;
+        CurrentLocalFile->nlink_def = 1;
+        if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 /*
  * If a device number is defined, locate file system and save its identity.
@@ -165,10 +165,10 @@ enter_vnode_info(vip)
     if (devs) {
         for (mp = readmnt(); mp; mp = mp->next) {
             if (dev == mp->dev) {
-                Lf->fsdir = mp->dir;
-                Lf->fsdev = mp->fsname;
-                if (mp->is_nfs && Fnfs)
-                    Lf->sf |= SELNFS;
+                CurrentLocalFile->fsdir = mp->dir;
+                CurrentLocalFile->fsdev = mp->fsname;
+                if (mp->is_nfs && OptNfs)
+                    CurrentLocalFile->sf |= SELNFS;
                 break;
             }
         }
@@ -176,38 +176,38 @@ enter_vnode_info(vip)
 /*
  * Save the file size.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_CHR:
         case N_FIFO:
-            Lf->off_def = 1;
+            CurrentLocalFile->off_def = 1;
             break;
         default:
-            Lf->sz = (SZOFFTYPE) vip->vip_vi.vi_stat.vst_size;
-            Lf->sz_def = 1;
+            CurrentLocalFile->sz = (SZOFFTYPE) vip->vip_vi.vi_stat.vst_size;
+            CurrentLocalFile->sz_def = 1;
     }
 /*
  * Test for specified file.
  */
-    if (Sfile && is_file_named(NULL,
-                               ((Ntype == N_CHR) || (Ntype == N_BLK) ? 1
+    if (SearchFileChain && is_file_named(NULL,
+                               ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1
                                                                      : 0))) {
-        Lf->sf |= SELNM;
+        CurrentLocalFile->sf |= SELNM;
     }
 /*
  * Enter name characters.
  */
-    if (!Lf->nm && Namech[0])
-        enter_nm(Namech);
+    if (!CurrentLocalFile->nm && NameChars[0])
+        enter_nm(NameChars);
 }
 
 
 /*
- * err2nm() -- convert errno to a message in Namech
+ * err2nm() -- convert errno to a message in NameChars
  */
 
 void
 err2nm(pfx)
-        char *pfx;            /* Namech message prefix */
+        char *pfx;            /* NameChars message prefix */
 {
     char *sfx;
 
@@ -233,8 +233,8 @@ err2nm(pfx)
              */
             sfx = strerror(errno);
     }
-    (void) snpf(Namech, Namechl, "%s: %s", pfx, sfx);
-    enter_nm(Namech);
+    (void) snpf(NameChars, NameCharsLength, "%s: %s", pfx, sfx);
+    enter_nm(NameChars);
 }
 
 
@@ -275,7 +275,7 @@ process_atalk(pid, fd)
         int pid;            /* PID */
         int32_t fd;            /* FD */
 {
-    (void) snpf(Lf->type, sizeof(Lf->type), "ATALK");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ATALK");
     return;
 }
 
@@ -289,7 +289,7 @@ process_fsevents(pid, fd)
         int pid;            /* PID */
         int32_t fd;            /* FD */
 {
-    (void) snpf(Lf->type, sizeof(Lf->type), "FSEVENTS");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "FSEVENTS");
 }
 
 
@@ -307,7 +307,7 @@ process_kqueue(pid, fd)
 /*
  * Get the kernel queue file information.
  */
-    (void) snpf(Lf->type, sizeof(Lf->type), "KQUEUE");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "KQUEUE");
     nb = proc_pidfdinfo(pid, fd, PROC_PIDFDKQUEUEINFO, &kq, sizeof(kq));
     if (nb <= 0) {
         (void) err2nm("kqueue");
@@ -315,7 +315,7 @@ process_kqueue(pid, fd)
     } else if (nb < sizeof(kq)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d; proc_pidfdinfo(PROC_PIDFDKQUEUEINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(kq), nb);
@@ -328,11 +328,11 @@ process_kqueue(pid, fd)
 /*
  * Enter queue counts as NAME column information.
  */
-    (void) snpf(Namech, Namechl,
+    (void) snpf(NameChars, NameCharsLength,
                 "count=%" SZOFFPSPEC "u, state=%#x",
                 (SZOFFTYPE) kq.kqueueinfo.kq_stat.vst_size,
                 kq.kqueueinfo.kq_state);
-    enter_nm(Namech);
+    enter_nm(NameChars);
 }
 
 
@@ -347,7 +347,7 @@ process_pipe_common(pi)
     char dev_ch[32], *ep;
     size_t sz;
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "PIPE");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PIPE");
 /*
  * Enter the pipe handle as the device.
  */
@@ -357,21 +357,21 @@ process_pipe_common(pi)
 /*
  * Enable offset or size reporting.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        Lf->sz = (SZOFFTYPE) pi->pipeinfo.pipe_stat.vst_blksize;
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE) pi->pipeinfo.pipe_stat.vst_blksize;
+        CurrentLocalFile->sz_def = 1;
     }
 /*
  * If there is a peer handle, enter it in as NAME column information.
  */
     if (pi->pipeinfo.pipe_peerhandle) {
-        (void) snpf(Namech, Namechl, "->%s",
+        (void) snpf(NameChars, NameCharsLength, "->%s",
                     print_kptr((KA_T) pi->pipeinfo.pipe_peerhandle, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
     } else
-        Namech[0] = '\0';
+        NameChars[0] = '\0';
 /*
  * If the pipe has a count, add it to the NAME column.
  */
@@ -400,7 +400,7 @@ process_pipe(pid, fd)
     } else if (nb < sizeof(pi)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d; proc_pidfdinfo(PROC_PIDFDPIPEINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(pi), nb);
@@ -425,7 +425,7 @@ process_psem(pid, fd)
 /*
  * Get the sempaphore file information.
  */
-    (void) snpf(Lf->type, sizeof(Lf->type), "PSXSEM");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PSXSEM");
     nb = proc_pidfdinfo(pid, fd, PROC_PIDFDPSEMINFO, &ps, sizeof(ps));
     if (nb <= 0) {
         (void) err2nm("semaphore");
@@ -433,7 +433,7 @@ process_psem(pid, fd)
     } else if (nb < sizeof(ps)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d; proc_pidfdinfo(PROC_PIDFDPSEMINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(ps), nb);
@@ -448,15 +448,15 @@ process_psem(pid, fd)
  */
     if (ps.pseminfo.psem_name[0]) {
         ps.pseminfo.psem_name[sizeof(ps.pseminfo.psem_name) - 1] = '\0';
-        (void) snpf(Namech, Namechl, "%s", ps.pseminfo.psem_name);
-        enter_nm(Namech);
+        (void) snpf(NameChars, NameCharsLength, "%s", ps.pseminfo.psem_name);
+        enter_nm(NameChars);
     }
 /*
  * Unless file size has been specifically requested, enable the printing of
  * file offset.
  */
-    if (!Fsize)
-        Lf->off_def = 1;
+    if (!OptSize)
+        CurrentLocalFile->off_def = 1;
 }
 
 
@@ -468,7 +468,7 @@ static void
 process_pshm_common(ps)
         struct pshm_fdinfo *ps;
 {
-    (void) snpf(Lf->type, sizeof(Lf->type), "PSXSHM");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PSXSHM");
 /*
  * Enter the POSIX shared memory file information.
  */
@@ -479,21 +479,21 @@ process_pshm_common(ps)
  */
     if (ps->pshminfo.pshm_name[0]) {
         ps->pshminfo.pshm_name[sizeof(ps->pshminfo.pshm_name) - 1] = '\0';
-        (void) snpf(Namech, Namechl, "%s", ps->pshminfo.pshm_name);
-        enter_nm(Namech);
+        (void) snpf(NameChars, NameCharsLength, "%s", ps->pshminfo.pshm_name);
+        enter_nm(NameChars);
     } else if (ps->pshminfo.pshm_mappaddr) {
-        (void) snpf(Namech, Namechl, "obj=%s",
+        (void) snpf(NameChars, NameCharsLength, "obj=%s",
                     print_kptr((KA_T) ps->pshminfo.pshm_mappaddr, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
     }
 /*
  * Enable offset or size reporting.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        Lf->sz = (SZOFFTYPE) ps->pshminfo.pshm_stat.vst_size;
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE) ps->pshminfo.pshm_stat.vst_size;
+        CurrentLocalFile->sz_def = 1;
     }
 }
 
@@ -515,7 +515,7 @@ process_pshm(pid, fd)
     } else if (nb < sizeof(ps)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d; proc_pidfdinfo(PROC_PIDFDPSHMINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(ps), nb);
@@ -567,7 +567,7 @@ process_vnode(pid, fd)
     } else if (nb < sizeof(vi)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d: proc_pidfdinfo(PROC_PIDFDVNODEPATHINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(vi), nb);

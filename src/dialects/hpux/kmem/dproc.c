@@ -230,12 +230,12 @@ gather_proc_info() {
             if ((get_Nl_value("chunksz", Drive_Nl, &v) >= 0) && v) {
             if (kread(v, (char *)&oftsz, sizeof(oftsz))) {
                 (void) fprintf(stderr, "%s: can't get FD chunk size\n",
-                Pn);
+                ProgramName);
                 Exit(1);
             }
             if (!oftsz) {
                 (void) fprintf(stderr, "%s: bad FD chunk size: %d\n",
-                Pn, oftsz);
+                ProgramName, oftsz);
                 Exit(1);
             }
             }
@@ -243,12 +243,12 @@ gather_proc_info() {
             if (oftsz != (ofasz * SFDCHUNK)) {
             (void) fprintf(stderr,
                 "%s: FD chunk size (%d) not exact multiple of %d\n",
-                Pn, oftsz, SFDCHUNK);
+                ProgramName, oftsz, SFDCHUNK);
             Exit(1);
             }
             if (!(oftp = (char *)malloc((MALLOC_S)oftsz))) {
             (void) fprintf(stderr, "%s: no space for %d FD bytes\n",
-                Pn, oftsz);
+                ProgramName, oftsz);
             Exit(1);
             }
         }
@@ -296,9 +296,9 @@ gather_proc_info() {
          */
 
             if (pstat(PSTAT_PROC, &ps, sizeof(ps), 0, p->p_pid) != 1) {
-             if (!Fwarn)
+             if (!OptWarnings)
                 (void) fprintf(stderr, "%s: can't pstat process %d: %s\n",
-                Pn, p->p_pid, strerror(errno));
+                ProgramName, p->p_pid, strerror(errno));
             continue;
             }
         /*
@@ -377,14 +377,14 @@ gather_proc_info() {
                 continue;
             alloc_lproc(p->p_pid, (int) p->p_pgid, (int) p->p_ppid,
                         (UID_ARG) p->p_uid, u->u_comm, (int) pss, (int) sf);
-            Plf = (struct lfile *) NULL;
+            PrevLocalFile = (struct lfile *) NULL;
             /*
              * Save current working directory information.
              */
             if (CURDIR) {
                 alloc_lfile(CWD, -1);
                 process_node((KA_T) CURDIR);
-                if (Lf->sf)
+                if (CurrentLocalFile->sf)
                     link_lfile();
             }
             /*
@@ -393,7 +393,7 @@ gather_proc_info() {
             if (ROOTDIR) {
                 alloc_lfile(RTD, -1);
                 process_node((KA_T) ROOTDIR);
-                if (Lf->sf)
+                if (CurrentLocalFile->sf)
                     link_lfile();
             }
 
@@ -475,11 +475,11 @@ gather_proc_info() {
                 {
                     alloc_lfile(NULL, i);
                     process_file(fp);
-                    if (Lf->sf) {
+                    if (CurrentLocalFile->sf) {
 
 #if    defined(USESPOFILE)
-                        if (Fsv & FSV_FG)
-                            Lf->pof = pof;
+                        if (OptFileStructValues & FSV_FILE_FLAGS)
+                            CurrentLocalFile->pof = pof;
 #endif    /* defined(USESPOFILE) */
 
                         link_lfile();
@@ -517,13 +517,13 @@ gather_proc_info() {
                 if ((rv = sysconf(_SC_KERNEL_BITS)) < 0) {
                 (void) fprintf(stderr,
                     "%s: sysconf(_SC_KERNEL_BITS) returns: %s\n",
-                    Pn, strerror(errno));
+                    ProgramName, strerror(errno));
                 Exit(1);
                 }
                 if (rv != (long)HPUXKERNBITS) {
                 (void) fprintf(stderr,
                     "%s: FATAL: %s was built for a %d bit kernel, but this\n",
-                    Pn, Pn, HPUXKERNBITS);
+                    ProgramName, ProgramName, HPUXKERNBITS);
                 (void) fprintf(stderr, "      is a %ld bit kernel.\n", rv);
                 Exit(1);
                 }
@@ -540,13 +540,13 @@ gather_proc_info() {
  */
         if ((Mem = open("/dev/mem", O_RDONLY, 0)) < 0) {
             (void) fprintf(stderr, "%s: can't open /dev/mem: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             err = 1;
         }
         if (!Memory || strcmp(Memory, KMEM) == 0) {
             if ((Swap = open(SWAP, O_RDONLY, 0)) < 0) {
                 (void) fprintf(stderr, "%s: %s: %s\n",
-                               Pn, SWAP, strerror(errno));
+                               ProgramName, SWAP, strerror(errno));
                 err = 1;
             }
         }
@@ -573,7 +573,7 @@ gather_proc_info() {
         if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
             int errno_save = errno;
 
-            (void) fprintf(stderr, "%s: can't open ", Pn);
+            (void) fprintf(stderr, "%s: can't open ", ProgramName);
             safestrprt(Memory ? Memory : KMEM, stderr, 0);
             (void) fprintf(stderr, ": %s\n", strerror(errno_save));
             Exit(1);
@@ -589,35 +589,35 @@ gather_proc_info() {
 /*
  * See if the name list file is readable.
  */
-        if (Nmlst && !is_readable(Nmlst, 1))
+        if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
             Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
         (void) build_Nl(Drive_Nl);
 
 #if    defined(HAS_AFS)
-        if (!Nmlst) {
+        if (!NamelistFilePath) {
 
         /*
          * If AFS is defined and we're getting kernel symbol values from
-         * from N_UNIX, make a copy of Nl[] for possible use with the AFS
+         * from N_UNIX, make a copy of NlistTable[] for possible use with the AFS
          * module name list file.
          */
-            if (!(nl = (struct NLIST_TYPE *)malloc(Nll))) {
+            if (!(nl = (struct NLIST_TYPE *)malloc(NlistLength))) {
             (void) fprintf(stderr,
-                "%s: no space (%d) for Nl[] copy\n", Pn, Nll);
+                "%s: no space (%d) for NlistTable[] copy\n", ProgramName, NlistLength);
             Exit(1);
             }
-            (void) memcpy((void *)nl, (void *)Nl, (size_t)Nll);
+            (void) memcpy((void *)nl, (void *)NlistTable, (size_t)NlistLength);
         }
 #endif    /* defined(HAS_AFS) */
 
 /*
  * Access kernel symbols.
  */
-        if (NLIST_TYPE(Nmlst ? Nmlst : N_UNIX, Nl) < 0) {
-            (void) fprintf(stderr, "%s: can't read namelist from: ", Pn);
-            safestrprt(Nmlst ? Nmlst : N_UNIX, stderr, 1);
+        if (NLIST_TYPE(NamelistFilePath ? NamelistFilePath : N_UNIX, NlistTable) < 0) {
+            (void) fprintf(stderr, "%s: can't read namelist from: ", ProgramName);
+            safestrprt(NamelistFilePath ? NamelistFilePath : N_UNIX, stderr, 1);
             Exit(1);
         }
         if (get_Nl_value("proc", Drive_Nl, &v) < 0 || !v
@@ -625,7 +625,7 @@ gather_proc_info() {
             || get_Nl_value("nproc", Drive_Nl, &v) < 0 || !v
             || kread((KA_T) v, (char *) &Np, sizeof(Np))
             || !Kp || Np < 1) {
-            (void) fprintf(stderr, "%s: can't read proc table info\n", Pn);
+            (void) fprintf(stderr, "%s: can't read proc table info\n", ProgramName);
             Exit(1);
         }
         if (get_Nl_value("vfops", Drive_Nl, (KA_T * ) & Vnfops) < 0)
@@ -633,11 +633,11 @@ gather_proc_info() {
 
 #if    HPUXV < 800 && defined(hp9000s300)
         if (get_Nl_value("upmap", Drive_Nl, (unsigned long *)&Usrptmap) < 0) {
-            (void) fprintf(stderr, "%s: can't get kernel's Usrptmap\n", Pn);
+            (void) fprintf(stderr, "%s: can't get kernel's Usrptmap\n", ProgramName);
             Exit(1);
         }
         if (get_Nl_value("upt", Drive_Nl, (unsigned long *)&usrpt) < 0) {
-            (void) fprintf(stderr, "%s: can't get kernel's usrpt\n", Pn);
+            (void) fprintf(stderr, "%s: can't get kernel's usrpt\n", ProgramName);
             Exit(1);
         }
 #endif    /* HPUXV<800 && defined(hp9000s300) */
@@ -645,12 +645,12 @@ gather_proc_info() {
 #if    HPUXV < 800 && defined(hp9000s800)
         proc = (struct proc *)Kp;
         if (get_Nl_value("ubase", Drive_Nl, (unsigned long *)&ubase) < 0) {
-            (void) fprintf(stderr, "%s: can't get kernel's ubase\n", Pn);
+            (void) fprintf(stderr, "%s: can't get kernel's ubase\n", ProgramName);
             Exit(1);
         }
         if (get_Nl_value("npids", Drive_Nl, &v) < 0 || !v
         ||  kread((KA_T)v, (char *)&npids, sizeof(npids))) {
-            (void) fprintf(stderr, "%s: can't get kernel's npids\n", Pn);
+            (void) fprintf(stderr, "%s: can't get kernel's npids\n", ProgramName);
             Exit(1);
         }
 #endif    /* HPUXV<800 && defined(hp9000s800) */
@@ -768,10 +768,10 @@ gather_proc_info() {
          * Avoid infinite loop.
          */
             if (lm > 1000) {
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                 "%s: too many virtual address regions for PID %d\n",
-                Pn, Lp->pid);
+                ProgramName, CurrentLocalProc->pid);
             return;
             }
         /*
@@ -806,7 +806,7 @@ gather_proc_info() {
                 Vp = (KA_T *)realloc((MALLOC_P *)Vp, len);
             if (!Vp) {
                 (void) fprintf(stderr,
-                "%s: no more space for text vnode pointers\n", Pn);
+                "%s: no more space for text vnode pointers\n", ProgramName);
                 Exit(1);
             }
             }
@@ -830,7 +830,7 @@ gather_proc_info() {
          * Save vnode information.
          */
             process_node(va);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
             link_lfile();
         }
     }

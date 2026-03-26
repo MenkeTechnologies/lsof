@@ -55,10 +55,10 @@ build_IPstates()
 {
 
 /*
- * Set the TcpNstates global variable.
+ * Set the TcpNumStates global variable.
  */
-    TcpNstates = TCP_NSTATES;
-    TcpSt = (char **)&tcpstates;
+    TcpNumStates = TCP_NSTATES;
+    TcpStateNames = (char **)&tcpstates;
 }
 
 
@@ -73,49 +73,49 @@ print_tcptpi(nl)
     int ps = 0;
     int s;
 
-    if ((Ftcptpi & TCPTPI_STATE) && Lf->lts.type == 0) {
-        if (Ffield)
-        (void) printf("%cST=", LSOF_FID_TCPTPI);
+    if ((OptTcpTpiInfo & TCPTPI_STATE) && CurrentLocalFile->lts.type == 0) {
+        if (OptFieldOutput)
+        (void) printf("%cST=", LSOF_FID_TCP_TPI_INFO);
         else
         putchar('(');
-        if (!TcpNstates)
+        if (!TcpNumStates)
         (void) build_IPstates();
-        if ((s = Lf->lts.state.i) < 0 || s >= TcpNstates)
+        if ((s = CurrentLocalFile->lts.state.i) < 0 || s >= TcpNumStates)
         (void) printf("UNKNOWN_TCP_STATE_%d", s);
         else
-        (void) fputs(TcpSt[s], stdout);
+        (void) fputs(TcpStateNames[s], stdout);
         ps++;
-        if (Ffield)
+        if (OptFieldOutput)
         putchar(Terminator);
     }
 
 #if	defined(HASTCPTPIQ)
-    if (Ftcptpi & TCPTPI_QUEUES) {
-        if (Lf->lts.rqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_QUEUES) {
+        if (CurrentLocalFile->lts.rqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", Lf->lts.rq);
-        if (Ffield)
+        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.sqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.sqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", Lf->lts.sq);
-        if (Ffield)
+        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
@@ -123,17 +123,17 @@ print_tcptpi(nl)
 #endif	/* defined(HASTCPTPIQ) */
 
 #if	defined(HASSOOPT)
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int opt;
 
-        if ((opt = Lf->lts.opt)
-        ||  Lf->lts.pqlens || Lf->lts.qlens || Lf->lts.qlims
-        ||  Lf->lts.rbszs  || Lf->lts.sbsz
+        if ((opt = CurrentLocalFile->lts.opt)
+        ||  CurrentLocalFile->lts.pqlens || CurrentLocalFile->lts.qlens || CurrentLocalFile->lts.qlims
+        ||  CurrentLocalFile->lts.rbszs  || CurrentLocalFile->lts.sbsz
         ) {
         char sep = ' ';
 
-        if (Ffield)
-            sep = LSOF_FID_TCPTPI;
+        if (OptFieldOutput)
+            sep = LSOF_FID_TCP_TPI_INFO;
         else if (!ps)
             sep = '(';
         (void) printf("%cSO", sep);
@@ -255,8 +255,8 @@ print_tcptpi(nl)
 # if	defined(SO_KEEPALIVE)
         if (opt & SO_KEEPALIVE) {
             (void) printf("%cKEEPALIVE", sep);
-            if (Lf->lts.kai)
-            (void) printf("=%d", Lf->lts.kai);
+            if (CurrentLocalFile->lts.kai)
+            (void) printf("=%d", CurrentLocalFile->lts.kai);
             opt &= ~SO_KEEPALIVE;
             sep = ',';
         }
@@ -281,8 +281,8 @@ print_tcptpi(nl)
 # if	defined(SO_LINGER)
         if (opt & SO_LINGER) {
             (void) printf("%cLINGER", sep);
-            if (Lf->lts.ltm)
-            (void) printf("=%d", Lf->lts.ltm);
+            if (CurrentLocalFile->lts.ltm)
+            (void) printf("=%d", CurrentLocalFile->lts.ltm);
             opt &= ~SO_LINGER;
             sep = ',';
         }
@@ -352,20 +352,20 @@ print_tcptpi(nl)
         }
 # endif	/* defined(SO_ORDREL) */
 
-        if (Lf->lts.pqlens) {
-            (void) printf("%cPQLEN=%u", sep, Lf->lts.pqlen);
+        if (CurrentLocalFile->lts.pqlens) {
+            (void) printf("%cPQLEN=%u", sep, CurrentLocalFile->lts.pqlen);
             sep = ',';
         }
-        if (Lf->lts.qlens) {
-            (void) printf("%cQLEN=%u", sep, Lf->lts.qlen);
+        if (CurrentLocalFile->lts.qlens) {
+            (void) printf("%cQLEN=%u", sep, CurrentLocalFile->lts.qlen);
             sep = ',';
         }
-        if (Lf->lts.qlims) {
-            (void) printf("%cQLIM=%u", sep, Lf->lts.qlim);
+        if (CurrentLocalFile->lts.qlims) {
+            (void) printf("%cQLIM=%u", sep, CurrentLocalFile->lts.qlim);
             sep = ',';
         }
-        if (Lf->lts.rbszs) {
-            (void) printf("%cRCVBUF=%lu", sep, Lf->lts.rbsz);
+        if (CurrentLocalFile->lts.rbszs) {
+            (void) printf("%cRCVBUF=%lu", sep, CurrentLocalFile->lts.rbsz);
             sep = ',';
         }
 
@@ -409,8 +409,8 @@ print_tcptpi(nl)
         }
 # endif	/* defined(SO_SECURITY_REQUEST) */
 
-        if (Lf->lts.sbszs) {
-            (void) printf("%cSNDBUF=%lu", sep, Lf->lts.sbsz);
+        if (CurrentLocalFile->lts.sbszs) {
+            (void) printf("%cSNDBUF=%lu", sep, CurrentLocalFile->lts.sbsz);
             sep = ',';
         }
 
@@ -464,21 +464,21 @@ print_tcptpi(nl)
 
         if (opt)
             (void) printf("%cUNKNOWN=%#x", sep, opt);
-        if (Ffield)
+        if (OptFieldOutput)
             putchar(Terminator);
         }
     }
 #endif	/* defined(HASSOOPT) */
 
 #if	defined(HASSOSTATE)
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         unsigned int ss;
 
-        if ((ss = Lf->lts.ss)) {
+        if ((ss = CurrentLocalFile->lts.ss)) {
         char sep = ' ';
 
-        if (Ffield)
-            sep = LSOF_FID_TCPTPI;
+        if (OptFieldOutput)
+            sep = LSOF_FID_TCP_TPI_INFO;
         else if (!ps)
             sep = '(';
         (void) printf("%cSS", sep);
@@ -503,17 +503,17 @@ print_tcptpi(nl)
 
 # if	defined(HASSBSTATE)
 #  if	defined(SBS_CANTRCVMORE)
-        if (Lf->lts.sbs_rcv & SBS_CANTRCVMORE) {
+        if (CurrentLocalFile->lts.sbs_rcv & SBS_CANTRCVMORE) {
             (void) printf("%cCANTRCVMORE", sep);
-            Lf->lts.sbs_rcv &= ~SBS_CANTRCVMORE;
+            CurrentLocalFile->lts.sbs_rcv &= ~SBS_CANTRCVMORE;
             sep = ',';
         }
 #  endif	/* defined(SBS_CANTRCVMORE) */
 
 #  if	defined(SBS_CANTSENDMORE)
-        if (Lf->lts.sbs_snd & SBS_CANTSENDMORE) {
+        if (CurrentLocalFile->lts.sbs_snd & SBS_CANTSENDMORE) {
             (void) printf("%cCANTSENDMORE", sep);
-            Lf->lts.sbs_snd &= ~SBS_CANTSENDMORE;
+            CurrentLocalFile->lts.sbs_snd &= ~SBS_CANTSENDMORE;
             sep = ',';
         }
 #  endif	/* defined(SS_CANTSENDMORE) */
@@ -690,9 +690,9 @@ print_tcptpi(nl)
 
 # if	defined(HASSBSTATE)
 #  if	defined(SBS_RCVATMARK)
-        if (Lf->lts.sbs_rcv & SBS_RCVATMARK) {
+        if (CurrentLocalFile->lts.sbs_rcv & SBS_RCVATMARK) {
             (void) printf("%cRCVATMARK", sep);
-            Lf->lts.sbs_rcv &= ~SBS_RCVATMARK;
+            CurrentLocalFile->lts.sbs_rcv &= ~SBS_RCVATMARK;
             sep = ',';
         }
 #  endif	/* defined(SBS_RCVATMARK) */
@@ -773,21 +773,21 @@ print_tcptpi(nl)
 
         if (ss)
             (void) printf("%cUNKNOWN=%#x", sep, ss);
-        if (Ffield)
+        if (OptFieldOutput)
             putchar(Terminator);
         }
     }
 #endif	/* defined(HASSOSTATE) */
 
 #if	defined(HASTCPOPT)
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int topt;
 
-        if ((topt = Lf->lts.topt) || Lf->lts.msss) {
+        if ((topt = CurrentLocalFile->lts.topt) || CurrentLocalFile->lts.msss) {
         char sep = ' ';
 
-        if (Ffield)
-            sep = LSOF_FID_TCPTPI;
+        if (OptFieldOutput)
+            sep = LSOF_FID_TCP_TPI_INFO;
         else if (!ps)
             sep = '(';
         (void) printf("%cTF", sep);
@@ -930,8 +930,8 @@ print_tcptpi(nl)
         }
 # endif	/* defined(TF_LQ_OVERFLOW) */
 
-        if (Lf->lts.msss) {
-            (void) printf("%cMSS=%lu", sep, Lf->lts.mss);
+        if (CurrentLocalFile->lts.msss) {
+            (void) printf("%cMSS=%lu", sep, CurrentLocalFile->lts.mss);
             sep = ',';
         }
 
@@ -1321,46 +1321,46 @@ print_tcptpi(nl)
 
         if (topt)
             (void) printf("%cUNKNOWN=%#x", sep, topt);
-        if (Ffield)
+        if (OptFieldOutput)
             putchar(Terminator);
         }
     }
 #endif	/* defined(HASTCPOPT) */
 
 #if	defined(HASTCPTPIW)
-    if (Ftcptpi & TCPTPI_WINDOWS) {
-        if (Lf->lts.rws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
+        if (CurrentLocalFile->lts.rws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", Lf->lts.rw);
-        if (Ffield)
+        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.wws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.wws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", Lf->lts.ww);
-        if (Ffield)
+        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
     }
 #endif	/* defined(HASTCPTPIW) */
 
-    if (ps && !Ffield)
+    if (ps && !OptFieldOutput)
         putchar(')');
     if (nl)
         putchar('\n');

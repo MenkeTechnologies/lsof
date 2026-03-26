@@ -270,25 +270,25 @@ ncache_isroot(va, cp)
     /*
      * The vnode tests failed.  Try the inode tests.
      */
-        if (Lf->inp_ty != 1 || !Lf->inode
-        ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
+        if (CurrentLocalFile->inp_ty != 1 || !CurrentLocalFile->inode
+        ||  !CurrentLocalFile->fsdir || (len = strlen(CurrentLocalFile->fsdir)) < 1)
         return(0);
         if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
         return(0);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (strcmp(Lf->fsdir, mtp->dir) == 0)
+        if (strcmp(CurrentLocalFile->fsdir, mtp->dir) == 0)
             break;
         }
         if (!mtp)
         return(0);
-        (void) strcpy(buf, Lf->fsdir);
+        (void) strcpy(buf, CurrentLocalFile->fsdir);
         if (buf[len - 1] != '/')
         buf[len++] = '/';
         (void) strcpy(&buf[len], cp);
         if (statsafely(buf, &sb) != 0
-        ||  (unsigned long)sb.st_ino != Lf->inode)
+        ||  (unsigned long)sb.st_ino != CurrentLocalFile->inode)
         return(0);
     }
 /*
@@ -303,7 +303,7 @@ ncache_isroot(va, cp)
         vc = (KA_T *)realloc(vc, len);
         if (!vc) {
         (void) fprintf(stderr, "%s: no space for root vnode table\n",
-            Pn);
+            ProgramName);
         Exit(1);
         }
     }
@@ -339,7 +339,7 @@ ncache_load()
     static struct ncache *kca = (struct ncache *)NULL;
 # endif	/* defined(NCACHE_NXT) */
 
-    if (!Fncache)
+    if (!OptNameCache)
         return;
     if (Ncfirst) {
 
@@ -357,10 +357,10 @@ ncache_load()
         ||  !v
         ||  kread((KA_T)v, (char *)&Nc, sizeof(Nc)))
         {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't read name cache size: %s\n",
-            Pn, print_kptr(v, (char *)NULL, 0));
+            ProgramName, print_kptr(v, (char *)NULL, 0));
         iNc = Nc = 0;
         return;
         }
@@ -370,9 +370,9 @@ ncache_load()
 # endif	/* defined(X_NCSIZE) */
 
         if (Nc < 1) {
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
-            "%s: WARNING: kernel name cache size: %d\n", Pn, Nc);
+            "%s: WARNING: kernel name cache size: %d\n", ProgramName, Nc);
             (void) fprintf(stderr,
             "      Cache size assumed to be: %d\n", DEFNCACHESZ);
         }
@@ -399,9 +399,9 @@ ncache_load()
         kp = (KA_T)0;
         if (get_Nl_value(X_NCACHE,(struct drive_Nl *)NULL,(KA_T *)&kp) < 0
         || !kp) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: WARNING: no name cache address\n", Pn);
+            "%s: WARNING: no name cache address\n", ProgramName);
         iNc = Nc = 0;
         return;
         }
@@ -410,10 +410,10 @@ ncache_load()
         if (get_Nl_value(X_NCACHE, (struct drive_Nl *)NULL, &v) < 0
         || !v
         ||  kread((KA_T)v, (char *)&kp, sizeof(kp))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't read name cache ptr: %s\n",
-            Pn, print_kptr(v, (char *)NULL, 0));
+            ProgramName, print_kptr(v, (char *)NULL, 0));
         iNc = Nc = 0;
         return;
         }
@@ -426,9 +426,9 @@ ncache_load()
 # if	!defined(NCACHE_NXT)
         len = Nc * sizeof(struct ncache);
         if (!(kca = (struct ncache *)malloc((MALLOC_S)len))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: can't allocate name cache space: %d\n", Pn, len);
+            "%s: can't allocate name cache space: %d\n", ProgramName, len);
         Exit(1);
         }
 # endif	/* !defined(NCACHE_NXT) */
@@ -441,9 +441,9 @@ ncache_load()
 
 no_local_space:
 
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-              "%s: no space for %d byte local name cache\n", Pn, len);
+              "%s: no space for %d byte local name cache\n", ProgramName, len);
         Exit(1);
         }
     } else {
@@ -483,10 +483,10 @@ no_local_space:
  * Read the kernel's name cache.
  */
     if (kread(kp, (char *)kca, (Nc * sizeof(struct ncache)))) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't read kernel's name cache: %s\n",
-            Pn, print_kptr(kp, (char *)NULL, 0));
+            ProgramName, print_kptr(kp, (char *)NULL, 0));
         Nc = 0;
         return;
     }
@@ -532,7 +532,7 @@ no_local_space:
         if (!nb) {
             (void) fprintf(stderr,
             "%s: can't allocate %d byte temporary name buffer\n",
-            Pn, na);
+            ProgramName, na);
             Exit(1);
         }
         }
@@ -558,7 +558,7 @@ no_local_space:
         if (!(cp = (char *)malloc(len + 1))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for name cache name: %s\n",
-            Pn, len + 1, np);
+            ProgramName, len + 1, np);
         Exit(1);
         }
         (void) strncpy(cp, np, len);
@@ -577,7 +577,7 @@ no_local_space:
         {
             (void) fprintf(stderr,
             "%s: no more space for %d entry local name cache\n",
-            Pn, Nc);
+            ProgramName, Nc);
             Exit(1);
         }
         lc = &Ncache[n];
@@ -604,10 +604,10 @@ no_local_space:
 
 # if	defined(NCACHE_NXT)
         if (n >= i) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: name cache truncated at %d entries\n",
-            Pn, n);
+            ProgramName, n);
         break;
         }
 # endif	/* defined(NCACHE_NXT) */
@@ -618,12 +618,12 @@ no_local_space:
  */
 
 # if	!defined(NCACHE_NXT)
-    if (!RptTm)
+    if (!RepeatTime)
         (void) free((FREE_P *)kca);
 # endif	/* !defined(NCACHE_NXT) */
 
     if (n < 1) {
-        if (!RptTm && Ncache) {
+        if (!RepeatTime && Ncache) {
 
         /*
          * If not in repeat mode, free the space that has been malloc'd
@@ -639,14 +639,14 @@ no_local_space:
          Ncache = (struct l_nch *)NULL;
         Nc = 0;
         }
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: unusable name cache size: %d\n", Pn, n);
+            "%s: WARNING: unusable name cache size: %d\n", ProgramName, n);
         return;
     }
     if (n < Nc) {
         Nc = n;
-        if (!RptTm) {
+        if (!RepeatTime) {
         len = Nc * sizeof(struct l_nch);
         if (!(Ncache = (struct l_nch *)realloc(Ncache, len)))
             goto no_local_space;
@@ -661,10 +661,10 @@ no_local_space:
     Mch = Nch - 1;
     if (!(Nchash = (struct l_nch **)calloc(Nch+Nc, sizeof(struct l_nch *))))
     {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: no space for %d name cache hash pointers\n",
-            Pn, Nch + Nc);
+            ProgramName, Nch + Nc);
         Exit(1);
     }
     for (i = 0, lc = Ncache; i < Nc; i++, lc++) {
@@ -740,7 +740,7 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-    if ((Lf->inp_ty == 1) && Lf->fs_ino && (Lf->inode == Lf->fs_ino))
+    if ((CurrentLocalFile->inp_ty == 1) && CurrentLocalFile->fs_ino && (CurrentLocalFile->inode == CurrentLocalFile->fs_ino))
         return(cp);
 # endif	/* defined(HASFSINO) */
 
@@ -750,9 +750,9 @@ ncache_lookup(buf, blen, fp)
     if (!Nc
 
 # if	defined(NCACHE_NODEID)
-    ||  !(lc = ncache_addr(Lf->id, Lf->na))
+    ||  !(lc = ncache_addr(CurrentLocalFile->id, CurrentLocalFile->na))
 # else	/* !defined(NCACHE_NODEID) */
-    ||  !(lc = ncache_addr(Lf->na))
+    ||  !(lc = ncache_addr(CurrentLocalFile->na))
 # endif	/* defined(NCACHE_NODEID) */
 
     ) {
@@ -761,14 +761,14 @@ ncache_lookup(buf, blen, fp)
      * If the node has no cache entry, see if it's the mount
      * point of a known file system.
      */
-        if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
+        if (!CurrentLocalFile->fsdir || !CurrentLocalFile->dev_def || CurrentLocalFile->inp_ty != 1)
         return((char *)NULL);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (Lf->dev == mtp->dev
-        &&  mtp->inode == Lf->inode
-        &&  strcmp(mtp->dir, Lf->fsdir) == 0)
+        if (CurrentLocalFile->dev == mtp->dev
+        &&  mtp->inode == CurrentLocalFile->inode
+        &&  strcmp(mtp->dir, CurrentLocalFile->fsdir) == 0)
             return(cp);
         }
         return((char *)NULL);

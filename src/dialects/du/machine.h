@@ -92,7 +92,7 @@
 
 /*
  * HASBLKDEV is defined for those dialects that want block device information
- * recorded in BDevtp[].
+ * recorded in BlockDeviceTable[].
  *
  * NOWARNBLKDEV suppresses warnings about no block devices for Tru64 UNIX 5.0
  * and above.
@@ -247,7 +247,7 @@
 #if    defined(HASTAGTOPATH)
 #define HASLFILEADD int advfs_seq; unsigned char advfs_seq_stat;
 /* #define CLRLFILEADD(lf)	(lf)->... = (type)NULL;	*/
-#define SETLFILEADD Lf->advfs_seq_stat = 0;
+#define SETLFILEADD CurrentLocalFile->advfs_seq_stat = 0;
 #endif    /* defined(HASTAGTOPATH) */
 
 
@@ -487,7 +487,7 @@
  * of a successful stat(2) of a file name argument.
  *
  * For example, HASSPECDEVD() for Darwin makes sure that st_dev is set to
- * what stat("/dev") returns -- i.e., what's in DevDev.
+ * what stat("/dev") returns -- i.e., what's in DeviceOfDev.
  *
  * The function takes two arguments:
  *

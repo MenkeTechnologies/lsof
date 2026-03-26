@@ -205,7 +205,7 @@ ncache_alloc()
     if (!(Nchash = (struct l_nc **)calloc(Nceh, sizeof(struct l_nc *))))
     {
         (void) fprintf(stderr,
-        "%s: can't allocate %d local name cache entries\n", Pn, Nceh);
+        "%s: can't allocate %d local name cache entries\n", ProgramName, Nceh);
         Exit(1);
     }
     if (Ncfsid)
@@ -214,7 +214,7 @@ ncache_alloc()
     {
         (void) fprintf(stderr,
         "%s: can't allocate %d local file system cache entries\n",
-        Pn, NFSIDH);
+        ProgramName, NFSIDH);
         Exit(1);
     }
 }
@@ -276,10 +276,10 @@ ncache_isroot(ps)
         return(1);
 
 # if	defined(HASFSINO)
-    if (!Lf->fs_ino || (Lf->inp_ty != 1) || !Lf->dev_def)
+    if (!CurrentLocalFile->fs_ino || (CurrentLocalFile->inp_ty != 1) || !CurrentLocalFile->dev_def)
         return(0);
-    if ((Lf->dev == (dev_t)ps->psf_fsid.psfs_id)
-    &&  (Lf->fs_ino == (unsigned long)ps->psf_fileid))
+    if ((CurrentLocalFile->dev == (dev_t)ps->psf_fsid.psfs_id)
+    &&  (CurrentLocalFile->fs_ino == (unsigned long)ps->psf_fileid))
         return(1);
 # endif	/* defined(HASFSINO) */
 
@@ -294,7 +294,7 @@ ncache_isroot(ps)
 void
 ncache_load()
 {
-    if (!Fncache)
+    if (!OptNameCache)
         return;
     (void) ncache_alloc();
     if (!Nzpfs) {
@@ -327,7 +327,7 @@ ncache_loadfs(fsid, fh)
  * Allocate a new file system pointer structure and link it to its bucket.
  */
     if (!(f = (struct l_fic *)malloc(sizeof(struct l_fic)))) {
-        (void) fprintf(stderr, "%s: no fsid structure space\n", Pn);
+        (void) fprintf(stderr, "%s: no fsid structure space\n", ProgramName);
         Exit(1);
     }
     f->fsid = *fsid;
@@ -354,13 +354,13 @@ ncache_loadfs(fsid, fh)
         if (!(cp = (char *)malloc((MALLOC_S)(nl + 1)))) {
             (void) fprintf(stderr,
             "%s: no name entry space (%d) for:%s\n",
-            Pn, nl + 1, mp[i].psr_name);
+            ProgramName, nl + 1, mp[i].psr_name);
             Exit(1);
         }
         if (!(nn = (struct l_nc *)malloc(sizeof(struct l_nc)))) {
             (void) fprintf(stderr,
             "%s: no name cache entry space (%d) for: %s\n",
-            Pn, (int)sizeof(struct l_nc), mp[i].psr_name);
+            ProgramName, (int)sizeof(struct l_nc), mp[i].psr_name);
             Exit(1);
         }
         /*
@@ -443,7 +443,7 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller that the already-printed system mount point name is sufficient.
  */
-    if (Lf->inp_ty == 1 && Lf->fs_ino && Lf->inode == Lf->fs_ino)
+    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino && CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
         return(cp);
 # endif	/* defined(HASFSINO) */
 
@@ -452,24 +452,24 @@ ncache_lookup(buf, blen, fp)
  * loading has been inhibited with -C, or unless the real or effective UID of
  * this process is root.
  */
-    if ((!Myuid || Setuidroot) && Fncache) {
-        for (fh = HASHFSID(&Lf->psfid.psf_fsid), fs = *fh;
+    if ((!MyRealUid || SetuidRootState) && OptNameCache) {
+        for (fh = HASHFSID(&CurrentLocalFile->psfid.psf_fsid), fs = *fh;
          fs;
          fs = fs->next)
         {
-        if (memcmp((void *)&fs->fsid, (void *)&Lf->psfid.psf_fsid,
+        if (memcmp((void *)&fs->fsid, (void *)&CurrentLocalFile->psfid.psf_fsid,
                 NFSID)
         == 0)
             break;
         }
         if (!fs)
-        fs = ncache_loadfs(&Lf->psfid.psf_fsid, fh);
+        fs = ncache_loadfs(&CurrentLocalFile->psfid.psf_fsid, fh);
     } else
         fs = (struct l_fic *)NULL;
 /*
  * Search the cache for an entry whose psfileid matches.
  */
-    if (!fs || !fs->nc || !(lc = ncache_addr(&Lf->psfid))) {
+    if (!fs || !fs->nc || !(lc = ncache_addr(&CurrentLocalFile->psfid))) {
 
     /*
      * If the node has no cache entry, see if it's the root of the file
@@ -477,7 +477,7 @@ ncache_lookup(buf, blen, fp)
      */
 
 # if	defined(HASFSINO)
-        if (Lf->fs_ino && (Lf->inp_ty == 1) && (Lf->fs_ino == Lf->inode))
+        if (CurrentLocalFile->fs_ino && (CurrentLocalFile->inp_ty == 1) && (CurrentLocalFile->fs_ino == CurrentLocalFile->inode))
         return(cp);
 # endif	/* defined(HASFSINO) */
 
@@ -489,10 +489,10 @@ ncache_lookup(buf, blen, fp)
      * this particular file.  (The file must have a non-zero opaque ID.)
      */
         if (!fs) {
-        if (Fncache
-        &&  (Myuid == Lp->uid)
-        &&  memcmp((void *)&Lf->opfid, (void *)&Nzpf, sizeof(Nzpf))
-        &&  (nl = pstat_getpathname(buf, (blen - 1), &Lf->opfid)) > 0)
+        if (OptNameCache
+        &&  (MyRealUid == CurrentLocalProc->uid)
+        &&  memcmp((void *)&CurrentLocalFile->opfid, (void *)&Nzpf, sizeof(Nzpf))
+        &&  (nl = pstat_getpathname(buf, (blen - 1), &CurrentLocalFile->opfid)) > 0)
         {
             buf[nl] = '\0';
             if (*buf == '/')
@@ -548,7 +548,7 @@ ncache_lookup(buf, blen, fp)
          * system root directory, and indicate that the assembly should
          * stop after this entry.
          */
-        if (!(pc = Lf->fsdir))
+        if (!(pc = CurrentLocalFile->fsdir))
             break;
         nl = (int)strlen(pc);
         ef = 1;
@@ -605,7 +605,7 @@ ncache_size()
     struct pst_dynamic pd;
 
     if (pstat_getdynamic(&pd, sizeof(pd), 1, 0) != 1) {
-        (void) fprintf(stderr, "%s: can't get dynamic status\n", Pn);
+        (void) fprintf(stderr, "%s: can't get dynamic status\n", ProgramName);
         Exit(1);
     }
     Ndnlc = (int)pd.psd_dnlc_size;
@@ -652,16 +652,16 @@ process_finfo(pd, opfid, psfid, na)
 /*
  * Save file IDs for later use in name lookup.
  */
-    Lf->opfid = *opfid;
-    Lf->psfid = *psfid;
+    CurrentLocalFile->opfid = *opfid;
+    CurrentLocalFile->psfid = *psfid;
 
 #if    defined(HASFSTRUCT)
     /*
      * Save node ID.
      */
-        if (na && (Fsv & FSV_NI)) {
-            Lf->fna = na;
-            Lf->fsv |= FSV_NI;
+        if (na && (OptFileStructValues & FSV_NODE_ID)) {
+            CurrentLocalFile->fna = na;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
         }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -669,80 +669,80 @@ process_finfo(pd, opfid, psfid, na)
  * Construct lock code.
  */
     if ((lk = pd->psfd_lckflag) & PS_FPARTRDLCK)
-        Lf->lock = 'r';
+        CurrentLocalFile->lock = 'r';
     else if (lk & PS_FPARTWRLCK)
-        Lf->lock = 'w';
+        CurrentLocalFile->lock = 'w';
     else if (lk & PS_FFULLRDLCK)
-        Lf->lock = 'R';
+        CurrentLocalFile->lock = 'R';
     else if (lk & PS_FFULLWRLCK)
-        Lf->lock = 'W';
+        CurrentLocalFile->lock = 'W';
     else
-        Lf->lock = ' ';
+        CurrentLocalFile->lock = ' ';
 /*
  * Derive type from modes.
  */
     switch ((int) (pd->psfd_mode & PS_IFMT)) {
         case PS_IFREG:
             cp = "REG";
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
             break;
         case PS_IFBLK:
             cp = "BLK";
-            Ntype = N_BLK;
+            NodeType = N_BLK;
             break;
         case PS_IFDIR:
             cp = "DIR";
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
             break;
         case PS_IFCHR:
             cp = "CHR";
-            Ntype = N_CHR;
+            NodeType = N_CHR;
             break;
         case PS_IFIFO:
             cp = "FIFO";
-            Ntype = N_FIFO;
+            NodeType = N_FIFO;
             break;
         default:
             (void) snpf(buf, sizeof(buf), "%04o",
                         (unsigned int) (((pd->psfd_mode & PS_IFMT) >> 12) & 0xfff));
             cp = buf;
-            Ntype = N_REGLR;
+            NodeType = N_REGLR;
     }
-    if (!Lf->type[0])
-        (void) snpf(Lf->type, sizeof(Lf->type), "%s", cp);
-    Lf->ntype = Ntype;
+    if (!CurrentLocalFile->type[0])
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", cp);
+    CurrentLocalFile->ntype = NodeType;
 /*
  * Save device number.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_FIFO:
             (void) enter_dev_ch(print_kptr(na, (char *) NULL, 0));
             break;
         default:
-            dev = Lf->dev = (dev_t) pd->psfd_dev;
-            devs = Lf->dev_def = 1;
-            if ((Ntype == N_CHR) || (Ntype == N_BLK)) {
-                Lf->rdev = (dev_t) pd->psfd_rdev;
-                Lf->rdev_def = 1;
+            dev = CurrentLocalFile->dev = (dev_t) pd->psfd_dev;
+            devs = CurrentLocalFile->dev_def = 1;
+            if ((NodeType == N_CHR) || (NodeType == N_BLK)) {
+                CurrentLocalFile->rdev = (dev_t) pd->psfd_rdev;
+                CurrentLocalFile->rdev_def = 1;
             }
     }
 /*
  * Save node number.
  */
-    Lf->inode = (INODETYPE) pd->psfd_ino;
-    Lf->inp_ty = 1;
+    CurrentLocalFile->inode = (INODETYPE) pd->psfd_ino;
+    CurrentLocalFile->inp_ty = 1;
 /*
  * Save link count.
  */
-    if (Fnlink) {
+    if (OptLinkCount) {
 
         /*
          * Ignore a zero link count only if the file is a FIFO.
          */
-        if ((Lf->nlink = (long) pd->psfd_nlink) || (Ntype != N_FIFO))
-            Lf->nlink_def = 1;
-        if (Lf->nlink_def && Nlink && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+        if ((CurrentLocalFile->nlink = (long) pd->psfd_nlink) || (NodeType != N_FIFO))
+            CurrentLocalFile->nlink_def = 1;
+        if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 /*
  * Save file system identity.
@@ -750,11 +750,11 @@ process_finfo(pd, opfid, psfid, na)
     if (devs) {
         for (mp = readmnt(); mp; mp = mp->next) {
             if (dev == mp->dev) {
-                Lf->fsdir = mp->dir;
-                Lf->fsdev = mp->fsname;
+                CurrentLocalFile->fsdir = mp->dir;
+                CurrentLocalFile->fsdev = mp->fsname;
 
 #if    defined(HASFSINO)
-                Lf->fs_ino = (unsigned long)mp->inode;
+                CurrentLocalFile->fs_ino = (unsigned long)mp->inode;
 #endif    /* defined(HASFSINO) */
 
                 break;
@@ -766,40 +766,40 @@ process_finfo(pd, opfid, psfid, na)
  * If no offset has been activated and no size saved, activate the offset or
  * save the size.
  */
-    if (!Lf->off_def && !Lf->sz_def) {
-        if (Foffset)
-            Lf->off_def = 1;
+    if (!CurrentLocalFile->off_def && !CurrentLocalFile->sz_def) {
+        if (OptOffset)
+            CurrentLocalFile->off_def = 1;
         else {
-            switch (Ntype) {
+            switch (NodeType) {
                 case N_CHR:
                 case N_FIFO:
-                    Lf->off_def = 1;
+                    CurrentLocalFile->off_def = 1;
                     break;
                 default:
-                    Lf->sz = (SZOFFTYPE) pd->psfd_size;
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE) pd->psfd_size;
+                    CurrentLocalFile->sz_def = 1;
             }
         }
     }
 /*
  * See if this is an NFS file.
  */
-    if (Fnfs) {
+    if (OptNfs) {
         if (HasNFS < 0)
             (void) scanmnttab();
         if (HasNFS && mp && mp->is_nfs)
-            Lf->sf |= SELNFS;
+            CurrentLocalFile->sf |= SELNFS;
     }
 /*
  * Test for specified file.
  */
-    if (Sfile && is_file_named(NULL,
-                               ((Ntype == N_CHR) || (Ntype == N_BLK) ? 1
+    if (SearchFileChain && is_file_named(NULL,
+                               ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1
                                                                      : 0)))
-        Lf->sf |= SELNM;
+        CurrentLocalFile->sf |= SELNM;
 /*
  * Enter name characters.
  */
-    if (!Lf->nm && Namech[0])
-        enter_nm(Namech);
+    if (!CurrentLocalFile->nm && NameChars[0])
+        enter_nm(NameChars);
 }

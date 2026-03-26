@@ -264,25 +264,25 @@ ncache_isroot(na, cp)
     /*
      * The vnode tests failed.  Try the inode tests.
      */
-        if (Lf->inp_ty != 1 || !Lf->inode
-        ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
+        if (CurrentLocalFile->inp_ty != 1 || !CurrentLocalFile->inode
+        ||  !CurrentLocalFile->fsdir || (len = strlen(CurrentLocalFile->fsdir)) < 1)
         return(0);
         if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
         return(0);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (strcmp(Lf->fsdir, mtp->dir) == 0)
+        if (strcmp(CurrentLocalFile->fsdir, mtp->dir) == 0)
             break;
         }
         if (!mtp)
         return(0);
-        (void) strcpy(buf, Lf->fsdir);
+        (void) strcpy(buf, CurrentLocalFile->fsdir);
         if (buf[len - 1] != '/')
         buf[len++] = '/';
         (void) strcpy(&buf[len], cp);
         if (statsafely(buf, &sb) != 0
-        ||  (unsigned long)sb.st_ino != Lf->inode)
+        ||  (unsigned long)sb.st_ino != CurrentLocalFile->inode)
         return(0);
     }
 /*
@@ -298,7 +298,7 @@ ncache_isroot(na, cp)
         }
         if (!nc) {
         (void) fprintf(stderr, "%s: no space for root node table\n",
-            Pn);
+            ProgramName);
         Exit(1);
         }
         nca += 10;
@@ -344,7 +344,7 @@ ncache_load()
     nbf[nbfl] = '\0';
 # endif	/* !defined(NCACHE_NMLEN) */
 
-    if (!Fncache)
+    if (!OptNameCache)
         return;
 /*
  * Free previously allocated space.
@@ -365,17 +365,17 @@ ncache_load()
     ||  !v
     ||  kread((KA_T)v, (char *)&khsz, sizeof(khsz)))
     {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't read name cache hash size: %s\n",
-            Pn, print_kptr(v, (char *)NULL, 0));
+            ProgramName, print_kptr(v, (char *)NULL, 0));
         return;
     }
     if (khsz < 1) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: name cache hash size length error: %#lx\n",
-            Pn, khsz);
+            ProgramName, khsz);
         return;
     }
 /*
@@ -388,10 +388,10 @@ ncache_load()
     ||  kread((KA_T)v, (char *)&ka, sizeof(ka))
     ||  !ka)
     {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: unusable name cache hash pointer: (%s)=%s\n",
-                Pn, print_kptr(v, tbuf, sizeof(tbuf)),
+                ProgramName, print_kptr(v, tbuf, sizeof(tbuf)),
             print_kptr(ka, (char *)NULL, 0));
         return;
     }
@@ -407,7 +407,7 @@ ncache_load()
         if (!khp) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for name cache hash table\n",
-            Pn, len);
+            ProgramName, len);
         Exit(1);
         }
         khpl = len;
@@ -415,7 +415,7 @@ ncache_load()
     if (kread((KA_T)ka, (char *)khp, len)) {
         (void) fprintf(stderr,
         "%s: can't read name cache hash pointers from: %s\n",
-        Pn, print_kptr(ka, (char *)NULL, 0));
+        ProgramName, print_kptr(ka, (char *)NULL, 0));
         return;
     }
 /*
@@ -429,10 +429,10 @@ ncache_load()
      */
         for (ka = (KA_T)khp[kx], n = 0; ka; ka = knx, n++) {
         if (n > lim) {
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: name cache hash chain too long\n",
-                Pn);
+                ProgramName);
             break;
         }
         if (kread(ka, (char *)&c, sizeof(c)))
@@ -511,7 +511,7 @@ ncache_load()
             if (!lc) {
             (void) fprintf(stderr,
                 "%s: can't allocate %d local name cache bytes\n",
-                Pn, nlcl);
+                ProgramName, nlcl);
             Exit(1);
             }
             lcl = nlcl;
@@ -581,15 +581,15 @@ ncache_load()
 /*
  * Reduce memory usage, as required.
  */
-    if (!RptTm) {
+    if (!RepeatTime) {
         (void) free((FREE_P *)khp);
         khp = (struct NCACHE **)NULL;
         khpl = 0;
     }
     if (nch < 1) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: unusable name cache size: %d\n", Pn, nch);
+            "%s: WARNING: unusable name cache size: %d\n", ProgramName, nch);
         return;
     }
 /*
@@ -601,10 +601,10 @@ ncache_load()
     Mch = nchl - 1;
     len = nchl + nch;
     if (!(Nchash = (struct l_nch **)calloc(len, sizeof(struct l_nch *)))) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: no space for %d local name cache hash pointers\n",
-            Pn, len);
+            ProgramName, len);
         Exit(1);
     }
     for (lc = Ncache; lc; lc = lc->next) {
@@ -669,7 +669,7 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-    if ((Lf->inp_ty == 1) && Lf->fs_ino && (Lf->inode == Lf->fs_ino))
+    if ((CurrentLocalFile->inp_ty == 1) && CurrentLocalFile->fs_ino && (CurrentLocalFile->inode == CurrentLocalFile->fs_ino))
         return(cp);
 # endif	/* defined(HASFSINO) */
 
@@ -678,9 +678,9 @@ ncache_lookup(buf, blen, fp)
  */
 
 # if	defined(NCACHE_NODEID)
-    if (!Nchash || !(lc = ncache_addr(Lf->id, Lf->na)))
+    if (!Nchash || !(lc = ncache_addr(CurrentLocalFile->id, CurrentLocalFile->na)))
 # else	/* !defined(NCACHE_NODEID) */
-    if (!Nchash || !(lc = ncache_addr(Lf->na)))
+    if (!Nchash || !(lc = ncache_addr(CurrentLocalFile->na)))
 # endif	/* defined(NCACHE_NODEID) */
 
     {
@@ -689,14 +689,14 @@ ncache_lookup(buf, blen, fp)
      * If the node has no cache entry, see if it's the mount
      * point of a known file system.
      */
-        if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
+        if (!CurrentLocalFile->fsdir || !CurrentLocalFile->dev_def || CurrentLocalFile->inp_ty != 1)
         return((char *)NULL);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (Lf->dev == mtp->dev
-        &&  mtp->inode == Lf->inode
-        &&  (strcmp(mtp->dir, Lf->fsdir) == 0))
+        if (CurrentLocalFile->dev == mtp->dev
+        &&  mtp->inode == CurrentLocalFile->inode
+        &&  (strcmp(mtp->dir, CurrentLocalFile->fsdir) == 0))
             return(cp);
         }
         return((char *)NULL);

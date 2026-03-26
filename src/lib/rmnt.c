@@ -102,7 +102,7 @@ readmnt()
  * Open access to the mount table.
  */
     if (!(mfp = setmntent(MOUNTED, "r"))) {
-        (void) fprintf(stderr, "%s: can't access %s\n", Pn, MOUNTED);
+        (void) fprintf(stderr, "%s: can't access %s\n", ProgramName, MOUNTED);
         Exit(1);
     }
 /*
@@ -130,7 +130,7 @@ readmnt()
         if (!(dn = mkstrcpy(mp->mnt_dir, (MALLOC_S *)NULL)))
         goto no_space_for_mount;
         if (!(ln = Readlink(dn))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "      Output information may be incomplete.\n");
         continue;
@@ -145,8 +145,8 @@ readmnt()
      * Stat() the directory.
      */
         if (statsafely(dn, &sb)) {
-        if (!Fwarn) {
-            (void) fprintf(stderr, "%s: WARNING: can't stat() ", Pn);
+        if (!OptWarnings) {
+            (void) fprintf(stderr, "%s: WARNING: can't stat() ", ProgramName);
             safestrprt(mp->mnt_type, stderr, 0);
             (void) fprintf(stderr, " file system ");
             safestrprt(mp->mnt_dir, stderr, 1);
@@ -157,7 +157,7 @@ readmnt()
             (void) zeromem(&sb, sizeof(sb));
             if ((opte = x2dev(opt + 4, (dev_t *)&sb.st_dev))) {
             sb.st_mode = S_IFDIR | 0777;
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                 "      assuming \"%.*s\" from %s\n",
                 (int)(opte - opt), opt, MOUNTED);
@@ -175,7 +175,7 @@ readmnt()
 
 no_space_for_mount:
 
-        (void) fprintf(stderr, "%s: no space for mount at ", Pn);
+        (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
         safestrprt(mp->mnt_fsname, stderr, 0);
         (void) fprintf(stderr, " (");
         safestrprt(mp->mnt_dir, stderr, 0);
@@ -198,7 +198,7 @@ no_space_for_mount:
                         (MALLOC_S *)NULL)))
         {
         (void) fprintf(stderr, "%s: no space for fstype (%s): %s\n",
-            Pn, mtp->dir, mp->RMNT_FSTYPE);
+            ProgramName, mtp->dir, mp->RMNT_FSTYPE);
         Exit(1);
         }
         (void) strcpy(mtp->MOUNTS_FSTYPE, mp->RMNT_FSTYPE);

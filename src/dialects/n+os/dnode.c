@@ -147,7 +147,7 @@ isvlocked(vp)
  * for this process.
  */
     for (lp = sv->lp; lp; lp = lp->next) {
-        if (lp->pid == (pid_t)Lp->pid) {
+        if (lp->pid == (pid_t)CurrentLocalProc->pid) {
         if (lp->start == 0 && lp->end == 0x7fffffff)
             i = 1;
         else
@@ -196,7 +196,7 @@ load_svnc()
         {
         (void) fprintf(stderr,
             "%s: no space for %d local shadow vnode hash buckets\n",
-            Pn, LF_SVNODE_HSZ);
+            ProgramName, LF_SVNODE_HSZ);
         Exit(1);
         }
     }
@@ -223,7 +223,7 @@ load_svnc()
         if (!(lsv = (struct l_svn *)malloc(sizeof(struct l_svn)))) {
             (void) fprintf(stderr,
             "%s: no space for local shadow vnode -- PID: %ld\n",
-            Pn, Lp->pid);
+            ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
         lsv->vp = (KA_T)sv.lf_vnodep;
@@ -245,7 +245,7 @@ load_svnc()
             {
             (void) fprintf(stderr,
                 "%s: no space for local lock struct -- PID: %ld\n",
-                Pn, Lp->pid);
+                ProgramName, CurrentLocalProc->pid);
             Exit(1);
             }
             lsf->type = lf.lf_type;
@@ -325,7 +325,7 @@ process_node(va)
 #endif    /* defined(HAS_AFS) */
 
         if (!v) {
-            (void) fprintf(stderr, "%s: can't allocate %s space\n", Pn,
+            (void) fprintf(stderr, "%s: can't allocate %s space\n", ProgramName,
 
 #if    defined(HAS_AFS)
                     "vcache"
@@ -338,17 +338,17 @@ process_node(va)
         }
     }
     if (readvnode(va, v)) {
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 
 # if    defined(HASNCACHE)
-    Lf->na = va;
+    CurrentLocalFile->na = va;
 # endif    /* defined(HASNCACHE) */
 
 # if    defined(HASFSTRUCT)
-    Lf->fna = va;
-    Lf->fsv |= FSV_NI;
+    CurrentLocalFile->fna = va;
+    CurrentLocalFile->fsv |= FSV_NODE_ID;
 # endif    /* defined(HASFSTRUCT) */
 
 /*
@@ -371,11 +371,11 @@ process_node(va)
  */
     if ((uvops && (KA_T) v->v_op == uvops)
         || (svops && (KA_T) v->v_op == svops))
-        Ntype = N_REGLR;
+        NodeType = N_REGLR;
     else if (nvops && (KA_T) v->v_op == nvops)
-        Ntype = N_NFS;
+        NodeType = N_NFS;
     else if (fvops && (KA_T) v->v_op == fvops)
-        Ntype = N_FIFO;
+        NodeType = N_FIFO;
 
 #if    defined(HAS_AFS)
         /*
@@ -384,14 +384,14 @@ process_node(va)
 
         else if (avops) {
             if ((KA_T)v->v_op == avops)
-            Ntype = N_AFS;
+            NodeType = N_AFS;
             else {
 
     unknown_v_op:
-            (void) snpf(Namech, Namechl,
+            (void) snpf(NameChars, NameCharsLength,
                 "unknown file system type; v_op: %s",
                 print_kptr((KA_T)v->v_op, (char *)NULL, 0));
-            enter_nm(Namech);
+            enter_nm(NameChars);
             return;
             }
         } else if (v->v_data || !v->v_vfsp)
@@ -406,21 +406,21 @@ process_node(va)
                 goto unknown_v_op;
             }
             afs = 1;
-            Ntype = N_AFS;
+            NodeType = N_AFS;
             AFSVfsp = (KA_T)v->v_vfsp;
             break;
             case 1:
             if ((KA_T)v->v_vfsp == AFSVfsp)
-                Ntype = N_AFS;
+                NodeType = N_AFS;
             else
                 goto unknown_v_op;
             }
         }
 #else	/* !defined(HAS_AFS) */
     else {
-        (void) snpf(Namech, Namechl, "unknown file system type; v_op: %s",
+        (void) snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
                     print_kptr((KA_T) v->v_op, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 #endif    /* defined(HAS_AFS) */
@@ -430,22 +430,22 @@ process_node(va)
  */
     if (v->v_shlockc || v->v_exlockc) {
         if (FILEPTR && (FILEPTR->f_flag & FSHLOCK))
-            Lf->lock = 'R';
+            CurrentLocalFile->lock = 'R';
         else if (FILEPTR && (FILEPTR->f_flag & FEXLOCK))
-            Lf->lock = 'W';
+            CurrentLocalFile->lock = 'W';
         else
 
 #if    STEPV >= 31
-            Lf->lock = isvlocked(va);
+            CurrentLocalFile->lock = isvlocked(va);
 #else	/* STEPV<31 */
-            Lf->lock = ' ';
+            CurrentLocalFile->lock = ' ';
 #endif    /* STEPV>=31 */
 
     }
 /*
  * Read the inode, rnode, snode, or vcache struct.
  */
-    switch (Ntype) {
+    switch (NodeType) {
 
 #if    defined(HAS_AFS)
         case N_AFS:
@@ -456,11 +456,11 @@ process_node(va)
 
         case N_NFS:
             if (!v->v_data || readrnode((KA_T) v->v_data, &r)) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                             "vnode at %s: can't read rnode (%s)",
                             print_kptr(va, tbuf, sizeof(tbuf)),
                             print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             break;
@@ -473,28 +473,28 @@ process_node(va)
              */
             if (v->v_type == VBLK || v->v_type == VCHR || v->v_type == VFIFO) {
                 if (!v->v_data || readsnode((KA_T) v->v_data, &s)) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "vnode at %s: can't read snode(%s)",
                                 print_kptr(va, tbuf, sizeof(tbuf)),
                                 print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
                 if (s.s_realvp) {
                     if (readvnode((KA_T) s.s_realvp, &rv)) {
-                        (void) snpf(Namech, Namechl,
+                        (void) snpf(NameChars, NameCharsLength,
                                     "snode at %s: can't read real vnode (%s)",
                                     print_kptr((KA_T) v->v_data, tbuf, sizeof(tbuf)),
                                     print_kptr((KA_T) s.s_realvp, (char *) NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                     }
                     if (!rv.v_data || readinode((KA_T) rv.v_data, &i)) {
-                        (void) snpf(Namech, Namechl,
+                        (void) snpf(NameChars, NameCharsLength,
                                     "snode at %s: can't read inode (%s)",
                                     print_kptr((KA_T) v->v_data, tbuf, sizeof(tbuf)),
                                     print_kptr((KA_T) rv.v_data, (char *) NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                     }
                     ins = 1;
@@ -502,11 +502,11 @@ process_node(va)
                 break;
             } else {
                 if (!v->v_data || readinode((KA_T) v->v_data, &i)) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "vnode at %s: can't read inode (%s)",
                                 print_kptr(va, tbuf, sizeof(tbuf)),
                                 print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
                 ins = 1;
@@ -515,7 +515,7 @@ process_node(va)
 /*
  * Get device and type for printing.
  */
-    switch (Ntype) {
+    switch (NodeType) {
 
 #if    defined(HAS_AFS)
         case N_AFS:
@@ -545,106 +545,106 @@ process_node(va)
 /*
  * Obtain the inode number.
  */
-    switch (Ntype) {
+    switch (NodeType) {
 
 #if    defined(HAS_AFS)
         case N_AFS:
             if (an.ino_st) {
-            Lf->inode = (INODETYPE)an.inode;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE)an.inode;
+            CurrentLocalFile->inp_ty = 1;
             }
             break;
 #endif    /* defined(HAS_AFS) */
 
         case N_NFS:
-            Lf->inode = (INODETYPE) r.r_attr.va_nodeid;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) r.r_attr.va_nodeid;
+            CurrentLocalFile->inp_ty = 1;
             break;
         case N_FIFO:
         case N_REGLR:
             if (ins) {
-                Lf->inode = (INODETYPE) i.i_number;
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inode = (INODETYPE) i.i_number;
+                CurrentLocalFile->inp_ty = 1;
             }
     }
 /*
  * Obtain the file size.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        switch (Ntype) {
+        switch (NodeType) {
 
 #if    defined(HAS_AFS)
             case N_AFS:
-            Lf->sz = (SZOFFTYPE)an.size;
-            Lf->sz_def = 1;
+            CurrentLocalFile->sz = (SZOFFTYPE)an.size;
+            CurrentLocalFile->sz_def = 1;
             break;
 #endif    /* defined(HAS_AFS) */
 
             case N_NFS:
-                Lf->sz = (SZOFFTYPE) r.r_attr.va_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) r.r_attr.va_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
             case N_FIFO:
-                Lf->off_def = 1;
+                CurrentLocalFile->off_def = 1;
                 break;
             case N_REGLR:
                 if (type == VREG || type == VDIR) {
                     if (ins) {
-                        Lf->sz = (SZOFFTYPE) i.i_size;
-                        Lf->sz_def = 1;
+                        CurrentLocalFile->sz = (SZOFFTYPE) i.i_size;
+                        CurrentLocalFile->sz_def = 1;
                     }
-                } else if ((type == VCHR || type == VBLK) && !Fsize)
-                    Lf->off_def = 1;
+                } else if ((type == VCHR || type == VBLK) && !OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
         }
     }
 /*
  * Record the link count.
  */
-    if (Fnlink) {
+    if (OptLinkCount) {
 
 #if    defined(HAS_AFS)
         case N_AFS:
-        Lf->nlink = an.nlink;
-        Lf->nlink_def = an.nlink_st;
+        CurrentLocalFile->nlink = an.nlink;
+        CurrentLocalFile->nlink_def = an.nlink_st;
         break;
 #endif    /* defined(HAS_AFS) */
 
-        switch (Ntype) {
+        switch (NodeType) {
             case N_NFS:
-                Lf->nlink = (long) r.r_attr.va_nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) r.r_attr.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
                 break;
             case N_REGLR:
                 if (ins) {
-                    Lf->nlink = (long) i.i_nlink;
-                    Lf->nlink_def = 1;
+                    CurrentLocalFile->nlink = (long) i.i_nlink;
+                    CurrentLocalFile->nlink_def = 1;
                 }
                 break;
         }
-        if (Lf->nlink_def && Nlink && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+        if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 /*
  * Record an NFS file selection.
  */
-    if (Ntype == N_NFS && Fnfs)
-        Lf->sf |= SELNFS;
+    if (NodeType == N_NFS && OptNfs)
+        CurrentLocalFile->sf |= SELNFS;
 /*
  * Defer file system info lookup until printname().
  */
-    Lf->lmi_srch = 1;
+    CurrentLocalFile->lmi_srch = 1;
 /*
  * Save the device numbers and their states.
  *
  * Format the vnode type.
  */
-    Lf->dev = dev;
-    Lf->dev_def = devs;
-    Lf->rdev = rdev;
-    Lf->rdev_def = rdevs;
+    CurrentLocalFile->dev = dev;
+    CurrentLocalFile->dev_def = devs;
+    CurrentLocalFile->rdev = rdev;
+    CurrentLocalFile->rdev_def = rdevs;
     switch (type) {
         case VNON:
             ty = "VNON";
@@ -655,11 +655,11 @@ process_node(va)
             break;
         case VBLK:
             ty = "VBLK";
-            Ntype = N_BLK;
+            NodeType = N_BLK;
             break;
         case VCHR:
             ty = "VCHR";
-            Ntype = N_CHR;
+            NodeType = N_CHR;
             break;
         case VLNK:
             ty = "VLNK";
@@ -678,33 +678,33 @@ process_node(va)
             ty = "FIFO";
             break;
         default:
-            (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
             ty = NULL;
     }
     if (ty)
-        (void) snpf(Lf->type, sizeof(Lf->type), ty);
-    Lf->ntype = Ntype;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), ty);
+    CurrentLocalFile->ntype = NodeType;
 /*
  * If this is a VBLK file and it's missing an inode number, try to
  * supply one.
  */
-    if ((Lf->inp_ty == 0) && (Lf->ntype == N_BLK))
+    if ((CurrentLocalFile->inp_ty == 0) && (CurrentLocalFile->ntype == N_BLK))
         find_bl_ino();
 /*
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
-    if ((Lf->inp_ty == 0) && (Lf->ntype == N_CHR))
+    if ((CurrentLocalFile->inp_ty == 0) && (CurrentLocalFile->ntype == N_CHR))
         find_ch_ino();
 /*
  * Test for specified file.
  */
-    if (Sfile && is_file_named((char *) NULL,
+    if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == VCHR) || (type == VBLK)) ? 1 : 0))
-        Lf->sf |= SELNM;
+        CurrentLocalFile->sf |= SELNM;
 /*
  * Enter name characters.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }

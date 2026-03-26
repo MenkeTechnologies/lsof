@@ -259,7 +259,7 @@ typedef u_longlong_t	KA_T;
 
 
 /*
- * Name list (Nl[]) indexes
+ * Name list (NlistTable[]) indexes
  */
 
 #define    X_UADDR        0
@@ -413,7 +413,7 @@ extern KA_T AFSVfsp;		/* AFS struct vfs kernel pointer */
 
 extern int Kd;
 extern int Km;
-extern struct nlist Nl[];
+extern struct nlist NlistTable[];
 
 # if    defined(TCPSTATES) && AIXV <= 3250
 /*

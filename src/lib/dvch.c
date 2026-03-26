@@ -74,7 +74,7 @@ static char *rcsid = "$Id: dvch.c,v 1.16 2008/10/21 16:12:36 abe Exp $";
  *	DVCH_EXPDEV	if st_rdev must be expanded with the expdev()
  *			macro before use.  (This is an EP/IX artifact.)
  *
- *	HASBLKDEV	if block device information is stored in BDevtp[].
+ *	HASBLKDEV	if block device information is stored in BlockDeviceTable[].
  */
 
 
@@ -124,17 +124,17 @@ _PROTOTYPE(static int rw_clone_sect,(int m));
 void
 alloc_bdcache()
 {
-    if (!(BDevtp = (struct l_dev *)calloc((MALLOC_S)BNdev,
+    if (!(BlockDeviceTable = (struct l_dev *)calloc((MALLOC_S)BlockNumDevices,
                        sizeof(struct l_dev))))
     {
-        (void) fprintf(stderr, "%s: no space for block devices\n", Pn);
+        (void) fprintf(stderr, "%s: no space for block devices\n", ProgramName);
         Exit(1);
     }
-    if (!(BSdev = (struct l_dev **)malloc((MALLOC_S)(sizeof(struct l_dev *)
-                       * BNdev))))
+    if (!(BlockSortedDevices = (struct l_dev **)malloc((MALLOC_S)(sizeof(struct l_dev *)
+                       * BlockNumDevices))))
     {
         (void) fprintf(stderr, "%s: no space for block device pointers\n",
-        Pn);
+        ProgramName);
         Exit(1);
     }
 }
@@ -148,17 +148,17 @@ alloc_bdcache()
 void
 alloc_dcache()
 {
-    if (!(Devtp = (struct l_dev *)calloc((MALLOC_S)Ndev,
+    if (!(DeviceTable = (struct l_dev *)calloc((MALLOC_S)NumDevices,
                       sizeof(struct l_dev))))
     {
-        (void) fprintf(stderr, "%s: no space for devices\n", Pn);
+        (void) fprintf(stderr, "%s: no space for devices\n", ProgramName);
         Exit(1);
     }
-    if (!(Sdev = (struct l_dev **)malloc((MALLOC_S)(sizeof(struct l_dev *)
-                      * Ndev))))
+    if (!(SortedDevices = (struct l_dev **)malloc((MALLOC_S)(sizeof(struct l_dev *)
+                      * NumDevices))))
     {
         (void) fprintf(stderr, "%s: no space for device pointers\n",
-        Pn);
+        ProgramName);
         Exit(1);
     }
 }
@@ -173,38 +173,38 @@ clr_devtab()
 {
     int i;
 
-    if (Devtp) {
-        for (i = 0; i < Ndev; i++) {
-        if (Devtp[i].name) {
-            (void) free((FREE_P *)Devtp[i].name);
-            Devtp[i].name = (char *)NULL;
+    if (DeviceTable) {
+        for (i = 0; i < NumDevices; i++) {
+        if (DeviceTable[i].name) {
+            (void) free((FREE_P *)DeviceTable[i].name);
+            DeviceTable[i].name = (char *)NULL;
         }
         }
-        (void) free((FREE_P *)Devtp);
-        Devtp = (struct l_dev *)NULL;
+        (void) free((FREE_P *)DeviceTable);
+        DeviceTable = (struct l_dev *)NULL;
     }
-    if (Sdev) {
-        (void) free((FREE_P *)Sdev);
-        Sdev = (struct l_dev **)NULL;
+    if (SortedDevices) {
+        (void) free((FREE_P *)SortedDevices);
+        SortedDevices = (struct l_dev **)NULL;
     }
-    Ndev = 0;
+    NumDevices = 0;
 
 # if	defined(HASBLKDEV)
-    if (BDevtp) {
-        for (i = 0; i < BNdev; i++) {
-        if (BDevtp[i].name) {
-            (void) free((FREE_P *)BDevtp[i].name);
-            BDevtp[i].name = (char *)NULL;
+    if (BlockDeviceTable) {
+        for (i = 0; i < BlockNumDevices; i++) {
+        if (BlockDeviceTable[i].name) {
+            (void) free((FREE_P *)BlockDeviceTable[i].name);
+            BlockDeviceTable[i].name = (char *)NULL;
         }
         }
-        (void) free((FREE_P *)BDevtp);
-        BDevtp = (struct l_dev *)NULL;
+        (void) free((FREE_P *)BlockDeviceTable);
+        BlockDeviceTable = (struct l_dev *)NULL;
     }
-    if (BSdev) {
-        (void) free((FREE_P *)BSdev);
-        BSdev = (struct l_dev **)NULL;
+    if (BlockSortedDevices) {
+        (void) free((FREE_P *)BlockSortedDevices);
+        BlockSortedDevices = (struct l_dev **)NULL;
     }
-    BNdev = 0;
+    BlockNumDevices = 0;
 # endif	/* defined(HASBLKDEV) */
 
 }
@@ -303,24 +303,24 @@ dcpath(rw, npw)
 /*
  * Release any space reserved by previous path calls to dcpath().
  */
-    if (DCpath[1]) {
-        (void) free((FREE_P *)DCpath[1]);
-        DCpath[1] = (char *)NULL;
+    if (DevCachePath[1]) {
+        (void) free((FREE_P *)DevCachePath[1]);
+        DevCachePath[1] = (char *)NULL;
     }
-    if (DCpath[3]) {
-        (void) free((FREE_P *)DCpath[3]);
-        DCpath[3] = (char *)NULL;
+    if (DevCachePath[3]) {
+        (void) free((FREE_P *)DevCachePath[3]);
+        DevCachePath[3] = (char *)NULL;
     }
 /*
  * If a path was specified via -D, it's character address will have been
- * stored in DCpathArg by ctrl_dcache().  Use that address if the real UID
+ * stored in DevCachePathArg by ctrl_dcache().  Use that address if the real UID
  * of this process is root, or the mode is read, or the process is neither
  * setuid-root nor setgid.
  */
-    if (Myuid == 0 || rw == 1 || (!Setuidroot && !Setgid))
-        DCpath[0] = DCpathArg;
+    if (MyRealUid == 0 || rw == 1 || (!SetuidRootState && !SetgidState))
+        DevCachePath[0] = DevCachePathArg;
     else
-        DCpath[0] = (char *)NULL;
+        DevCachePath[0] = (char *)NULL;
 
 # if	defined(HASENVDC)
 /*
@@ -329,18 +329,18 @@ dcpath(rw, npw)
  * mode is write and the process is setgid.
  */
     if ((cp1 = getenv(HASENVDC)) && (l = strlen(cp1)) > 0
-    &&  !Setuidroot && Myuid && (rw == 1 || !Setgid)) {
+    &&  !SetuidRootState && MyRealUid && (rw == 1 || !SetgidState)) {
         if (!(cp2 = mkstrcpy(cp1, (MALLOC_S *)NULL))) {
         (void) fprintf(stderr,
-            "%s: no space for device cache path: %s=", Pn, HASENVDC);
+            "%s: no space for device cache path: %s=", ProgramName, HASENVDC);
         safestrprt(cp1, stderr, 1);
         merr = 1;
         } else
-        DCpath[1] = cp2;
+        DevCachePath[1] = cp2;
     } else if (cp1 && l > 0) {
-        if (!Fwarn && wenv) {
+        if (!OptWarnings && wenv) {
         (void) fprintf(stderr,
-            "%s: WARNING: ignoring environment: %s=", Pn, HASENVDC);
+            "%s: WARNING: ignoring environment: %s=", ProgramName, HASENVDC);
         safestrprt(cp1, stderr, 1);
         }
         wenv = 0;
@@ -353,9 +353,9 @@ dcpath(rw, npw)
  * cache file, unless the mode is write.
  */
     if (rw != 2)
-        DCpath[2] = HASSYSDC;
+        DevCachePath[2] = HASSYSDC;
     else
-        DCpath[2] = (char *)NULL;
+        DevCachePath[2] = (char *)NULL;
 # endif	/* defined(HASSYSDC) */
 
 # if	defined(HASPERSDC)
@@ -413,7 +413,7 @@ dcpath(rw, npw)
          */
 
         case '0':
-        if (Setuidroot || !Myuid)
+        if (SetuidRootState || !MyRealUid)
             i = 0;
         else
             endf = 1;
@@ -424,11 +424,11 @@ dcpath(rw, npw)
          */
 
         case 'h':
-        if (!p && !(p = getpwuid(Myuid))) {
-            if (!Fwarn)
+        if (!p && !(p = getpwuid(MyRealUid))) {
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: can't get home dir for UID: %d\n",
-                Pn, (int)Myuid);
+                ProgramName, (int)MyRealUid);
             ierr = 1;
             break;
         }
@@ -460,10 +460,10 @@ dcpath(rw, npw)
         case 'l':
         case 'L':
         if (gethostname(hn, sizeof(hn) - 1) < 0) {
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: no gethostname for %%l or %%L: %s\n",
-                Pn, strerror(errno));
+                ProgramName, strerror(errno));
             ierr = 1;
             break;
         }
@@ -494,9 +494,9 @@ dcpath(rw, npw)
 #  if	defined(HASPERSDCPATH)
         if ((cp2 = getenv(HASPERSDCPATH))
         &&  (l = strlen(cp2)) > 0
-        &&  !Setuidroot
-        &&  Myuid
-        &&  (rw == 1 || !Setgid))
+        &&  !SetuidRootState
+        &&  MyRealUid
+        &&  (rw == 1 || !SetgidState))
         {
             if (i && buf[i - 1] == '/' && *cp2 == '/') {
             cp2++;
@@ -516,20 +516,20 @@ dcpath(rw, npw)
             ierr = 2;
         } else {
             if (cp2 && l > 0)  {
-            if (!Fwarn && wpp) {
+            if (!OptWarnings && wpp) {
                 (void) fprintf(stderr,
                 "%s: WARNING: ignoring environment: %s",
-                Pn, HASPERSDCPATH);
+                ProgramName, HASPERSDCPATH);
                 safestrprt(cp2, stderr, 1);
             }
             wpp = 0;
             }
         }
 #  else	/* !defined(HASPERSDCPATH) */
-        if (!Fwarn && wpp)
+        if (!OptWarnings && wpp)
             (void) fprintf(stderr,
             "%s: WARNING: HASPERSDCPATH disabled: %s\n",
-            Pn, HASPERSDC);
+            ProgramName, HASPERSDC);
         ierr = 1;
         wpp = 0;
 #  endif	/* defined(HASPERSDCPATH) */
@@ -542,11 +542,11 @@ dcpath(rw, npw)
          */
 
         case 'u':
-        if (!p && !(p = getpwuid(Myuid))) {
-            if (!Fwarn)
+        if (!p && !(p = getpwuid(MyRealUid))) {
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: can't get login name for UID: %d\n",
-                Pn, (int)Myuid);
+                ProgramName, (int)MyRealUid);
             ierr = 1;
             break;
         }
@@ -563,7 +563,7 @@ dcpath(rw, npw)
          */
 
         case 'U':
-        (void) snpf(hn, sizeof(hn), "%d", (int)Myuid);
+        (void) snpf(hn, sizeof(hn), "%d", (int)MyRealUid);
         if ((i + (l = strlen(hn))) >= (int)sizeof(buf))
             ierr = 2;
         else {
@@ -572,10 +572,10 @@ dcpath(rw, npw)
         }
         break;
         default:
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: bad conversion (%%%c): %s\n",
-            Pn, *cp1, HASPERSDC);
+            ProgramName, *cp1, HASPERSDC);
         ierr = 1;
         }
         if (endf || ierr > 1)
@@ -589,25 +589,25 @@ dcpath(rw, npw)
      * warning message.  A type 2 intermediate error requires the
      * issuing of a buffer overlow warning message.
      */
-        if (ierr == 2 && !Fwarn)
+        if (ierr == 2 && !OptWarnings)
         (void) fprintf(stderr,
              "%s: WARNING: device cache path too large: %s\n",
-            Pn, HASPERSDC);
+            ProgramName, HASPERSDC);
         i = 0;
     }
     buf[i] = '\0';
 /*
  * If there is one, allocate space for the personal device cache path,
- * copy buf[] to it, and store its pointer in DCpath[3].
+ * copy buf[] to it, and store its pointer in DevCachePath[3].
  */
     if (i) {
         if (!(cp1 = mkstrcpy(buf, (MALLOC_S *)NULL))) {
         (void) fprintf(stderr,
-            "%s: no space for device cache path: ", Pn);
+            "%s: no space for device cache path: ", ProgramName);
         safestrprt(buf, stderr, 1);
         merr = 1;
         } else
-        DCpath[3] = cp1;
+        DevCachePath[3] = cp1;
     }
 # endif	/* defined(HASPERSDC) */
 
@@ -618,17 +618,17 @@ dcpath(rw, npw)
     if (merr)
         Exit(1);
 /*
- * Return the index of the first defined path.  Since DCpath[] is arranged
+ * Return the index of the first defined path.  Since DevCachePath[] is arranged
  * in priority order, searching it beginning to end follows priority.
  * Return an error indication if the search discloses no path name.
  */
     for (i = 0; i < MAXDCPATH; i++) {
-        if (DCpath[i])
+        if (DevCachePath[i])
         return(i);
     }
-    if (!Fwarn && npw)
+    if (!OptWarnings && npw)
         (void) fprintf(stderr,
-        "%s: WARNING: can't form any device cache path\n", Pn);
+        "%s: WARNING: can't form any device cache path\n", ProgramName);
     return(-1);
 }
 
@@ -640,7 +640,7 @@ dcpath(rw, npw)
 int
 open_dcache(m, r, s)
     int m;			/* mode: 1 = read; 2 = write */
-    int r;			/* create DCpath[] if 0, reuse if 1 */
+    int r;			/* create DevCachePath[] if 0, reuse if 1 */
     struct stat *s;		/* stat() receiver */
 {
     char buf[128];
@@ -649,7 +649,7 @@ open_dcache(m, r, s)
  * Get the device cache file paths.
  */
     if (!r) {
-        if ((DCpathX = dcpath(m, 1)) < 0)
+        if ((DevCachePathIndex = dcpath(m, 1)) < 0)
         return(1);
     }
 /*
@@ -661,51 +661,51 @@ open_dcache(m, r, s)
     /*
      * Check for access permission.
      */
-        if (!is_readable(DCpath[DCpathX], 0)) {
-        if (DCpathX == 2 && errno == ENOENT)
+        if (!is_readable(DevCachePath[DevCachePathIndex], 0)) {
+        if (DevCachePathIndex == 2 && errno == ENOENT)
             return(2);
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, ACCESSERRFMT,
-            Pn, DCpath[DCpathX], strerror(errno));
+            ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
         return(1);
         }
     /*
      * Open for reading.
      */
-        if ((DCfd = open(DCpath[DCpathX], O_RDONLY, 0)) < 0) {
-        if (DCstate == 3 && errno == ENOENT)
+        if ((DevCacheFd = open(DevCachePath[DevCachePathIndex], O_RDONLY, 0)) < 0) {
+        if (DevCacheState == 3 && errno == ENOENT)
             return(1);
 
 cant_open:
             (void) fprintf(stderr,
             "%s: WARNING: can't open %s: %s\n",
-            Pn, DCpath[DCpathX], strerror(errno));
+            ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
         return(1);
         }
-        if (stat(DCpath[DCpathX], s) != 0) {
+        if (stat(DevCachePath[DevCachePathIndex], s) != 0) {
 
 cant_stat:
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't stat(%s): %s\n",
-            Pn, DCpath[DCpathX], strerror(errno));
+            ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
 close_exit:
-        (void) close(DCfd);
-        DCfd = -1;
+        (void) close(DevCacheFd);
+        DevCacheFd = -1;
         return(1);
         }
-        if ((int)(s->st_mode & 07777) != ((DCpathX == 2) ? 0644 : 0600)) {
+        if ((int)(s->st_mode & 07777) != ((DevCachePathIndex == 2) ? 0644 : 0600)) {
         (void) snpf(buf, sizeof(buf), "doesn't have %04o modes",
-                (DCpathX == 2) ? 0644 : 0600);
+                (DevCachePathIndex == 2) ? 0644 : 0600);
         w = buf;
         } else if ((s->st_mode & S_IFMT) != S_IFREG)
         w = "isn't a regular file";
         else if (!s->st_size)
         w = "is empty";
         if (w) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: WARNING: %s %s.\n", Pn, DCpath[DCpathX], w);
+            "%s: WARNING: %s %s.\n", ProgramName, DevCachePath[DevCachePathIndex], w);
         goto close_exit;
         }
         return(0);
@@ -715,42 +715,42 @@ close_exit:
      * Open for writing: first unlink any previous version; then
      * open exclusively, specifying it's an error if the file exists.
      */
-        if (unlink(DCpath[DCpathX]) < 0) {
+        if (unlink(DevCachePath[DevCachePathIndex]) < 0) {
         if (errno != ENOENT) {
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: can't unlink %s: %s\n",
-                Pn, DCpath[DCpathX], strerror(errno));
+                ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
             return(1);
         }
         }
-        if ((DCfd = open(DCpath[DCpathX], O_RDWR|O_CREAT|O_EXCL, 0600)) < 0)
+        if ((DevCacheFd = open(DevCachePath[DevCachePathIndex], O_RDWR|O_CREAT|O_EXCL, 0600)) < 0)
         goto cant_open;
     /*
      * If the real user is not root, but the process is setuid-root,
      * change the ownerships of the file to the real ones.
      */
-        if (Myuid && Setuidroot) {
+        if (MyRealUid && SetuidRootState) {
 
 # if	defined(DVCH_CHOWN)
-         if (chown(DCpath[DCpathX], Myuid, getgid()) < 0)
+         if (chown(DevCachePath[DevCachePathIndex], MyRealUid, getgid()) < 0)
 # else	/* !defined(DVCH_CHOWN) */
-         if (fchown(DCfd, Myuid, getgid()) < 0)
+         if (fchown(DevCacheFd, MyRealUid, getgid()) < 0)
 # endif	/* defined(DVCH_CHOWN) */
 
         {
-            if (!Fwarn)
+            if (!OptWarnings)
             (void) fprintf(stderr,
                  "%s: WARNING: can't change ownerships of %s: %s\n",
-                 Pn, DCpath[DCpathX], strerror(errno));
+                 ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
          }
         }
-        if (!Fwarn && DCstate != 1 && !DCunsafe)
+        if (!OptWarnings && DevCacheState != 1 && !DevCacheUnsafe)
         (void) fprintf(stderr,
             "%s: WARNING: created device cache file: %s\n",
-            Pn, DCpath[DCpathX]);
-        if (stat(DCpath[DCpathX], s) != 0) {
-        (void) unlink(DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
+        if (stat(DevCachePath[DevCachePathIndex], s) != 0) {
+        (void) unlink(DevCachePath[DevCachePathIndex]);
         goto cant_stat;
         }
         return(0);
@@ -760,7 +760,7 @@ close_exit:
      * Oops!
      */
         (void) fprintf(stderr, "%s: internal error: open_dcache=%d\n",
-        Pn, m);
+        ProgramName, m);
         Exit(1);
     }
     return(1);
@@ -785,9 +785,9 @@ read_dcache()
  * file at HASPERSDC.
  */
     if ((ov = open_dcache(1, 0, &sb)) != 0) {
-        if (DCpathX == 2) {
-        if (ov == 2 && DCpath[3]) {
-            DCpathX = 3;
+        if (DevCachePathIndex == 2) {
+        if (ov == 2 && DevCachePath[3]) {
+            DevCachePathIndex = 3;
             if (open_dcache(1, 1, &sb) != 0)
             return(1);
         } else
@@ -800,37 +800,37 @@ read_dcache()
  * DVCH_DEVPATH's mtime/ctime, ignore it, unless -Dr was specified.
  */
     if (stat(DVCH_DEVPATH, &devsb) != 0) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't stat(%s): %s\n",
-            Pn, DVCH_DEVPATH, strerror(errno));
+            ProgramName, DVCH_DEVPATH, strerror(errno));
     } else {
         if (sb.st_mtime <= devsb.st_mtime || sb.st_ctime <= devsb.st_ctime)
-        DCunsafe = 1;
+        DevCacheUnsafe = 1;
     }
-    if (!(DCfs = fdopen(DCfd, "r"))) {
-        if (!Fwarn)
+    if (!(DevCacheStream = fdopen(DevCacheFd, "r"))) {
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: can't fdopen(%s)\n", Pn, DCpath[DCpathX]);
-        (void) close(DCfd);
-        DCfd = -1;
+            "%s: WARNING: can't fdopen(%s)\n", ProgramName, DevCachePath[DevCachePathIndex]);
+        (void) close(DevCacheFd);
+        DevCacheFd = -1;
         return(1);
     }
 /*
  * Read the section count line; initialize the CRC table;
  * validate the section count line.
  */
-    if (!fgets(buf, sizeof(buf), DCfs)) {
+    if (!fgets(buf, sizeof(buf), DevCacheStream)) {
 
 cant_read:
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: can't fread %s: %s\n", Pn, DCpath[DCpathX],
+            "%s: WARNING: can't fread %s: %s\n", ProgramName, DevCachePath[DevCachePathIndex],
             strerror(errno));
 read_close:
-        (void) fclose(DCfs);
-        DCfd = -1;
-        DCfs = (FILE *)NULL;
+        (void) fclose(DevCacheStream);
+        DevCacheFd = -1;
+        DevCacheStream = (FILE *)NULL;
         (void) clr_devtab();
 
 # if	defined(DCACHE_CLR)
@@ -840,8 +840,8 @@ read_close:
         return(1);
     }
     (void) crcbld();
-    DCcksum = 0;
-    (void) crc(buf, strlen(buf), &DCcksum);
+    DevCacheChecksum = 0;
+    (void) crc(buf, strlen(buf), &DevCacheChecksum);
     i = 1;
     cp = "";
 
@@ -863,21 +863,21 @@ read_close:
     (void) snpf(cbuf, sizeof(cbuf), "%d section%s", i, cp);
     len = strlen(cbuf);
     (void) snpf(&cbuf[len], sizeof(cbuf) - len, ", dev=%lx\n",
-            (long)DevDev);
+            (long)DeviceOfDev);
     if (!strncmp(buf, cbuf, len) && (buf[len] == '\n')) {
-        if (!Fwarn) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
-            "%s: WARNING: no /dev device in %s: line ", Pn,
-            DCpath[DCpathX]);
+            "%s: WARNING: no /dev device in %s: line ", ProgramName,
+            DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
     }
     if (strcmp(buf, cbuf)) {
-        if (!Fwarn) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
             "%s: WARNING: bad section count line in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
@@ -885,48 +885,48 @@ read_close:
 /*
  * Read device section header and validate it.
  */
-    if (!fgets(buf, sizeof(buf), DCfs))
+    if (!fgets(buf, sizeof(buf), DevCacheStream))
         goto cant_read;
-    (void) crc(buf, strlen(buf), &DCcksum);
+    (void) crc(buf, strlen(buf), &DevCacheChecksum);
     len = strlen("device section: ");
     if (strncmp(buf, "device section: ", len) != 0) {
 
 read_dhdr:
-        if (!Fwarn) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
             "%s: WARNING: bad device section header in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
     }
 /*
- * Compute the device count; allocate Sdev[] and Devtp[] space.
+ * Compute the device count; allocate SortedDevices[] and DeviceTable[] space.
  */
-    if ((Ndev = atoi(&buf[len])) < 1)
+    if ((NumDevices = atoi(&buf[len])) < 1)
         goto read_dhdr;
     alloc_dcache();
 /*
- * Read the device lines and store their information in Devtp[].
- * Construct the Sdev[] pointers to Devtp[].
+ * Read the device lines and store their information in DeviceTable[].
+ * Construct the SortedDevices[] pointers to DeviceTable[].
  */
-    for (i = 0; i < Ndev; i++) {
-        if (!fgets(buf, sizeof(buf), DCfs)) {
-        if (!Fwarn)
+    for (i = 0; i < NumDevices; i++) {
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't read device %d from %s\n",
-            Pn, i + 1, DCpath[DCpathX]);
+            ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
         goto read_close;
         }
-        (void) crc(buf, strlen(buf), &DCcksum);
+        (void) crc(buf, strlen(buf), &DevCacheChecksum);
     /*
      * Convert hexadecimal device number.
      */
-        if (!(cp = x2dev(buf, &Devtp[i].rdev)) || *cp != ' ') {
-        if (!Fwarn) {
+        if (!(cp = x2dev(buf, &DeviceTable[i].rdev)) || *cp != ' ') {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
             "%s: device %d: bad device in %s: line ",
-            Pn, i + 1, DCpath[DCpathX]);
+            ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
@@ -934,87 +934,87 @@ read_dhdr:
     /*
      * Convert inode number.
      */
-        for (cp++, Devtp[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
+        for (cp++, DeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
         if (*cp < '0' || *cp > '9') {
-            if (!Fwarn) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
                 "%s: WARNING: device %d: bad inode # in %s: line ",
-                Pn, i + 1, DCpath[DCpathX]);
+                ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
             }
             goto read_close;
         }
-        Devtp[i].inode = (INODETYPE)((Devtp[i].inode * 10)
+        DeviceTable[i].inode = (INODETYPE)((DeviceTable[i].inode * 10)
                    + (int)(*cp - '0'));
         }
     /*
      * Get path name; allocate space for it; copy it; store the
-     * pointer in Devtp[]; clear verify status; construct the Sdev[]
-     * pointer to Devtp[].
+     * pointer in DeviceTable[]; clear verify status; construct the SortedDevices[]
+     * pointer to DeviceTable[].
      */
         if ((len = strlen(++cp)) < 2 || *(cp + len - 1) != '\n') {
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
             "%s: WARNING: device %d: bad path in %s: line ",
-            Pn, i + 1, DCpath[DCpathX]);
+            ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
          }
          goto read_close;
         }
         *(cp + len - 1) = '\0';
-        if (!(Devtp[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
+        if (!(DeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
         (void) fprintf(stderr,
-            "%s: device %d: no space for path: line ", Pn, i + 1);
+            "%s: device %d: no space for path: line ", ProgramName, i + 1);
         safestrprt(buf, stderr, 1+4+8);
         Exit(1);
         }
-        Devtp[i].v = 0;
-        Sdev[i] = &Devtp[i];
+        DeviceTable[i].v = 0;
+        SortedDevices[i] = &DeviceTable[i];
     }
 
 # if	defined(HASBLKDEV)
 /*
  * Read block device section header and validate it.
  */
-    if (!fgets(buf, sizeof(buf), DCfs))
+    if (!fgets(buf, sizeof(buf), DevCacheStream))
         goto cant_read;
-    (void) crc(buf, strlen(buf), &DCcksum);
+    (void) crc(buf, strlen(buf), &DevCacheChecksum);
     len = strlen("block device section: ");
     if (strncmp(buf, "block device section: ", len) != 0) {
-        if (!Fwarn) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
             "%s: WARNING: bad block device section header in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
     }
 /*
- * Compute the block device count; allocate BSdev[] and BDevtp[] space.
+ * Compute the block device count; allocate BlockSortedDevices[] and BlockDeviceTable[] space.
  */
-    if ((BNdev = atoi(&buf[len])) > 0) {
+    if ((BlockNumDevices = atoi(&buf[len])) > 0) {
         alloc_bdcache();
     /*
-     * Read the block device lines and store their information in BDevtp[].
-     * Construct the BSdev[] pointers to BDevtp[].
+     * Read the block device lines and store their information in BlockDeviceTable[].
+     * Construct the BlockSortedDevices[] pointers to BlockDeviceTable[].
      */
-        for (i = 0; i < BNdev; i++) {
-        if (!fgets(buf, sizeof(buf), DCfs)) {
-            if (!Fwarn)
+        for (i = 0; i < BlockNumDevices; i++) {
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+            if (!OptWarnings)
             (void) fprintf(stderr,
                 "%s: WARNING: can't read block device %d from %s\n",
-                Pn, i + 1, DCpath[DCpathX]);
+                ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             goto read_close;
         }
-        (void) crc(buf, strlen(buf), &DCcksum);
+        (void) crc(buf, strlen(buf), &DevCacheChecksum);
         /*
          * Convert hexadecimal device number.
          */
-        if (!(cp = x2dev(buf, &BDevtp[i].rdev)) || *cp != ' ') {
-            if (!Fwarn) {
+        if (!(cp = x2dev(buf, &BlockDeviceTable[i].rdev)) || *cp != ' ') {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
                 "%s: block dev %d: bad device in %s: line ",
-                Pn, i + 1, DCpath[DCpathX]);
+                ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
             }
             goto read_close;
@@ -1022,42 +1022,42 @@ read_dhdr:
         /*
          * Convert inode number.
          */
-        for (cp++, BDevtp[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
+        for (cp++, BlockDeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
             if (*cp < '0' || *cp > '9') {
-              if (!Fwarn) {
+              if (!OptWarnings) {
             (void) fprintf(stderr,
               "%s: WARNING: block dev %d: bad inode # in %s: line ",
-              Pn, i + 1, DCpath[DCpathX]);
+              ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
               }
               goto read_close;
             }
-            BDevtp[i].inode = (INODETYPE)((BDevtp[i].inode * 10)
+            BlockDeviceTable[i].inode = (INODETYPE)((BlockDeviceTable[i].inode * 10)
                     + (int)(*cp - '0'));
         }
         /*
          * Get path name; allocate space for it; copy it; store the
-         * pointer in BDevtp[]; clear verify status; construct the BSdev[]
-         * pointer to BDevtp[].
+         * pointer in BlockDeviceTable[]; clear verify status; construct the BlockSortedDevices[]
+         * pointer to BlockDeviceTable[].
          */
         if ((len = strlen(++cp)) < 2 || *(cp + len - 1) != '\n') {
-            if (!Fwarn) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
                 "%s: WARNING: block dev %d: bad path in %s: line",
-                Pn, i + 1, DCpath[DCpathX]);
+                ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
             }
             goto read_close;
         }
             *(cp + len - 1) = '\0';
-        if (!(BDevtp[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
+        if (!(BlockDeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
             (void) fprintf(stderr,
-            "%s: block dev %d: no space for path: line", Pn, i + 1);
+            "%s: block dev %d: no space for path: line", ProgramName, i + 1);
             safestrprt(buf, stderr, 1+4+8);
             Exit(1);
         }
-            BDevtp[i].v = 0;
-            BSdev[i] = &BDevtp[i];
+            BlockDeviceTable[i].v = 0;
+            BlockSortedDevices[i] = &BlockDeviceTable[i];
         }
     }
 # endif	/* defined(HASBLKDEV) */
@@ -1081,21 +1081,21 @@ read_dhdr:
 /*
  * Read and check the CRC section; it must be the last thing in the file.
  */
-    (void) snpf(cbuf, sizeof(cbuf), "CRC section: %x\n", DCcksum);
-    if (!fgets(buf, sizeof(buf), DCfs) || strcmp(buf, cbuf) != 0) {
-        if (!Fwarn) {
+    (void) snpf(cbuf, sizeof(cbuf), "CRC section: %x\n", DevCacheChecksum);
+    if (!fgets(buf, sizeof(buf), DevCacheStream) || strcmp(buf, cbuf) != 0) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
             "%s: WARNING: bad CRC section in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
     }
-    if (fgets(buf, sizeof(buf), DCfs)) {
-        if (!Fwarn) {
+    if (fgets(buf, sizeof(buf), DevCacheStream)) {
+        if (!OptWarnings) {
         (void) fprintf(stderr,
             "%s: WARNING: data follows CRC section in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
         safestrprt(buf, stderr, 1+4+8);
         }
         goto read_close;
@@ -1104,28 +1104,28 @@ read_dhdr:
  * Check one device entry at random -- the randomness based on our
  * PID.
  */
-    i = (int)(Mypid % Ndev);
-    if (stat(Devtp[i].name, &sb) != 0
+    i = (int)(MyProcessId % NumDevices);
+    if (stat(DeviceTable[i].name, &sb) != 0
 
 # if	defined(DVCH_EXPDEV)
-    ||  expdev(sb.st_rdev) != Devtp[i].rdev
+    ||  expdev(sb.st_rdev) != DeviceTable[i].rdev
 # else	/* !defined(DVCH_EXPDEV) */
-    ||  sb.st_rdev != Devtp[i].rdev
+    ||  sb.st_rdev != DeviceTable[i].rdev
 # endif	/* defined(DVCH_EXPDEV) */
 
-    || sb.st_ino != Devtp[i].inode) {
-        if (!Fwarn)
+    || sb.st_ino != DeviceTable[i].inode) {
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: device cache mismatch: %s\n",
-            Pn, Devtp[i].name);
+            ProgramName, DeviceTable[i].name);
         goto read_close;
     }
 /*
  * Close the device cache file and return OK.
  */
-    (void) fclose(DCfs);
-    DCfd = -1;
-    DCfs = (FILE *)NULL;
+    (void) fclose(DevCacheStream);
+    DevCacheFd = -1;
+    DevCacheStream = (FILE *)NULL;
     return(0);
 }
 
@@ -1149,18 +1149,18 @@ rw_clone_sect(m)
     /*
      * Read the clone section header and validate it.
      */
-        if (!fgets(buf, sizeof(buf), DCfs)) {
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
 
 bad_clone_sect:
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
             "%s: bad clone section header in %s: line ",
-            Pn, DCpath[DCpathX]);
+            ProgramName, DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
         }
         return(1);
         }
-        (void) crc(buf, strlen(buf), &DCcksum);
+        (void) crc(buf, strlen(buf), &DevCacheChecksum);
         len = strlen("clone section: ");
         if (strncmp(buf, "clone section: ", len) != 0)
         goto bad_clone_sect;
@@ -1170,43 +1170,43 @@ bad_clone_sect:
      * Read the clone section lines and create the Clone list.
      */
         for (i = 0; i < n; i++) {
-        if (fgets(buf, sizeof(buf), DCfs) == NULL) {
-            if (!Fwarn) {
+        if (fgets(buf, sizeof(buf), DevCacheStream) == NULL) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
-                "%s: no %d clone line in %s: line ", Pn, i + 1,
-                DCpath[DCpathX]);
+                "%s: no %d clone line in %s: line ", ProgramName, i + 1,
+                DevCachePath[DevCachePathIndex]);
             safestrprt(buf, stderr, 1+4+8);
             }
             return(1);
         }
-        (void) crc(buf, strlen(buf), &DCcksum);
+        (void) crc(buf, strlen(buf), &DevCacheChecksum);
         /*
-         * Assemble Devtp[] index and make sure it's correct.
+         * Assemble DeviceTable[] index and make sure it's correct.
          */
         for (cp = buf, j = 0; *cp != ' '; cp++) {
             if (*cp < '0' || *cp > '9') {
 
 bad_clone_index:
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                 "%s: clone %d: bad cached device index: line ",
-                Pn, i + 1);
+                ProgramName, i + 1);
                 safestrprt(buf, stderr, 1+4+8);
             }
             return(1);
             }
             j = (j * 10) + (int)(*cp - '0');
         }
-        if (j < 0 || j >= Ndev || (cp1 = strchr(++cp, '\n')) == NULL)
+        if (j < 0 || j >= NumDevices || (cp1 = strchr(++cp, '\n')) == NULL)
             goto bad_clone_index;
-        if (strncmp(cp, Devtp[j].name, (cp1 - cp)) != 0)
+        if (strncmp(cp, DeviceTable[j].name, (cp1 - cp)) != 0)
             goto bad_clone_index;
         /*
          * Allocate and complete a clone structure.
          */
         if (!(c = (struct clone *)malloc(sizeof(struct clone)))) {
             (void) fprintf(stderr,
-            "%s: clone %d: no space for cached clone: line ", Pn,
+            "%s: clone %d: no space for cached clone: line ", ProgramName,
             i + 1);
             safestrprt(buf, stderr, 1+4+8);
             Exit(1);
@@ -1224,29 +1224,29 @@ bad_clone_index:
         for (c = Clone, n = 0; c; c = c->next, n++)
         ;
         (void) snpf(buf, sizeof(buf), "clone section: %d\n", n);
-        if (wr2DCfd(buf, &DCcksum))
+        if (wr2DCfd(buf, &DevCacheChecksum))
         return(1);
     /*
      * Write the clone section lines.
      */
         for (c = Clone; c; c = c->next) {
-        for (dp = &Devtp[c->dx], j = 0; j < Ndev; j++) {
-            if (dp == Sdev[j])
+        for (dp = &DeviceTable[c->dx], j = 0; j < NumDevices; j++) {
+            if (dp == SortedDevices[j])
             break;
         }
-        if (j >= Ndev) {
-            if (!Fwarn) {
+        if (j >= NumDevices) {
+            if (!OptWarnings) {
             (void) fprintf(stderr,
-                "%s: can't make index for clone: ", Pn);
+                "%s: can't make index for clone: ", ProgramName);
             safestrprt(dp->name, stderr, 1);
             }
-            (void) unlink(DCpath[DCpathX]);
-            (void) close(DCfd);
-            DCfd = -1;
+            (void) unlink(DevCachePath[DevCachePathIndex]);
+            (void) close(DevCacheFd);
+            DevCacheFd = -1;
             return(1);
         }
         (void) snpf(buf, sizeof(buf), "%d %s\n", j, dp->name);
-        if (wr2DCfd(buf, &DCcksum))
+        if (wr2DCfd(buf, &DevCacheChecksum))
             return(1);
         }
         return(0);
@@ -1255,7 +1255,7 @@ bad_clone_index:
  * A shouldn't-happen case: mode neither 1 nor 2.
  */
     (void) fprintf(stderr, "%s: internal rw_clone_sect error: %d\n",
-        Pn, m);
+        ProgramName, m);
     Exit(1);
     return(1);		/* This useless return(1) keeps some
 				 * compilers happy. */
@@ -1298,38 +1298,38 @@ write_dcache()
 # endif	/* defined(DCACHE_PSEUDO) */
 
     (void) snpf(buf, sizeof(buf), "%d section%s, dev=%lx\n", i, cp,
-        (long)DevDev);
+        (long)DeviceOfDev);
     (void) crcbld();
-    DCcksum = 0;
-    if (wr2DCfd(buf, &DCcksum))
+    DevCacheChecksum = 0;
+    if (wr2DCfd(buf, &DevCacheChecksum))
         return;
 /*
- * Write the device section from the contents of Sdev[] and Devtp[].
+ * Write the device section from the contents of SortedDevices[] and DeviceTable[].
  */
-    (void) snpf(buf, sizeof(buf), "device section: %d\n", Ndev);
-    if (wr2DCfd(buf, &DCcksum))
+    (void) snpf(buf, sizeof(buf), "device section: %d\n", NumDevices);
+    if (wr2DCfd(buf, &DevCacheChecksum))
         return;
-    for (i = 0; i < Ndev; i++) {
-        dp = Sdev[i];
+    for (i = 0; i < NumDevices; i++) {
+        dp = SortedDevices[i];
         (void) snpf(buf, sizeof(buf), "%lx %ld %s\n", (long)dp->rdev,
             (long)dp->inode, dp->name);
-        if (wr2DCfd(buf, &DCcksum))
+        if (wr2DCfd(buf, &DevCacheChecksum))
         return;
     }
 
 # if	defined(HASBLKDEV)
 /*
- * Write the block device section from the contents of BSdev[] and BDevtp[].
+ * Write the block device section from the contents of BlockSortedDevices[] and BlockDeviceTable[].
  */
-    (void) snpf(buf, sizeof(buf), "block device section: %d\n", BNdev);
-    if (wr2DCfd(buf, &DCcksum))
+    (void) snpf(buf, sizeof(buf), "block device section: %d\n", BlockNumDevices);
+    if (wr2DCfd(buf, &DevCacheChecksum))
         return;
-    if (BNdev) {
-        for (i = 0; i < BNdev; i++) {
-        dp = BSdev[i];
+    if (BlockNumDevices) {
+        for (i = 0; i < BlockNumDevices; i++) {
+        dp = BlockSortedDevices[i];
         (void) snpf(buf, sizeof(buf), "%lx %ld %s\n", (long)dp->rdev,
             (long)dp->inode, dp->name);
-        if (wr2DCfd(buf, &DCcksum))
+        if (wr2DCfd(buf, &DevCacheChecksum))
             return;
         }
     }
@@ -1354,32 +1354,32 @@ write_dcache()
 /*
  * Write the CRC section and close the file.
  */
-    (void) snpf(buf, sizeof(buf), "CRC section: %x\n", DCcksum);
+    (void) snpf(buf, sizeof(buf), "CRC section: %x\n", DevCacheChecksum);
     if (wr2DCfd(buf, (unsigned *)NULL))
         return;
-    if (close(DCfd) != 0) {
-        if (!Fwarn)
+    if (close(DevCacheFd) != 0) {
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't close %s: %s\n",
-            Pn, DCpath[DCpathX], strerror(errno));
-        (void) unlink(DCpath[DCpathX]);
-        DCfd = -1;
+            ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
+        (void) unlink(DevCachePath[DevCachePathIndex]);
+        DevCacheFd = -1;
     }
-    DCfd = -1;
+    DevCacheFd = -1;
 /*
  * If the previous reading of the previous device cache file marked it
  * "unsafe," drop that marking and record that the device cache file was
  * rebuilt.
  */
-    if (DCunsafe) {
-        DCunsafe = 0;
-        DCrebuilt = 1;
+    if (DevCacheUnsafe) {
+        DevCacheUnsafe = 0;
+        DevCacheRebuilt = 1;
     }
 }
 
 
 /*
- * wr2DCfd() - write to the DCfd file descriptor
+ * wr2DCfd() - write to the DevCacheFd file descriptor
  */
 
 int
@@ -1393,14 +1393,14 @@ wr2DCfd(b, c)
     if (c)
         (void) crc(b, bl, c);
     while (bl > 0) {
-        if ((bw = write(DCfd, b, bl)) < 0) {
-        if (!Fwarn)
+        if ((bw = write(DevCacheFd, b, bl)) < 0) {
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't write to %s: %s\n",
-            Pn, DCpath[DCpathX], strerror(errno));
-        (void) unlink(DCpath[DCpathX]);
-        (void) close(DCfd);
-        DCfd = -1;
+            ProgramName, DevCachePath[DevCachePathIndex], strerror(errno));
+        (void) unlink(DevCachePath[DevCachePathIndex]);
+        (void) close(DevCacheFd);
+        DevCacheFd = -1;
         return(1);
         }
         b += bw;

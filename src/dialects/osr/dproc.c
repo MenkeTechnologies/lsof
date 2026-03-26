@@ -90,14 +90,14 @@ Ckkv(d, er, ev, ea)
 #if    defined(HASKERNIDCK)
     struct scoutsname s;
 
-    if (Fwarn)
+    if (OptWarnings)
         return;
 /*
  * Read OSR kernel information.
  */
     if (__scoinfo(&s, sizeof(s)) < 0) {
         (void) fprintf(stderr, "%s: can't get __scoinfo: %s\n",
-        Pn, strerror(errno));
+        ProgramName, strerror(errno));
         Exit(1);
     }
 /*
@@ -106,7 +106,7 @@ Ckkv(d, er, ev, ea)
     if (!er || strcmp(er, s.release))
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s release %s; this is %s.\n",
-        Pn, d, er ? er : "UNKNOWN", s.release);
+        ProgramName, d, er ? er : "UNKNOWN", s.release);
 #endif    /* defined(HASKERNIDCK) */
 
 }
@@ -142,7 +142,7 @@ gather_proc_info() {
         if (!(ua = (char *) malloc(ual))) {
             (void) fprintf(stderr,
                            "%s: no space for %d byte user structure buffer\n",
-                           Pn, ual);
+                           ProgramName, ual);
             Exit(1);
         }
         u = (struct user *) ua;
@@ -153,7 +153,7 @@ gather_proc_info() {
     if (!pb) {
         if (!(pb = (char *) malloc(sizeof(struct proc) * PROCBFRD))) {
             (void) fprintf(stderr, "%s: no space for %d proc structures\n",
-                           Pn, PROCBFRD);
+                           ProgramName, PROCBFRD);
             Exit(1);
         }
     }
@@ -201,14 +201,14 @@ gather_proc_info() {
             continue;
         alloc_lproc(pid, pgrp, (int) p->p_ppid, (UID_ARG) uid, u->u_comm,
                     (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
         if (u->u_cdir) {
             alloc_lfile(CWD, -1);
             process_node((KA_T) u->u_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -217,7 +217,7 @@ gather_proc_info() {
         if (u->u_rdir) {
             alloc_lfile(RTD, -1);
             process_node((KA_T) u->u_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -236,7 +236,7 @@ gather_proc_info() {
 #endif    /* OSRV<42 */
 
 #if    defined(HASFSTRUCT)
-        if (Fsv & FSV_FG) {
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
 
         /*
          * If u_pofile is in the u block, set its address.
@@ -258,7 +258,7 @@ gather_proc_info() {
                 pofb = (char *)realloc((MALLOC_P *)pofb,
                            (MALLOC_S)nf);
             if (!pofb) {
-                (void) fprintf(stderr, "%s: no pofile space\n", Pn);
+                (void) fprintf(stderr, "%s: no pofile space\n", ProgramName);
                 Exit(1);
             }
             npofb = nf;
@@ -276,11 +276,11 @@ gather_proc_info() {
             if (u->u_ofile[i]) {
                 alloc_lfile((char *) NULL, i);
                 process_file((KA_T) u->u_ofile[i]);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG && pof)
-                        Lf->pof = (long)pof[i];
+                    if (OptFileStructValues & FSV_FILE_FLAGS && pof)
+                        CurrentLocalFile->pof = (long)pof[i];
 #endif    /* defined(HASFSTRUCT) */
 
                     link_lfile();
@@ -322,7 +322,7 @@ get_cdevsw() {
  */
     if (!(Cdevsw = (char **) malloc(Cdevcnt * sizeof(char *)))) {
         (void) fprintf(stderr, "%s: no space for %d cdevsw[] names\n",
-                       Pn, Cdevcnt);
+                       ProgramName, Cdevcnt);
         Exit(1);
     }
 /*
@@ -331,7 +331,7 @@ get_cdevsw() {
     i = Cdevcnt * sizeof(struct cdevsw);
     if (!(tmp = (struct cdevsw *) malloc(i))) {
         (void) fprintf(stderr, "%s: no space for %d cdevsw[] entries\n",
-                       Pn, Cdevcnt);
+                       ProgramName, Cdevcnt);
         Exit(1);
     }
     if (kread((KA_T) v[0], (char *) tmp, i)) {
@@ -354,7 +354,7 @@ get_cdevsw() {
         if (kread((KA_T) c->d_name, buf, j)) {
             (void) fprintf(stderr,
                            "%s: WARNING: can't read name for cdevsw[%d]: %#x\n",
-                           Pn, i, c->d_name);
+                           ProgramName, i, c->d_name);
             continue;
         }
         if (!buf[0])
@@ -362,7 +362,7 @@ get_cdevsw() {
         len = strlen(buf) + 1;
         if (!(Cdevsw[i] = (char *) malloc(len))) {
             (void) fprintf(stderr, "%s: no space for cdevsw[%d] name: %s\n",
-                           Pn, i, buf);
+                           ProgramName, i, buf);
             Exit(1);
         }
         (void) snpf(Cdevsw[i], len, "%s", buf);
@@ -399,7 +399,7 @@ get_kernel_access() {
 /*
  * See if the name list file is readable.
  */
-    if (Nmlst && !is_readable(Nmlst, 1))
+    if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
         Exit(1);
 /*
  * Access kernel symbols.
@@ -407,13 +407,13 @@ get_kernel_access() {
 
 #if    defined(N_UNIX)
     (void) build_Nl(Drive_Nl);
-    if (nlist(Nmlst ? Nmlst : N_UNIX, Nl) < 0)
+    if (nlist(NamelistFilePath ? NamelistFilePath : N_UNIX, NlistTable) < 0)
 #else	/* !defined(N_UNIX) */
     if (!get_nlist_path(0))
 #endif    /* defined(N_UNIX) */
 
     {
-        (void) fprintf(stderr, "%s: can't read kernel name list.\n", Pn);
+        (void) fprintf(stderr, "%s: can't read kernel name list.\n", ProgramName);
         Exit(1);
     }
 /*
@@ -432,7 +432,7 @@ get_kernel_access() {
  * Check proc table pointer.
  */
     if (get_Nl_value("proc", Drive_Nl, &Kp) < 0 || !Kp) {
-        (void) fprintf(stderr, "%s: no proc table pointer\n", Pn);
+        (void) fprintf(stderr, "%s: no proc table pointer\n", ProgramName);
         Exit(1);
     }
 
@@ -445,7 +445,7 @@ get_kernel_access() {
         || kread(v, (char *) &Npp, sizeof(Npp))
         || Npp < 1) {
         (void) fprintf(stderr,
-                       "%s: can't read pregion count (%d) from %s\n", Pn, Npp,
+                       "%s: can't read pregion count (%d) from %s\n", ProgramName, Npp,
                        print_kptr(v, (char *) NULL, 0));
         Exit(1);
     }
@@ -453,7 +453,7 @@ get_kernel_access() {
     if (!(Pr = (struct pregion *) malloc(Prsz))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d pregions\n",
-                       Pn, Npp);
+                       ProgramName, Npp);
         Exit(1);
     }
 #endif    /* OSRV< 500 */
@@ -464,7 +464,7 @@ get_kernel_access() {
     if (get_Nl_value("var", Drive_Nl, &v) < 0 || !v
         || kread((KA_T) v, (char *) &Var, sizeof(Var))) {
         (void) fprintf(stderr,
-                       "%s: can't read system configuration info\n", Pn);
+                       "%s: can't read system configuration info\n", ProgramName);
         Exit(1);
     }
 /*
@@ -473,17 +473,17 @@ get_kernel_access() {
     v = (KA_T) 0;
     if (get_Nl_value("hz", Drive_Nl, &v) < 0 || !v
         || kread(v, (char *) &Hz, sizeof(Hz))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, "%s: WARNING: can't read Hz from %s\n",
-                           Pn, print_kptr(v, (char *) NULL, 0));
+                           ProgramName, print_kptr(v, (char *) NULL, 0));
         Hz = -1;
     }
     if (get_Nl_value("lbolt", Drive_Nl, &Lbolt) < 0 || !v
         || kread((KA_T) v, (char *) &lbolt, sizeof(lbolt))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
                            "%s: WARNING: can't read lightning bolt timer from %s\n",
-                           Pn, print_kptr(v, (char *) NULL, 0));
+                           ProgramName, print_kptr(v, (char *) NULL, 0));
         Lbolt = (KA_T) 0;
     }
 /*
@@ -492,14 +492,14 @@ get_kernel_access() {
     if (get_Nl_value("sockd", Drive_Nl, &v) < 0 || !v
         || kread(v, (char *) &Sockdev, sizeof(Sockdev))) {
         (void) fprintf(stderr,
-                       "%s: WARNING: can't identify socket device.\n", Pn);
+                       "%s: WARNING: can't identify socket device.\n", ProgramName);
         (void) fprintf(stderr,
                        "      Socket output may be incomplete.\n");
         return;
     }
     if (get_Nl_value("sockt", Drive_Nl, &Socktab) < 0 || !Socktab) {
         (void) fprintf(stderr,
-                       "%s: WARNING: socket table address is NULL.\n", Pn);
+                       "%s: WARNING: socket table address is NULL.\n", ProgramName);
         (void) fprintf(stderr,
                        "      Socket output may be incomplete.\n");
         return;
@@ -519,13 +519,13 @@ get_kernel_access() {
         {
             (void) fprintf(stderr,
             "%s: bad extended device table size (%d) at %s.\n",
-            Pn, nxdevmaps, print_kptr(v, (char *)NULL, 0));
+            ProgramName, nxdevmaps, print_kptr(v, (char *)NULL, 0));
             Exit(1);
         }
         len = (MALLOC_S)((nxdevmaps + 1) * sizeof(struct XDEVMAP));
         if (!(Xdevmap = (struct XDEVMAP *)malloc(len))) {
             (void) fprintf(stderr, "%s: no space for %d byte xdevmap table\n",
-            Pn, len);
+            ProgramName, len);
             Exit(1);
         }
         v = (KA_T)0;
@@ -533,7 +533,7 @@ get_kernel_access() {
         ||  kread((KA_T)v, (char *)Xdevmap, len))
         {
             (void) fprintf(stderr,
-            "%s: can't read %d byte xdevmap table at #x\n", Pn, len, v);
+            "%s: can't read %d byte xdevmap table at #x\n", ProgramName, len, v);
             Exit(1);
         }
 #endif    /* OSRV>=40 */
@@ -547,7 +547,7 @@ get_kernel_access() {
  * get_nlist_path() - get kernel nlist() path
  *
  * As a side effect on a successful return (non-NULL character pointer), the
- * boot path's name list will have been loaded into Nl[].
+ * boot path's name list will have been loaded into NlistTable[].
  */
 
 char *
@@ -567,9 +567,9 @@ get_nlist_path(ap)
 /*
  * If a kernel name list file was specified, use it.
  */
-    if (Nmlst) {
-        if (is_boot(Nmlst))
-            return (Nmlst);
+    if (NamelistFilePath) {
+        if (is_boot(NamelistFilePath))
+            return (NamelistFilePath);
         return ((char *) NULL);
     }
 /*
@@ -639,7 +639,7 @@ get_nlist_path(ap)
                 if (!(tp = (char *) malloc(len))) {
                     (void) fprintf(stderr,
                                    "%s: can't allocate %d bytes for: %s\n",
-                                   Pn, len, pp);
+                                   ProgramName, len, pp);
                     Exit(1);
                 }
                 (void) snpf(tp, len, "%s", pp);
@@ -663,8 +663,8 @@ initialize() {
     get_kernel_access();
     get_cdevsw();
     readfsinfo();
-    if (Fsv & FSV_NI)
-        NiTtl = "INODE-ADDR";
+    if (OptFileStructValues & FSV_NODE_ID)
+        NodeIdTitle = "INODE-ADDR";
 }
 
 
@@ -694,16 +694,16 @@ return 0;
  * the scoutsname structure and compare it to the _s_scoinfo() one.  If the
  * two match, this is the boot path.
  */
-if (Nl) {
+if (NlistTable) {
 (void)
 free((FREE_P
-*)Nl);
-Nl = (struct NLIST_TYPE *) NULL;
+*)NlistTable);
+NlistTable = (struct NLIST_TYPE *) NULL;
 }
 (void)
 build_Nl(Drive_Nl);
 if (
-nlist(p, Nl
+nlist(p, NlistTable
 ) < 0)
 return(0);
 if (get_Nl_value("scouts", Drive_Nl, &ka) < 0 || !ka)
@@ -771,7 +771,7 @@ open_kmem(nx)
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
         if (nx)
             return (1);
-        (void) fprintf(stderr, "%s: can't open %s: %s\n", Pn,
+        (void) fprintf(stderr, "%s: can't open %s: %s\n", ProgramName,
                        Memory ? Memory : KMEM, strerror(errno));
         Exit(1);
     }
@@ -817,10 +817,10 @@ process_text(prp)
          * Avoid infinite loop.
          */
             if (i > 1000) {
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                 "%s: too many virtual address regions for PID %d\n",
-                Pn, Lp->pid);
+                ProgramName, CurrentLocalProc->pid);
             return;
             }
             if ((i && pc == prp)
@@ -850,7 +850,7 @@ process_text(prp)
         if (!Nc) {
             if (!(Nc = (KA_T *) malloc((MALLOC_S)(sizeof(KA_T) * 10)))) {
                 (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                               Pn, Lp->pid);
+                               ProgramName, CurrentLocalProc->pid);
                 Exit(1);
             }
             Nn = 10;
@@ -859,7 +859,7 @@ process_text(prp)
             if (!(Nc = (KA_T *) realloc((MALLOC_P *) Nc,
                                         (MALLOC_S)(Nn * sizeof(KA_T))))) {
                 (void) fprintf(stderr,
-                               "%s: no more txt ptr space, PID %d\n", Pn, Lp->pid);
+                               "%s: no more txt ptr space, PID %d\n", ProgramName, CurrentLocalProc->pid);
                 Exit(1);
             }
         }
@@ -892,7 +892,7 @@ process_text(prp)
         if (ty) {
             alloc_lfile(ty, -1);
             process_node(na);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
     }
@@ -910,26 +910,26 @@ readfsinfo() {
 
     if ((Fsinfomax = sysfs(GETNFSTYP)) == -1) {
         (void) fprintf(stderr, "%s: sysfs(GETNFSTYP) error: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         Exit(1);
     }
     if (Fsinfomax == 0)
         return;
     if (!(Fsinfo = (char **) malloc((MALLOC_S)(Fsinfomax * sizeof(char *))))) {
-        (void) fprintf(stderr, "%s: no space for sysfs info\n", Pn);
+        (void) fprintf(stderr, "%s: no space for sysfs info\n", ProgramName);
         Exit(1);
     }
     for (i = 1; i <= Fsinfomax; i++) {
         if (sysfs(GETFSTYP, i, buf) == -1) {
             (void) fprintf(stderr, "%s: sysfs(GETFSTYP) error: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             Exit(1);
         }
         buf[FSTYPSZ] = '\0';
         len = strlen(buf) + 1;
         if (!(Fsinfo[i - 1] = (char *) malloc((MALLOC_S) len))) {
             (void) fprintf(stderr,
-                           "%s: no space for file system entry %s\n", Pn, buf);
+                           "%s: no space for file system entry %s\n", ProgramName, buf);
             Exit(1);
         }
         (void) snpf(Fsinfo[i - 1], len, "%s", buf);
@@ -1160,7 +1160,7 @@ DNLC_load()
         if (!(dnlc = (struct dnlc__cachent *)malloc(chl))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for DNLC chunk\n",
-            Pn, chl);
+            ProgramName, chl);
         cha = 0;
         Exit(1);
         }
@@ -1209,7 +1209,7 @@ DNLC_load()
 /*
  * If not repeating, free kernel DNLC name cache buffer space.
  */
-    if (dnlc && !RptTm) {
+    if (dnlc && !RepeatTime) {
         (void) free((MALLOC_P *)dnlc);
         dnlc = (struct dnlc__cachent *)NULL;
         dnlce = cha = chl = 0;
@@ -1259,7 +1259,7 @@ DTFS_load()
         if (!(dtnc = (struct dtcachent *)malloc(kcl))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for DTFS name cache\n",
-            Pn, kcl);
+            ProgramName, kcl);
         Exit(1);
         }
     }
@@ -1292,7 +1292,7 @@ DTFS_load()
 /*
  * If not repeating, free kernel DTFS name cache buffer space.
  */
-    if (dtnc && !RptTm) {
+    if (dtnc && !RepeatTime) {
         (void) free((MALLOC_P *)dtnc);
         dtnc = (struct dtcachent *)NULL;
         dtnce = kcl = 0;
@@ -1340,7 +1340,7 @@ HTFS_load()
         if (!(htnc = (struct htcachent *)malloc(kcl))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for HTFS name cache\n",
-            Pn, kcl);
+            ProgramName, kcl);
         Exit(1);
         }
     }
@@ -1373,7 +1373,7 @@ HTFS_load()
 /*
  * If not repeating, free kernel HTFS name cache buffer space.
  */
-    if (htnc && !RptTm) {
+    if (htnc && !RepeatTime) {
         (void) free((MALLOC_P *)htnc);
         htnc = (struct htcachent *)NULL;
         htnce = kcl = 0;
@@ -1402,7 +1402,7 @@ LNC_enter(le, nm, nl, fs)
         if (!(LNC_nc = (struct lnch *)realloc(LNC_nc, len))) {
         (void) fprintf(stderr,
             "%s: no more space for %d byte local name cache: %s\n",
-            Pn, len, fs);
+            ProgramName, len, fs);
         Exit(1);
         }
     }
@@ -1428,10 +1428,10 @@ LNC_enter(le, nm, nl, fs)
  * and advance the linear cache entry count.
  */
     if (nl > MAXNSZ) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: length for \"%s\" too large: %d\n",
-            Pn, nm, nl);
+            ProgramName, nm, nl);
         nl = MAXNSZ;
     }
     (void) strncpy(lc->nm, nm, nl);
@@ -1452,10 +1452,10 @@ static void
 LNC_nosp(len)
     int len;			/* attempted length */
 {
-    if (!Fwarn)
+    if (!OptWarnings)
         (void) fprintf(stderr,
         "%s: no space for %d byte local name cache\n",
-        Pn, len);
+        ProgramName, len);
     Exit(1);
 }
 
@@ -1471,7 +1471,7 @@ ncache_load()
     struct lnch *hl, *hlp, *lc;
     int f, i, len;
 
-    if (!Fncache)
+    if (!OptNameCache)
         return;
 /*
  * Initialize local name cache, as required.
@@ -1516,13 +1516,13 @@ ncache_load()
  */
     if (LNC_csz < 1) {
         LNC_csz = 0;
-        if (!RptTm) {
+        if (!RepeatTime) {
         (void) free((FREE_P *)LNC_nc);
         LNC_nc = (struct lnch *)NULL;
         }
         return;
     }
-    if (LNC_csz < LNC_asz && !RptTm) {
+    if (LNC_csz < LNC_asz && !RepeatTime) {
         len = LNC_csz * sizeof(struct lnch);
         if (!(LNC_nc = (struct lnch *)realloc(LNC_nc, len)))
         (void)LNC_nosp(len);
@@ -1536,7 +1536,7 @@ ncache_load()
         if (!LNC_hh) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for name cache hash table\n",
-            Pn, LNCHHLEN * sizeof(struct lnch_hh));
+            ProgramName, LNCHHLEN * sizeof(struct lnch_hh));
         Exit(1);
         }
     } else
@@ -1647,7 +1647,7 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-    if (Lf->inp_ty == 1 && Lf->fs_ino && Lf->inode == Lf->fs_ino)
+    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino && CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
         return(cp);
     if (!LNC_nc)
         return((char *)NULL);
@@ -1656,8 +1656,8 @@ ncache_lookup(buf, blen, fp)
 /*
  * Look up the NFS name cache entry.
  */
-    if (Lf->is_nfs) {
-        if ((lc = NFS_addr(Lf->na)) && !lc->dup) {
+    if (CurrentLocalFile->is_nfs) {
+        if ((lc = NFS_addr(CurrentLocalFile->na)) && !lc->dup) {
         if ((nl = (int)lc->nl) > (blen - 1))
             return(*cp ? cp : (char *)NULL);
         cp = buf + blen - nl - 1;
@@ -1698,8 +1698,8 @@ ncache_lookup(buf, blen, fp)
 /*
  * Look up the device-inode name cache entry.
  */
-    if (Lf->dev_def && Lf->inp_ty == 1
-    &&  (lc = DIN_addr(&Lf->dev, Lf->inode)) && !lc->dup) {
+    if (CurrentLocalFile->dev_def && CurrentLocalFile->inp_ty == 1
+    &&  (lc = DIN_addr(&CurrentLocalFile->dev, CurrentLocalFile->inode)) && !lc->dup) {
         if ((nl = (int)lc->nl) > (blen - 1))
         return(*cp ? cp : (char *)NULL);
         cp = buf + blen - nl - 1;
@@ -1715,16 +1715,16 @@ ncache_lookup(buf, blen, fp)
      */
         for (;;) {
         if (!lc->pa) {
-            if (lc->u.ld.pa_inum && Lf->fs_ino
-            &&  lc->u.ld.pa_inum == Lf->fs_ino)
+            if (lc->u.ld.pa_inum && CurrentLocalFile->fs_ino
+            &&  lc->u.ld.pa_inum == CurrentLocalFile->fs_ino)
             *fp = 1;
             break;
         }
         lc = lc->pa;
         if (lc->dup)
             break;
-        if (lc->u.ld.inum && Lf->fs_ino
-        &&  lc->u.ld.inum == Lf->fs_ino) {
+        if (lc->u.ld.inum && CurrentLocalFile->fs_ino
+        &&  lc->u.ld.inum == CurrentLocalFile->fs_ino) {
             *fp = 1;
             break;
         }
@@ -1804,7 +1804,7 @@ NFS_load()
         if (!(nfnc = (struct ncache *)malloc(kcl))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for NFS name cache\n",
-            Pn, kcl);
+            ProgramName, kcl);
         Exit(1);
         }
     }
@@ -1838,7 +1838,7 @@ NFS_load()
 /*
  * If not repeating, free kernel NFS name cache buffer space.
  */
-    if (nfnc && !RptTm) {
+    if (nfnc && !RepeatTime) {
         (void) free((MALLOC_P *)nfnc);
         nfnc = (struct ncache *)NULL;
         kcl = nfnce = 0;
@@ -1863,7 +1863,7 @@ NFS_root(r)
     unsigned short *n1;
 # endif	/* OSRV>=500 */
 
-    if (!Lf->fs_ino || !r)
+    if (!CurrentLocalFile->fs_ino || !r)
         return(0);
 /*
  * Search NFS root rnode cache.
@@ -1889,7 +1889,7 @@ NFS_root(r)
         nnum = (unsigned long)*n1;
 # endif	/* OSRV<500 */
 
-    if (!nnum || nnum != Lf->fs_ino)
+    if (!nnum || nnum != CurrentLocalFile->fs_ino)
         return(0);
 /*
  * Add the rnode address to the NFS root rnode cache.
@@ -1906,7 +1906,7 @@ NFS_root(r)
         }
         if (!rc) {
         (void) fprintf(stderr, "%s: no space for root rnode table\n",
-            Pn);
+            ProgramName);
         Exit(1);
         }
     }
@@ -1964,7 +1964,7 @@ SYSV_load()
         if (!(s5nc = (struct s5cachent *)malloc(kcl))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for SYSV name cache\n",
-            Pn, kcl);
+            ProgramName, kcl);
         Exit(1);
         }
     }
@@ -1997,7 +1997,7 @@ SYSV_load()
 /*
  * If not repeating, free kernel SYSV name cache buffer space.
  */
-    if (s5nc && !RptTm) {
+    if (s5nc && !RepeatTime) {
         (void) free((MALLOC_P *)s5nc);
         s5nc = (struct s5cachent *)NULL;
         kcl = s5nce = 0;

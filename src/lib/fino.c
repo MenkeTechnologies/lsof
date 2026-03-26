@@ -75,13 +75,13 @@ find_bl_ino_again:
 # endif	/* defined(HASDCACHE) */
 
     low = mid = 0;
-    hi = BNdev - 1;
-    if (!Lf->dev_def || (Lf->dev != DevDev) || !Lf->rdev_def)
+    hi = BlockNumDevices - 1;
+    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) || !CurrentLocalFile->rdev_def)
         return;
-    ldev = Lf->rdev;
+    ldev = CurrentLocalFile->rdev;
     while (low <= hi) {
         mid = (low + hi) / 2;
-        tdev = BSdev[mid]->rdev;
+        tdev = BlockSortedDevices[mid]->rdev;
         if (ldev < tdev)
         hi = mid - 1;
         else if (ldev > tdev)
@@ -89,13 +89,13 @@ find_bl_ino_again:
         else {
 
 # if	defined(HASDCACHE)
-        if (DCunsafe && !BSdev[mid]->v && !vfy_dev(BSdev[mid]))
+        if (DevCacheUnsafe && !BlockSortedDevices[mid]->v && !vfy_dev(BlockSortedDevices[mid]))
             goto find_bl_ino_again;
 # endif	/* defined(HASDCACHE) */
 
-        Lf->inode = BSdev[mid]->inode;
-        if (Lf->inp_ty == 0)
-            Lf->inp_ty = 1;
+        CurrentLocalFile->inode = BlockSortedDevices[mid]->inode;
+        if (CurrentLocalFile->inp_ty == 0)
+            CurrentLocalFile->inp_ty = 1;
         return;
         }
     }
@@ -121,13 +121,13 @@ find_ch_ino_again:
 # endif	/* defined(HASDCACHE) */
 
     low = mid = 0;
-    hi = Ndev - 1;
-    if (!Lf->dev_def || (Lf->dev != DevDev) || !Lf->rdev_def)
+    hi = NumDevices - 1;
+    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) || !CurrentLocalFile->rdev_def)
         return;
-    ldev = Lf->rdev;
+    ldev = CurrentLocalFile->rdev;
     while (low <= hi) {
         mid = (low + hi) / 2;
-        tdev = Sdev[mid]->rdev;
+        tdev = SortedDevices[mid]->rdev;
         if (ldev < tdev)
         hi = mid - 1;
         else if (ldev > tdev)
@@ -135,13 +135,13 @@ find_ch_ino_again:
         else {
 
 # if	defined(HASDCACHE)
-        if (DCunsafe && !Sdev[mid]->v && !vfy_dev(Sdev[mid]))
+        if (DevCacheUnsafe && !SortedDevices[mid]->v && !vfy_dev(SortedDevices[mid]))
             goto find_ch_ino_again;
 # endif	/* defined(HASDCACHE) */
 
-        Lf->inode = Sdev[mid]->inode;
-        if (Lf->inp_ty == 0)
-            Lf->inp_ty = 1;
+        CurrentLocalFile->inode = SortedDevices[mid]->inode;
+        if (CurrentLocalFile->inp_ty == 0)
+            CurrentLocalFile->inp_ty = 1;
         return;
         }
     }

@@ -69,7 +69,7 @@ readmnt() {
  * Open access to the mount table.
  */
     if ((fd = open(MNTTAB, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s\n", Pn, MNTTAB);
+        (void) fprintf(stderr, "%s: can't open %s\n", ProgramName, MNTTAB);
         Exit(1);
     }
 /*
@@ -136,7 +136,7 @@ readmnt() {
             ln = (char *) NULL;
         }
         if (!(ln = Readlink(fsnm))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }
@@ -154,7 +154,7 @@ readmnt() {
 
                 no_space_for_mount:
 
-                (void) fprintf(stderr, "%s: no space for mount at ", Pn);
+                (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
                 safestrprt(fsnm, stderr, 0);
                 (void) fprintf(stderr, " (");
                 safestrprt(dvnm, stderr, 0);
@@ -166,9 +166,9 @@ readmnt() {
          * Stat() the directory.
          */
         if (statsafely(ln, &sb)) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
-                               "%s: WARNING: can't stat() file system: ", Pn);
+                               "%s: WARNING: can't stat() file system: ", ProgramName);
                 safestrprt(fsnm, stderr, 1);
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");

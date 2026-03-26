@@ -67,8 +67,8 @@ process_socket_common(si)
 /*
  * Enter basic socket values.
  */
-    (void) snpf(Lf->type, sizeof(Lf->type), "sock");
-    Lf->inp_ty = 2;
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "sock");
+    CurrentLocalFile->inp_ty = 2;
 /*
  * Enter basic file information.
  */
@@ -76,47 +76,47 @@ process_socket_common(si)
 /*
  * Enable size or offset display.
  */
-    if (Fsize) {
-        if (Lf->access == 'r')
-            Lf->sz = (SZOFFTYPE) si->psi.soi_rcv.sbi_cc;
-        else if (Lf->access == 'w')
-            Lf->sz = (SZOFFTYPE) si->psi.soi_snd.sbi_cc;
+    if (OptSize) {
+        if (CurrentLocalFile->access == 'r')
+            CurrentLocalFile->sz = (SZOFFTYPE) si->psi.soi_rcv.sbi_cc;
+        else if (CurrentLocalFile->access == 'w')
+            CurrentLocalFile->sz = (SZOFFTYPE) si->psi.soi_snd.sbi_cc;
         else
-            Lf->sz = (SZOFFTYPE) (si->psi.soi_rcv.sbi_cc
+            CurrentLocalFile->sz = (SZOFFTYPE) (si->psi.soi_rcv.sbi_cc
                                   + si->psi.soi_snd.sbi_cc);
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz_def = 1;
     } else
-        Lf->off_def = 1;
+        CurrentLocalFile->off_def = 1;
 
 #if    defined(HASTCPTPIQ)
     /*
      * Enter send and receive queue sizes.
      */
-        Lf->lts.rq = si->psi.soi_rcv.sbi_cc;
-        Lf->lts.sq = si->psi.soi_snd.sbi_cc;
-        Lf->lts.rqs = Lf->lts.sqs = (unsigned char)1;
+        CurrentLocalFile->lts.rq = si->psi.soi_rcv.sbi_cc;
+        CurrentLocalFile->lts.sq = si->psi.soi_snd.sbi_cc;
+        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = (unsigned char)1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
     /*
      * Enter socket options.
      */
-        Lf->lts.ltm = (unsigned int)(si->psi.soi_linger & 0xffff);
-        Lf->lts.opt = (unsigned int)(si->psi.soi_options & 0xffff);
-        Lf->lts.pqlen = (unsigned int)si->psi.soi_incqlen;
-        Lf->lts.qlen = (unsigned int)si->psi.soi_qlen;
-        Lf->lts.qlim = (unsigned int)si->psi.soi_qlimit;
-        Lf->lts.rbsz = (unsigned long)si->psi.soi_rcv.sbi_mbmax;
-        Lf->lts.sbsz = (unsigned long)si->psi.soi_snd.sbi_mbmax;
-        Lf->lts.pqlens = Lf->lts.qlens = Lf->lts.qlims = Lf->lts.rbszs
-                   = Lf->lts.sbszs = (unsigned char)1;
+        CurrentLocalFile->lts.ltm = (unsigned int)(si->psi.soi_linger & 0xffff);
+        CurrentLocalFile->lts.opt = (unsigned int)(si->psi.soi_options & 0xffff);
+        CurrentLocalFile->lts.pqlen = (unsigned int)si->psi.soi_incqlen;
+        CurrentLocalFile->lts.qlen = (unsigned int)si->psi.soi_qlen;
+        CurrentLocalFile->lts.qlim = (unsigned int)si->psi.soi_qlimit;
+        CurrentLocalFile->lts.rbsz = (unsigned long)si->psi.soi_rcv.sbi_mbmax;
+        CurrentLocalFile->lts.sbsz = (unsigned long)si->psi.soi_snd.sbi_mbmax;
+        CurrentLocalFile->lts.pqlens = CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims = CurrentLocalFile->lts.rbszs
+                   = CurrentLocalFile->lts.sbszs = (unsigned char)1;
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
     /*
      * Enter socket state.
      */
-        Lf->lts.ss = (unsigned int)si->psi.soi_state;
+        CurrentLocalFile->lts.ss = (unsigned int)si->psi.soi_state;
 #endif    /* defined(HASSOSTATE) */
 
 /*
@@ -129,7 +129,7 @@ process_socket_common(si)
             /*
              * Process IPv[46] sockets.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type),
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type),
                         (fam == AF_INET) ? "IPv4" : "IPv6");
             if ((si->psi.soi_kind != SOCKINFO_IN) &&
                 (si->psi.soi_kind != SOCKINFO_TCP)) {
@@ -138,22 +138,22 @@ process_socket_common(si)
             /*
              * Process TCP state inclusions and exclusions, as required.
              */
-            if ((si->psi.soi_kind == SOCKINFO_TCP) && (TcpStXn || TcpStIn)) {
+            if ((si->psi.soi_kind == SOCKINFO_TCP) && (TcpStateExcludeCount || TcpStateIncludeCount)) {
                 int tsnx = (int) si->psi.soi_proto.pri_tcp.tcpsi_state
-                           + TcpStOff;
+                           + TcpStateOffset;
 
-                if ((tsnx >= 0) && (tsnx < TcpNstates)) {
-                    if (TcpStXn) {
-                        if (TcpStX[tsnx]) {
-                            Lf->sf |= SELEXCLF;
+                if ((tsnx >= 0) && (tsnx < TcpNumStates)) {
+                    if (TcpStateExcludeCount) {
+                        if (TcpStateExclude[tsnx]) {
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
-                    if (TcpStIn) {
-                        if (TcpStI[tsnx])
-                            TcpStI[tsnx] = 2;
+                    if (TcpStateIncludeCount) {
+                        if (TcpStateInclude[tsnx])
+                            TcpStateInclude[tsnx] = 2;
                         else {
-                            Lf->sf |= SELEXCLF;
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
@@ -162,12 +162,12 @@ process_socket_common(si)
             /*
              * Process an Internet domain socket.
              */
-            if (Fnet) {
-                if (!FnetTy
-                    || ((FnetTy == 4) && (fam == AF_INET))
-                    || ((FnetTy == 6) && (fam == AF_INET6))
+            if (OptNetwork) {
+                if (!OptNetworkType
+                    || ((OptNetworkType == 4) && (fam == AF_INET))
+                    || ((OptNetworkType == 6) && (fam == AF_INET6))
                         )
-                    Lf->sf |= SELNET;
+                    CurrentLocalFile->sf |= SELNET;
             }
             printiproto(si->psi.soi_protocol);
             if ((si->psi.soi_kind == SOCKINFO_TCP)
@@ -260,20 +260,20 @@ process_socket_common(si)
                 /*
                  * Enter a TCP socket definition and its state.
                  */
-                Lf->lts.type = 0;
-                Lf->lts.state.i = (int) si->psi.soi_proto.pri_tcp.tcpsi_state;
+                CurrentLocalFile->lts.type = 0;
+                CurrentLocalFile->lts.state.i = (int) si->psi.soi_proto.pri_tcp.tcpsi_state;
                 /*
                  * Enter TCP options.
                  */
 
 #if    defined(HASSOOPT)
-                Lf->lts.kai = (unsigned int)si->psi.soi_proto.pri_tcp.tcpsi_timer[TCPT_KEEP];
+                CurrentLocalFile->lts.kai = (unsigned int)si->psi.soi_proto.pri_tcp.tcpsi_timer[TCPT_KEEP];
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASTCPOPT)
-                Lf->lts.mss = (unsigned long)si->psi.soi_proto.pri_tcp.tcpsi_mss;
-                Lf->lts.msss = (unsigned char)1;
-                Lf->lts.topt = (unsigned int)si->psi.soi_proto.pri_tcp.tcpsi_flags;
+                CurrentLocalFile->lts.mss = (unsigned long)si->psi.soi_proto.pri_tcp.tcpsi_mss;
+                CurrentLocalFile->lts.msss = (unsigned char)1;
+                CurrentLocalFile->lts.topt = (unsigned int)si->psi.soi_proto.pri_tcp.tcpsi_flags;
 #endif    /* defined(HASTCPOPT) */
 
             }
@@ -283,11 +283,11 @@ process_socket_common(si)
             /*
              * Process a UNIX domain socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "unix");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
             if (si->psi.soi_kind != SOCKINFO_UN)
                 break;
-            if (Funix)
-                Lf->sf |= SELUNX;
+            if (OptUnixSocket)
+                CurrentLocalFile->sf |= SELUNX;
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
             /*
              * Enter information on a UNIX domain socket that has no address bound
@@ -298,12 +298,12 @@ process_socket_common(si)
                 if (si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_family
                     == AF_UNSPEC) {
                     if (si->psi.soi_proto.pri_un.unsi_conn_pcb) {
-                        (void) snpf(Namech, Namechl, "->%s",
+                        (void) snpf(NameChars, NameCharsLength, "->%s",
                                     print_kptr((KA_T) si->psi.soi_proto.pri_un.unsi_conn_pcb, (char *) NULL, 0));
                     } else
-                        (void) snpf(Namech, Namechl, "->(none)");
+                        (void) snpf(NameChars, NameCharsLength, "->(none)");
                 } else
-                    (void) snpf(Namech, Namechl, "unknown sun_family (%d)",
+                    (void) snpf(NameChars, NameCharsLength, "unknown sun_family (%d)",
                                 si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_family);
                 break;
             }
@@ -314,35 +314,35 @@ process_socket_common(si)
                     unl = sizeof(si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path) - 1;
                 si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path[unl] = '\0';
                 if (si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path[0]
-                    && Sfile
+                    && SearchFileChain
                     && is_file_named(si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path, 0))
-                    Lf->sf |= SELNM;
+                    CurrentLocalFile->sf |= SELNM;
                 if (si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path[0]
-                    && !Namech[0])
-                    (void) snpf(Namech, Namechl, "%s", si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path);
+                    && !NameChars[0])
+                    (void) snpf(NameChars, NameCharsLength, "%s", si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path);
             } else
-                (void) snpf(Namech, Namechl, "no address");
+                (void) snpf(NameChars, NameCharsLength, "no address");
             break;
         case AF_ROUTE:
 
             /*
              * Process a ROUTE domain socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "rte");
-            if (!Fsize)
-                Lf->off_def = 1;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "rte");
+            if (!OptSize)
+                CurrentLocalFile->off_def = 1;
             break;
         case AF_NDRV:
 
             /*
              * Process an NDRV domain socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "ndrv");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ndrv");
             if (si->psi.soi_kind != SOCKINFO_NDRV)
                 break;
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
             si->psi.soi_proto.pri_ndrv.ndrvsi_if_name[sizeof(si->psi.soi_proto.pri_ndrv.ndrvsi_if_name) - 1] = '\0';
-            (void) snpf(Namech, Namechl, "-> %s%d",
+            (void) snpf(NameChars, NameCharsLength, "-> %s%d",
                         si->psi.soi_proto.pri_ndrv.ndrvsi_if_name,
                         si->psi.soi_proto.pri_ndrv.ndrvsi_if_unit);
             break;
@@ -351,7 +351,7 @@ process_socket_common(si)
             /*
              * Process an [internal] key-management function socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "key");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "key");
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
             break;
         case AF_SYSTEM:
@@ -359,11 +359,11 @@ process_socket_common(si)
             /*
              * Process a SYSTEM domain socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "systm");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "systm");
             if (si->psi.soi_kind != SOCKINFO_KERN_EVENT)
                 break;
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
-            (void) snpf(Namech, Namechl, "[%x:%x:%x]",
+            (void) snpf(NameChars, NameCharsLength, "[%x:%x:%x]",
                         si->psi.soi_proto.pri_kern_event.kesi_vendor_code_filter,
                         si->psi.soi_proto.pri_kern_event.kesi_class_filter,
                         si->psi.soi_proto.pri_kern_event.kesi_subclass_filter);
@@ -373,7 +373,7 @@ process_socket_common(si)
             /*
              * Process a PPP domain socket.
              */
-            (void) snpf(Lf->type, sizeof(Lf->type), "ppp");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "ppp");
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
             break;
         default:
@@ -382,8 +382,8 @@ process_socket_common(si)
 /*
  * If there are NAME column characters, enter them.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }
 
 
@@ -404,7 +404,7 @@ process_socket(pid, fd)
     } else if (nb < sizeof(si)) {
         (void) fprintf(stderr,
                        "%s: PID %d, FD %d: proc_pidfdinfo(PROC_PIDFDSOCKETINFO);\n",
-                       Pn, pid, fd);
+                       ProgramName, pid, fd);
         (void) fprintf(stderr,
                        "      too few bytes; expected %ld, got %d\n",
                        sizeof(si), nb);

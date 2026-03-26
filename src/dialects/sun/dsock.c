@@ -332,7 +332,7 @@ _PROTOTYPE(static void save_TCP_states, (tcp_t * tc, caddr_t * fa, tcpb_t * tb,
 
 void
 build_IPstates() {
-    if (!TcpSt) {
+    if (!TcpStateNames) {
         (void) enter_IPstate("TCP", "CLOSED", TCPS_CLOSED);
         (void) enter_IPstate("TCP", "IDLE", TCPS_IDLE);
         (void) enter_IPstate("TCP", "BOUND", TCPS_BOUND);
@@ -348,7 +348,7 @@ build_IPstates() {
         (void) enter_IPstate("TCP", "TIME_WAIT", TCPS_TIME_WAIT);
         (void) enter_IPstate("TCP", (char *) NULL, 0);
     }
-    if (!UdpSt) {
+    if (!UdpStateNames) {
         (void) enter_IPstate("UDP", "Unbound", TS_UNBND);
         (void) enter_IPstate("UDP", "Wait_BIND_REQ_Ack", TS_WACK_BREQ);
         (void) enter_IPstate("UDP", "Wait_UNBIND_REQ_Ack", TS_WACK_UREQ);
@@ -385,31 +385,31 @@ print_tcptpi(nl)
     int ps = 0;
     unsigned int u;
 
-    if (Ftcptpi & TCPTPI_STATE) {
-        switch (Lf->lts.type) {
+    if (OptTcpTpiInfo & TCPTPI_STATE) {
+        switch (CurrentLocalFile->lts.type) {
             case 0:                /* TCP */
-                if (!TcpSt)
+                if (!TcpStateNames)
                     (void) build_IPstates();
-                if ((i = Lf->lts.state.i + TcpStOff) < 0 || i >= TcpNstates) {
+                if ((i = CurrentLocalFile->lts.state.i + TcpStateOffset) < 0 || i >= TcpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UNKNOWN_TCP_STATE_%d",
-                                Lf->lts.state.i);
+                                CurrentLocalFile->lts.state.i);
                     cp = sbuf;
                 } else
-                    cp = TcpSt[i];
+                    cp = TcpStateNames[i];
                 break;
             case 1:                /* TPI */
-                if (!UdpSt)
+                if (!UdpStateNames)
                     (void) build_IPstates();
-                if ((u = Lf->lts.state.ui + UdpStOff) < 0 || u >= UdpNstates) {
+                if ((u = CurrentLocalFile->lts.state.ui + UdpStateOffset) < 0 || u >= UdpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UNKNOWN_UDP_STATE_%u",
-                                Lf->lts.state.ui);
+                                CurrentLocalFile->lts.state.ui);
                     cp = sbuf;
                 } else
-                    cp = UdpSt[u];
+                    cp = UdpStateNames[u];
         }
         if (cp) {
-            if (Ffield)
-                (void) printf("%cST=%s%c", LSOF_FID_TCPTPI, cp, Terminator);
+            if (OptFieldOutput)
+                (void) printf("%cST=%s%c", LSOF_FID_TCP_TPI_INFO, cp, Terminator);
             else {
                 putchar('(');
                 (void) fputs(cp, stdout);
@@ -419,32 +419,32 @@ print_tcptpi(nl)
     }
 
 #if    defined(HASTCPTPIQ)
-    if (Ftcptpi & TCPTPI_QUEUES) {
-        if (Lf->lts.rqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_QUEUES) {
+        if (CurrentLocalFile->lts.rqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", Lf->lts.rq);
-        if (Ffield)
+        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.sqs) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.sqs) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", Lf->lts.sq);
-        if (Ffield)
+        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
@@ -452,17 +452,17 @@ print_tcptpi(nl)
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int opt;
 
-        if ((opt = Lf->lts.opt)
-        ||  Lf->lts.pqlens || Lf->lts.qlens || Lf->lts.qlims
-        ||  Lf->lts.rbszs  || Lf->lts.sbsz
+        if ((opt = CurrentLocalFile->lts.opt)
+        ||  CurrentLocalFile->lts.pqlens || CurrentLocalFile->lts.qlens || CurrentLocalFile->lts.qlims
+        ||  CurrentLocalFile->lts.rbszs  || CurrentLocalFile->lts.sbsz
         ) {
         char sep = ' ';
 
-        if (Ffield)
-            sep = LSOF_FID_TCPTPI;
+        if (OptFieldOutput)
+            sep = LSOF_FID_TCP_TPI_INFO;
         else if (!ps)
             sep = '(';
         (void) printf("%cSO", sep);
@@ -504,8 +504,8 @@ print_tcptpi(nl)
 # if	defined(SO_KEEPALIVE)
         if (opt & SO_KEEPALIVE) {
             (void) printf("%cKEEPALIVE", sep);
-            if (Lf->lts.kai)
-            (void) printf("=%d", Lf->lts.kai);
+            if (CurrentLocalFile->lts.kai)
+            (void) printf("=%d", CurrentLocalFile->lts.kai);
             opt &= ~SO_KEEPALIVE;
             sep = ',';
         }
@@ -514,8 +514,8 @@ print_tcptpi(nl)
 # if	defined(SO_LINGER)
         if (opt & SO_LINGER) {
             (void) printf("%cLINGER", sep);
-            if (Lf->lts.ltm)
-            (void) printf("=%d", Lf->lts.ltm);
+            if (CurrentLocalFile->lts.ltm)
+            (void) printf("=%d", CurrentLocalFile->lts.ltm);
             opt &= ~SO_LINGER;
             sep = ',';
         }
@@ -529,20 +529,20 @@ print_tcptpi(nl)
         }
 # endif	/* defined(SO_OOBINLINE) */
 
-        if (Lf->lts.pqlens) {
-            (void) printf("%cPQLEN=%u", sep, Lf->lts.pqlen);
+        if (CurrentLocalFile->lts.pqlens) {
+            (void) printf("%cPQLEN=%u", sep, CurrentLocalFile->lts.pqlen);
             sep = ',';
         }
-        if (Lf->lts.qlens) {
-            (void) printf("%cQLEN=%u", sep, Lf->lts.qlen);
+        if (CurrentLocalFile->lts.qlens) {
+            (void) printf("%cQLEN=%u", sep, CurrentLocalFile->lts.qlen);
             sep = ',';
         }
-        if (Lf->lts.qlims) {
-            (void) printf("%cQLIM=%u", sep, Lf->lts.qlim);
+        if (CurrentLocalFile->lts.qlims) {
+            (void) printf("%cQLIM=%u", sep, CurrentLocalFile->lts.qlim);
             sep = ',';
         }
-        if (Lf->lts.rbszs) {
-            (void) printf("%cRCVBUF=%lu", sep, Lf->lts.rbsz);
+        if (CurrentLocalFile->lts.rbszs) {
+            (void) printf("%cRCVBUF=%lu", sep, CurrentLocalFile->lts.rbsz);
             sep = ',';
         }
 
@@ -554,8 +554,8 @@ print_tcptpi(nl)
         }
 # endif	/* defined(SO_REUSEADDR) */
 
-        if (Lf->lts.sbszs) {
-            (void) printf("%cSNDBUF=%lu", sep, Lf->lts.sbsz);
+        if (CurrentLocalFile->lts.sbszs) {
+            (void) printf("%cSNDBUF=%lu", sep, CurrentLocalFile->lts.sbsz);
             sep = ',';
         }
 
@@ -577,21 +577,21 @@ print_tcptpi(nl)
 
         if (opt)
             (void) printf("%cUNKNOWN=%#x", sep, opt);
-        if (Ffield)
+        if (OptFieldOutput)
             putchar(Terminator);
         }
     }
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASTCPOPT)
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int topt;
 
-        if ((topt = Lf->lts.topt) || Lf->lts.msss) {
+        if ((topt = CurrentLocalFile->lts.topt) || CurrentLocalFile->lts.msss) {
         char sep = ' ';
 
-        if (Ffield)
-            sep = LSOF_FID_TCPTPI;
+        if (OptFieldOutput)
+            sep = LSOF_FID_TCP_TPI_INFO;
         else if (!ps)
             sep = '(';
         (void) printf("%cTF", sep);
@@ -614,8 +614,8 @@ print_tcptpi(nl)
         }
 # endif	/* defined(TF_DELACK) */
 
-        if (Lf->lts.msss) {
-            (void) printf("%cMSS=%lu", sep, Lf->lts.mss);
+        if (CurrentLocalFile->lts.msss) {
+            (void) printf("%cMSS=%lu", sep, CurrentLocalFile->lts.mss);
             sep = ',';
         }
 
@@ -645,46 +645,46 @@ print_tcptpi(nl)
 
         if (topt)
             (void) printf("%cUNKNOWN=%#x", sep, topt);
-        if (Ffield)
+        if (OptFieldOutput)
             putchar(Terminator);
         }
     }
 #endif    /* defined(HASTCPOPT) */
 
 #if    defined(HASTCPTPIW)
-    if (Ftcptpi & TCPTPI_WINDOWS) {
-        if (Lf->lts.rws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+    if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
+        if (CurrentLocalFile->lts.rws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", Lf->lts.rw);
-        if (Ffield)
+        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (Lf->lts.wws) {
-        if (Ffield)
-            putchar(LSOF_FID_TCPTPI);
+        if (CurrentLocalFile->lts.wws) {
+        if (OptFieldOutput)
+            putchar(LSOF_FID_TCP_TPI_INFO);
         else {
             if (ps)
             putchar(' ');
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", Lf->lts.ww);
-        if (Ffield)
+        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
     }
 #endif    /* defined(HASTCPTPIW) */
 
-    if (Ftcptpi && !Ffield && ps)
+    if (OptTcpTpiInfo && !OptFieldOutput && ps)
         putchar(')');
     if (nl)
         putchar('\n');
@@ -747,13 +747,13 @@ process_VSOCK(va, v, so)
     if (!(pha = (KA_T)so->so_proto_handle))
         return(0);
     if (kread(pha, (char *)&cs, sizeof(cs))) {
-        (void) snpf(Namech, Namechl,
+        (void) snpf(NameChars, NameCharsLength,
         "vnode at %s; snode at %s; can't read proto handle at: %s",
         print_kptr(va, tbuf, sizeof(tbuf)),
         print_kptr((KA_T)v->v_data, tbuf1, sizeof(tbuf1)),
         print_kptr(pha, (char *)NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return(1);
     }
     enter_dev_ch(print_kptr(pha, (char *)NULL, 0));
@@ -771,7 +771,7 @@ process_VSOCK(va, v, so)
         ty = "IPv4";
         else
         ty = "IPv6";
-        (void) snpf(Lf->type, sizeof(Lf->type), ty);
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), ty);
 
         switch (cs.conn_ulp) {
         case IPPROTO_TCP:
@@ -782,36 +782,36 @@ process_VSOCK(va, v, so)
         if (!(ka = (KA_T)cs.conn_proto_priv.cp_tcp)
         ||  kread(ka, (char *)&tc, sizeof(tc))
         ) {
-            (void) snpf(Namech, Namechl - 1,
+            (void) snpf(NameChars, NameCharsLength - 1,
             "can't read TCP socket's control structure: %s",
             print_kptr((KA_T)ka, (char *)NULL, 0));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
             return(1);
         }
         /*
-         * Set TCP protcol name in Lf->iproto[].
+         * Set TCP protcol name in CurrentLocalFile->iproto[].
          */
-        (void) snpf(Lf->iproto, IPROTOL - 1, "%s", "TCP");
-        Lf->iproto[IPROTOL - 1] = '\0';
-        Lf->inp_ty = 2;
+        (void) snpf(CurrentLocalFile->iproto, IPROTOL - 1, "%s", "TCP");
+        CurrentLocalFile->iproto[IPROTOL - 1] = '\0';
+        CurrentLocalFile->inp_ty = 2;
         /*
          * Check for TCP state inclusion or exclusion.
          */
-        if (TcpNstates) {
-            if ((s = (int)tc.tcp_state + TcpStOff) < TcpNstates) {
-            if (TcpStXn) {
-                if (TcpStX[s]) {
-                Lf->sf |= SELEXCLF;
+        if (TcpNumStates) {
+            if ((s = (int)tc.tcp_state + TcpStateOffset) < TcpNumStates) {
+            if (TcpStateExcludeCount) {
+                if (TcpStateExclude[s]) {
+                CurrentLocalFile->sf |= SELEXCLF;
                 return(1);
                 }
             }
-            if (TcpStIn) {
-                if (TcpStI[s]) {
-                TcpStI[s] = 2;
-                Lf->sf |= SELNET;
+            if (TcpStateIncludeCount) {
+                if (TcpStateInclude[s]) {
+                TcpStateInclude[s] = 2;
+                CurrentLocalFile->sf |= SELNET;
                 } else {
-                Lf->sf |= SELEXCLF;
+                CurrentLocalFile->sf |= SELEXCLF;
                 return(1);
                 }
             }
@@ -820,12 +820,12 @@ process_VSOCK(va, v, so)
         /*
          * Set network file selection status.
          */
-        if (Fnet) {
-            if (!FnetTy
-            ||  ((FnetTy == 4) && (af == AF_INET))
-            ||  ((FnetTy == 6) && (af == AF_INET6))
+        if (OptNetwork) {
+            if (!OptNetworkType
+            ||  ((OptNetworkType == 4) && (af == AF_INET))
+            ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            Lf->sf |= SELNET;
+            CurrentLocalFile->sf |= SELNET;
             }
         }
         /*
@@ -881,8 +881,8 @@ process_VSOCK(va, v, so)
                        (caddr_t *)NULL);
 # endif	/* defined(HAS_CONN_NEW) */
 
-        Lf->lts.type = 0;
-        Lf->lts.state.i = (int)tc.tcp_state;
+        CurrentLocalFile->lts.type = 0;
+        CurrentLocalFile->lts.state.i = (int)tc.tcp_state;
         /*
          * Save TCP size information.
          */
@@ -896,36 +896,36 @@ process_VSOCK(va, v, so)
         if (!(ka = (KA_T)cs.conn_proto_priv.cp_udp)
         ||  kread(ka, (char *)&uc, sizeof(uc))
         ) {
-            (void) snpf(Namech, Namechl - 1,
+            (void) snpf(NameChars, NameCharsLength - 1,
             "can't read UDP socket's control structure: %s",
             print_kptr((KA_T)ka, (char *)NULL, 0));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
             return(1);
         }
         /*
-         * Set UDP protcol name in Lf->iproto[].
+         * Set UDP protcol name in CurrentLocalFile->iproto[].
          */
-        (void) snpf(Lf->iproto, IPROTOL - 1, "%s", "UDP");
-        Lf->iproto[IPROTOL - 1] = '\0';
-        Lf->inp_ty = 2;
+        (void) snpf(CurrentLocalFile->iproto, IPROTOL - 1, "%s", "UDP");
+        CurrentLocalFile->iproto[IPROTOL - 1] = '\0';
+        CurrentLocalFile->inp_ty = 2;
         /*
          * Check for UDP state inclusion or exclusion.
          */
-        if (UdpNstates) {
-            if ((s = (int)uc.udp_state + TcpStOff) < UdpNstates) {
-            if (UdpStXn) {
-                if (UdpStX[s]) {
-                Lf->sf |= SELEXCLF;
+        if (UdpNumStates) {
+            if ((s = (int)uc.udp_state + TcpStateOffset) < UdpNumStates) {
+            if (UdpStateExcludeCount) {
+                if (UdpStateExclude[s]) {
+                CurrentLocalFile->sf |= SELEXCLF;
                 return(1);
                 }
             }
-            if (UdpStIn) {
-                if (UdpStI[s]) {
-                UdpStI[s] = 2;
-                Lf->sf |= SELNET;
+            if (UdpStateIncludeCount) {
+                if (UdpStateInclude[s]) {
+                UdpStateInclude[s] = 2;
+                CurrentLocalFile->sf |= SELNET;
                 } else {
-                Lf->sf |= SELEXCLF;
+                CurrentLocalFile->sf |= SELEXCLF;
                 return(1);
                 }
             }
@@ -934,12 +934,12 @@ process_VSOCK(va, v, so)
         /*
          * Set network file selection status.
          */
-        if (Fnet) {
-            if (!FnetTy
-            ||  ((FnetTy == 4) && (af == AF_INET))
-            ||  ((FnetTy == 6) && (af == AF_INET6))
+        if (OptNetwork) {
+            if (!OptNetworkType
+            ||  ((OptNetworkType == 4) && (af == AF_INET))
+            ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            Lf->sf |= SELNET;
+            CurrentLocalFile->sf |= SELNET;
             }
         }
         /*
@@ -961,16 +961,16 @@ process_VSOCK(va, v, so)
         /*
          * Save UDP state and size information.
          */
-        if (!Fsize)
-            Lf->off_def = 1;
-        Lf->lts.type = 1;
-        Lf->lts.state.ui = (unsigned int)uc.udp_state;
+        if (!OptSize)
+            CurrentLocalFile->off_def = 1;
+        CurrentLocalFile->lts.type = 1;
+        CurrentLocalFile->lts.state.ui = (unsigned int)uc.udp_state;
 
 # if	defined(HASSOOPT)
         /*
          * Save UDP flags.
          */
-        if (Ftcptpi & TCPTPI_FLAGS) {
+        if (OptTcpTpiInfo & TCPTPI_FLAGS) {
             union {
             uint_t flags;
             uint_t
@@ -985,17 +985,17 @@ process_VSOCK(va, v, so)
 
             ucf.flags = uc.udp_bits;
             if (ucf.udpb_debug)
-            Lf->lts.opt |= SO_DEBUG;
+            CurrentLocalFile->lts.opt |= SO_DEBUG;
             if (ucf.udpb_dontroute)
-                Lf->lts.opt |= SO_DONTROUTE;
+                CurrentLocalFile->lts.opt |= SO_DONTROUTE;
             if (ucf.udpb_broadcast)
-                Lf->lts.opt |= SO_BROADCAST;
+                CurrentLocalFile->lts.opt |= SO_BROADCAST;
             if (ucf.udpb_reuseaddr)
-            Lf->lts.opt |= SO_REUSEADDR;
+            CurrentLocalFile->lts.opt |= SO_REUSEADDR;
             if (ucf.udpb_useloopback)
-            Lf->lts.opt |= SO_USELOOPBACK;
+            CurrentLocalFile->lts.opt |= SO_USELOOPBACK;
             if (ucf.udpb_dgram_errind)
-            Lf->lts.opt |= SO_DGRAM_ERRIND;
+            CurrentLocalFile->lts.opt |= SO_DGRAM_ERRIND;
         }
 # endif	/* defined(HASSOOPT) */
 
@@ -1012,9 +1012,9 @@ process_VSOCK(va, v, so)
             ty = "ICMP";
         else
             ty = "ICMP6";
-        (void) snpf(Lf->iproto, IPROTOL - 1, "%s", ty);
-        Lf->iproto[IPROTOL - 1] = '\0';
-        Lf->inp_ty = 2;
+        (void) snpf(CurrentLocalFile->iproto, IPROTOL - 1, "%s", ty);
+        CurrentLocalFile->iproto[IPROTOL - 1] = '\0';
+        CurrentLocalFile->inp_ty = 2;
         /*
          * Read the ICMP control structure.
          */
@@ -1023,19 +1023,19 @@ process_VSOCK(va, v, so)
         /*
          * Save ICMP size and state information.
          */
-        if (!Fsize)
-            Lf->off_def = 1;
-        Lf->lts.type = 1;
-        Lf->lts.state.ui = (unsigned int)ic.icmp_state;
+        if (!OptSize)
+            CurrentLocalFile->off_def = 1;
+        CurrentLocalFile->lts.type = 1;
+        CurrentLocalFile->lts.state.ui = (unsigned int)ic.icmp_state;
         /*
          * Set network file selection status.
          */
-        if (Fnet) {
-            if (!FnetTy
-            ||  ((FnetTy == 4) && (af == AF_INET))
-            ||  ((FnetTy == 6) && (af == AF_INET6))
+        if (OptNetwork) {
+            if (!OptNetworkType
+            ||  ((OptNetworkType == 4) && (af == AF_INET))
+            ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            Lf->sf |= SELNET;
+            CurrentLocalFile->sf |= SELNET;
             }
         }
         /*
@@ -1056,30 +1056,30 @@ process_VSOCK(va, v, so)
         /*
          * Save ICMP flags.
          */
-        if (Ftcptpi & TCPTPI_FLAGS) {
+        if (OptTcpTpiInfo & TCPTPI_FLAGS) {
             if (ic.icmp_debug.icmp_Debug)
-            Lf->lts.opt |= SO_DEBUG;
+            CurrentLocalFile->lts.opt |= SO_DEBUG;
             if (ic.icmp_debug.icmp_dontroute)
-                Lf->lts.opt |= SO_DONTROUTE;
+                CurrentLocalFile->lts.opt |= SO_DONTROUTE;
             if (ic.icmp_debug.icmp_broadcast)
-                Lf->lts.opt |= SO_BROADCAST;
+                CurrentLocalFile->lts.opt |= SO_BROADCAST;
             if (ic.icmp_debug.icmp_reuseaddr)
-            Lf->lts.opt |= SO_REUSEADDR;
+            CurrentLocalFile->lts.opt |= SO_REUSEADDR;
             if (ic.icmp_debug.icmp_useloopback)
-            Lf->lts.opt |= SO_USELOOPBACK;
+            CurrentLocalFile->lts.opt |= SO_USELOOPBACK;
             if (ic.icmp_debug.icmp_dgram_errind)
-            Lf->lts.opt |= SO_DGRAM_ERRIND;
+            CurrentLocalFile->lts.opt |= SO_DGRAM_ERRIND;
         }
 # endif	/* defined(HASSOOPT) */
 
         break;
         default:
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
             "unsupported conn_s AF_INET%s protocol: %u",
             (af == AF_INET6) ? "6" : "",
             (unsigned int)cs.conn_ulp);
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return(1);
         }
         break;
@@ -1092,13 +1092,13 @@ process_VSOCK(va, v, so)
         ty = "IPv4";
         else
         ty = "IPv6";
-        (void) snpf(Lf->type, sizeof(Lf->type), ty);
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), ty);
     /*
      * Set protocol name.
      */
-        (void) strncpy(Lf->iproto, "ROUTE", IPROTOL - 1);
-        Lf->iproto[IPROTOL - 1] = '\0';
-        Lf->inp_ty = 2;
+        (void) strncpy(CurrentLocalFile->iproto, "ROUTE", IPROTOL - 1);
+        CurrentLocalFile->iproto[IPROTOL - 1] = '\0';
+        CurrentLocalFile->inp_ty = 2;
 
     /*
      * Read routing control structure.
@@ -1109,19 +1109,19 @@ process_VSOCK(va, v, so)
     /*
      * Save AF_ROUTE size and state information.
      */
-        if (!Fsize)
-        Lf->off_def = 1;
-        Lf->lts.type = 1;
-        Lf->lts.state.i = (int)rt.rts_state;
+        if (!OptSize)
+        CurrentLocalFile->off_def = 1;
+        CurrentLocalFile->lts.type = 1;
+        CurrentLocalFile->lts.state.i = (int)rt.rts_state;
     /*
      * Set network file selection status.
      */
-        if (Fnet) {
-        if (!FnetTy
-        ||  ((FnetTy == 4) && (af == AF_INET))
-        ||  ((FnetTy == 6) && (af == AF_INET6))
+        if (OptNetwork) {
+        if (!OptNetworkType
+        ||  ((OptNetworkType == 4) && (af == AF_INET))
+        ||  ((OptNetworkType == 6) && (af == AF_INET6))
         ) {
-            Lf->sf |= SELNET;
+            CurrentLocalFile->sf |= SELNET;
         }
         }
 
@@ -1129,28 +1129,28 @@ process_VSOCK(va, v, so)
     /*
      * Save ROUTE flags.
      */
-        if (Ftcptpi & TCPTPI_FLAGS) {
+        if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         if (rt.rts_debug.rts_Debug)
-            Lf->lts.opt |= SO_DEBUG;
+            CurrentLocalFile->lts.opt |= SO_DEBUG;
         if (rt.rts_debug.rts_dontroute)
-            Lf->lts.opt |= SO_DONTROUTE;
+            CurrentLocalFile->lts.opt |= SO_DONTROUTE;
         if (rt.rts_debug.rts_broadcast)
-            Lf->lts.opt |= SO_BROADCAST;
+            CurrentLocalFile->lts.opt |= SO_BROADCAST;
         if (rt.rts_debug.rts_reuseaddr)
-           Lf->lts.opt |= SO_REUSEADDR;
+           CurrentLocalFile->lts.opt |= SO_REUSEADDR;
         if (rt.rts_debug.rts_useloopback)
-            Lf->lts.opt |= SO_USELOOPBACK;
+            CurrentLocalFile->lts.opt |= SO_USELOOPBACK;
         }
 # endif	/* defined(HASSOOPT) */
 
         break;
     default:
         (void) printiproto((int)cs.conn_ulp);
-        (void) snpf(Namech, Namechl - 1, "unsupported socket family: %u",
+        (void) snpf(NameChars, NameCharsLength - 1, "unsupported socket family: %u",
         so->so_family);
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
-        Lf->inp_ty = 2;
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
+        CurrentLocalFile->inp_ty = 2;
     }
     return(1);
 }
@@ -1301,47 +1301,47 @@ process_socket(sa, ty)
 
 #if    defined(HASIPv6)
     if (strrchr(ty, '6')) {
-        (void) snpf(Lf->type, sizeof(Lf->type), "IPv6");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "IPv6");
         af = AF_INET6;
     } else {
-        (void) snpf(Lf->type, sizeof(Lf->type), "IPv4");
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "IPv4");
         af = AF_INET;
     }
 #else	/* !defined(HASIPv6) */
-    (void) snpf(Lf->type, sizeof(Lf->type), "inet");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
     af = AF_INET;
 #endif    /* defined(HASIPv6) */
 
 /*
  * Set network file selection status.
  */
-    if (Fnet) {
-        if (!FnetTy
-            || ((FnetTy == 4) && (af == AF_INET))
+    if (OptNetwork) {
+        if (!OptNetworkType
+            || ((OptNetworkType == 4) && (af == AF_INET))
 
 #if    defined(HASIPv6)
-            ||  ((FnetTy == 6) && (af == AF_INET6))
+            ||  ((OptNetworkType == 6) && (af == AF_INET6))
 #endif    /* defined(HASIPv6) */
 
                 ) {
-            if (!TcpStIn && !UdpStIn)
-                Lf->sf |= SELNET;
+            if (!TcpStateIncludeCount && !UdpStateIncludeCount)
+                CurrentLocalFile->sf |= SELNET;
         }
     }
-    Lf->inp_ty = 2;
+    CurrentLocalFile->inp_ty = 2;
 /*
  * Convert type to upper case protocol name.
  */
     if (ty) {
         for (i = 0; (ty[i] != '\0') && (i < IPROTOL) && (i < 3); i++) {
             if (islower((unsigned char) ty[i]))
-                Lf->iproto[i] = toupper((unsigned char) ty[i]);
+                CurrentLocalFile->iproto[i] = toupper((unsigned char) ty[i]);
             else
-                Lf->iproto[i] = ty[i];
+                CurrentLocalFile->iproto[i] = ty[i];
         }
     } else
         i = 0;
-    Lf->iproto[i] = '\0';
+    CurrentLocalFile->iproto[i] = '\0';
 /*
  * Read stream queue entries to obtain private IP, TCP, and UDP structures.
  */
@@ -1412,43 +1412,43 @@ process_socket(sa, ty)
 # endif	/* solaris>=110000 */
 #endif        /* solaris<=90000 || !defined(HAS_IPCLASSIFIER_H) */
 
-            if (tcs && TcpNstates) {
-                int s = (int) tc.tcp_state + TcpStOff;
+            if (tcs && TcpNumStates) {
+                int s = (int) tc.tcp_state + TcpStateOffset;
                 /*
                  * Check for TCP state inclusion or exclusion.
                  */
 
-                if (s < TcpNstates) {
-                    if (TcpStXn) {
-                        if (TcpStX[s]) {
-                            Lf->sf &= ~SELNET;
-                            Lf->sf |= SELEXCLF;
+                if (s < TcpNumStates) {
+                    if (TcpStateExcludeCount) {
+                        if (TcpStateExclude[s]) {
+                            CurrentLocalFile->sf &= ~SELNET;
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
-                    if (TcpStIn) {
-                        if (TcpStI[s]) {
-                            TcpStI[s] = 2;
-                            Lf->sf |= SELNET;
+                    if (TcpStateIncludeCount) {
+                        if (TcpStateInclude[s]) {
+                            TcpStateInclude[s] = 2;
+                            CurrentLocalFile->sf |= SELNET;
                         } else {
-                            Lf->sf &= ~SELNET;
-                            Lf->sf |= SELEXCLF;
+                            CurrentLocalFile->sf &= ~SELNET;
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
                 }
             }
-            if (!(Lf->sf & SELNET) && !TcpStIn && UdpStIn) {
-                if (Fnet) {
-                    if (!FnetTy
-                        || (FnetTy == 4) && (af == AF_INET)
+            if (!(CurrentLocalFile->sf & SELNET) && !TcpStateIncludeCount && UdpStateIncludeCount) {
+                if (OptNetwork) {
+                    if (!OptNetworkType
+                        || (OptNetworkType == 4) && (af == AF_INET)
 
 #if    defined(HASIPv6)
-                        ||  (FnetTy == 6) && (af == AF_INET6)
+                        ||  (OptNetworkType == 6) && (af == AF_INET6)
 #endif    /* defined(HASIPv6) */
 
                             ) {
-                        Lf->sf |= SELNET;
+                        CurrentLocalFile->sf |= SELNET;
                     }
                 }
             }
@@ -1472,42 +1472,42 @@ process_socket(sa, ty)
             }
 #endif    /* solaris<110000 */
 
-            if (ucs && UdpNstates) {
-                unsigned int s = (unsigned int) uc.udp_state + UdpStOff;
+            if (ucs && UdpNumStates) {
+                unsigned int s = (unsigned int) uc.udp_state + UdpStateOffset;
                 /*
                  * Check for UDP state inclusion or exclusion.
                  */
 
-                if (s < UdpNstates) {
-                    if (UdpStXn) {
-                        if (UdpStX[s]) {
-                            Lf->sf &= ~SELNET;
-                            Lf->sf |= SELEXCLF;
+                if (s < UdpNumStates) {
+                    if (UdpStateExcludeCount) {
+                        if (UdpStateExclude[s]) {
+                            CurrentLocalFile->sf &= ~SELNET;
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
-                    if (UdpStIn) {
-                        if (UdpStI[s]) {
-                            UdpStI[s] = 2;
-                            Lf->sf |= SELNET;
+                    if (UdpStateIncludeCount) {
+                        if (UdpStateInclude[s]) {
+                            UdpStateInclude[s] = 2;
+                            CurrentLocalFile->sf |= SELNET;
                         } else {
-                            Lf->sf |= SELEXCLF;
+                            CurrentLocalFile->sf |= SELEXCLF;
                             return;
                         }
                     }
                 }
             }
-            if (!(Lf->sf & SELNET) && TcpStIn && !UdpStIn) {
-                if (Fnet) {
-                    if (!FnetTy
-                        || (FnetTy == 4) && (af == AF_INET)
+            if (!(CurrentLocalFile->sf & SELNET) && TcpStateIncludeCount && !UdpStateIncludeCount) {
+                if (OptNetwork) {
+                    if (!OptNetworkType
+                        || (OptNetworkType == 4) && (af == AF_INET)
 
 #if    defined(HASIPv6)
-                        ||  (FnetTy == 6) && (af == AF_INET6)
+                        ||  (OptNetworkType == 6) && (af == AF_INET6)
 #endif    /* defined(HASIPv6) */
 
                             ) {
-                        Lf->sf |= SELNET;
+                        CurrentLocalFile->sf |= SELNET;
                     }
                 }
             }
@@ -1521,7 +1521,7 @@ process_socket(sa, ty)
          */
         if (pcb)
             enter_dev_ch(print_kptr(pcb, (char *) NULL, 0));
-        if (strncmp(Lf->iproto, "UDP", 3) == 0) {
+        if (strncmp(CurrentLocalFile->iproto, "UDP", 3) == 0) {
 
             /*
              * Save UDP address and TPI state.
@@ -1576,13 +1576,13 @@ process_socket(sa, ty)
 
             (void) ent_inaddr(la, (int) ntohs(p), (unsigned char *) NULL,
                               -1, af);
-            if (!Fsize)
-                Lf->off_def = 1;
+            if (!OptSize)
+                CurrentLocalFile->off_def = 1;
             if (ucs) {
-                Lf->lts.type = 1;
-                Lf->lts.state.ui = (unsigned int) uc.udp_state;
+                CurrentLocalFile->lts.type = 1;
+                CurrentLocalFile->lts.state.ui = (unsigned int) uc.udp_state;
             }
-        } else if (strncmp(Lf->iproto, "TCP", 3) == 0) {
+        } else if (strncmp(CurrentLocalFile->iproto, "TCP", 3) == 0) {
             if (ics) {
 
                 /*
@@ -1724,8 +1724,8 @@ process_socket(sa, ty)
             if (tcs) {
                 (void) save_TCP_states(&tc, (caddr_t *) tha, tcbp,
                                        (caddr_t *) NULL);
-                Lf->lts.type = 0;
-                Lf->lts.state.i = (int) tc.tcp_state;
+                CurrentLocalFile->lts.type = 0;
+                CurrentLocalFile->lts.state.i = (int) tc.tcp_state;
             }
             /*
              * Save TCP size information.
@@ -1735,12 +1735,12 @@ process_socket(sa, ty)
                 (void) save_TCP_size(&tc);
         }
     } else
-        (void) strcat(Namech, "no TCP/UDP/IP information available");
+        (void) strcat(NameChars, "no TCP/UDP/IP information available");
 /*
  * Enter name characters if there are some.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }
 
 
@@ -1779,13 +1779,13 @@ read_icmp_t(va, ph, ia, ic)
 # endif	/* defined(HAS_CONN_NEW) */
 
     ) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
         "vnode at %s; proto handle at %s; can't read icmp_t at %s",
         print_kptr(va, tbuf, sizeof(tbuf)),
         print_kptr(ph, tbuf1, sizeof(tbuf1)),
         print_kptr(ia, (char *)NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return(1);
     }
 
@@ -1851,13 +1851,13 @@ read_rts_t(va, ph, ra, rt)
 # endif	/* defined(HAS_CONN_NEW) */
 
     ) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
         "vnode at %s; proto handle at %s; can't read rts_t at %s",
         print_kptr(va, tbuf, sizeof(tbuf)),
         print_kptr(ph, tbuf1, sizeof(tbuf1)),
         print_kptr(ra, (char *)NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return(1);
     }
 
@@ -1913,10 +1913,10 @@ read_udp_t(ua, uc)
 # endif	/* defined(HAS_CONN_NEW) */
 
     ) {
-        (void) snpf(Namech, Namechl, "can't read udp_t: %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read udp_t: %s",
             print_kptr(ua, (char *)NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return(1);
     }
     return(0);
@@ -1937,9 +1937,9 @@ save_TCP_size(tc)
 
 #if    defined(HASTCPTPIQ) || defined(HASTCPTPIW)
 # if	defined(HASTCPTPIW)
-    Lf->lts.rw = (int)tc->tcp_rwnd;
-    Lf->lts.ww = (int)tc->tcp_swnd;
-    Lf->lts.rws = Lf->lts.wws = 1;
+    CurrentLocalFile->lts.rw = (int)tc->tcp_rwnd;
+    CurrentLocalFile->lts.ww = (int)tc->tcp_swnd;
+    CurrentLocalFile->lts.rws = CurrentLocalFile->lts.wws = 1;
 # endif	/* defined(HASTCPTPIW) */
 
     if ((rq = (int)tc->tcp_rnxt - (int)tc->tcp_rack) < 0)
@@ -1948,23 +1948,23 @@ save_TCP_size(tc)
         sq  = 0;
 
 # if	defined(HASTCPTPIQ)
-    Lf->lts.rq = (unsigned long)rq;
-    Lf->lts.sq = (unsigned long)sq;
-    Lf->lts.rqs = Lf->lts.sqs = 1;
+    CurrentLocalFile->lts.rq = (unsigned long)rq;
+    CurrentLocalFile->lts.sq = (unsigned long)sq;
+    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
 # endif	/* defined(HASTCPTPIQ) */
 
-    if (Fsize) {
-        if (Lf->access == 'r')
-        Lf->sz = (SZOFFTYPE)rq;
-        else if (Lf->access == 'w')
-        Lf->sz = (SZOFFTYPE)sq;
+    if (OptSize) {
+        if (CurrentLocalFile->access == 'r')
+        CurrentLocalFile->sz = (SZOFFTYPE)rq;
+        else if (CurrentLocalFile->access == 'w')
+        CurrentLocalFile->sz = (SZOFFTYPE)sq;
         else
-        Lf->sz = (SZOFFTYPE)(rq + sq);
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE)(rq + sq);
+        CurrentLocalFile->sz_def = 1;
     } else
-        Lf->off_def = 1;
+        CurrentLocalFile->off_def = 1;
 #else	/* !defined(HASTCPTPIQ) && !defined(HASTCPTPIW) */
-    Lf->off_def = 1;
+    CurrentLocalFile->off_def = 1;
 #endif    /* defined(HASTCPTPIQ) || defined(HASTCPTPIW) */
 
 }
@@ -1991,60 +1991,60 @@ save_TCP_states(tc, fa, tb, xp)
 
 #if    defined(HASSOOPT)
 # if	defined(HAS_CONN_NEW)
-    if (Ftcptpi & TCPTPI_FLAGS && fa) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS && fa) {
         struct conn_s *cs = (struct conn_s *)fa;
 
         if (cs->conn_broadcast)
-        Lf->lts.opt |= SO_BROADCAST;
+        CurrentLocalFile->lts.opt |= SO_BROADCAST;
         if (cs->conn_debug)
-        Lf->lts.opt |= SO_DEBUG;
+        CurrentLocalFile->lts.opt |= SO_DEBUG;
         if (cs->conn_dgram_errind)
-        Lf->lts.opt |= SO_DGRAM_ERRIND;
+        CurrentLocalFile->lts.opt |= SO_DGRAM_ERRIND;
         if (xp && (((ip_xmit_attr_t *)xp)->ixa_flags & IXAF_DONTROUTE))
-        Lf->lts.opt |= SO_DONTROUTE;
+        CurrentLocalFile->lts.opt |= SO_DONTROUTE;
         if (cs->conn_keepalive) {
-        Lf->lts.opt |= SO_KEEPALIVE;
-        Lf->lts.kai = (unsigned int)tc->tcp_ka_interval;
+        CurrentLocalFile->lts.opt |= SO_KEEPALIVE;
+        CurrentLocalFile->lts.kai = (unsigned int)tc->tcp_ka_interval;
         }
         if (cs->conn_linger) {
-        Lf->lts.opt |= SO_LINGER;
-        Lf->lts.ltm = (unsigned int)cs->conn_lingertime;
+        CurrentLocalFile->lts.opt |= SO_LINGER;
+        CurrentLocalFile->lts.ltm = (unsigned int)cs->conn_lingertime;
         }
         if (cs->conn_oobinline)
-        Lf->lts.opt |= SO_OOBINLINE;
-        Lf->lts.pqlen = (unsigned int)tc->tcp_conn_req_cnt_q0;
-        Lf->lts.qlen = (unsigned int)tc->tcp_conn_req_cnt_q;
-        Lf->lts.qlim = (unsigned int)tc->tcp_conn_req_max;
-        Lf->lts.pqlens = Lf->lts.qlens = Lf->lts.qlims
+        CurrentLocalFile->lts.opt |= SO_OOBINLINE;
+        CurrentLocalFile->lts.pqlen = (unsigned int)tc->tcp_conn_req_cnt_q0;
+        CurrentLocalFile->lts.qlen = (unsigned int)tc->tcp_conn_req_cnt_q;
+        CurrentLocalFile->lts.qlim = (unsigned int)tc->tcp_conn_req_max;
+        CurrentLocalFile->lts.pqlens = CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims
                = (unsigned char)1;
         if (cs->conn_reuseaddr)
-        Lf->lts.opt |= SO_REUSEADDR;
+        CurrentLocalFile->lts.opt |= SO_REUSEADDR;
         if (cs->conn_useloopback)
-        Lf->lts.opt |= SO_USELOOPBACK;
+        CurrentLocalFile->lts.opt |= SO_USELOOPBACK;
 # else	/* !defined(HAS_CONN_NEW) */
-    if (Ftcptpi & TCPTPI_FLAGS) {
+    if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         if (tc->tcp_broadcast)
-        Lf->lts.opt |= SO_BROADCAST;
+        CurrentLocalFile->lts.opt |= SO_BROADCAST;
         if (tc->tcp_debug)
-        Lf->lts.opt |= SO_DEBUG;
+        CurrentLocalFile->lts.opt |= SO_DEBUG;
         if (tc->tcp_dgram_errind)
-        Lf->lts.opt |= SO_DGRAM_ERRIND;
+        CurrentLocalFile->lts.opt |= SO_DGRAM_ERRIND;
         if (tc->tcp_dontroute)
-        Lf->lts.opt |= SO_DONTROUTE;
+        CurrentLocalFile->lts.opt |= SO_DONTROUTE;
         if (tc->KEEPALIVE_INTERVAL) {
-        Lf->lts.opt |= SO_KEEPALIVE;
-        Lf->lts.kai = (unsigned int)tc->KEEPALIVE_INTERVAL;
+        CurrentLocalFile->lts.opt |= SO_KEEPALIVE;
+        CurrentLocalFile->lts.kai = (unsigned int)tc->KEEPALIVE_INTERVAL;
         }
         if (tc->tcp_linger) {
-        Lf->lts.opt |= SO_LINGER;
-        Lf->lts.ltm = (unsigned int)tc->tcp_lingertime;
+        CurrentLocalFile->lts.opt |= SO_LINGER;
+        CurrentLocalFile->lts.ltm = (unsigned int)tc->tcp_lingertime;
         }
         if (tc->tcp_oobinline)
-        Lf->lts.opt |= SO_OOBINLINE;
-        Lf->lts.pqlen = (unsigned int)tc->tcp_conn_req_cnt_q0;
-        Lf->lts.qlen = (unsigned int)tc->tcp_conn_req_cnt_q;
-        Lf->lts.qlim = (unsigned int)tc->tcp_conn_req_max;
-        Lf->lts.pqlens = Lf->lts.qlens = Lf->lts.qlims
+        CurrentLocalFile->lts.opt |= SO_OOBINLINE;
+        CurrentLocalFile->lts.pqlen = (unsigned int)tc->tcp_conn_req_cnt_q0;
+        CurrentLocalFile->lts.qlen = (unsigned int)tc->tcp_conn_req_cnt_q;
+        CurrentLocalFile->lts.qlim = (unsigned int)tc->tcp_conn_req_max;
+        CurrentLocalFile->lts.pqlens = CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims
                = (unsigned char)1;
 
 #  if	solaris>=80000
@@ -2054,11 +2054,11 @@ save_TCP_states(tc, fa, tb, xp)
         if (tb && tb->tcpb_reuseaddr)
 #   endif /* !defined(HAS_IPCLASSIFIER_H) */
 
-        Lf->lts.opt |= SO_REUSEADDR;
+        CurrentLocalFile->lts.opt |= SO_REUSEADDR;
 #  endif	/* solaris>=80000 */
 
         if (tc->tcp_useloopback)
-        Lf->lts.opt |= SO_USELOOPBACK;
+        CurrentLocalFile->lts.opt |= SO_USELOOPBACK;
 # endif /* defined(HAS_CONN_NEW) */
 #endif    /* defined(HASSOOPT) */
 
@@ -2066,22 +2066,22 @@ save_TCP_states(tc, fa, tb, xp)
 # if	defined(ACK_TIMER)
 #  if	!defined(HAS_CONN_NEW)
     if (fa && (((tcph_t *)fa)->th_flags[0] & ACK_TIMER))
-    Lf->lts.topt |= TF_DELACK;
+    CurrentLocalFile->lts.topt |= TF_DELACK;
 #  endif /* !defined(HAS_CONN_NEW) */
 # endif	/* defined(ACK_TIMER) */
 
 # if	solaris<80000 || defined(HAS_IPCLASSIFIER_H)
-    Lf->lts.mss = (unsigned long)tc->tcp_mss;
+    CurrentLocalFile->lts.mss = (unsigned long)tc->tcp_mss;
 # else	/* solaris>=80000 && !defined(HAS_IPCLASSIFIER_H) */
     if (tb)
-    Lf->lts.mss = (unsigned long)tb->tcpb_mss;
+    CurrentLocalFile->lts.mss = (unsigned long)tb->tcpb_mss;
 # endif	/* solaris<80000 || defined(HAS_IPCLASSIFIER_H) */
 
-    Lf->lts.msss = (unsigned char)1;
+    CurrentLocalFile->lts.msss = (unsigned char)1;
     if (tc->tcp_naglim == 1L)
-    Lf->lts.topt |= TF_NODELAY;
+    CurrentLocalFile->lts.topt |= TF_NODELAY;
     if (tc->tcp_fin_sent)
-    Lf->lts.topt |= TF_SENTFIN;
+    CurrentLocalFile->lts.topt |= TF_SENTFIN;
 }
 #endif    /* defined(HASTCPOPT) */
 

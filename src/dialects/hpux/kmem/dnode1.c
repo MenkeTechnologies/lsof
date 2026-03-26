@@ -132,25 +132,25 @@ read_vxnode(v, vfs, dev, devs, rdev, rdevs)
 /*
  * Record inode number.
  */
-    Lf->inode = (INODETYPE)i.i_number;
-    Lf->inp_ty = 1;
+    CurrentLocalFile->inode = (INODETYPE)i.i_number;
+    CurrentLocalFile->inp_ty = 1;
 /*
  * Record size.
  */
-    if (Foffset || ((v->v_type == VCHR || v->v_type == VBLK) && !Fsize))
-        Lf->off_def = 1;
+    if (OptOffset || ((v->v_type == VCHR || v->v_type == VBLK) && !OptSize))
+        CurrentLocalFile->off_def = 1;
     else {
-        Lf->sz = (SZOFFTYPE)i.i_size;
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE)i.i_size;
+        CurrentLocalFile->sz_def = 1;
     }
 /*
  * Record link count.
  */
-    if (Fnlink) {
-        Lf->nlink = (long)i.i_nlink;
-        Lf->nlink_def = 1;
-        if (Nlink && (Lf->nlink < Nlink))
-        Lf->sf |= SELNLINK;
+    if (OptLinkCount) {
+        CurrentLocalFile->nlink = (long)i.i_nlink;
+        CurrentLocalFile->nlink_def = 1;
+        if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+        CurrentLocalFile->sf |= SELNLINK;
     }
     return(0);
 }

@@ -628,13 +628,13 @@ build_Voptab() {
     if (!(Voptab = (v_optab_t **) calloc((MALLOC_S) VOPHASHBINS,
                                          sizeof(v_optab_t)))
             ) {
-        (void) fprintf(stderr, "%s: no space for Voptab\n", Pn);
+        (void) fprintf(stderr, "%s: no space for Voptab\n", ProgramName);
         Exit(1);
     }
     if (!(FxToVoptab = (v_optab_t **) calloc((MALLOC_S) Fsinfomax,
                                              sizeof(v_optab_t *)))
             ) {
-        (void) fprintf(stderr, "%s: no space for FxToVoptab\n", Pn);
+        (void) fprintf(stderr, "%s: no space for FxToVoptab\n", ProgramName);
         Exit(1);
     }
     for (i = 0; i < VXVOP_NUM; i++) {
@@ -675,7 +675,7 @@ build_Voptab() {
 	 */
         if (!(nv = (v_optab_t *) malloc((MALLOC_S)sizeof(v_optab_t)))) {
             (void) fprintf(stderr, "%s: out of Voptab space at: %s\n",
-                           Pn, bp->dnm);
+                           ProgramName, bp->dnm);
             Exit(1);
         }
         nv->fsys = bp->fsys;
@@ -789,7 +789,7 @@ CTF_getmem(f, mod, ty, mem)
  */
     if ((id = ctf_lookup_by_name(f, ty)) == CTF_ERR) {
 	(void) fprintf(stderr, "%s: ctf_lookup_by_name: %s: %s: %s\n",
-	    Pn, mod, ty, ctf_errmsg(ctf_errno(f)));
+	    ProgramName, mod, ty, ctf_errmsg(ctf_errno(f)));
 	return(1);
     }
 /*
@@ -797,7 +797,7 @@ CTF_getmem(f, mod, ty, mem)
  */
     if (ctf_member_iter(f, id, CTF_memCB, mem) == CTF_ERR) {
 	(void) fprintf(stderr, "%s: ctf_member_iter: %s: %s: %s\n",
-	    Pn, mod, ty, ctf_errmsg(ctf_errno(f)));
+	    ProgramName, mod, ty, ctf_errmsg(ctf_errno(f)));
 	return(1);
     }
 /*
@@ -819,7 +819,7 @@ CTF_getmem(f, mod, ty, mem)
 	    if (!xs) {
 		(void) fprintf(stderr,
 		    "%s: getmembers: %s: %s: %s: struct member undefined\n",
-		    Pn, mod, ty, mp->m_name);
+		    ProgramName, mod, ty, mp->m_name);
 	        err = 1;
 	    }
 	} else {
@@ -830,7 +830,7 @@ CTF_getmem(f, mod, ty, mem)
 	    if ((mp->m_offset % NBBY) != 0) {
 		(void) fprintf(stderr,
 		    "%s: getmembers: %s: %s: %s: struct member is bit field\n",
-		    Pn, mod, ty, mp->m_name);
+		    ProgramName, mod, ty, mp->m_name);
 		err = 1;
 	    } else
 		mp->m_offset /= NBBY;
@@ -878,7 +878,7 @@ CTF_init(i, t, r)
  */
     if (!isas) {
 	if (sysinfo(SI_ARCHITECTURE_K, isa, sizeof(isa) - 1) == -1) {
-	    (void) fprintf(stderr, "%s: sysinfo: %s\n", Pn, strerror(errno));
+	    (void) fprintf(stderr, "%s: sysinfo: %s\n", ProgramName, strerror(errno));
 	    Exit(1);
 	}
 	isas = 1;
@@ -926,7 +926,7 @@ CTF_init(i, t, r)
  */
     if ((f = ctf_open(kmp, &err)) == NULL) {
 	(void) fprintf(stderr, "%s: ctf_open: %s: %s\n",
-	    Pn, kmp, ctf_errmsg(err));
+	    ProgramName, kmp, ctf_errmsg(err));
 	Exit(1);
     }
     for (err = 0; r->name; r++) {
@@ -1056,9 +1056,9 @@ is_socket(v)
         pf = "/devices/pseudo/";
 #endif    /* solaris<80000 */
 
-        for (i = n = 0, pfl = (int) strlen(pf); (i < Ndev) && (n < NTCPUDP); i++) {
-            if (strncmp(Devtp[i].name, pf, pfl)
-                || !(ep = strrchr((cp = &Devtp[i].name[pfl]), ':'))
+        for (i = n = 0, pfl = (int) strlen(pf); (i < NumDevices) && (n < NTCPUDP); i++) {
+            if (strncmp(DeviceTable[i].name, pf, pfl)
+                || !(ep = strrchr((cp = &DeviceTable[i].name[pfl]), ':'))
                 || (strncmp(++ep, "tcp", 3) && strncmp(ep, "udp", 3)))
                 continue;
 
@@ -1073,8 +1073,8 @@ is_socket(v)
             for (j = 0; j < NTCPUDP; j++) {
                 if (!tcpudp[j].ds && !strcmp(ep, tcpudp[j].proto)) {
                     tcpudp[j].ds = 1;
-                    tcpudp[j].maj = (major_t) GET_MAJ_DEV(Devtp[i].rdev);
-                    tcpudp[j].min = (minor_t) GET_MIN_DEV(Devtp[i].rdev);
+                    tcpudp[j].maj = (major_t) GET_MAJ_DEV(DeviceTable[i].rdev);
+                    tcpudp[j].min = (minor_t) GET_MIN_DEV(DeviceTable[i].rdev);
                     n++;
                     break;
                 }
@@ -1146,7 +1146,7 @@ isvlocked(va)
 
 #if    solaris < 20500
 # if    solaris > 20300 || (solaris == 20300 && defined(P101318) && P101318 >= 45)
-    if (Ntype == N_NFS)
+    if (NodeType == N_NFS)
 # endif    /* solaris>20300 || (solaris==20300 && defined(P101318) && P101318>=45) */
 
     {
@@ -1156,7 +1156,7 @@ isvlocked(va)
             if (kread(fp, (char *) &f, sizeof(f)))
                 return (' ');
             i++;
-            if (f.set.l_pid != (pid_t) Lp->pid)
+            if (f.set.l_pid != (pid_t) CurrentLocalProc->pid)
                 continue;
             if (f.set.l_whence == 0 && f.set.l_start == 0
                 && f.set.l_len == MAXEND)
@@ -1184,7 +1184,7 @@ isvlocked(va)
 	if (kread(lp, (char *)&ld, sizeof(ld)))
 	    return(' ');
 	i++;
-	if (!(LOCK_FLAGS & ACTIVE_LOCK) || LOCK_OWNER != (pid_t)Lp->pid)
+	if (!(LOCK_FLAGS & ACTIVE_LOCK) || LOCK_OWNER != (pid_t)CurrentLocalProc->pid)
 	    continue;
 	if (LOCK_START == 0
 	&&  (LOCK_END == 0
@@ -1231,7 +1231,7 @@ finddev(dev, rdev, flags)
     struct l_dev *dp;
     struct pseudo *p;
 
-    if (!Sdev)
+    if (!SortedDevices)
         readdev(0);
 /*
  * Search device table for match.
@@ -1255,7 +1255,7 @@ finddev(dev, rdev, flags)
             if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(c->cd.rdev)) {
 
 #if    defined(HASDCACHE)
-                                                                                                                                        if (DCunsafe && !c->cd.v && !vfy_dev(&c->cd))
+                                                                                                                                        if (DevCacheUnsafe && !c->cd.v && !vfy_dev(&c->cd))
 			goto finddev_again;
 #endif    /* defined(HASDCACHE) */
 
@@ -1271,7 +1271,7 @@ finddev(dev, rdev, flags)
             if (GET_MAJ_DEV(*rdev) == GET_MAJ_DEV(p->pd.rdev)) {
 
 #if    defined(HASDCACHE)
-                                                                                                                                        if (DCunsafe && !p->pd.v && !vfy_dev(&p->pd))
+                                                                                                                                        if (DevCacheUnsafe && !p->pd.v && !vfy_dev(&p->pd))
 			goto finddev_again;
 #endif    /* defined(HASDCACHE) */
 
@@ -1311,7 +1311,7 @@ idoorkeep(d)
  * Put the description in the NAME column addition field.  If there's already
  * something there, allocate more space and add the door description to it.
  */
-	if (Lp->pid == (int)dpid.pid_id)
+	if (CurrentLocalProc->pid == (int)dpid.pid_id)
 	    (void) snpf(buf, bufl, "(this PID's door)");
 	else {
 	    (void) snpf(buf, bufl, "(door to %.64s[%ld])", dp.p_user.u_comm,
@@ -1489,7 +1489,7 @@ process_node(va)
 #endif    /* defined(HAS_AFS) */
 
         if (!v) {
-            (void) fprintf(stderr, "%s: can't allocate %s space\n", Pn,
+            (void) fprintf(stderr, "%s: can't allocate %s space\n", ProgramName,
 
 #if    defined(HAS_AFS)
                     "vcache"
@@ -1502,21 +1502,21 @@ process_node(va)
         }
     }
     if (readvnode(va, v)) {
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 
 #if    defined(HASNCACHE)
-    Lf->na = va;
+    CurrentLocalFile->na = va;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
-                                                                                                                            Lf->fna = va;
-	Lf->fsv |= FSV_NI;
+                                                                                                                            CurrentLocalFile->fna = va;
+	CurrentLocalFile->fsv |= FSV_NODE_ID;
 #endif    /* defined(HASFSTRUCT) */
 
 #if    defined(HASLFILEADD) && defined(HAS_V_PATH)
-    Lf->V_path = (KA_T)v->v_path;
+    CurrentLocalFile->V_path = (KA_T)v->v_path;
 #endif    /* defined(HASLFILEADD) && defined(HAS_V_PATH) */
 
     vs = (KA_T) v->v_stream;
@@ -1534,12 +1534,12 @@ process_node(va)
 
             vfs_read_error:
 
-            (void) snpf(Namech, Namechl - 1,
+            (void) snpf(NameChars, NameCharsLength - 1,
                         "vnode at %s: can't read vfs: %s",
                         print_kptr(vka, tbuf, sizeof(tbuf)),
                         print_kptr(ka, (char *) NULL, 0));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
             return;
         }
         kvs = 1;
@@ -1562,32 +1562,32 @@ process_node(va)
 /*
  * Determine the Solaris vnode type.
  */
-    if ((Ntype = vop2ty(v, fx)) < 0) {
+    if ((NodeType = vop2ty(v, fx)) < 0) {
         if (v->v_type == VFIFO) {
             vty = N_REGLR;
-            Ntype = N_FIFO;
+            NodeType = N_FIFO;
         } else if (vs) {
-            Ntype = vty = N_STREAM;
-            Lf->is_stream = 1;
+            NodeType = vty = N_STREAM;
+            CurrentLocalFile->is_stream = 1;
         }
-        if (Ntype < 0) {
-            (void) snpf(Namech, Namechl - 1,
+        if (NodeType < 0) {
+            (void) snpf(NameChars, NameCharsLength - 1,
                         "unknown file system type%s%s%s, v_op: %s",
                         fxs ? " (" : "",
                         fxs ? Fsinfo[fx] : "",
                         fxs ? ")" : "",
                         print_kptr((KA_T) v->v_op, (char *) NULL, 0));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
             return;
         }
     } else {
-        vty = Ntype;
+        vty = NodeType;
         if (v->v_type == VFIFO)
-            Ntype = N_FIFO;
-        else if (vs && Ntype != N_SOCK) {
-            Ntype = vty = N_STREAM;
-            Lf->is_stream = 1;
+            NodeType = N_FIFO;
+        else if (vs && NodeType != N_SOCK) {
+            NodeType = vty = N_STREAM;
+            CurrentLocalFile->is_stream = 1;
         }
     }
 /*
@@ -1604,16 +1604,16 @@ process_node(va)
         if (nn.nm_mountpt)
 
 #if    solaris >= 20500
-                                                                                                                                    fa = ent_fa((KA_T *)((Ntype == N_FIFO || v->v_type == VDOOR)
+                                                                                                                                    fa = ent_fa((KA_T *)((NodeType == N_FIFO || v->v_type == VDOOR)
 			    ? NULL : &va),
 			    (KA_T *)&nn.nm_mountpt, "->", &fal);
 #else	/* solaris<20500 */
-            fa = ent_fa((KA_T * )((Ntype == N_FIFO)
+            fa = ent_fa((KA_T * )((NodeType == N_FIFO)
                                   ? NULL : &va),
                         (KA_T * ) & nn.nm_mountpt, "->", &fal);
 #endif    /* solaris>=20500 */
 
-        if (Ntype != N_FIFO
+        if (NodeType != N_FIFO
             && nn.nm_filevp
             && !kread((KA_T) nn.nm_filevp, (char *) &rv, sizeof(rv))) {
             rvs = 1;
@@ -1629,24 +1629,24 @@ process_node(va)
             }
 
 #if    defined(HASNCACHE)
-            Lf->na = (KA_T)nn.nm_filevp;
+            CurrentLocalFile->na = (KA_T)nn.nm_filevp;
 #endif    /* defined(HASNCACHE) */
 
             if (is_socket(&rv))
                 return;
         }
     }
-    if (Selinet && Ntype != N_SOCK)
+    if (SelectInetOnly && NodeType != N_SOCK)
         return;
 /*
  * See if this Solaris node is served by spec_vnodeops.
  */
     if (Spvops && Spvops == (KA_T) v->v_op)
-        Ntype = N_SPEC;
+        NodeType = N_SPEC;
 /*
  * Determine the Solaris lock state.
  */
-    Lf->lock = isvlocked(v);
+    CurrentLocalFile->lock = isvlocked(v);
 /*
  * Establish the Solaris local virtual file system structure.
  */
@@ -1660,7 +1660,7 @@ process_node(va)
  * Read the afsnode, autonode, cnode, door_node, fifonode, fnnode, lnode,
  * inode, pcnode, rnode, snode, tmpnode, znode, etc.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_SPEC:
 
             /*
@@ -1676,9 +1676,9 @@ process_node(va)
                     return;
                 if (!rv.v_stream) {
                     if (din[0]) {
-                        (void) snpf(Namech, Namechl, "COMMON: %s", din);
-                        Namech[Namechl - 1] = '\0';
-                        Lf->is_com = 1;
+                        (void) snpf(NameChars, NameCharsLength, "COMMON: %s", din);
+                        NameChars[NameCharsLength - 1] = '\0';
+                        CurrentLocalFile->is_com = 1;
                     }
                     break;
                 }
@@ -1691,7 +1691,7 @@ process_node(va)
 	     * pointer, get the module names.
 	     */
                 if ((vty == N_STREAM || vty == N_REGLR) && vs) {
-                    Lf->is_stream = 1;
+                    CurrentLocalFile->is_stream = 1;
                     vty = N_STREAM;
 
 #if    solaris < 100000
@@ -1757,7 +1757,7 @@ process_node(va)
 	case N_CTFSSYM:
 	case N_CTFSTDIR:
 	case N_CTFSTMPL:
-	    if (read_nctfsn(Ntype, va, (KA_T)v->v_data, (char *)&ctfs))
+	    if (read_nctfsn(NodeType, va, (KA_T)v->v_data, (char *)&ctfs))
 		return;
 	    break;
 #endif    /* solaris>=100000 */
@@ -1794,7 +1794,7 @@ process_node(va)
                 realvp = (KA_T) nn.nm_filevp;
 
 #if    defined(HASNCACHE)
-            Lf->na = (KA_T)nn.nm_filevp;
+            CurrentLocalFile->na = (KA_T)nn.nm_filevp;
 #endif    /* defined(HASNCACHE) */
 
             break;
@@ -1816,10 +1816,10 @@ process_node(va)
                     realvp = (KA_T) NULL;
                     vty = N_FIFO;
                 } else {
-                    (void) snpf(Namech, Namechl - 1,
+                    (void) snpf(NameChars, NameCharsLength - 1,
                                 "FIFO namenode at %s: no fifonode pointer",
                                 print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                    Namech[Namechl - 1] = '\0';
+                    NameChars[NameCharsLength - 1] = '\0';
                     return;
                 }
             } else {
@@ -1828,20 +1828,20 @@ process_node(va)
                 realvp = (KA_T) f.fn_realvp;
             }
             if (!realvp) {
-                Lf->inode = (INODETYPE) (nns ? nn.nm_vattr.va_nodeid : f.fn_ino);
+                CurrentLocalFile->inode = (INODETYPE) (nns ? nn.nm_vattr.va_nodeid : f.fn_ino);
 
 #if    solaris >= 80000    /* Solaris 8 and above hack! */
                                                                                                                                         # if	defined(_LP64)
-		if (Lf->inode >= (unsigned long)0xbaddcafebaddcafe)
+		if (CurrentLocalFile->inode >= (unsigned long)0xbaddcafebaddcafe)
 # else	/* !defined(_LP64) */
-		if (Lf->inode >= (unsigned long)0xbaddcafe)
+		if (CurrentLocalFile->inode >= (unsigned long)0xbaddcafe)
 # endif	/* defined(_LP64) */
 
-		    Lf->inp_ty = 0;
+		    CurrentLocalFile->inp_ty = 0;
 		else
 #endif    /* solaris>=80000 Solaris 8 and above hack! */
 
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inp_ty = 1;
                 enter_dev_ch(print_kptr((KA_T) v->v_data, (char *) NULL, 0));
                 if (f.fn_flag & ISPIPE) {
                     (void) snpf(tbuf, sizeof(tbuf), "PIPE");
@@ -1883,11 +1883,11 @@ process_node(va)
                     return;
                 }
                 if (!(realvp = (KA_T) lo.lo_vp)) {
-                    (void) snpf(Namech, Namechl - 1,
+                    (void) snpf(NameChars, NameCharsLength - 1,
                                 "lnode at %s: no real vnode",
                                 print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                    Namech[Namechl - 1] = '\0';
-                    enter_nm(Namech);
+                    NameChars[NameCharsLength - 1] = '\0';
+                    enter_nm(NameChars);
                     return;
                 }
                 if (read_nvn((KA_T) v->v_data, (KA_T) realvp, &rv))
@@ -1905,11 +1905,11 @@ process_node(va)
                     rfxs = fxs;
                 }
                 if (((vty_tmp = vop2ty(&rv, rfx)) == N_LOFS) && (llc > 1000)) {
-                    (void) snpf(Namech, Namechl - 1,
+                    (void) snpf(NameChars, NameCharsLength - 1,
                                 "lnode at %s: loop > 1000",
                                 print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                    Namech[Namechl - 1] = '\0';
-                    enter_nm(Namech);
+                    NameChars[NameCharsLength - 1] = '\0';
+                    enter_nm(NameChars);
                     return;
                 }
             } while (vty_tmp == N_LOFS);
@@ -1950,7 +1950,7 @@ process_node(va)
             if (read_nsn(va, (KA_T) v->v_data, &s))
                 return;
             if (vs) {
-                Lf->is_stream = 1;
+                CurrentLocalFile->is_stream = 1;
 
 #if    solaris < 100000
                 read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
@@ -2002,7 +2002,7 @@ process_node(va)
             else {
 
 #if    defined(HASNCACHE)
-                Lf->na = (KA_T)realvp;
+                CurrentLocalFile->na = (KA_T)realvp;
 #endif    /* defined(HASNCACHE) */
 
                 if ((ka = (KA_T) v->v_vfsp)
@@ -2022,7 +2022,7 @@ process_node(va)
 	 * pointer and if there is no sdev_node, get the module names.
 	 */
         if (vty == N_STREAM && vs && !sdns) {
-            Lf->is_stream = 1;
+            CurrentLocalFile->is_stream = 1;
 
 #if    solaris < 100000
             read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
@@ -2037,30 +2037,30 @@ process_node(va)
 	 * Get the real vnode's type.
 	 */
         if ((vty = vop2ty(v, fx)) < 0) {
-            if (Ntype != N_FIFO && vs)
+            if (NodeType != N_FIFO && vs)
                 vty = N_STREAM;
             else {
 
 #if    solaris < 100000
-                (void) snpf(Namech, Namechl - 1,
+                (void) snpf(NameChars, NameCharsLength - 1,
                             "unknown file system type, v_op: %s",
                             print_kptr((KA_T) v->v_op, (char *) NULL, 0));
 #else	/* solaris>=100000 */
-                                                                                                                                        (void) snpf(Namech, Namechl - 1,
+                                                                                                                                        (void) snpf(NameChars, NameCharsLength - 1,
 			"unknown file system type (%s), v_op: %s",
 			fxs ? Fsinfo[fx] : "unknown",
 			print_kptr((KA_T)v->v_op, (char *)NULL, 0));
 #endif    /* solaris<100000 */
 
-                Namech[Namechl - 1] = '\0';
+                NameChars[NameCharsLength - 1] = '\0';
             }
         }
-        if (Ntype == N_NM || Ntype == N_AFS)
-            Ntype = vty;
+        if (NodeType == N_NM || NodeType == N_AFS)
+            NodeType = vty;
         /*
 	 * Base further processing on the "real" vnode.
 	 */
-        Lf->lock = isvlocked(v);
+        CurrentLocalFile->lock = isvlocked(v);
         switch (vty) {
 
 #if    defined(HAS_AFS)
@@ -2172,14 +2172,14 @@ process_node(va)
                                                                                                                                     case N_SDEV:
 		if (read_nsdn(va, (KA_T)v->v_data, &sdn, &sdva))
 		    return;
-		if (Lf->is_stream) {
+		if (CurrentLocalFile->is_stream) {
 
 		/*
 		 * This stream's real node is an sdev_node, so it's not really
 		 * a stream.  Reverse prior stream settings.
 		 */
-		    Lf->is_stream = 0;
-		    Namech[0] = '\0';
+		    CurrentLocalFile->is_stream = 0;
+		    NameChars[0] = '\0';
 		}
 		sdns = 1;
 		break;
@@ -2197,7 +2197,7 @@ process_node(va)
 
             case N_STREAM:
                 if (vs) {
-                    Lf->is_stream = 1;
+                    CurrentLocalFile->is_stream = 1;
 
 #if    solaris < 100000
                     read_mi(vs, (dev_t * ) & s.s_dev, (caddr_t) & soso, &so_st, so_ad,
@@ -2238,13 +2238,13 @@ process_node(va)
         /*
 	 * If this is a Solaris loopback node, use the "real" node type.
 	 */
-        if (Ntype == N_LOFS)
-            Ntype = vty;
+        if (NodeType == N_LOFS)
+            NodeType = vty;
     }
 /*
  * Get device and type for printing.
  */
-    switch (((Ntype == N_FIFO) || (vty == N_SDEV)) ? vty : Ntype) {
+    switch (((NodeType == N_FIFO) || (vty == N_SDEV)) ? vty : NodeType) {
 
 #if    defined(HAS_AFS)
                                                                                                                                 case N_AFS:
@@ -2443,18 +2443,18 @@ process_node(va)
 	     * Get its device numbers.  If they are located, start the NAME
 	     * column with the device name, followed by "->".
 	     */
-		nm = Namech;
-		nmrl = Namechl - 1;
-		Namech[Namechl - 1] = '\0';
+		nm = NameChars;
+		nmrl = NameCharsLength - 1;
+		NameChars[NameCharsLength - 1] = '\0';
 		if (!sdp)
-		    sdp = finddev(&DevDev, &sti.sti_dev, LOOKDEV_ALL);
+		    sdp = finddev(&DeviceOfDev, &sti.sti_dev, LOOKDEV_ALL);
 		if (sdp) {
-		    dev = DevDev;
+		    dev = DeviceOfDev;
 		    rdev = v->v_rdev;
 		    trdev = sdp->rdev;
 		    devs = rdevs = trdevs = 1;
-		    Lf->inode = (INODETYPE)sdp->inode;
-		    Lf->inp_ty = 1;
+		    CurrentLocalFile->inode = (INODETYPE)sdp->inode;
+		    CurrentLocalFile->inp_ty = 1;
 		    (void) snpf(nm, nmrl, "%s", sdp->name);
 		    tl = strlen(nm);
 		    nm += tl;
@@ -2533,9 +2533,9 @@ process_node(va)
 		&&  ((len = read_nusa(&sti.sti_laddr, &ua)) > 0)
 		&&  (nmrl > (len + 5))
 		) {
-		    if (Sfile
-		    &&  is_file_named(ua.sun_path, Ntype, VSOCK, 0))
-			Lf->sf |= SELNM;
+		    if (SearchFileChain
+		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
+			CurrentLocalFile->sf |= SELNM;
 		    if (len > nmrl)
 			len = nmrl;
 		    if (len > 0) {
@@ -2550,9 +2550,9 @@ process_node(va)
 		&&  ((len = read_nusa(&sti.sti_faddr, &ua)) > 0)
 		&&  (nmrl > (len + 5))
 		) {
-		    if (Sfile
-		    &&  is_file_named(ua.sun_path, Ntype, VSOCK, 0))
-			Lf->sf |= SELNM;
+		    if (SearchFileChain
+		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
+			CurrentLocalFile->sf |= SELNM;
 		    if (len > nmrl)
 			len = nmrl;
 		    if (len > 0) {
@@ -2585,13 +2585,13 @@ process_node(va)
 	     *	  Locate its device numbers;
 	     *    Enter the sonode address as the device (netstat's local
 	     *	  address);
-	     *    Get a non-NULL local sockaddr_un and enter it in Namech;
-	     *    Get a non-NULL foreign sockaddr_un and enter it in Namech;
+	     *    Get a non-NULL local sockaddr_un and enter it in NameChars;
+	     *    Get a non-NULL foreign sockaddr_un and enter it in NameChars;
 	     *    Check for matches on sockaddr_un.sun_path names.
 	     */
 
 		if (!sdp)
-		    sdp = finddev(&DevDev,
+		    sdp = finddev(&DeviceOfDev,
 
 #  if	solaris<100000
 				  &so.so_vnode.v_rdev,
@@ -2602,7 +2602,7 @@ process_node(va)
 				  LOOKDEV_ALL);
 
 		if (sdp) {
-		    dev = DevDev;
+		    dev = DeviceOfDev;
 
 #  if	solaris<100000
 		    rdev = so.so_vnode.v_rdev;
@@ -2612,40 +2612,40 @@ process_node(va)
 
 		    trdev = sdp->rdev;
 		    devs = rdevs = trdevs = 1;
-		    Lf->inode = (INODETYPE)sdp->inode;
-		    Lf->inp_ty = 1;
-		    (void) snpf(Namech, Namechl - 1, "%s", sdp->name);
-		    Namech[Namechl - 1] = '\0';
+		    CurrentLocalFile->inode = (INODETYPE)sdp->inode;
+		    CurrentLocalFile->inp_ty = 1;
+		    (void) snpf(NameChars, NameCharsLength - 1, "%s", sdp->name);
+		    NameChars[NameCharsLength - 1] = '\0';
 		} else
 		    devs = 0;
-		nl = snl = (int)strlen(Namech);
+		nl = snl = (int)strlen(NameChars);
 
 		if ((len = read_nusa(&so.so_laddr, &ua)))
 		{
-		    if (Sfile
-		    &&  is_file_named(ua.sun_path, Ntype, VSOCK, 0))
-			Lf->sf |= SELNM;
-		    sepl = Namech[0] ? 2 : 0;
-		    if (len > (Namechl - nl - sepl - 1))
-			len = Namechl - nl - sepl - 1;
+		    if (SearchFileChain
+		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
+			CurrentLocalFile->sf |= SELNM;
+		    sepl = NameChars[0] ? 2 : 0;
+		    if (len > (NameCharsLength - nl - sepl - 1))
+			len = NameCharsLength - nl - sepl - 1;
 		    if (len > 0) {
 			ua.sun_path[len] = '\0';
-			(void) snpf(&Namech[nl], Namechl - nl, "%s%s",
+			(void) snpf(&NameChars[nl], NameCharsLength - nl, "%s%s",
 			    sepl ? "->" : "", ua.sun_path);
 			nl += (len + sepl);
 		    }
 		}
 		if ((len = read_nusa(&so.so_faddr, &ua)))
 		{
-		    if (Sfile
-		    &&  is_file_named(ua.sun_path, Ntype, VSOCK, 0))
-			Lf->sf |= SELNM;
-		    sepl = Namech[0] ? 2 : 0;
-		    if (len > (Namechl - nl - sepl - 1))
-			len = Namechl - nl - sepl - 1;
+		    if (SearchFileChain
+		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
+			CurrentLocalFile->sf |= SELNM;
+		    sepl = NameChars[0] ? 2 : 0;
+		    if (len > (NameCharsLength - nl - sepl - 1))
+			len = NameCharsLength - nl - sepl - 1;
 		    if (len > 0) {
 			ua.sun_path[len] = 0;
-			(void) snpf(&Namech[nl], Namechl - nl, "%s%s",
+			(void) snpf(&NameChars[nl], NameCharsLength - nl, "%s%s",
 			    sepl ? "->" : "", ua.sun_path);
 			nl += (len + sepl);
 		    }
@@ -2679,11 +2679,11 @@ process_node(va)
 		    else
 			(void) snpf(ubuf, sizeof(ubuf), "(socketpair)");
 		    len = (int)strlen(ubuf);
-		    sepl = Namech[0] ? 2 : 0;
-		    if (len > (Namechl - nl - sepl - 1))
-			len = Namechl - nl - sepl - 1;
+		    sepl = NameChars[0] ? 2 : 0;
+		    if (len > (NameCharsLength - nl - sepl - 1))
+			len = NameCharsLength - nl - sepl - 1;
 		    if (len > 0) {
-			(void) snpf(&Namech[nl], Namechl - nl, "%s%s",
+			(void) snpf(&NameChars[nl], NameCharsLength - nl, "%s%s",
 			    sepl ? "->" : "", ubuf);
 			nl += (len + sepl);
 		    }
@@ -2700,13 +2700,13 @@ process_node(va)
 #  endif	/* defined(HASSOUXSOUA) */
 
 		(void) snpf(ubuf, sizeof(ubuf), "%s(%s%s%s)",
-		    Namech[0] ? " " : "",
+		    NameChars[0] ? " " : "",
 		    print_kptr((KA_T)v->v_data, (char *)NULL, 0),
 		    soa ? "->" : "",
 		    soa ? print_kptr(soa, tbuf, sizeof(tbuf)) : "");
 		len = (int)strlen(ubuf);
-		if (len <= (Namechl - nl - 1)) {
-		    (void) snpf(&Namech[nl], Namechl - nl, "%s", ubuf);
+		if (len <= (NameCharsLength - nl - 1)) {
+		    (void) snpf(&NameChars[nl], NameCharsLength - nl, "%s", ubuf);
 		    nl += len;
 		}
 	    /*
@@ -2715,11 +2715,11 @@ process_node(va)
 
 		if (so.so_ux_bound_vp) {
 		    (void) snpf(ubuf, sizeof(ubuf), "%s(Vnode=%s)",
-			Namech[0] ? " " : "",
+			NameChars[0] ? " " : "",
 			print_kptr((KA_T)so.so_ux_bound_vp, (char *)NULL, 0));
 		    len = (int)strlen(ubuf);
-		    if (len <= (Namechl - nl - 1)) {
-			(void) snpf(&Namech[nl], Namechl - nl, "%s", ubuf);
+		    if (len <= (NameCharsLength - nl - 1)) {
+			(void) snpf(&NameChars[nl], NameCharsLength - nl, "%s", ubuf);
 			nl += len;
 		    }
 		}
@@ -2733,9 +2733,9 @@ process_node(va)
         case N_SPEC:
 
 #if    solaris < 100000
-            if (((Ntype = vty) == N_STREAM) && so_st) {
-                if (Funix)
-                    Lf->sf |= SELUNX;
+            if (((NodeType = vty) == N_STREAM) && so_st) {
+                if (OptUnixSocket)
+                    CurrentLocalFile->sf |= SELUNX;
                 unix_sock = 1;
                 if (so_ad[0]) {
                     if (sdp) {
@@ -2745,8 +2745,8 @@ process_node(va)
                         }
                         rdev = sdp->rdev;
                         rdevs = 1;
-                        Lf->inode = (INODETYPE) sdp->inode;
-                        Lf->inp_ty = 1;
+                        CurrentLocalFile->inode = (INODETYPE) sdp->inode;
+                        CurrentLocalFile->inp_ty = 1;
                         (void) snpf(ubuf, sizeof(ubuf), "(%s%s%s)",
                                     print_kptr(so_ad[0], (char *) NULL, 0),
                                     so_ad[1] ? "->" : "",
@@ -2758,9 +2758,9 @@ process_node(va)
                             (void) snpf(ubuf, sizeof(ubuf), "(->%s)",
                                         print_kptr(so_ad[1], (char *) NULL, 0));
                     }
-                    if (!Lf->nma && (Lf->nma = (char *)
+                    if (!CurrentLocalFile->nma && (CurrentLocalFile->nma = (char *)
                             malloc((int) strlen(ubuf) + 1))) {
-                        (void) snpf(Lf->nma, (int) strlen(ubuf) + 1, "%s", ubuf);
+                        (void) snpf(CurrentLocalFile->nma, (int) strlen(ubuf) + 1, "%s", ubuf);
                     }
                 } else if (soso.lux_dev.addr.tu_addr.ino) {
                     if (vfs) {
@@ -2789,17 +2789,17 @@ process_node(va)
                         == 0) {
                         ua.sun_path[sizeof(ua.sun_path) - 1] = '\0';
                         if (ua.sun_path[0]) {
-                            if (Sfile
-                                && is_file_named(ua.sun_path, Ntype, type, 0))
-                                Lf->sf |= SELNM;
+                            if (SearchFileChain
+                                && is_file_named(ua.sun_path, NodeType, type, 0))
+                                CurrentLocalFile->sf |= SELNM;
                             len = (int) strlen(ua.sun_path);
-                            nl = (int) strlen(Namech);
-                            sepl = Namech[0] ? 2 : 0;
-                            if (len > (Namechl - nl - sepl - 1))
-                                len = Namechl - nl - sepl - 1;
+                            nl = (int) strlen(NameChars);
+                            sepl = NameChars[0] ? 2 : 0;
+                            if (len > (NameCharsLength - nl - sepl - 1))
+                                len = NameCharsLength - nl - sepl - 1;
                             if (len > 0) {
                                 ua.sun_path[len] = '\0';
-                                (void) snpf(&Namech[nl], Namechl - nl, "%s%s",
+                                (void) snpf(&NameChars[nl], NameCharsLength - nl, "%s%s",
                                             sepl ? "->" : "", ua.sun_path);
                             }
                         }
@@ -2880,7 +2880,7 @@ process_node(va)
         (void) completevfs(vfs, &dev);
 
 #if    defined(HAS_AFS)
-                                                                                                                                if (vfs->dir && (Ntype == N_AFS || vty == N_AFS) && !AFSVfsp)
+                                                                                                                                if (vfs->dir && (NodeType == N_AFS || vty == N_AFS) && !AFSVfsp)
 		AFSVfsp = (KA_T)v->v_vfsp;
 #endif    /* defined(HAS_AFS) */
 
@@ -2893,8 +2893,8 @@ process_node(va)
 #if    defined(HAS_AFS)
                                                                                                                                 case N_AFS:
 	    if (an.ino_st) {
-		Lf->inode = (INODETYPE)an.inode;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = (INODETYPE)an.inode;
+		CurrentLocalFile->inp_ty = 1;
 	    }
 	    break;
 #endif    /* defined(HAS_AFS) */
@@ -2903,38 +2903,38 @@ process_node(va)
                                                                                                                                 case N_AUTO:
 
 # if	solaris<20600
-	    Lf->inode = (INODETYPE)au.an_nodeid;
+	    CurrentLocalFile->inode = (INODETYPE)au.an_nodeid;
 # else	/* solaris>=20600 */
-	    Lf->inode = (INODETYPE)fnn.fn_nodeid;
+	    CurrentLocalFile->inode = (INODETYPE)fnn.fn_nodeid;
 # endif	/* solaris<20600 */
 
-	    Lf->inp_ty = 1;
+	    CurrentLocalFile->inp_ty = 1;
 	    break;
 
 # if	solaris>=100000
 	case N_DEV:
 	    if (dvs) {
-		Lf->inode = (INODETYPE)dv.dv_ino;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = (INODETYPE)dv.dv_ino;
+		CurrentLocalFile->inp_ty = 1;
 	    }
 	    break;
 # endif	/* solaris>=100000 */
 
 	case N_DOOR:
-	    if (nns && (Lf->inode = (INODETYPE)nn.nm_vattr.va_nodeid)) {
-		Lf->inp_ty = 1;
+	    if (nns && (CurrentLocalFile->inode = (INODETYPE)nn.nm_vattr.va_nodeid)) {
+		CurrentLocalFile->inp_ty = 1;
 		break;
 	    }
 	    if (dns) {
-		if ((Lf->inode = (INODETYPE)dn.door_index))
-		    Lf->inp_ty = 1;
+		if ((CurrentLocalFile->inode = (INODETYPE)dn.door_index))
+		    CurrentLocalFile->inp_ty = 1;
 	    }
 	    break;
 #endif    /* solaris>=20500 */
 
         case N_CACHE:
-            Lf->inode = (INODETYPE) cn.c_fileno;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) cn.c_fileno;
+            CurrentLocalFile->inp_ty = 1;
             break;
 
 #if    solaris >= 100000
@@ -2955,45 +2955,45 @@ process_node(va)
 
         case N_FD:
             if (v->v_type == VDIR)
-                Lf->inode = (INODETYPE) 2;
+                CurrentLocalFile->inode = (INODETYPE) 2;
             else
-                Lf->inode = (INODETYPE) (GET_MIN_DEV(v->v_rdev) * 100);
-            Lf->inp_ty = 1;
+                CurrentLocalFile->inode = (INODETYPE) (GET_MIN_DEV(v->v_rdev) * 100);
+            CurrentLocalFile->inp_ty = 1;
             break;
         case N_HSFS:
-            Lf->inode = (INODETYPE) h.hs_nodeid;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) h.hs_nodeid;
+            CurrentLocalFile->inp_ty = 1;
             break;
 
         case N_MNT:
 
 #if    defined(HASFSINO)
                                                                                                                                     if (vfs) {
-		Lf->inode = vfs->fs_ino;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = vfs->fs_ino;
+		CurrentLocalFile->inp_ty = 1;
 	    }
 #endif    /* defined(HASFSINO) */
 
             break;
         case N_MVFS:
-            Lf->inode = (INODETYPE) m.m_ino;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) m.m_ino;
+            CurrentLocalFile->inp_ty = 1;
             break;
         case N_NFS:
-            Lf->inode = (INODETYPE) r.r_attr.va_nodeid;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) r.r_attr.va_nodeid;
+            CurrentLocalFile->inp_ty = 1;
             break;
 
 #if    solaris >= 100000
                                                                                                                                 case N_NFS4:
-	    Lf->inode = (INODETYPE)r4.r_attr.va_nodeid;
-	    Lf->inp_ty = 1;
+	    CurrentLocalFile->inode = (INODETYPE)r4.r_attr.va_nodeid;
+	    CurrentLocalFile->inp_ty = 1;
 	    break;
 #endif    /* solaris>=100000 */
 
         case N_NM:
-            Lf->inode = (INODETYPE) nn.nm_vattr.va_nodeid;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) nn.nm_vattr.va_nodeid;
+            CurrentLocalFile->inp_ty = 1;
             break;
 
 #if    defined(HASPROCFS)
@@ -3012,7 +3012,7 @@ process_node(va)
 
 #if    solaris >= 70000
                                                                                                                                         # if	defined(HAS_PC_DIRENTPERSEC)
-		Lf->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
+		CurrentLocalFile->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
 			    pc.pc_eoffset,
 			    pc.pc_entry.pcd_attr,
 			    IS_FAT32(&pcfs)
@@ -3021,7 +3021,7 @@ process_node(va)
 				: ltohs(pc.pc_entry.pcd_scluster_lo),
 			    pc_direntpersec(&pcfs));
 # else	/* !defined(HAS_PC_DIRENTPERSEC) */
-		Lf->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
+		CurrentLocalFile->inode = (INODETYPE)pc_makenodeid(pc.pc_eblkno,
 			    pc.pc_eoffset,
 			    pc.pc_entry.pcd_attr,
 			    IS_FAT32(&pcfs)
@@ -3031,23 +3031,23 @@ process_node(va)
 			    pcfs.pcfs_entps);
 # endif	/* defined(HAS_PC_DIRENTPERSEC) */
 #else	/* solaris<70000 */
-                Lf->inode = (INODETYPE) pc_makenodeid(pc.pc_eblkno,
+                CurrentLocalFile->inode = (INODETYPE) pc_makenodeid(pc.pc_eblkno,
                                                       pc.pc_eoffset,
                                                       &pc.pc_entry,
                                                       pcfs.pcfs_entps);
 #endif    /* solaris>=70000 */
 
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inp_ty = 1;
             }
             break;
 
         case N_REGLR:
             if (nns) {
-                if ((Lf->inode = (INODETYPE) nn.nm_vattr.va_nodeid))
-                    Lf->inp_ty = 1;
+                if ((CurrentLocalFile->inode = (INODETYPE) nn.nm_vattr.va_nodeid))
+                    CurrentLocalFile->inp_ty = 1;
             } else if (ins) {
-                if ((Lf->inode = (INODETYPE) i.i_number))
-                    Lf->inp_ty = 1;
+                if ((CurrentLocalFile->inode = (INODETYPE) i.i_number))
+                    CurrentLocalFile->inp_ty = 1;
             }
             break;
         case N_SAMFS:
@@ -3056,50 +3056,50 @@ process_node(va)
 #if    solaris >= 110000
                                                                                                                                 case N_SDEV:
 	    if (sdns) {
-		Lf->inode = (INODETYPE)sdva.va_nodeid;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = (INODETYPE)sdva.va_nodeid;
+		CurrentLocalFile->inp_ty = 1;
 	    }
 	    break;
 #endif    /* solaris>=110000 */
 
         case N_SHARED:
-            (void) snpf(Lf->iproto, sizeof(Lf->iproto), "SHARED");
-            Lf->inp_ty = 2;
+            (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "SHARED");
+            CurrentLocalFile->inp_ty = 2;
             break;
         case N_STREAM:
 
 #if    solaris < 100000
             if (so_st && soso.lux_dev.addr.tu_addr.ino) {
-                if (Lf->inp_ty) {
-                    nl = Lf->nma ? (int) strlen(Lf->nma) : 0;
+                if (CurrentLocalFile->inp_ty) {
+                    nl = CurrentLocalFile->nma ? (int) strlen(CurrentLocalFile->nma) : 0;
                     (void) snpf(ubuf, sizeof(ubuf),
                                 "%s(Inode=%lu)", nl ? " " : "",
                                 (unsigned long) soso.lux_dev.addr.tu_addr.ino);
                     len = nl + (int) strlen(ubuf) + 1;
-                    if (Lf->nma)
-                        Lf->nma = (char *) realloc(Lf->nma, len);
+                    if (CurrentLocalFile->nma)
+                        CurrentLocalFile->nma = (char *) realloc(CurrentLocalFile->nma, len);
                     else
-                        Lf->nma = (char *) malloc(len);
-                    if (Lf->nma)
-                        (void) snpf(&Lf->nma[nl], len - nl, "%s", ubuf);
+                        CurrentLocalFile->nma = (char *) malloc(len);
+                    if (CurrentLocalFile->nma)
+                        (void) snpf(&CurrentLocalFile->nma[nl], len - nl, "%s", ubuf);
                 } else {
-                    Lf->inode = (INODETYPE) soso.lux_dev.addr.tu_addr.ino;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE) soso.lux_dev.addr.tu_addr.ino;
+                    CurrentLocalFile->inp_ty = 1;
                 }
             }
 #endif    /* solaris<100000 */
 
             break;
         case N_TMP:
-            Lf->inode = (INODETYPE) t.tn_attr.va_nodeid;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE) t.tn_attr.va_nodeid;
+            CurrentLocalFile->inp_ty = 1;
             break;
 
 #if    defined(HASVXFS)
                                                                                                                                 case N_VXFS:
 	    if (vx.ino_def) {
-		Lf->inode = (INODETYPE)vx.ino;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = (INODETYPE)vx.ino;
+		CurrentLocalFile->inp_ty = 1;
 	    } else if (type == VCHR)
 		pnl = 1;
 	    break;
@@ -3108,8 +3108,8 @@ process_node(va)
 #if    defined(HAS_ZFS)
                                                                                                                                 case N_ZFS:
 	    if (zns) {
-		Lf->inode = (INODETYPE)zn.z_id;
-		Lf->inp_ty = 1;
+		CurrentLocalFile->inode = (INODETYPE)zn.z_id;
+		CurrentLocalFile->inp_ty = 1;
 	    }
 	    break;
 #endif    /* defined(HAS_ZFS) */
@@ -3118,15 +3118,15 @@ process_node(va)
 /*
  * Obtain the file size.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        switch (Ntype) {
+        switch (NodeType) {
 
 #if    defined(HAS_AFS)
                                                                                                                                     case N_AFS:
-		Lf->sz = (SZOFFTYPE)an.size;
-		Lf->sz_def = 1;
+		CurrentLocalFile->sz = (SZOFFTYPE)an.size;
+		CurrentLocalFile->sz_def = 1;
 		break;
 #endif    /* defined(HAS_AFS) */
 
@@ -3134,18 +3134,18 @@ process_node(va)
                                                                                                                                     case N_AUTO:
 
 # if	solaris<20600
-		Lf->sz = (SZOFFTYPE)au.an_size;
+		CurrentLocalFile->sz = (SZOFFTYPE)au.an_size;
 # else	/* solaris >=20600 */
-		Lf->sz = (SZOFFTYPE)fnn.fn_size;
+		CurrentLocalFile->sz = (SZOFFTYPE)fnn.fn_size;
 # endif	/* solaris < 20600 */
 
-		Lf->sz_def = 1;
+		CurrentLocalFile->sz_def = 1;
 		break;
 #endif    /* solaris>=20500 */
 
             case N_CACHE:
-                Lf->sz = (SZOFFTYPE) cn.c_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) cn.c_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
 
 #if    solaris >= 100000
@@ -3166,82 +3166,82 @@ process_node(va)
 
             case N_FD:
                 if (v->v_type == VDIR)
-                    Lf->sz = (Unof + 2) * 16;
+                    CurrentLocalFile->sz = (Unof + 2) * 16;
                 else
-                    Lf->sz = (unsigned long) 0;
-                Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (unsigned long) 0;
+                CurrentLocalFile->sz_def = 1;
                 break;
 
 #if    solaris >= 20600
                                                                                                                                     case N_SOCK:
-		Lf->off_def = 1;
+		CurrentLocalFile->off_def = 1;
 		break;
 #endif    /* solaris>=20600 */
 
             case N_HSFS:
-                Lf->sz = (SZOFFTYPE) h.hs_dirent.ext_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) h.hs_dirent.ext_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
             case N_NM:
-                Lf->sz = (SZOFFTYPE) nn.nm_vattr.va_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) nn.nm_vattr.va_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
 
 # if    solaris >= 100000
                                                                                                                                     case N_DEV:
-		if (!Fsize)
-		    Lf->off_def = 1;
+		if (!OptSize)
+		    CurrentLocalFile->off_def = 1;
 		break;
 # endif    /* solaris>=100000 */
 
             case N_DOOR:
             case N_FIFO:
-                if (!Fsize)
-                    Lf->off_def = 1;
+                if (!OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
             case N_MNT:
 
 #if    defined(CVFS_SZSAVE)
                                                                                                                                         if (vfs) {
-		    Lf->sz = (SZOFFTYPE)vfs->size;
-		    Lf->sz_def = 1;
+		    CurrentLocalFile->sz = (SZOFFTYPE)vfs->size;
+		    CurrentLocalFile->sz_def = 1;
 		} else
 #endif    /* defined(CVFS_SZSAVE) */
 
-                Lf->off_def = 1;
+                CurrentLocalFile->off_def = 1;
                 break;
             case N_MVFS:
                 /* The location of file size isn't known. */
                 break;
             case N_NFS:
-                if ((type == VCHR || type == VBLK) && !Fsize)
-                    Lf->off_def = 1;
+                if ((type == VCHR || type == VBLK) && !OptSize)
+                    CurrentLocalFile->off_def = 1;
                 else {
-                    Lf->sz = (SZOFFTYPE) r.r_size;
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE) r.r_size;
+                    CurrentLocalFile->sz_def = 1;
                 }
                 break;
 
 #if    solaris >= 100000
                                                                                                                                     case N_NFS4:
-		if ((type == VCHR || type == VBLK) && !Fsize)
-		    Lf->off_def = 1;
+		if ((type == VCHR || type == VBLK) && !OptSize)
+		    CurrentLocalFile->off_def = 1;
 		else {
-		    Lf->sz = (SZOFFTYPE)r4.r_size;
-		    Lf->sz_def = 1;
+		    CurrentLocalFile->sz = (SZOFFTYPE)r4.r_size;
+		    CurrentLocalFile->sz_def = 1;
 		}
 		break;
 #endif    /* solaris>=100000 */
 
             case N_PCFS:
-                Lf->sz = (SZOFFTYPE) pc.pc_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) pc.pc_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
 
 #if    solaris >= 100000
                                                                                                                                     case N_PORT:
-		Lf->sz = (SZOFFTYPE)pn.port_curr;
-		Lf->sz_def = 1;
+		CurrentLocalFile->sz = (SZOFFTYPE)pn.port_curr;
+		CurrentLocalFile->sz_def = 1;
 		break;
 #endif    /* solaris>=100000 */
 
@@ -3259,22 +3259,22 @@ process_node(va)
             case N_REGLR:
                 if (type == VREG || type == VDIR) {
                     if (ins | nns) {
-                        Lf->sz = (SZOFFTYPE) (nns ? nn.nm_vattr.va_size
+                        CurrentLocalFile->sz = (SZOFFTYPE) (nns ? nn.nm_vattr.va_size
                                                   : i.i_size);
-                        Lf->sz_def = 1;
+                        CurrentLocalFile->sz_def = 1;
                     }
-                } else if ((type == VCHR || type == VBLK) && !Fsize)
-                    Lf->off_def = 1;
+                } else if ((type == VCHR || type == VBLK) && !OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
 
 #if    solaris >= 110000
                                                                                                                                     case N_SDEV:
 		if (sdns) {
 		    if (type == VREG || type == VDIR) {
-			Lf->sz = (SZOFFTYPE)sdva.va_size;
-			Lf->sz_def = 1;
-		    } else if ((type == VCHR || type == VBLK) && !Fsize)
-			Lf->off_def = 1;
+			CurrentLocalFile->sz = (SZOFFTYPE)sdva.va_size;
+			CurrentLocalFile->sz_def = 1;
+		    } else if ((type == VCHR || type == VBLK) && !OptSize)
+			CurrentLocalFile->off_def = 1;
 		}
 		break;
 #endif    /* solaris>=110000 */
@@ -3284,21 +3284,21 @@ process_node(va)
             case N_SHARED:
                 break;        /* No more sharedfs information is available. */
             case N_STREAM:
-                if (!Fsize)
-                    Lf->off_def = 1;
+                if (!OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
             case N_TMP:
-                Lf->sz = (SZOFFTYPE) t.tn_attr.va_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE) t.tn_attr.va_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
 
 #if    defined(HASVXFS)
                                                                                                                                     case N_VXFS:
 		if (type == VREG || type == VDIR) {
-		    Lf->sz = (SZOFFTYPE)vx.sz;
-		    Lf->sz_def = vx.sz_def;
-		} else if ((type == VCHR || type == VBLK) && !Fsize)
-		    Lf->off_def = 1;
+		    CurrentLocalFile->sz = (SZOFFTYPE)vx.sz;
+		    CurrentLocalFile->sz_def = vx.sz_def;
+		} else if ((type == VCHR || type == VBLK) && !OptSize)
+		    CurrentLocalFile->off_def = 1;
 		break;
 #endif    /* defined(HASVXFS) */
 
@@ -3306,10 +3306,10 @@ process_node(va)
                                                                                                                                     case N_ZFS:
 		if (zns) {
 		    if (type == VREG || type == VDIR) {
-			Lf->sz = (SZOFFTYPE)zn.z_size;
-			Lf->sz_def = 1;
-		    } else if ((type == VCHR || type == VBLK) && !Fsize)
-			Lf->off_def = 1;
+			CurrentLocalFile->sz = (SZOFFTYPE)zn.z_size;
+			CurrentLocalFile->sz_def = 1;
+		    } else if ((type == VCHR || type == VBLK) && !OptSize)
+			CurrentLocalFile->off_def = 1;
 		}
 		break;
 #endif    /* defined(HAS_ZFS) */
@@ -3321,16 +3321,16 @@ process_node(va)
  */
 
 #if    !defined(HASXOPT)
-    if (Fnlink)
+    if (OptLinkCount)
 #endif    /* !defined(HASXOPT) */
 
     {
-        switch (Ntype) {
+        switch (NodeType) {
 
 #if    defined(HAS_AFS)
                                                                                                                                     case N_AFS:
-		Lf->nlink = an.nlink;
-		Lf->nlink_def = an.nlink_st;
+		CurrentLocalFile->nlink = an.nlink;
+		CurrentLocalFile->nlink_def = an.nlink_st;
 		break;
 #endif    /* defined(HAS_AFS) */
 
@@ -3338,8 +3338,8 @@ process_node(va)
                                                                                                                                     case N_AUTO:
 		break;
 	    case N_CACHE:
-		Lf->nlink = (long)cn.c_attr.va_nlink;
-		Lf->nlink_def = 1;
+		CurrentLocalFile->nlink = (long)cn.c_attr.va_nlink;
+		CurrentLocalFile->nlink_def = 1;
 		break;
 #endif    /* solaris>=20500 */
 
@@ -3360,8 +3360,8 @@ process_node(va)
 #endif    /* solaris>=100000 */
 
             case N_FD:
-                Lf->nlink = (v->v_type == VDIR) ? 2 : 1;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (v->v_type == VDIR) ? 2 : 1;
+                CurrentLocalFile->nlink_def = 1;
                 break;
 
 #if    solaris >= 20600
@@ -3370,26 +3370,26 @@ process_node(va)
 #endif    /* solaris>=20600 */
 
             case N_HSFS:
-                Lf->nlink = (long) h.hs_dirent.nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) h.hs_dirent.nlink;
+                CurrentLocalFile->nlink_def = 1;
                 break;
             case N_NM:
-                Lf->nlink = (long) nn.nm_vattr.va_nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) nn.nm_vattr.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
                 break;
 
 # if    solaris >= 100000
                                                                                                                                     case N_DEV:
 		if (dvs) {
-		    Lf->nlink = (long)dv.dv_nlink;
-		    Lf->nlink_def = 1;
+		    CurrentLocalFile->nlink = (long)dv.dv_nlink;
+		    CurrentLocalFile->nlink_def = 1;
 		}
 		break;
 # endif    /* solaris>=100000 */
 
             case N_DOOR:
-                Lf->nlink = (long) v->v_count;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) v->v_count;
+                CurrentLocalFile->nlink_def = 1;
                 break;
             case N_FIFO:
                 break;
@@ -3397,8 +3397,8 @@ process_node(va)
 
 #if    defined(CVFS_NLKSAVE)
                                                                                                                                         if (vfs) {
-		    Lf->nlink = (long)vfs->nlink;
-		    Lf->nlink_def = 1;
+		    CurrentLocalFile->nlink = (long)vfs->nlink;
+		    CurrentLocalFile->nlink_def = 1;
 		}
 #endif    /* defined(CVFS_NLKSAVE) */
 
@@ -3406,14 +3406,14 @@ process_node(va)
             case N_MVFS:            /* no link count */
                 break;
             case N_NFS:
-                Lf->nlink = (long) r.r_attr.va_nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) r.r_attr.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
                 break;
 
 #if    solaris >= 100000
                                                                                                                                     case N_NFS4:
-		Lf->nlink = (long)r4.r_attr.va_nlink;
-		Lf->nlink_def = 1;
+		CurrentLocalFile->nlink = (long)r4.r_attr.va_nlink;
+		CurrentLocalFile->nlink_def = 1;
 		break;
 #endif    /* solaris>=100000 */
 
@@ -3427,8 +3427,8 @@ process_node(va)
 
             case N_REGLR:
                 if (ins) {
-                    Lf->nlink = (long) i.i_nlink;
-                    Lf->nlink_def = 1;
+                    CurrentLocalFile->nlink = (long) i.i_nlink;
+                    CurrentLocalFile->nlink_def = 1;
                 }
                 break;
             case N_SAMFS:
@@ -3437,8 +3437,8 @@ process_node(va)
 #if    solaris >= 110000
                                                                                                                                     case N_SDEV:
 		if (sdns) {
-		    Lf->nlink = (long)sdva.va_nlink;
-		    Lf->nlink_def = 1;
+		    CurrentLocalFile->nlink = (long)sdva.va_nlink;
+		    CurrentLocalFile->nlink_def = 1;
 		}
 		break;
 #endif    /* solaris>=110000 */
@@ -3448,29 +3448,29 @@ process_node(va)
             case N_STREAM:
                 break;
             case N_TMP:
-                Lf->nlink = (long) t.tn_attr.va_nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long) t.tn_attr.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
                 break;
 
 #if    defined(HASVXFS)
                                                                                                                                     case N_VXFS:
-		Lf->nlink = vx.nl;
-		Lf->nlink_def = vx.nl_def;
+		CurrentLocalFile->nlink = vx.nl;
+		CurrentLocalFile->nlink_def = vx.nl_def;
 		break;
 #endif    /* defined(HASVXFS) */
 
 #if    defined(HAS_ZFS)
                                                                                                                                     case N_ZFS:
 		if (zns) {
-		    Lf->nlink = (long)MIN(zn.z_links, UINT32_MAX);
-		    Lf->nlink_def = 1;
+		    CurrentLocalFile->nlink = (long)MIN(zn.z_links, UINT32_MAX);
+		    CurrentLocalFile->nlink_def = 1;
 		}
 		break;
 #endif    /* defined(HAS_ZFS) */
 
         }
-        if (Nlink && Lf->nlink_def && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+        if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 
 #if    defined(HASVXFS)
@@ -3479,16 +3479,16 @@ process_node(va)
  */
 
 # if	defined(HASVXFSDNLC)
-	Lf->is_vxfs = (Ntype == N_VXFS) ? 1 : 0;
+	CurrentLocalFile->is_vxfs = (NodeType == N_VXFS) ? 1 : 0;
 # endif	/* defined(HASVXFSDNLC) */
 #endif    /* defined(HASVXFS) */
 
 /*
  * Record an NFS selection.
  */
-    if (Fnfs) {
-        if ((Ntype == N_NFS) || (Ntype == N_NFS4))
-            Lf->sf |= SELNFS;
+    if (OptNfs) {
+        if ((NodeType == N_NFS) || (NodeType == N_NFS4))
+            CurrentLocalFile->sf |= SELNFS;
     }
 
 #if    solaris >= 20500
@@ -3496,21 +3496,21 @@ process_node(va)
  * If this is a Solaris 2.5 and greater autofs entry, save the autonode name
  * (less than Solaris 2.6) or fnnode name (Solaris 2.6 and greater).
  */
-	if (Ntype == N_AUTO && !Namech[0]) {
+	if (NodeType == N_AUTO && !NameChars[0]) {
 
 # if	solaris<20600
 	    if (au.an_name[0])
-		(void) snpf(Namech, Namechl - 1, "%s", au.an_name);
-		Namech[Namechl - 1] = '\0';
+		(void) snpf(NameChars, NameCharsLength - 1, "%s", au.an_name);
+		NameChars[NameCharsLength - 1] = '\0';
 # else  /* solaris>=20600 */
 	    if (fnn.fn_name
 	    &&  (len = fnn.fn_namelen) > 0
-	    &&  len < (Namechl - 1))
+	    &&  len < (NameCharsLength - 1))
 	    {
-		if (kread((KA_T)fnn.fn_name, Namech, len))
-		    Namech[0] = '\0';
+		if (kread((KA_T)fnn.fn_name, NameChars, len))
+		    NameChars[0] = '\0';
 		else
-		    Namech[len] = '\0';
+		    NameChars[len] = '\0';
 	    }
 # endif /* solaris<20600 */
 
@@ -3549,9 +3549,9 @@ process_node(va)
  * If there's a namenode and its device and node number match this one,
  * use the nm_mountpt's address for name cache lookups.
  */
-	if (nns && devs && (dev == nn.nm_vattr.va_fsid) && (Lf->inp_ty == 1)
-	&&  (Lf->inode == (INODETYPE)nn.nm_vattr.va_nodeid))
-	    Lf->na = (KA_T)nn.nm_mountpt;
+	if (nns && devs && (dev == nn.nm_vattr.va_fsid) && (CurrentLocalFile->inp_ty == 1)
+	&&  (CurrentLocalFile->inode == (INODETYPE)nn.nm_vattr.va_nodeid))
+	    CurrentLocalFile->na = (KA_T)nn.nm_mountpt;
 # endif	/* defined(HASNCACHE) */
 #endif    /* solaris>=20500 */
 
@@ -3559,14 +3559,14 @@ process_node(va)
  * Save the file system names.
  */
     if (vfs) {
-        Lf->fsdir = vfs->dir;
-        Lf->fsdev = vfs->fsname;
+        CurrentLocalFile->fsdir = vfs->dir;
+        CurrentLocalFile->fsdev = vfs->fsname;
 
 #if    defined(HASMNTSTAT)
-        Lf->mnt_stat = vfs->mnt_stat;
+        CurrentLocalFile->mnt_stat = vfs->mnt_stat;
 #endif    /* defined(HASMNTSTAT) */
 
-        if (!Lf->fsdir && !Lf->fsdev && kvs && fxs) {
+        if (!CurrentLocalFile->fsdir && !CurrentLocalFile->fsdev && kvs && fxs) {
 
             /*
 	     * The file system names are unknown.
@@ -3574,14 +3574,14 @@ process_node(va)
 	     * Set the file system device to the file system type and clear
 	     * the doubtful device numbers.
 	     */
-            Lf->fsdev = Fsinfo[fx];
+            CurrentLocalFile->fsdev = Fsinfo[fx];
             devs = 0;
             rdevs = 0;
         }
 
 #if    defined(HASFSINO)
                                                                                                                                 else
-		Lf->fs_ino = vfs->fs_ino;
+		CurrentLocalFile->fs_ino = vfs->fs_ino;
 #endif    /* defined(HASFSINO) */
 
     }
@@ -3594,47 +3594,47 @@ process_node(va)
 
         case VNON:
             ty = "VNON";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VREG:
         case VDIR:
             ty = (type == VREG) ? "VREG" : "VDIR";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VBLK:
             ty = "VBLK";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
-            Ntype = N_BLK;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
+            NodeType = N_BLK;
             break;
         case VCHR:
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             if (unix_sock) {
                 ty = "unix";
                 break;
             }
             ty = "VCHR";
-            if (Lf->is_stream == 0 && Lf->is_com == 0)
-                Ntype = N_CHR;
+            if (CurrentLocalFile->is_stream == 0 && CurrentLocalFile->is_com == 0)
+                NodeType = N_CHR;
             break;
 
 #if    solaris >= 20500
                                                                                                                                 case VDOOR:
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
+	    CurrentLocalFile->dev = dev;
+	    CurrentLocalFile->dev_def = devs;
+	    CurrentLocalFile->rdev = rdev;
+	    CurrentLocalFile->rdev_def = rdevs;
 	    ty = "DOOR";
 	    if (dns)
 		(void) idoorkeep(&dn);
@@ -3643,19 +3643,19 @@ process_node(va)
 
         case VLNK:
             ty = "VLNK";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
 
 #if    solaris >= 100000
                                                                                                                                 case VPORT:
 	    ty = "PORT";
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
+	    CurrentLocalFile->dev = dev;
+	    CurrentLocalFile->dev_def = devs;
+	    CurrentLocalFile->rdev = rdev;
+	    CurrentLocalFile->rdev_def = rdevs;
 	    break;
 #endif    /* solaris>=100000 */
 
@@ -3665,10 +3665,10 @@ process_node(va)
 	/*
 	 * The proc file system type is defined when the prnode is read.
 	 */
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
+	    CurrentLocalFile->dev = dev;
+	    CurrentLocalFile->dev_def = devs;
+	    CurrentLocalFile->rdev = rdev;
+	    CurrentLocalFile->rdev_def = rdevs;
 	    ty = (char *)NULL;
 	    break;
 #endif    /* solaris>=20600 */
@@ -3679,8 +3679,8 @@ process_node(va)
 # if	solaris>=20600
 	    if (so.so_family == AF_UNIX) {
 		ty = "unix";
-		if (Funix)
-		    Lf->sf |= SELUNX;
+		if (OptUnixSocket)
+		    CurrentLocalFile->sf |= SELUNX;
 	    } else {
 		if (so.so_family == AF_INET) {
 
@@ -3690,23 +3690,23 @@ process_node(va)
 		    ty = "inet";
 #  endif	/* defined(HASIPv6) */
 
-		    (void) snpf(Namech, Namechl - 1, printsockty(so.so_type));
-		    Namech[Namechl - 1] = '\0';
-		    if (TcpStIn || UdpStIn || TcpStXn || UdpStXn)
-			Lf->sf |= SELEXCLF;
-		    else if (Fnet && (FnetTy != 6))
-			Lf->sf |= SELNET;
+		    (void) snpf(NameChars, NameCharsLength - 1, printsockty(so.so_type));
+		    NameChars[NameCharsLength - 1] = '\0';
+		    if (TcpStateIncludeCount || UdpStateIncludeCount || TcpStateExcludeCount || UdpStateExcludeCount)
+			CurrentLocalFile->sf |= SELEXCLF;
+		    else if (OptNetwork && (OptNetworkType != 6))
+			CurrentLocalFile->sf |= SELNET;
 		}
 
 #  if	defined(HASIPv6)
 		else if (so.so_family == AF_INET6) {
 		    ty = "IPv6";
-		    (void) snpf(Namech, Namechl - 1, printsockty(so.so_type));
-		    Namech[Namechl - 1] = '\0';
-		    if (TcpStIn || UdpStIn || TcpStXn || UdpStXn)
-			Lf->sf |= SELEXCLF;
-		    else if (Fnet && (FnetTy != 4))
-			Lf->sf |= SELNET;
+		    (void) snpf(NameChars, NameCharsLength - 1, printsockty(so.so_type));
+		    NameChars[NameCharsLength - 1] = '\0';
+		    if (TcpStateIncludeCount || UdpStateIncludeCount || TcpStateExcludeCount || UdpStateExcludeCount)
+			CurrentLocalFile->sf |= SELEXCLF;
+		    else if (OptNetwork && (OptNetworkType != 4))
+			CurrentLocalFile->sf |= SELNET;
 		}
 #  endif	/* defined(HASIPv6) */
 
@@ -3719,45 +3719,45 @@ process_node(va)
 	    }
 # endif	/* solaris>=20600 */
 
-	    Lf->dev = dev;
-	    Lf->dev_def = devs;
-	    Lf->rdev = rdev;
-	    Lf->rdev_def = rdevs;
+	    CurrentLocalFile->dev = dev;
+	    CurrentLocalFile->dev_def = devs;
+	    CurrentLocalFile->rdev = rdev;
+	    CurrentLocalFile->rdev_def = rdevs;
 	    break;
 #endif    /* defined(HAS_VSOCK) */
 
         case VBAD:
             ty = "VBAD";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VFIFO:
             ty = "FIFO";
-            if (!Lf->dev_ch || Lf->dev_ch[0] == '\0') {
-                Lf->dev = dev;
-                Lf->dev_def = devs;
-                Lf->rdev = rdev;
-                Lf->rdev_def = rdevs;
+            if (!CurrentLocalFile->dev_ch || CurrentLocalFile->dev_ch[0] == '\0') {
+                CurrentLocalFile->dev = dev;
+                CurrentLocalFile->dev_def = devs;
+                CurrentLocalFile->rdev = rdev;
+                CurrentLocalFile->rdev_def = rdevs;
             }
             break;
         default:
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
-            (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
             ty = (char *) NULL;
     }
     if (ty)
-        (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
-    Lf->ntype = Ntype;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
+    CurrentLocalFile->ntype = NodeType;
 /*
  * If this a Solaris common vnode/snode void some information.
  */
-    if (Lf->is_com)
-        Lf->sz_def = Lf->inp_ty = 0;
+    if (CurrentLocalFile->is_com)
+        CurrentLocalFile->sz_def = CurrentLocalFile->inp_ty = 0;
 /*
  * If a file attach description remains, put it in the NAME column addition.
  */
@@ -3769,7 +3769,7 @@ process_node(va)
  * If this is a VBLK file and it's missing an inode number, try to
  * supply one.
  */
-	if ((Lf->inp_ty == 0) && (type == VBLK))
+	if ((CurrentLocalFile->inp_ty == 0) && (type == VBLK))
 	    find_bl_ino();
 #endif    /* defined(HASBLKDEV) */
 
@@ -3777,7 +3777,7 @@ process_node(va)
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
-    if ((Lf->inp_ty == 0) && (type == VCHR)) {
+    if ((CurrentLocalFile->inp_ty == 0) && (type == VCHR)) {
         find_ch_ino();
         /*
 	 * If the VCHR inode number still isn't known and this is a COMMON
@@ -3788,30 +3788,30 @@ process_node(va)
 	 * If it can, save the pseudo or clone device for temporary
 	 * use when searching for a match with a named file argument.
 	 */
-        if ((Lf->inp_ty == 0) && (Lf->is_com || Lf->is_stream || pnl)
+        if ((CurrentLocalFile->inp_ty == 0) && (CurrentLocalFile->is_com || CurrentLocalFile->is_stream || pnl)
             && (Clone || Pseudo)) {
             if (!sdp) {
                 if (rdevs || devs) {
-                    if (Lf->is_stream && !pnl)
-                        sdp = finddev(devs ? &dev : &DevDev,
-                                      rdevs ? &rdev : &Lf->dev,
+                    if (CurrentLocalFile->is_stream && !pnl)
+                        sdp = finddev(devs ? &dev : &DeviceOfDev,
+                                      rdevs ? &rdev : &CurrentLocalFile->dev,
                                       LOOKDEV_CLONE);
                     else
-                        sdp = finddev(devs ? &dev : &DevDev,
-                                      rdevs ? &rdev : &Lf->dev,
+                        sdp = finddev(devs ? &dev : &DeviceOfDev,
+                                      rdevs ? &rdev : &CurrentLocalFile->dev,
                                       LOOKDEV_PSEUDO);
                     if (!sdp)
-                        sdp = finddev(devs ? &dev : &DevDev,
-                                      rdevs ? &rdev : &Lf->dev,
+                        sdp = finddev(devs ? &dev : &DeviceOfDev,
+                                      rdevs ? &rdev : &CurrentLocalFile->dev,
                                       LOOKDEV_ALL);
                     if (sdp) {
                         if (!rdevs) {
-                            Lf->rdev = Lf->dev;
-                            Lf->rdev_def = rdevs = 1;
+                            CurrentLocalFile->rdev = CurrentLocalFile->dev;
+                            CurrentLocalFile->rdev_def = rdevs = 1;
                         }
                         if (!devs) {
-                            Lf->dev = DevDev;
-                            devs = Lf->dev_def = 1;
+                            CurrentLocalFile->dev = DeviceOfDev;
+                            devs = CurrentLocalFile->dev_def = 1;
                         }
                     }
                 }
@@ -3822,12 +3822,12 @@ process_node(va)
 		 * that it's accompanied by device settings.
 		 */
                 if (!devs && vfs) {
-                    dev = Lf->dev = vfs->dev;
-                    devs = Lf->dev_def = 1;
+                    dev = CurrentLocalFile->dev = vfs->dev;
+                    devs = CurrentLocalFile->dev_def = 1;
                 }
                 if (!rdevs) {
-                    Lf->rdev = rdev = sdp->rdev;
-                    Lf->rdev_def = rdevs = 1;
+                    CurrentLocalFile->rdev = rdev = sdp->rdev;
+                    CurrentLocalFile->rdev_def = rdevs = 1;
                 }
             }
             if (sdp) {
@@ -3836,21 +3836,21 @@ process_node(va)
 		 * Process the local device information.
 		 */
                 trdev = sdp->rdev;
-                Lf->inode = sdp->inode;
-                Lf->inp_ty = trdevs = 1;
-                if (!Namech[0] || Lf->is_com) {
-                    (void) snpf(Namech, Namechl - 1, "%s", sdp->name);
-                    Namech[Namechl - 1] = '\0';
+                CurrentLocalFile->inode = sdp->inode;
+                CurrentLocalFile->inp_ty = trdevs = 1;
+                if (!NameChars[0] || CurrentLocalFile->is_com) {
+                    (void) snpf(NameChars, NameCharsLength - 1, "%s", sdp->name);
+                    NameChars[NameCharsLength - 1] = '\0';
                 }
-                if (Lf->is_com && !Lf->nma) {
+                if (CurrentLocalFile->is_com && !CurrentLocalFile->nma) {
                     len = (int) strlen("(COMMON)") + 1;
-                    if (!(Lf->nma = (char *) malloc(len))) {
+                    if (!(CurrentLocalFile->nma = (char *) malloc(len))) {
                         (void) fprintf(stderr,
                                        "%s: no space for (COMMON): PID %d; FD %s\n",
-                                       Pn, Lp->pid, Lf->fd);
+                                       ProgramName, CurrentLocalProc->pid, CurrentLocalFile->fd);
                         Exit(1);
                     }
-                    (void) snpf(Lf->nma, len, "(COMMON)");
+                    (void) snpf(CurrentLocalFile->nma, len, "(COMMON)");
                 }
             }
         }
@@ -3858,32 +3858,32 @@ process_node(va)
 /*
  * Record stream status.
  */
-    if (Lf->inp_ty == 0 && Lf->is_stream && strcmp(Lf->iproto, "STR") == 0)
-        Lf->inp_ty = 2;
+    if (CurrentLocalFile->inp_ty == 0 && CurrentLocalFile->is_stream && strcmp(CurrentLocalFile->iproto, "STR") == 0)
+        CurrentLocalFile->inp_ty = 2;
 /*
  * Test for specified file.
  */
 
 #if    defined(HASPROCFS)
-                                                                                                                            if (Ntype == N_PROC) {
-	    if (Procsrch) {
-		Procfind = 1;
-		Lf->sf |= SELNM;
+                                                                                                                            if (NodeType == N_PROC) {
+	    if (ProcFsSearching) {
+		ProcFsFound = 1;
+		CurrentLocalFile->sf |= SELNM;
 	    } else {
-		for (pfi = Procfsid; pfi; pfi = pfi->next) {
+		for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
 		    if ((pfi->pid && pfi->pid == pids.pid_id)
 
 # if	defined(HASPINODEN)
-		    ||  (Lf->inp_ty == 1 && Lf->inode == pfi->inode)
+		    ||  (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->inode == pfi->inode)
 # endif	/* defined(HASPINODEN) */
 
 		    ) {
 			pfi->f = 1;
-			if (!Namech[0]) {
-			    (void) snpf(Namech, Namechl - 1, "%s", pfi->nm);
-			    Namech[Namechl - 1] = '\0';
+			if (!NameChars[0]) {
+			    (void) snpf(NameChars, NameCharsLength - 1, "%s", pfi->nm);
+			    NameChars[NameCharsLength - 1] = '\0';
 			}
-			Lf->sf |= SELNM;
+			CurrentLocalFile->sf |= SELNM;
 			break;
 		    }
 		}
@@ -3892,26 +3892,26 @@ process_node(va)
 #endif    /* defined(HASPROCFS) */
 
     {
-        if (Sfile) {
+        if (SearchFileChain) {
             if (trdevs) {
-                rdev = Lf->rdev;
-                Lf->rdev = trdev;
-                tdef = Lf->rdev_def;
-                Lf->rdev_def = 1;
+                rdev = CurrentLocalFile->rdev;
+                CurrentLocalFile->rdev = trdev;
+                tdef = CurrentLocalFile->rdev_def;
+                CurrentLocalFile->rdev_def = 1;
             }
-            if (is_file_named(NULL, Ntype, type, 1))
-                Lf->sf |= SELNM;
+            if (is_file_named(NULL, NodeType, type, 1))
+                CurrentLocalFile->sf |= SELNM;
             if (trdevs) {
-                Lf->rdev = rdev;
-                Lf->rdev_def = tdef;
+                CurrentLocalFile->rdev = rdev;
+                CurrentLocalFile->rdev_def = tdef;
             }
         }
     }
 /*
  * Enter name characters.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }
 
 
@@ -3938,12 +3938,12 @@ read_cni(s, rv, v, rs, di, din, dinl)
     *din = '\0';
     if (rs->s_dip) {
         if (kread((KA_T) rs->s_dip, (char *) di, sizeof(struct dev_info))) {
-            (void) snpf(Namech, Namechl - 1,
+            (void) snpf(NameChars, NameCharsLength - 1,
                         "common snode at %s: no dev info: %s",
                         print_kptr((KA_T) rv->v_data, tbuf, sizeof(tbuf)),
                         print_kptr((KA_T) rs->s_dip, (char *) NULL, 0));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
             return (1);
         }
         if (di->devi_name
@@ -3964,10 +3964,10 @@ readinode(ia, i)
         struct inode *i;        /* inode buffer */
 {
     if (kread((KA_T) ia, (char *) i, sizeof(struct inode))) {
-        (void) snpf(Namech, Namechl - 1, "can't read inode at %s",
+        (void) snpf(NameChars, NameCharsLength - 1, "can't read inode at %s",
                     print_kptr((KA_T) ia, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -3988,12 +3988,12 @@ read_ndn(na, da, dn)
 	char tbuf[32];
 
 	if (!da || kread((KA_T)da, (char *)dn, sizeof(struct door_node))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"vnode at %s: can't read door_node: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(da, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4030,10 +4030,10 @@ read_mi(s, rdev, so, so_st, so_ad, sdp)
     if (!s)
         return;
     if (kread((KA_T) s, (char *) &sd, sizeof(sd))) {
-        (void) snpf(Namech, Namechl - 1, "can't read stream head: %s",
+        (void) snpf(NameChars, NameCharsLength - 1, "can't read stream head: %s",
                     print_kptr(s, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return;
     }
 /*
@@ -4047,16 +4047,16 @@ read_mi(s, rdev, so, so_st, so_ad, sdp)
  * Ignore module names that end in "head".
  */
     k = 0;
-    Namech[0] = '\0';
-    if (!(dp = finddev(&DevDev, rdev, LOOKDEV_CLONE)))
-        dp = finddev(&DevDev, rdev, LOOKDEV_ALL);
+    NameChars[0] = '\0';
+    if (!(dp = finddev(&DeviceOfDev, rdev, LOOKDEV_CLONE)))
+        dp = finddev(&DeviceOfDev, rdev, LOOKDEV_ALL);
     if (dp) {
-        (void) snpf(Namech, Namechl - 1, "%s", dp->name);
-        Namech[Namechl - 1] = '\0';
-        k = (int) strlen(Namech);
+        (void) snpf(NameChars, NameCharsLength - 1, "%s", dp->name);
+        NameChars[NameCharsLength - 1] = '\0';
+        k = (int) strlen(NameChars);
         *sdp = dp;
     } else
-        (void) snpf(Lf->iproto, sizeof(Lf->iproto), "STR");
+        (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "STR");
     nl = sizeof(mn) - 1;
     mn[nl] = '\0';
     qp = (KA_T) sd.sd_wrq;
@@ -4099,14 +4099,14 @@ read_mi(s, rdev, so, so_st, so_ad, sdp)
 #endif    /* solaris<100000 */
 
         if (k) {
-            if ((k + 2) > (Namechl - 1))
+            if ((k + 2) > (NameCharsLength - 1))
                 break;
-            (void) snpf(&Namech[k], Namechl - k, "->");
+            (void) snpf(&NameChars[k], NameCharsLength - k, "->");
             k += 2;
         }
-        if ((k + j) > (Namechl - 1))
+        if ((k + j) > (NameCharsLength - 1))
             break;
-        (void) snpf(&Namech[k], Namechl - k, "%s", mn);
+        (void) snpf(&NameChars[k], NameCharsLength - k, "%s", mn);
         k += j;
     }
 }
@@ -4139,7 +4139,7 @@ read_nan(na, aa, rn)
 # endif /* solaris<20600 */
 
 	{
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 
 # if    solaris<20600
 		"node at %s: can't read autonode: %s",
@@ -4149,8 +4149,8 @@ read_nan(na, aa, rn)
 
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(aa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4171,12 +4171,12 @@ read_ncn(na, ca, cn)
     char tbuf[32];
 
     if (!ca || kread((KA_T) ca, (char *) cn, sizeof(struct cnode))) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read cnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ca, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4244,19 +4244,19 @@ read_nctfsn(ty, na, ca, cn)
 	    sz = (READLEN_T)sizeof(ctfs_tmplnode_t);
 	    break;
 	default:
-	    (void) snpf(Namech, Namechl - 1, "unknown CTFS node type: %d", ty);
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    (void) snpf(NameChars, NameCharsLength - 1, "unknown CTFS node type: %d", ty);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	if (!ca || kread((KA_T)ca, cn, sz)) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read CTFS %s node: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		nm,
 		print_kptr(ca, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4277,12 +4277,12 @@ read_nfn(na, fa, f)
     char tbuf[32];
 
     if (!fa || readfifonode(fa, f)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read fifonode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(fa, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4302,12 +4302,12 @@ read_nhn(na, ha, h)
     char tbuf[32];
 
     if (!ha || readhsnode(ha, h)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read hsnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ha, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4327,12 +4327,12 @@ read_nin(na, ia, i)
     char tbuf[32];
 
     if (!ia || readinode(ia, i)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read inode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ia, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4352,12 +4352,12 @@ read_nln(na, la, ln)
     char tbuf[32];
 
     if (!la || kread((KA_T) la, (char *) ln, sizeof(struct lnode))) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read lnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(la, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4377,12 +4377,12 @@ read_nnn(na, nna, nn)
     char tbuf[32];
 
     if (!nna || kread((KA_T) nna, (char *) nn, sizeof(struct namenode))) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read namenode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(nna, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4402,12 +4402,12 @@ read_nmn(na, ma, m)
     char tbuf[32];
 
     if (!ma || kread((KA_T) ma, (char *) m, sizeof(struct mvfsnode))) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read mvfsnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ma, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4440,12 +4440,12 @@ read_npi(na, v, pids)
 #endif	/* solaris>=20600 */
 
 	if (!v->v_data || kread((KA_T)v->v_data, (char *)&pr, sizeof(pr))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read prnode: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 
@@ -4459,52 +4459,52 @@ read_npi(na, v, pids)
  */
 	if (!pr.pr_proc) {
 	    if (v->v_type == VDIR) {
-		(void) snpf(Namech, Namechl - 1, "/%s", HASPROCFS);
-		Namech[Namechl - 1] = '\0';
-		enter_nm(Namech);
-		Lf->inode = (INODETYPE)PR_ROOTINO;
-		Lf->inp_ty = 1;
+		(void) snpf(NameChars, NameCharsLength - 1, "/%s", HASPROCFS);
+		NameChars[NameCharsLength - 1] = '\0';
+		enter_nm(NameChars);
+		CurrentLocalFile->inode = (INODETYPE)PR_ROOTINO;
+		CurrentLocalFile->inp_ty = 1;
 	    } else {
-		(void) snpf(Namech, Namechl - 1, "/%s/", HASPROCFS);
-		Namech[Namechl - 1] = '\0';
-		enter_nm(Namech);
-		Lf->inp_ty = 0;
+		(void) snpf(NameChars, NameCharsLength - 1, "/%s/", HASPROCFS);
+		NameChars[NameCharsLength - 1] = '\0';
+		enter_nm(NameChars);
+		CurrentLocalFile->inp_ty = 0;
 	    }
 	    return(0);
 	}
 	if (kread((KA_T)pr.pr_proc, (char *)&p, sizeof(p))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"prnode at %s: can't read proc: %s",
 		print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)pr.pr_proc, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	if (p.p_as && !kread((KA_T)p.p_as, (char *)&as, sizeof(as))) {
-	    Lf->sz = (SZOFFTYPE)as.a_size;
-	    Lf->sz_def = 1;
+	    CurrentLocalFile->sz = (SZOFFTYPE)as.a_size;
+	    CurrentLocalFile->sz_def = 1;
 	}
 	if (!p.p_pidp
 	||  kread((KA_T)p.p_pidp, (char *)pids, sizeof(struct pid))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"proc struct at %s: can't read pid: %s",
 		print_kptr((KA_T)pr.pr_proc, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)p.p_pidp, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
-	(void) snpf(Namech, Namechl, "/%s/%d", HASPROCFS, (int)pids->pid_id);
-	Namech[Namechl - 1] = '\0';
-	Lf->inode = (INODETYPE)ptoi(pids->pid_id);
-	Lf->inp_ty = 1;
+	(void) snpf(NameChars, NameCharsLength, "/%s/%d", HASPROCFS, (int)pids->pid_id);
+	NameChars[NameCharsLength - 1] = '\0';
+	CurrentLocalFile->inode = (INODETYPE)ptoi(pids->pid_id);
+	CurrentLocalFile->inp_ty = 1;
 #else	/* solaris>=20600 */
 /*
  * Enter the >= Solaris 2.6 inode number.
  */
-	Lf->inode = (INODETYPE)pr.pr_ino;
-	Lf->inp_ty = 1;
+	CurrentLocalFile->inode = (INODETYPE)pr.pr_ino;
+	CurrentLocalFile->inp_ty = 1;
 /*
  * Read the >= Solaris 2.6 prnode common structures.
  *
@@ -4549,182 +4549,182 @@ read_npi(na, v, pids)
  */
 	switch (pr.pr_type) {
 	case PR_PROCDIR:
-	    (void) snpf(Namech, Namechl - 1,  "/%s", HASPROCFS);
+	    (void) snpf(NameChars, NameCharsLength - 1,  "/%s", HASPROCFS);
 	    ty = "PDIR";
 	    break;
 	case PR_PIDDIR:
-	    (void) snpf(Namech, Namechl - 1,  "/%s/%d", HASPROCFS, (int)prpid);
+	    (void) snpf(NameChars, NameCharsLength - 1,  "/%s/%d", HASPROCFS, (int)prpid);
 	    ty = "PDIR";
 	    break;
 	case PR_AS:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/as", HASPROCFS, (int)prpid);
 	    ty = "PAS";
 	    if (prpcs
 	    &&  kread((KA_T)pc.prc_proc, (char *)&p, sizeof(p)) == 0
 	    &&  p.p_as
 	    &&  kread((KA_T)p.p_as, (char *)&as, sizeof(as)) == 0) {
-		Lf->sz = (SZOFFTYPE)as.a_size;
-		Lf->sz_def = 1;
+		CurrentLocalFile->sz = (SZOFFTYPE)as.a_size;
+		CurrentLocalFile->sz_def = 1;
 	    }
 	    break;
 	case PR_CTL:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/ctl", HASPROCFS, (int)prpid);
 	    ty = "PCTL";
 	    break;
 	case PR_STATUS:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/status", HASPROCFS, (int)prpid);
 	    ty = "PSTA";
 	    break;
 	case PR_LSTATUS:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lstatus", HASPROCFS, (int)prpid);
 	    ty = "PLST";
 	    break;
 	case PR_PSINFO:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/psinfo", HASPROCFS, (int)prpid);
 	    ty = "PSIN";
 	    break;
 	case PR_LPSINFO:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lpsinfo", HASPROCFS, (int)prpid);
 	    ty = "PLPI";
 	    break;
 	case PR_MAP:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/map", HASPROCFS, (int)prpid);
 	    ty = "PMAP";
 	    break;
 	case PR_RMAP:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/rmap", HASPROCFS, (int)prpid);
 	    ty = "PRMP";
 	    break;
 	case PR_XMAP:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/xmap", HASPROCFS, (int)prpid);
 	    ty = "PXMP";
 	    break;
 	case PR_CRED:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/cred", HASPROCFS, (int)prpid);
 	    ty = "PCRE";
 	    break;
 	case PR_SIGACT:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/sigact", HASPROCFS, (int)prpid);
 	    ty = "PSGA";
 	    break;
 	case PR_AUXV:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/auxv", HASPROCFS, (int)prpid);
 	    ty = "PAXV";
 	    break;
 
 # if	defined(HASPR_LDT)
 	case PR_LDT:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/ldt", HASPROCFS, (int)prpid);
 	    ty = "PLDT";
 	    break;
 # endif	/* defined(HASPR_LDT) */
 
 	case PR_USAGE:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/usage", HASPROCFS, (int)prpid);
 	    ty = "PUSG";
 	    break;
 	case PR_LUSAGE:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lusage", HASPROCFS, (int)prpid);
 	    ty = "PLU";
 	    break;
 	case PR_PAGEDATA:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/pagedata", HASPROCFS, (int)prpid);
 	    ty = "PGD";
 	    break;
 	case PR_WATCH:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/watch", HASPROCFS, (int)prpid);
 	    ty = "PW";
 	    break;
 	case PR_CURDIR:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/cwd", HASPROCFS, (int)prpid);
 	    ty = "PCWD";
 	    break;
 	case PR_ROOTDIR:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/root", HASPROCFS, (int)prpid);
 	    ty = "PRTD";
 	    break;
 	case PR_FDDIR:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/fd", HASPROCFS, (int)prpid);
 	    ty = "PFDR";
 	    break;
 	case PR_FD:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/fd/%d", HASPROCFS, (int)prpid,
 		pr.pr_index);
 	    ty = "PFD";
 	    break;
 	case PR_OBJECTDIR:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/object", HASPROCFS, (int)prpid);
 	    ty = "PODR";
 	    break;
 	case PR_OBJECT:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/object/", HASPROCFS, (int)prpid);
 	    ty = "POBJ";
 	    break;
 	case PR_LWPDIR:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lpw", HASPROCFS, (int)prpid);
 	    ty = "PLDR";
 	    break;
 	case PR_LWPIDDIR:
-	    (void) snpf(Namech, Namechl,
+	    (void) snpf(NameChars, NameCharsLength,
 		"/%s/%d/lwp/%d", HASPROCFS, (int)prpid, (int)prtid);
 	    ty = "PLDR";
 	    break;
 	case PR_LWPCTL:
-	    (void) snpf(Namech, Namechl - 1, "/%s/%d/lwp/%d/lwpctl", HASPROCFS,
+	    (void) snpf(NameChars, NameCharsLength - 1, "/%s/%d/lwp/%d/lwpctl", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLC";
 	    break;
 	case PR_LWPSTATUS:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lwp/%d/lwpstatus", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLWS";
 	    break;
 	case PR_LWPSINFO:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lwp/%d/lwpsinfo", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLWI";
 	    break;
 	case PR_LWPUSAGE:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lwp/%d/lwpusage", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLWU";
 	    break;
 	case PR_XREGS:
-	    (void) snpf(Namech, Namechl - 1, "/%s/%d/lwp/%d/xregs", HASPROCFS,
+	    (void) snpf(NameChars, NameCharsLength - 1, "/%s/%d/lwp/%d/xregs", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLWX";
 	    break;
 
 # if	defined(HASPR_GWINDOWS)
 	case PR_GWINDOWS:
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"/%s/%d/lwp/%d/gwindows", HASPROCFS,
 		(int)prpid, (int)prtid);
 	    ty = "PLWG";
@@ -4732,34 +4732,34 @@ read_npi(na, v, pids)
 # endif	/* defined(HASPR_GWINDOWS) */
 
 	case PR_PIDFILE:
-	    (void) snpf(Namech, Namechl - 1, "/%s/%d", HASPROCFS, (int)prpid);
+	    (void) snpf(NameChars, NameCharsLength - 1, "/%s/%d", HASPROCFS, (int)prpid);
 	    ty = "POPF";
 	    break;
 	case PR_LWPIDFILE:
-	    (void) snpf(Namech, Namechl - 1, "/%s/%d", HASPROCFS, (int)prpid);
+	    (void) snpf(NameChars, NameCharsLength - 1, "/%s/%d", HASPROCFS, (int)prpid);
 	    ty = "POLP";
 	    break;
 	case PR_OPAGEDATA:
-	    (void) snpf(Namech, Namechl - 1, "/%s/%d", HASPROCFS, (int)prpid);
+	    (void) snpf(NameChars, NameCharsLength - 1, "/%s/%d", HASPROCFS, (int)prpid);
 	    ty = "POPG";
 	    break;
 	default:
 	    ty = (char *)NULL;
 	}
 	if (ty)
-	    (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
+	    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
 	else
-	    (void) snpf(Lf->type, sizeof(Lf->type), "%04o",
+	    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o",
 		(pr.pr_type & 0xfff));
 /*
  * Record the Solaris 2.6 /proc file system inode number.
  */
-	Lf->inode = (INODETYPE)pr.pr_ino;
-	Lf->inp_ty = 1;
+	CurrentLocalFile->inode = (INODETYPE)pr.pr_ino;
+	CurrentLocalFile->inp_ty = 1;
 # endif	/* solaris<20600 */
 
-	Namech[Namechl - 1] = '\0';
-	enter_nm(Namech);
+	NameChars[NameCharsLength - 1] = '\0';
+	enter_nm(NameChars);
 	return(0);
 }
 #endif    /* defined(HASPROCFS) */
@@ -4778,12 +4778,12 @@ read_npn(na, pa, p)
     char tbuf[32];
 
     if (!pa || kread(pa, (char *) p, sizeof(struct pcnode))) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read pcnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(pa, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4804,12 +4804,12 @@ read_nprtn(na, pa, p)
 	char tbuf[32];
 
 	if (!pa || kread(pa, (char *)p, sizeof(port_t))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read port node: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(pa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4830,11 +4830,11 @@ read_nrn(na, ra, r)
     char tbuf[32];
 
     if (!ra || readrnode(ra, r)) {
-        (void) snpf(Namech, Namechl - 1, "node at %s: can't read rnode: %s",
+        (void) snpf(NameChars, NameCharsLength - 1, "node at %s: can't read rnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ra, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4857,12 +4857,12 @@ read_nrn4(na, ra, r)
 	if (!ra ||
 	    kread((KA_T)ra, (char *)r, sizeof(struct rnode4))
 	) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read rnode4: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(ra, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4886,24 +4886,24 @@ read_nsdn(na, sa, sdn, sdva)
 	char tbuf[32], tbuf1[32];
 
 	if (!sa || kread((KA_T)sa, (char *)sdn, sizeof(struct sdev_node))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read sdev_node: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(sa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	if (!(va = (KA_T)sdn->sdev_attr)
 	||  kread(va, (char *)sdva, sizeof(struct vattr))
 	) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s; sdev_node at %s: can't read vattr: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(sa, tbuf1, sizeof(tbuf1)),
 		print_kptr(va, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4926,12 +4926,12 @@ read_nson(na, sa, sn)
 	char tbuf[32];
 
 	if (!sa || kread((KA_T)sa, (char *)sn, sizeof(struct sonode))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read sonode: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(sa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -4952,12 +4952,12 @@ read_nsn(na, sa, s)
     char tbuf[32];
 
     if (!sa || readsnode(sa, s)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read snode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(sa, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -4986,12 +4986,12 @@ read_nsti(so, stpi)
 	||  CTF_MEMBER_READ(so->so_priv,stpi,sotpi_info_members, sti_ux_faddr)
 	||  CTF_MEMBER_READ(so->so_priv,stpi,sotpi_info_members, sti_serv_type)
 	) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"sonode at %s: can't read so_priv: %s",
 		print_kptr((KA_T)so, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)so->so_priv, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -5012,12 +5012,12 @@ read_ntn(na, ta, t)
     char tbuf[32];
 
     if (!ta || readtnode(ta, t)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read tnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(ta, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -5068,12 +5068,12 @@ read_nvn(na, va, v)
     char tbuf[32];
 
     if (readvnode(va, v)) {
-        (void) snpf(Namech, Namechl - 1,
+        (void) snpf(NameChars, NameCharsLength - 1,
                     "node at %s: can't read real vnode: %s",
                     print_kptr(na, tbuf, sizeof(tbuf)),
                     print_kptr(va, (char *) NULL, 0));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
         return (1);
     }
     return (0);
@@ -5105,12 +5105,12 @@ read_nzn(na, nza, zn)
 	||  CTF_MEMBER_READ(nza, zn, znode_members, z_links)
 	||  CTF_MEMBER_READ(nza, zn, znode_members, z_size)
 	) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"node at %s: can't read znode: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(nza, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 /*
@@ -5129,21 +5129,21 @@ read_nzn(na, nza, zn)
 	 * Make sure z_link and z_size are defined when z_phys isn't.
 	 */
 	    if (znode_members[MX_z_links].m_offset == CTF_MEMBER_UNDEF) {
-		(void) snpf(Namech, Namechl - 1,
+		(void) snpf(NameChars, NameCharsLength - 1,
 		    "node at %s: can't read z_links: %s",
 		    print_kptr(na, tbuf, sizeof(tbuf)),
 		    print_kptr(nza, (char *)NULL, 0));
-		    Namech[Namechl - 1] = '\0';
-		    enter_nm(Namech);
+		    NameChars[NameCharsLength - 1] = '\0';
+		    enter_nm(NameChars);
 		    err = 1;
 	    }
 	    if (znode_members[MX_z_size].m_offset == CTF_MEMBER_UNDEF) {
-		(void) snpf(Namech, Namechl - 1,
+		(void) snpf(NameChars, NameCharsLength - 1,
 		    "node at %s: can't read z_size: %s",
 		    print_kptr(na, tbuf, sizeof(tbuf)),
 		    print_kptr(nza, (char *)NULL, 0));
-		    Namech[Namechl - 1] = '\0';
-		    enter_nm(Namech);
+		    NameChars[NameCharsLength - 1] = '\0';
+		    enter_nm(NameChars);
 		    err = 1;
 	    }
 	}
@@ -5168,12 +5168,12 @@ read_nznp(nza, nzpa, zp)
 	||  CTF_MEMBER_READ(nzpa, zp, znode_phys_members, zp_size)
 	||  CTF_MEMBER_READ(nzpa, zp, znode_phys_members, zp_links)
 	) {
-	    (void) snpf(Namech, Namechl - 1, "znode at %s: "
+	    (void) snpf(NameChars, NameCharsLength - 1, "znode at %s: "
 	                                 "can't read znode_phys: %s",
 		print_kptr(nza, tbuf, sizeof(tbuf)),
 		print_kptr(nzpa, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -5196,12 +5196,12 @@ read_nzvfs(nza, nzva, zv)
 	if (!nzva
 	||  CTF_MEMBER_READ(nzva, zv, zfsvfs_members, z_vfs)
 	) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"znode at %s: can't read zfsvfs: %s",
 		print_kptr(nza, tbuf, sizeof(tbuf)),
 		print_kptr(nzva, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 	return(0);
@@ -5418,7 +5418,7 @@ vop2ty(vp, fx)
 	     */
             if (!(nv = (v_optab_t *) malloc((MALLOC_S)sizeof(v_optab_t)))) {
                 (void) fprintf(stderr, "%s: can't add \"%s\" to Voptab\n",
-                               Pn, Fsinfo[fx]);
+                               ProgramName, Fsinfo[fx]);
                 Exit(1);
             }
             *nv = *v;
@@ -5482,12 +5482,12 @@ read_ndvn(na, da, dv, dev, devs)
  * Read the snode.
  */
 	if (!da || kread((KA_T)da, (char *)&s, sizeof(s))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"dv_node vnode at %s: can't read snode: %s",
 		print_kptr(na, tbuf, sizeof(tbuf)),
 		print_kptr(da, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 /*
@@ -5496,24 +5496,24 @@ read_ndvn(na, da, dv, dev, devs)
 	if (!s.s_realvp
 	|| kread((KA_T)s.s_realvp, (char *)&rv, sizeof(struct dv_node)))
 	{
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"dv_node snode at %s: can't read real vnode: %s",
 		print_kptr(da, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 /*
  * Read the real vnode's dv_node.
  */
 	if (!rv.v_data || kread((KA_T)rv.v_data, (char *)dv, sizeof(rv))) {
-	    (void) snpf(Namech, Namechl - 1,
+	    (void) snpf(NameChars, NameCharsLength - 1,
 		"dv_node real vnode at %s: can't read dv_node: %s",
 		print_kptr((KA_T)s.s_realvp, tbuf, sizeof(tbuf)),
 		print_kptr((KA_T)rv.v_data, (char *)NULL, 0));
-	    Namech[Namechl - 1] = '\0';
-	    enter_nm(Namech);
+	    NameChars[NameCharsLength - 1] = '\0';
+	    enter_nm(NameChars);
 	    return(1);
 	}
 /*

@@ -103,10 +103,10 @@ getvolume(f, vols)
 
     if (!ka) {
         if ((ka = (KA_T)AFSnl[X_AFS_VOL].n_value) == (KA_T)0) {
-        if (!w && !Fwarn) {
+        if (!w && !OptWarnings) {
             (void) fprintf(stderr,
             "%s: WARNING: no kernel address for: %s\n",
-            Pn, AFSnl[X_AFS_VOL]._n._n_name);
+            ProgramName, AFSnl[X_AFS_VOL]._n._n_name);
             (void) fprintf(stderr,
             "      This may hamper AFS node number reporting.\n");
             w = 1;
@@ -204,9 +204,9 @@ is_rootFid(vc, rfid)
 
 rfid_unavailable:
 
-        if (!w && !Fwarn) {
+        if (!w && !OptWarnings) {
             (void) fprintf(stderr,
-            "%s: WARNING: %s: %s\n", Pn,
+            "%s: WARNING: %s: %s\n", ProgramName,
             err ? "no kernel address" : "can't read from kernel",
             AFSnl[X_AFS_VOL]._n._n_name);
             (void) fprintf(stderr,
@@ -260,11 +260,11 @@ readafsnode(va, v, an)
     ka = (KA_T)((char *)va + sizeof(struct vnode));
     len = sizeof(struct vcache) - sizeof(struct vnode);
     if (kread(ka, cp, len)) {
-        (void) snpf(Namech, Namechl,
+        (void) snpf(NameChars, NameCharsLength,
         "vnode at %s: can't read vcache remainder from %s",
             print_kptr(va, tbuf, sizeof(tbuf)),
             print_kptr(ka, (char *)NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return(1);
     }
     vc = (struct vcache *)v;

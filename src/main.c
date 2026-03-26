@@ -102,16 +102,16 @@ main(argc, argv)
      */
         cntxlist_t *cntxp;
 
-        CntxStatus = is_selinux_enabled() ? 1 : 0;
+        ContextStatus = is_selinux_enabled() ? 1 : 0;
 #endif    /* defined(HASSELINUX) */
 
 /*
  * Save program name.
  */
-    if ((Pn = strrchr(argv[0], '/')))
-        Pn++;
+    if ((ProgramName = strrchr(argv[0], '/')))
+        ProgramName++;
     else
-        Pn = argv[0];
+        ProgramName = argv[0];
 /*
  * Close all file descriptors above 2.
  *
@@ -139,17 +139,17 @@ main(argc, argv)
 /*
  * Common initialization.
  */
-    Mypid = getpid();
-    if ((Mygid = (gid_t) getgid()) != getegid())
-        Setgid = 1;
-    Euid = geteuid();
-    if ((Myuid = (uid_t) getuid()) && !Euid)
-        Setuidroot = 1;
-    if (!(Namech = (char *) malloc(MAXPATHLEN + 1))) {
-        (void) fprintf(stderr, "%s: no space for name buffer\n", Pn);
+    MyProcessId = getpid();
+    if ((MyRealGid = (gid_t) getgid()) != getegid())
+        SetgidState = 1;
+    EffectiveUid = geteuid();
+    if ((MyRealUid = (uid_t) getuid()) && !EffectiveUid)
+        SetuidRootState = 1;
+    if (!(NameChars = (char *) malloc(MAXPATHLEN + 1))) {
+        (void) fprintf(stderr, "%s: no space for name buffer\n", ProgramName);
         Exit(1);
     }
-    Namechl = (size_t)(MAXPATHLEN + 1);
+    NameCharsLength = (size_t)(MAXPATHLEN + 1);
 /*
  * Create option mask.
  */
@@ -206,7 +206,7 @@ main(argc, argv)
 
 #if    defined(HASXOPT)
 # if	defined(HASXOPT_ROOT)
-    (Myuid == 0) ? "X" : "",
+    (MyRealUid == 0) ? "X" : "",
 # else	/* !defined(HASXOPT_ROOT) */
     "X",
 # endif	/* defined(HASXOPT_ROOT) */
@@ -237,13 +237,13 @@ main(argc, argv)
         }
         switch (c) {
             case 'a':
-                Fand = 1;
+                OptAndSelection = 1;
                 break;
 
 #if    defined(HAS_AFS) && defined(HASAOPT)
             case 'A':
             if (!GOv || *GOv == '-' || *GOv == '+') {
-                (void) fprintf(stderr, "%s: -A not followed by path\n", Pn);
+                (void) fprintf(stderr, "%s: -A not followed by path\n", ProgramName);
                 err = 1;
                 if (GOv) {
                 GOx1 = GObk[0];
@@ -255,27 +255,27 @@ main(argc, argv)
 #endif    /* defined(HAS_AFS) && defined(HASAOPT) */
 
             case 'b':
-                Fblock = 1;
+                OptBlockDevice = 1;
                 break;
             case 'c':
                 if (GOp == '+') {
                     if (!GOv || (*GOv == '-') || (*GOv == '+')
                         || !isdigit((int) *GOv)) {
                         (void) fprintf(stderr,
-                                       "%s: +c not followed by width number\n", Pn);
+                                       "%s: +c not followed by width number\n", ProgramName);
                         err = 1;
                         if (GOv) {
                             GOx1 = GObk[0];
                             GOx2 = GObk[1];
                         }
                     } else {
-                        CmdLim = atoi(GOv);
+                        CommandColLimit = atoi(GOv);
 
 #if    defined(MAXSYSCMDL)
-                        if (CmdLim > MAXSYSCMDL) {
+                        if (CommandColLimit > MAXSYSCMDL) {
                             (void) fprintf(stderr,
                             "%s: +c %d > what system provides (%d)\n",
-                            Pn, CmdLim, MAXSYSCMDL);
+                            ProgramName, CommandColLimit, MAXSYSCMDL);
                             err = 1;
                         }
 #endif    /* defined(MAXSYSCMDL) */
@@ -287,18 +287,18 @@ main(argc, argv)
                     if (enter_cmd_rx(GOv))
                         err = 1;
                 } else {
-                    if (enter_str_lst("-c", GOv, &Cmdl, &Cmdni, &Cmdnx))
+                    if (enter_str_lst("-c", GOv, &CommandNameList, &CommandNameInclusions, &CommandNameExclusions))
                         err = 1;
 
 #if    defined(MAXSYSCMDL)
-                    else if (Cmdl->len > MAXSYSCMDL) {
-                    (void) fprintf(stderr, "%s: \"-c ", Pn);
-                    (void) safestrprt(Cmdl->str, stderr, 2);
+                    else if (CommandNameList->len > MAXSYSCMDL) {
+                    (void) fprintf(stderr, "%s: \"-c ", ProgramName);
+                    (void) safestrprt(CommandNameList->str, stderr, 2);
                     (void) fprintf(stderr, "\" length (%d) > what system",
-                        Cmdl->len);
+                        CommandNameList->len);
                     (void) fprintf(stderr, " provides (%d)\n",
                         MAXSYSCMDL);
-                    Cmdl->len = 0;	/* (to avoid later error report) */
+                    CommandNameList->len = 0;	/* (to avoid later error report) */
                     err = 1;
                     }
 #endif    /* defined(MAXSYSCMDL) */
@@ -308,7 +308,7 @@ main(argc, argv)
 
 #if    defined(HASNCACHE)
             case 'C':
-            Fncache = (GOp == '-') ? 0 : 1;
+            OptNameCache = (GOp == '-') ? 0 : 1;
             break;
 #endif    /* defined(HASNCACHE) */
 
@@ -324,7 +324,7 @@ main(argc, argv)
                     if (enter_dir(GOv, 0))
                         err = 1;
                     else {
-                        Selflags |= SELNM;
+                        SelectionFlags |= SELNM;
                         xover = 1;
                     }
                 } else {
@@ -337,7 +337,7 @@ main(argc, argv)
                     if (enter_dir(GOv, 1))
                         err = 1;
                     else {
-                        Selflags |= SELNM;
+                        SelectionFlags |= SELNM;
                         xover = 1;
                     }
                 } else {
@@ -346,7 +346,7 @@ main(argc, argv)
                     if (ctrl_dcache(GOv))
                     err = 1;
 #else	/* !defined(HASDCACHE) */
-                    (void) fprintf(stderr, "%s: unsupported option: -D\n", Pn);
+                    (void) fprintf(stderr, "%s: unsupported option: -D\n", ProgramName);
                     err = 1;
 #endif    /* defined(HASDCACHE) */
 
@@ -354,7 +354,7 @@ main(argc, argv)
                 break;
             case 'f':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Ffilesys = (GOp == '+') ? 2 : 1;
+                    OptFileSystem = (GOp == '+') ? 2 : 1;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -370,10 +370,10 @@ main(argc, argv)
                 case 'c':
                 case 'C':
                 if (GOp == '+') {
-                    Fsv |= FSV_CT;
-                    FsvByf = 1;
+                    OptFileStructValues |= FSV_FILE_COUNT;
+                    OptFileStructSetByFlag = 1;
                 } else
-                    Fsv &= (unsigned char)~FSV_CT;
+                    OptFileStructValues &= (unsigned char)~FSV_FILE_COUNT;
                 break;
 # endif	/* !defined(HASNOFSCOUNT) */
 
@@ -381,10 +381,10 @@ main(argc, argv)
                 case 'f':
                 case 'F':
                 if (GOp == '+') {
-                    Fsv |= FSV_FA;
-                    FsvByf = 1;
+                    OptFileStructValues |= FSV_FILE_ADDR;
+                    OptFileStructSetByFlag = 1;
                 } else
-                    Fsv &= (unsigned char)~FSV_FA;
+                    OptFileStructValues &= (unsigned char)~FSV_FILE_ADDR;
                 break;
 # endif	/* !defined(HASNOFSADDR) */
 
@@ -392,11 +392,11 @@ main(argc, argv)
                 case 'g':
                 case 'G':
                 if (GOp == '+') {
-                    Fsv |= FSV_FG;
-                    FsvByf = 1;
+                    OptFileStructValues |= FSV_FILE_FLAGS;
+                    OptFileStructSetByFlag = 1;
                 } else
-                    Fsv &= (unsigned char)~FSV_FG;
-                FsvFlagX = (*GOv == 'G') ? 1 : 0;
+                    OptFileStructValues &= (unsigned char)~FSV_FILE_FLAGS;
+                OptFileStructFlagHex = (*GOv == 'G') ? 1 : 0;
                 break;
 # endif	/* !defined(HASNOFSFLAGS) */
 
@@ -404,22 +404,22 @@ main(argc, argv)
                 case 'n':
                 case 'N':
                 if (GOp == '+') {
-                    Fsv |= FSV_NI;
-                    FsvByf = 1;
+                    OptFileStructValues |= FSV_NODE_ID;
+                    OptFileStructSetByFlag = 1;
                 } else
-                    Fsv &= (unsigned char)~FSV_NI;
+                    OptFileStructValues &= (unsigned char)~FSV_NODE_ID;
                 break;
 # endif	/* !defined(HASNOFSNADDR */
 
                 default:
                 (void) fprintf(stderr,
-                    "%s: unknown file struct option: %c\n", Pn, *GOv);
+                    "%s: unknown file struct option: %c\n", ProgramName, *GOv);
                 err++;
                 }
             }
 #else	/* !defined(HASFSTRUCT) */
                 (void) fprintf(stderr,
-                               "%s: unknown string for %cf: %s\n", Pn, GOp, GOv);
+                               "%s: unknown string for %cf: %s\n", ProgramName, GOp, GOv);
                 err++;
 #endif    /* defined(HASFSTRUCT) */
 
@@ -434,51 +434,51 @@ main(argc, argv)
                         } else if (*GOv == '0')
                             Terminator = '\0';
                     }
-                    for (i = 0; FieldSel[i].nm; i++) {
+                    for (i = 0; FieldSelection[i].nm; i++) {
 
 #if    !defined(HASPPID)
-                        if (FieldSel[i].id == LSOF_FID_PPID)
+                        if (FieldSelection[i].id == LSOF_FID_PPID)
                             continue;
 #endif    /* !defined(HASPPID) */
 
 #if    !defined(HASFSTRUCT)
-                        if (FieldSel[i].id == LSOF_FID_CT
-                            || FieldSel[i].id == LSOF_FID_FA
-                            || FieldSel[i].id == LSOF_FID_FG
-                            || FieldSel[i].id == LSOF_FID_NI)
+                        if (FieldSelection[i].id == LSOF_FID_FILE_STRUCT_COUNT
+                            || FieldSelection[i].id == LSOF_FID_FILE_STRUCT_ADDR
+                            || FieldSelection[i].id == LSOF_FID_FILE_FLAGS
+                            || FieldSelection[i].id == LSOF_FID_NODE_ID)
                             continue;
 #endif    /* !defined(HASFSTRUCT) */
 
 #if    defined(HASSELINUX)
-                        if ((FieldSel[i].id == LSOF_FID_CNTX) && !CntxStatus)
+                        if ((FieldSelection[i].id == LSOF_FID_SEC_CONTEXT) && !ContextStatus)
                             continue;
 #else	/* !defined(HASSELINUX) */
-                        if (FieldSel[i].id == LSOF_FID_CNTX)
+                        if (FieldSelection[i].id == LSOF_FID_SEC_CONTEXT)
                             continue;
 #endif    /* !defined(HASSELINUX) */
 
-                        if (FieldSel[i].id == LSOF_FID_RDEV)
+                        if (FieldSelection[i].id == LSOF_FID_RDEV)
                             continue;    /* for compatibility */
 
 #if    !defined(HASTASKS)
-                        if (FieldSel[i].id == LSOF_FID_TID)
+                        if (FieldSelection[i].id == LSOF_FID_TID)
                             continue;
 #endif    /* !defined(HASTASKS) */
 
 #if    !defined(HASZONES)
-                        if (FieldSel[i].id == LSOF_FID_ZONE)
+                        if (FieldSelection[i].id == LSOF_FID_ZONE)
                             continue;
 #endif    /* !defined(HASZONES) */
 
-                        FieldSel[i].st = 1;
-                        if (FieldSel[i].opt && FieldSel[i].ov)
-                            *(FieldSel[i].opt) |= FieldSel[i].ov;
+                        FieldSelection[i].st = 1;
+                        if (FieldSelection[i].opt && FieldSelection[i].ov)
+                            *(FieldSelection[i].opt) |= FieldSelection[i].ov;
                     }
 
 #if    defined(HASFSTRUCT)
-                    Ffield = FsvFlagX = 1;
+                    OptFieldOutput = OptFileStructFlagHex = 1;
 #else	/* !defined(HASFSTRUCT) */
-                    Ffield = 1;
+                    OptFieldOutput = 1;
 #endif    /* defined(HASFSTRUCT) */
 
                     break;
@@ -488,34 +488,34 @@ main(argc, argv)
                     break;
                 }
                 for (; *GOv; GOv++) {
-                    for (i = 0; FieldSel[i].nm; i++) {
+                    for (i = 0; FieldSelection[i].nm; i++) {
 
 #if    !defined(HASPPID)
-                        if (FieldSel[i].id == LSOF_FID_PPID)
+                        if (FieldSelection[i].id == LSOF_FID_PPID)
                             continue;
 #endif    /* !defined(HASPPID) */
 
 #if    !defined(HASFSTRUCT)
-                        if (FieldSel[i].id == LSOF_FID_CT
-                            || FieldSel[i].id == LSOF_FID_FA
-                            || FieldSel[i].id == LSOF_FID_FG
-                            || FieldSel[i].id == LSOF_FID_NI)
+                        if (FieldSelection[i].id == LSOF_FID_FILE_STRUCT_COUNT
+                            || FieldSelection[i].id == LSOF_FID_FILE_STRUCT_ADDR
+                            || FieldSelection[i].id == LSOF_FID_FILE_FLAGS
+                            || FieldSelection[i].id == LSOF_FID_NODE_ID)
                             continue;
 #endif    /* !defined(HASFSTRUCT) */
 
 #if    !defined(HASTASKS)
-                        if (FieldSel[i].id == LSOF_FID_TID)
+                        if (FieldSelection[i].id == LSOF_FID_TID)
                             continue;
 #endif    /* !defined(HASTASKS) */
 
-                        if (FieldSel[i].id == *GOv) {
-                            FieldSel[i].st = 1;
-                            if (FieldSel[i].opt && FieldSel[i].ov)
-                                *(FieldSel[i].opt) |= FieldSel[i].ov;
+                        if (FieldSelection[i].id == *GOv) {
+                            FieldSelection[i].st = 1;
+                            if (FieldSelection[i].opt && FieldSelection[i].ov)
+                                *(FieldSelection[i].opt) |= FieldSelection[i].ov;
 
 #if    defined(HASFSTRUCT)
-                            if (i == LSOF_FIX_FG)
-                            FsvFlagX = 1;
+                            if (i == LSOF_FIX_FILE_FLAGS)
+                            OptFileStructFlagHex = 1;
 #endif    /* defined(HASFSTRUCT) */
 
                             if (i == LSOF_FIX_TERM)
@@ -523,13 +523,13 @@ main(argc, argv)
                             break;
                         }
                     }
-                    if (!FieldSel[i].nm) {
+                    if (!FieldSelection[i].nm) {
                         (void) fprintf(stderr,
-                                       "%s: unknown field: %c\n", Pn, *GOv);
+                                       "%s: unknown field: %c\n", ProgramName, *GOv);
                         err++;
                     }
                 }
-                Ffield = 1;
+                OptFieldOutput = 1;
                 break;
             case 'g':
                 if (GOv) {
@@ -539,16 +539,16 @@ main(argc, argv)
                     } else if (enter_id(PGID, GOv))
                         err = 1;
                 }
-                Fpgid = 1;
+                OptProcessGroup = 1;
                 break;
             case 'h':
             case '?':
-                Fhelp = 1;
+                OptHelp = 1;
                 break;
             case 'i':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Fnet = 1;
-                    FnetTy = 0;
+                    OptNetwork = 1;
+                    OptNetworkType = 0;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -562,31 +562,31 @@ main(argc, argv)
 #if    defined(HASKOPT)
             case 'k':
             if (!GOv || *GOv == '-' || *GOv == '+') {
-                (void) fprintf(stderr, "%s: -k not followed by path\n", Pn);
+                (void) fprintf(stderr, "%s: -k not followed by path\n", ProgramName);
                 err = 1;
                 if (GOv) {
                 GOx1 = GObk[0];
                 GOx2 = GObk[1];
                 }
             } else
-                Nmlst = GOv;
+                NamelistFilePath = GOv;
             break;
 #endif    /* defined(HASKOPT) */
 
 #if    defined(HASTASKS)
             case 'K':
-                Ftask = 1;
-                Selflags |= SELTASK;
+                OptTask = 1;
+                SelectionFlags |= SELTASK;
                 break;
 #endif    /* defined(HASTASKS) */
 
             case 'l':
-                Futol = 0;
+                OptUserToLogin = 0;
                 break;
             case 'L':
-                Fnlink = (GOp == '+') ? 1 : 0;
+                OptLinkCount = (GOp == '+') ? 1 : 0;
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Nlink = 0l;
+                    LinkCountThreshold = 0l;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -602,14 +602,14 @@ main(argc, argv)
                 if (n) {
                     if (GOp != '+') {
                         (void) fprintf(stderr,
-                                       "%s: no number may follow -L\n", Pn);
+                                       "%s: no number may follow -L\n", ProgramName);
                         err = 1;
                     } else {
-                        Nlink = l;
-                        Selflags |= SELNLINK;
+                        LinkCountThreshold = l;
+                        SelectionFlags |= SELNLINK;
                     }
                 } else
-                    Nlink = 0l;
+                    LinkCountThreshold = 0l;
                 if (*cp) {
                     GOx1 = GObk[0];
                     GOx2 = GObk[1] + n;
@@ -623,7 +623,7 @@ main(argc, argv)
 # if	defined(HASMOPT)
                 if (!GOv || *GOv == '-' || *GOv == '+') {
                 (void) fprintf(stderr,
-                    "%s: -m not followed by path\n", Pn);
+                    "%s: -m not followed by path\n", ProgramName);
                 err = 1;
                 if (GOv) {
                     GOx1 = GObk[0];
@@ -632,7 +632,7 @@ main(argc, argv)
                 } else
                 Memory = GOv;
 # else	/* !defined(HASMOPT) */
-                (void) fprintf(stderr, "%s: -m not supported\n", Pn);
+                (void) fprintf(stderr, "%s: -m not supported\n", ProgramName);
                 err = 1;
 # endif	/* defined(HASMOPT) */
 
@@ -640,22 +640,22 @@ main(argc, argv)
 
 # if	defined(HASMNTSUP)
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                MntSup = 1;
+                MountSupplementState = 1;
                 if (GOv) {
                     GOx1 = GObk[0];
                     GOx2 = GObk[1];
                 }
                 } else {
-                MntSup = 2;
-                MntSupP = GOv;
+                MountSupplementState = 2;
+                MountSupplementPath = GOv;
                 }
 # else	/* !defined(HASMNTSUP) */
-                (void) fprintf(stderr, "%s: +m not supported\n", Pn);
+                (void) fprintf(stderr, "%s: +m not supported\n", ProgramName);
                 err = 1;
 # endif	/* defined(HASMNTSUP) */
 
             } else {
-                (void) fprintf(stderr, "%s: %cm not supported\n", Pn, GOp);
+                (void) fprintf(stderr, "%s: %cm not supported\n", ProgramName, GOp);
                 err = 1;
             }
             break;
@@ -663,19 +663,19 @@ main(argc, argv)
 
 #if    !defined(HASNORPC_H)
             case 'M':
-                FportMap = (GOp == '+') ? 1 : 0;
+                OptPortMap = (GOp == '+') ? 1 : 0;
                 break;
 #endif    /* !defined(HASNORPC_H) */
 
             case 'n':
-                Fhost = (GOp == '-') ? 0 : 1;
+                OptHostLookup = (GOp == '-') ? 0 : 1;
                 break;
             case 'N':
-                Fnfs = 1;
+                OptNfs = 1;
                 break;
             case 'o':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Foffset = 1;
+                    OptOffset = 1;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -689,29 +689,29 @@ main(argc, argv)
                     n++;
                 }
                 if (n)
-                    OffDecDig = i;
+                    OffsetDecDigitLimit = i;
                 else
-                    Foffset = 1;
+                    OptOffset = 1;
                 if (*cp) {
                     GOx1 = GObk[0];
                     GOx2 = GObk[1] + n;
                 }
                 break;
             case 'O':
-                Fovhd = (GOp == '-') ? 1 : 0;
+                OptOverhead = (GOp == '-') ? 1 : 0;
                 break;
             case 'p':
                 if (enter_id(PID, GOv))
                     err = 1;
                 break;
             case 'P':
-                Fport = (GOp == '-') ? 0 : 1;
+                OptPortLookup = (GOp == '-') ? 0 : 1;
                 break;
             case 'r':
                 if (GOp == '+')
                     ev = rc = 1;
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    RptTm = RPTTM;
+                    RepeatTime = RPTTM;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -725,9 +725,9 @@ main(argc, argv)
                     n++;
                 }
                 if (n)
-                    RptTm = i;
+                    RepeatTime = i;
                 else
-                    RptTm = RPTTM;
+                    RepeatTime = RPTTM;
                 if (!*cp)
                     break;
                 while (*cp && (*cp == ' '))
@@ -746,7 +746,7 @@ main(argc, argv)
             cp++;
             if ((fmtl = strlen(cp) + 1) < 1) {
                 (void) fprintf(stderr, "%s: <fmt> too short: \"%s\"\n",
-                Pn, cp);
+                ProgramName, cp);
                 err = 1;
             } else {
                 fmt = cp;
@@ -754,19 +754,19 @@ main(argc, argv)
                 if (!(fmtr = (char *)malloc((MALLOC_S)fmtl))) {
                 (void) fprintf(stderr,
                     "%s: no space (%d) for <fmt> result: \"%s\"\n",
-                    Pn, (int)fmtl, cp);
+                    ProgramName, (int)fmtl, cp);
                     Exit(1);
                 }
                 if (util_strftime(fmtr, fmtl - 1, fmt) < 1) {
                 (void) fprintf(stderr, "%s: illegal <fmt>: \"%s\"\n",
-                    Pn, fmt);
+                    ProgramName, fmt);
                 err = 1;
                 }
             }
 
 #else	/* !defined(HAS_STRFTIME) */
                 (void) fprintf(stderr, "%s: m<fmt> not supported: \"%s\"\n",
-                               Pn, cp);
+                               ProgramName, cp);
                 err = 1;
 #endif    /* defined(HAS_STRFTIME) */
 
@@ -774,7 +774,7 @@ main(argc, argv)
 
 #if    defined(HASPPID)
             case 'R':
-            Fppid = 1;
+            OptParentPid = 1;
             break;
 #endif    /* defined(HASPPID) */
 
@@ -782,7 +782,7 @@ main(argc, argv)
 
 #if    defined(HASTCPUDPSTATE)
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Fsize = 1;
+                    OptSize = 1;
                     if (GOv) {
                     GOx1 = GObk[0];
                     GOx2 = GObk[1];
@@ -792,13 +792,13 @@ main(argc, argv)
                     err = 1;
                 }
 #else	/* !defined(HASTCPUDPSTATE) */
-                Fsize = 1;
+                OptSize = 1;
 #endif    /* defined(HASTCPUDPSTATE) */
 
                 break;
             case 'S':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    TmLimit = TMLIMIT;
+                    TimeoutLimit = TMLIMIT;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -812,61 +812,61 @@ main(argc, argv)
                     n++;
                 }
                 if (n)
-                    TmLimit = i;
+                    TimeoutLimit = i;
                 else
-                    TmLimit = TMLIMIT;
+                    TimeoutLimit = TMLIMIT;
                 if (*cp) {
                     GOx1 = GObk[0];
                     GOx2 = GObk[1] + n;
                 }
-                if (TmLimit < TMLIMMIN) {
+                if (TimeoutLimit < TMLIMMIN) {
                     (void) fprintf(stderr,
                                    "%s: WARNING: -S time (%d) changed to %d\n",
-                                   Pn, TmLimit, TMLIMMIN);
-                    TmLimit = TMLIMMIN;
+                                   ProgramName, TimeoutLimit, TMLIMMIN);
+                    TimeoutLimit = TMLIMMIN;
                 }
                 break;
             case 't':
-                Fterse = Fwarn = 1;
+                OptTerse = OptWarnings = 1;
                 break;
             case 'T':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Ftcptpi = (GOp == '-') ? 0 : TCPTPI_STATE;
+                    OptTcpTpiInfo = (GOp == '-') ? 0 : TCPTPI_STATE;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
                     }
                     break;
                 }
-                for (Ftcptpi = 0; *GOv; GOv++) {
+                for (OptTcpTpiInfo = 0; *GOv; GOv++) {
                     switch (*GOv) {
 
 #if    defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT)
                         case 'f':
-                        Ftcptpi |= TCPTPI_FLAGS;
+                        OptTcpTpiInfo |= TCPTPI_FLAGS;
                         break;
 #endif    /* defined(HASSOOPT) || defined(HASSOSTATE) || defined(HASTCPOPT) */
 
 #if    defined(HASTCPTPIQ)
                         case 'q':
-                        Ftcptpi |= TCPTPI_QUEUES;
+                        OptTcpTpiInfo |= TCPTPI_QUEUES;
                         break;
 #endif    /* defined(HASTCPTPIQ) */
 
                         case 's':
-                            Ftcptpi |= TCPTPI_STATE;
+                            OptTcpTpiInfo |= TCPTPI_STATE;
                             break;
 
 #if    defined(HASTCPTPIW)
                         case 'w':
-                        Ftcptpi |= TCPTPI_WINDOWS;
+                        OptTcpTpiInfo |= TCPTPI_WINDOWS;
                         break;
 #endif    /* defined(HASTCPTPIW) */
 
                         default:
                             (void) fprintf(stderr,
                                            "%s: unsupported TCP/TPI info selection: %c\n",
-                                           Pn, *GOv);
+                                           ProgramName, *GOv);
                             err = 1;
                     }
                 }
@@ -876,20 +876,20 @@ main(argc, argv)
                     err = 1;
                 break;
             case 'U':
-                Funix = 1;
+                OptUnixSocket = 1;
                 break;
             case 'v':
                 version = 1;
                 break;
             case 'V':
-                Fverbose = 1;
+                OptVerbose = 1;
                 break;
             case 'w':
-                Fwarn = (GOp == '+') ? 0 : 1;
+                OptWarnings = (GOp == '+') ? 0 : 1;
                 break;
             case 'x':
                 if (!GOv || *GOv == '-' || *GOv == '+') {
-                    Fxover = XO_ALL;
+                    OptCrossover = XO_ALL;
                     if (GOv) {
                         GOx1 = GObk[0];
                         GOx2 = GObk[1];
@@ -899,15 +899,15 @@ main(argc, argv)
                     for (; *GOv; GOv++) {
                         switch (*GOv) {
                             case 'f':
-                                Fxover |= XO_FILESYS;
+                                OptCrossover |= XO_FILESYS;
                                 break;
                             case 'l':
-                                Fxover |= XO_SYMLINK;
+                                OptCrossover |= XO_SYMLINK;
                                 break;
                             default:
                                 (void) fprintf(stderr,
                                                "%s: unknown cross-over option: %c\n",
-                                               Pn, *GOv);
+                                               ProgramName, *GOv);
                                 err++;
                         }
                     }
@@ -916,13 +916,13 @@ main(argc, argv)
 
 #if    defined(HASXOPT)
             case 'X':
-            Fxopt = Fxopt ? 0 : 1;
+            OptCrossoverExt = OptCrossoverExt ? 0 : 1;
             break;
 #endif    /* defined(HASXOPT) */
 
 #if    defined(HASZONES)
             case 'z':
-            Fzone = 1;
+            OptZone = 1;
             if (GOv && (*GOv != '-') && (*GOv != '+')) {
 
             /*
@@ -939,11 +939,11 @@ main(argc, argv)
 
 #if    defined(HASSELINUX)
             case 'Z':
-            if (!CntxStatus) {
-               (void) fprintf(stderr, "%s: -Z limited to SELinux\n", Pn);
+            if (!ContextStatus) {
+               (void) fprintf(stderr, "%s: -Z limited to SELinux\n", ProgramName);
                 err = 1;
             } else {
-                Fcntx = 1;
+                OptSecContext = 1;
                 if (GOv && (*GOv != '-') && (*GOv != '+')) {
 
                 /*
@@ -960,26 +960,26 @@ main(argc, argv)
 #endif    /* defined(HASSELINUX) */
 
             default:
-                (void) fprintf(stderr, "%s: unknown option (%c)\n", Pn, c);
+                (void) fprintf(stderr, "%s: unknown option (%c)\n", ProgramName, c);
                 err = 1;
         }
     }
 /*
  * Check for argument consistency.
  */
-    if (Cmdnx && Cmdni) {
+    if (CommandNameExclusions && CommandNameInclusions) {
 
         /*
          * Check for command inclusion/exclusion conflicts.
          */
-        for (str = Cmdl; str; str = str->next) {
+        for (str = CommandNameList; str; str = str->next) {
             if (str->x) {
-                for (strt = Cmdl; strt; strt = strt->next) {
+                for (strt = CommandNameList; strt; strt = strt->next) {
                     if (!strt->x) {
                         if (!strcmp(str->str, strt->str)) {
                             (void) fprintf(stderr,
                                            "%s: -c^%s and -c%s conflict.\n",
-                                           Pn, str->str, strt->str);
+                                           ProgramName, str->str, strt->str);
                             err++;
                         }
                     }
@@ -989,48 +989,48 @@ main(argc, argv)
     }
 
 #if    defined(HASTCPUDPSTATE)
-    if (TcpStXn && TcpStIn) {
+    if (TcpStateExcludeCount && TcpStateIncludeCount) {
 
     /*
      * Check for excluded and included TCP states.
      */
-        for (i = 0; i < TcpNstates; i++) {
-        if (TcpStX[i] && TcpStI[i]) {
+        for (i = 0; i < TcpNumStates; i++) {
+        if (TcpStateExclude[i] && TcpStateInclude[i]) {
             (void) fprintf(stderr,
             "%s: can't include and exclude TCP state: %s\n",
-            Pn, TcpSt[i]);
+            ProgramName, TcpStateNames[i]);
             err = 1;
         }
         }
     }
-    if (UdpStXn && UdpStIn) {
+    if (UdpStateExcludeCount && UdpStateIncludeCount) {
 
     /*
      * Check for excluded and included UDP states.
      */
-        for (i = 0; i < UdpNstates; i++) {
-        if (UdpStX[i] && UdpStI[i]) {
+        for (i = 0; i < UdpNumStates; i++) {
+        if (UdpStateExclude[i] && UdpStateInclude[i]) {
             (void) fprintf(stderr,
             "%s: can't include and exclude UDP state: %s\n",
-            Pn, UdpSt[i]);
+            ProgramName, UdpStateNames[i]);
             err = 1;
         }
         }
     }
 #endif    /* defined(HASTCPUDPSTATE) */
 
-    if (Fsize && Foffset) {
+    if (OptSize && OptOffset) {
         (void) fprintf(stderr, "%s: -o and -s are mutually exclusive\n",
-                       Pn);
+                       ProgramName);
         err++;
     }
-    if (Ffield) {
-        if (Fterse) {
+    if (OptFieldOutput) {
+        if (OptTerse) {
             (void) fprintf(stderr,
-                           "%s: -F and -t are mutually exclusive\n", Pn);
+                           "%s: -F and -t are mutually exclusive\n", ProgramName);
             err++;
         }
-        FieldSel[LSOF_FIX_PID].st = 1;
+        FieldSelection[LSOF_FIX_PID].st = 1;
 
 #if    defined(HAS_STRFTIME)
         if (fmtr) {
@@ -1042,7 +1042,7 @@ main(argc, argv)
         for (cp = strchr(fmt, '%'); cp; cp = strchr(cp, '%')) {
             if (*++cp  == 'n') {
             (void) fprintf(stderr,
-                "%s: %%n illegal in -r m<fmt> when -F has", Pn);
+                "%s: %%n illegal in -r m<fmt> when -F has", ProgramName);
             (void) fprintf(stderr,
                 " been specified: \"%s\"\n", fmt);
             err++;
@@ -1054,22 +1054,22 @@ main(argc, argv)
 #endif    /* defined(HAS_STRFTIME) */
 
     }
-    if (Fxover && !xover) {
-        (void) fprintf(stderr, "%s: -x must accompany +d or +D\n", Pn);
+    if (OptCrossover && !xover) {
+        (void) fprintf(stderr, "%s: -x must accompany +d or +D\n", ProgramName);
         err++;
     }
 
 #if    defined(HASEOPT)
-    if (Efsysl) {
+    if (ExcludedFileSysList) {
 
     /*
      * If there are file systems specified by -e options, check them.
      */
-        efsys_list_t *ep;		/* Efsysl pointer */
+        efsys_list_t *ep;		/* ExcludedFileSysList pointer */
         struct mounts *mp, *mpw;	/* local mount table pointers */
 
         if ((mp = readmnt())) {
-        for (ep = Efsysl; ep; ep = ep->next) {
+        for (ep = ExcludedFileSysList; ep; ep = ep->next) {
             for (mpw = mp; mpw; mpw = mpw->next) {
             if (!strcmp(mpw->dir, ep->path)) {
                 ep->mp = mpw;
@@ -1079,7 +1079,7 @@ main(argc, argv)
             if (!ep->mp) {
             (void) fprintf(stderr,
                 "%s: \"-e %s\" is not a mounted file system.\n",
-                Pn, ep->path);
+                ProgramName, ep->path);
             err++;
             }
         }
@@ -1087,70 +1087,70 @@ main(argc, argv)
     }
 #endif    /* defined(HASEOPT) */
 
-    if (DChelp || err || Fhelp || fh || version)
+    if (DevCacheHelp || err || OptHelp || fh || version)
         usage(err ? 1 : 0, fh, version);
 /*
- * Reduce the size of Suid[], if necessary.
+ * Reduce the size of SearchUidList[], if necessary.
  */
-    if (Suid && Nuid && Nuid < Mxuid) {
-        struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) Suid,
-                                               (MALLOC_S)(sizeof(struct seluid) * Nuid));
+    if (SearchUidList && NumUidSelections && NumUidSelections < MaxUidEntries) {
+        struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) SearchUidList,
+                                               (MALLOC_S)(sizeof(struct seluid) * NumUidSelections));
         if (!tmp) {
-            (void) fprintf(stderr, "%s: can't realloc UID table\n", Pn);
-            (void) free((FREE_P *) Suid);
-            Suid = (struct seluid *) NULL;
+            (void) fprintf(stderr, "%s: can't realloc UID table\n", ProgramName);
+            (void) free((FREE_P *) SearchUidList);
+            SearchUidList = (struct seluid *) NULL;
             Exit(1);
         }
-        Suid = tmp;
-        Mxuid = Nuid;
+        SearchUidList = tmp;
+        MaxUidEntries = NumUidSelections;
     }
 /*
  * Compute the selection flags.
  */
-    if ((Cmdl && Cmdni) || CmdRx)
-        Selflags |= SELCMD;
+    if ((CommandNameList && CommandNameInclusions) || CommandRegexTable)
+        SelectionFlags |= SELCMD;
 
 #if    defined(HASSELINUX)
-    if (CntxArg)
-        Selflags |= SELCNTX;
+    if (ContextArgList)
+        SelectionFlags |= SELCNTX;
 #endif    /* defined(HASSELINUX) */
 
-    if (Fdl)
-        Selflags |= SELFD;
-    if (Fnet)
-        Selflags |= SELNET;
-    if (Fnfs)
-        Selflags |= SELNFS;
-    if (Funix)
-        Selflags |= SELUNX;
-    if (Npgid && Npgidi)
-        Selflags |= SELPGID;
-    if (Npid && Npidi)
-        Selflags |= SELPID;
-    if (Nuid && Nuidincl)
-        Selflags |= SELUID;
-    if (Nwad)
-        Selflags |= SELNA;
+    if (FdList)
+        SelectionFlags |= SELFD;
+    if (OptNetwork)
+        SelectionFlags |= SELNET;
+    if (OptNfs)
+        SelectionFlags |= SELNFS;
+    if (OptUnixSocket)
+        SelectionFlags |= SELUNX;
+    if (NumPgidSelections && NumPgidInclusions)
+        SelectionFlags |= SELPGID;
+    if (NumPidSelections && NumPidInclusions)
+        SelectionFlags |= SELPID;
+    if (NumUidSelections && NumUidInclusions)
+        SelectionFlags |= SELUID;
+    if (NetworkAddrList)
+        SelectionFlags |= SELNA;
 
 #if    defined(HASZONES)
     if (ZoneArg)
-        Selflags |= SELZONE;
+        SelectionFlags |= SELZONE;
 #endif    /* defined(HASZONES) */
 
     if (GOx1 < argc)
-        Selflags |= SELNM;
-    if (Selflags == 0) {
-        if (Fand) {
+        SelectionFlags |= SELNM;
+    if (SelectionFlags == 0) {
+        if (OptAndSelection) {
             (void) fprintf(stderr,
-                           "%s: no select options to AND via -a\n", Pn);
+                           "%s: no select options to AND via -a\n", ProgramName);
             usage(1, 0, 0);
         }
-        Selflags = SELALL;
+        SelectionFlags = SELALL;
     } else {
-        if (GOx1 >= argc && (Selflags & (SELNA | SELNET)) != 0
-            && (Selflags & ~(SELNA | SELNET)) == 0)
-            Selinet = 1;
-        Selall = 0;
+        if (GOx1 >= argc && (SelectionFlags & (SELNA | SELNET)) != 0
+            && (SelectionFlags & ~(SELNA | SELNET)) == 0)
+            SelectInetOnly = 1;
+        SelectAll = 0;
     }
 /*
  * Get the device for DEVDEV_PATH.
@@ -1167,28 +1167,28 @@ main(argc, argv)
             ss = 1;
         }
         if (ss) {
-            (void) fprintf(stderr, "%s: can't stat(%s): %s\n", Pn,
+            (void) fprintf(stderr, "%s: can't stat(%s): %s\n", ProgramName,
                            DEVDEV_PATH, strerror(se1));
             if (ad) {
-                (void) fprintf(stderr, "%s: can't stat(/dev): %s\n", Pn,
+                (void) fprintf(stderr, "%s: can't stat(/dev): %s\n", ProgramName,
                                strerror(se2));
             }
             Exit(1);
         }
     }
-    DevDev = sb.st_dev;
+    DeviceOfDev = sb.st_dev;
 /*
  * Process the file arguments.
  */
     if (GOx1 < argc) {
-        if (ck_file_arg(GOx1, argc, argv, Ffilesys, 0, (struct stat *) NULL))
+        if (ck_file_arg(GOx1, argc, argv, OptFileSystem, 0, (struct stat *) NULL))
             usage(1, 0, 0);
     }
 /*
  * Do dialect-specific initialization.
  */
     initialize();
-    if (Sfile)
+    if (SearchFileChain)
         (void) hashSfile();
 
 #if    defined(WILLDROPGID)
@@ -1204,7 +1204,7 @@ main(argc, argv)
     /*
      * If there is a device cache, prepare the device table.
      */
-        if (DCstate)
+        if (DevCacheState)
             readdev(0);
 #endif    /* defined(HASDCACHE) */
 
@@ -1212,33 +1212,33 @@ main(argc, argv)
  * Define the size and offset print formats.
  */
     (void) snpf(options, sizeof(options), "%%%su", INODEPSPEC);
-    InodeFmt_d = sv_fmt_str(options);
+    InodeFormatDecimal = sv_fmt_str(options);
     (void) snpf(options, sizeof(options), "%%#%sx", INODEPSPEC);
-    InodeFmt_x = sv_fmt_str(options);
+    InodeFormatHex = sv_fmt_str(options);
     (void) snpf(options, sizeof(options), "0t%%%su", SZOFFPSPEC);
-    SzOffFmt_0t = sv_fmt_str(options);
+    SizeOffFormat0t = sv_fmt_str(options);
     (void) snpf(options, sizeof(options), "%%%su", SZOFFPSPEC);
-    SzOffFmt_d = sv_fmt_str(options);
+    SizeOffFormatD = sv_fmt_str(options);
     (void) snpf(options, sizeof(options), "%%*%su", SZOFFPSPEC);
-    SzOffFmt_dv = sv_fmt_str(options);
+    SizeOffFormatDv = sv_fmt_str(options);
     (void) snpf(options, sizeof(options), "%%#%sx", SZOFFPSPEC);
-    SzOffFmt_x = sv_fmt_str(options);
+    SizeOffFormatX = sv_fmt_str(options);
 
 #if    defined(HASMNTSUP)
     /*
      * Report mount supplement information, as requested.
      */
-        if (MntSup == 1) {
+        if (MountSupplementState == 1) {
             (void) readmnt();
             Exit(0);
         }
 #endif    /* defined(HASMNTSUP) */
 
 /*
- * Gather and report process information every RptTm seconds.
+ * Gather and report process information every RepeatTime seconds.
  */
-    if (RptTm)
-        CkPasswd = 1;
+    if (RepeatTime)
+        CheckPasswdChange = 1;
     do {
 
         /*
@@ -1248,10 +1248,10 @@ main(argc, argv)
         /*
          * If the local process table has more than one entry, sort it by PID.
          */
-        if (Nlproc > 1) {
-            if (Nlproc > sp) {
-                len = (MALLOC_S)(Nlproc * sizeof(struct lproc *));
-                sp = Nlproc;
+        if (NumLocalProcs > 1) {
+            if (NumLocalProcs > sp) {
+                len = (MALLOC_S)(NumLocalProcs * sizeof(struct lproc *));
+                sp = NumLocalProcs;
                 if (!slp)
                     slp = (struct lproc **) malloc(len);
                 else {
@@ -1264,52 +1264,52 @@ main(argc, argv)
                 }
                 if (!slp) {
                     (void) fprintf(stderr,
-                                   "%s: no space for %d sort pointers\n", Pn, Nlproc);
+                                   "%s: no space for %d sort pointers\n", ProgramName, NumLocalProcs);
                     Exit(1);
                 }
             }
-            for (i = 0; i < Nlproc; i++) {
-                slp[i] = &Lproc[i];
+            for (i = 0; i < NumLocalProcs; i++) {
+                slp[i] = &LocalProcTable[i];
             }
-            (void) qsort((QSORT_P *) slp, (size_t) Nlproc,
+            (void) qsort((QSORT_P *) slp, (size_t) NumLocalProcs,
                          (size_t)
             sizeof(struct lproc *), comppid);
         }
-        if ((n = Nlproc)) {
+        if ((n = NumLocalProcs)) {
 
 #if    defined(HASNCACHE)
             /*
              * If using the kernel name cache, force its reloading.
              */
-            NcacheReload = 1;
+            NameCacheReload = 1;
 #endif    /* defined(HASNCACHE) */
 
             /*
              * Print the selected processes and count them.
              *
-             * Lf contents must be preserved, since they may point to a
-             * malloc()'d area, and since Lf is used throughout the print
+             * CurrentLocalFile contents must be preserved, since they may point to a
+             * malloc()'d area, and since CurrentLocalFile is used throughout the print
              * process.
              */
-            for (lf = Lf, print_init(); PrPass < 2; PrPass++) {
-                for (i = n = 0; i < Nlproc; i++) {
-                    Lp = (Nlproc > 1) ? slp[i] : &Lproc[i];
-                    if (Lp->pss) {
+            for (lf = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
+                for (i = n = 0; i < NumLocalProcs; i++) {
+                    CurrentLocalProc = (NumLocalProcs > 1) ? slp[i] : &LocalProcTable[i];
+                    if (CurrentLocalProc->pss) {
                         if (print_proc())
                             n++;
                     }
-                    if (RptTm && PrPass)
-                        (void) free_lproc(Lp);
+                    if (RepeatTime && PrintPass)
+                        (void) free_lproc(CurrentLocalProc);
                 }
             }
-            Lf = lf;
+            CurrentLocalFile = lf;
         }
         /*
          * If a repeat time is set, sleep for the specified time.
          *
          * If conditional repeat mode is in effect, see if it's time to exit.
          */
-        if (RptTm) {
+        if (RepeatTime) {
             if (rc) {
                 if (!n)
                     break;
@@ -1328,7 +1328,7 @@ main(argc, argv)
             }
 #endif    /* defined(HAS_STRFTIME) */
 
-            if (Ffield) {
+            if (OptFieldOutput) {
                 putchar(LSOF_FID_MARK);
 
 #if    defined(HAS_STRFTIME)
@@ -1352,18 +1352,18 @@ main(argc, argv)
             }
             (void) fflush(stdout);
             (void) childx();
-            (void) sleep(RptTm);
-            Hdr = Nlproc = 0;
-            CkPasswd = 1;
+            (void) sleep(RepeatTime);
+            HeaderPrinted = NumLocalProcs = 0;
+            CheckPasswdChange = 1;
         }
-    } while (RptTm);
+    } while (RepeatTime);
 /*
  * See if all requested information was displayed.  Return zero if it
  * was; one, if not.  If -V was specified, report what was not displayed.
  */
     (void) childx();
     rv = 0;
-    for (str = Cmdl; str; str = str->next) {
+    for (str = CommandNameList; str; str = str->next) {
 
         /*
          * Check command specifications.
@@ -1371,25 +1371,25 @@ main(argc, argv)
         if (str->f)
             continue;
         rv = 1;
-        if (Fverbose) {
-            (void) printf("%s: command not located: ", Pn);
+        if (OptVerbose) {
+            (void) printf("%s: command not located: ", ProgramName);
             safestrprt(str->str, stdout, 1);
         }
     }
-    for (i = 0; i < NCmdRxU; i++) {
+    for (i = 0; i < NumCommandRegexUsed; i++) {
 
         /*
          * Check command regular expressions.
          */
-        if (CmdRx[i].mc)
+        if (CommandRegexTable[i].mc)
             continue;
         rv = 1;
-        if (Fverbose) {
-            (void) printf("%s: no command found for regex: ", Pn);
-            safestrprt(CmdRx[i].exp, stdout, 1);
+        if (OptVerbose) {
+            (void) printf("%s: no command found for regex: ", ProgramName);
+            safestrprt(CommandRegexTable[i].exp, stdout, 1);
         }
     }
-    for (sfp = Sfile; sfp; sfp = sfp->next) {
+    for (sfp = SearchFileChain; sfp; sfp = sfp->next) {
 
         /*
          * Check file specifications.
@@ -1397,8 +1397,8 @@ main(argc, argv)
         if (sfp->f)
             continue;
         rv = 1;
-        if (Fverbose) {
-            (void) printf("%s: no file%s use located: ", Pn,
+        if (OptVerbose) {
+            (void) printf("%s: no file%s use located: ", ProgramName,
                           sfp->type ? "" : " system");
             safestrprt(sfp->aname, stdout, 1);
         }
@@ -1408,21 +1408,21 @@ main(argc, argv)
     /*
      * Report on proc file system search results.
      */
-        if (Procsrch && !Procfind) {
+        if (ProcFsSearching && !ProcFsFound) {
         rv = 1;
-        if (Fverbose) {
-            (void) printf("%s: no file system use located: ", Pn);
+        if (OptVerbose) {
+            (void) printf("%s: no file system use located: ", ProgramName);
             safestrprt(Mtprocfs ? Mtprocfs->dir : HASPROCFS, stdout, 1);
         }
         }
         {
         struct procfsid *pfi;
 
-        for (pfi = Procfsid; pfi; pfi = pfi->next) {
+        for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
             if (!pfi->f) {
             rv = 1;
-            if (Fverbose) {
-                (void) printf("%s: no file use located: ", Pn);
+            if (OptVerbose) {
+                (void) printf("%s: no file use located: ", ProgramName);
                 safestrprt(pfi->nm, stdout, 1);
             }
             }
@@ -1430,7 +1430,7 @@ main(argc, argv)
         }
 #endif    /* defined(HASPROCFS) */
 
-    if ((np = Nwad)) {
+    if ((np = NetworkAddrList)) {
 
         /*
          * Check Internet address specifications.
@@ -1462,88 +1462,88 @@ main(argc, argv)
                 }
             }
         }
-        for (np = Nwad; np; np = np->next) {
+        for (np = NetworkAddrList; np; np = np->next) {
             if (!np->f && (cp = np->arg)) {
                 rv = 1;
-                if (Fverbose) {
-                    (void) printf("%s: Internet address not located: ", Pn);
+                if (OptVerbose) {
+                    (void) printf("%s: Internet address not located: ", ProgramName);
                     safestrprt(cp ? cp : "(unknown)", stdout, 1);
                 }
             }
         }
     }
-    if (Fnet && Fnet < 2) {
+    if (OptNetwork && OptNetwork < 2) {
 
         /*
          * Report no Internet files located.
          */
         rv = 1;
-        if (Fverbose)
-            (void) printf("%s: no Internet files located\n", Pn);
+        if (OptVerbose)
+            (void) printf("%s: no Internet files located\n", ProgramName);
     }
 
 #if    defined(HASTCPUDPSTATE)
-    if (TcpStIn) {
+    if (TcpStateIncludeCount) {
 
     /*
      * Check for included TCP states not located.
      */
-        for (i = 0; i < TcpNstates; i++) {
-        if (TcpStI[i] == 1) {
+        for (i = 0; i < TcpNumStates; i++) {
+        if (TcpStateInclude[i] == 1) {
             rv = 1;
-            if (Fverbose)
+            if (OptVerbose)
             (void) printf("%s: TCP state not located: %s\n",
-                Pn, TcpSt[i]);
+                ProgramName, TcpStateNames[i]);
         }
         }
     }
-    if (UdpStIn) {
+    if (UdpStateIncludeCount) {
 
     /*
      * Check for included UDP states not located.
      */
-        for (i = 0; i < UdpNstates; i++) {
-        if (UdpStI[i] == 1) {
+        for (i = 0; i < UdpNumStates; i++) {
+        if (UdpStateInclude[i] == 1) {
             rv = 1;
-            if (Fverbose)
+            if (OptVerbose)
             (void) printf("%s: UDP state not located: %s\n",
-                Pn, UdpSt[i]);
+                ProgramName, UdpStateNames[i]);
         }
         }
     }
 #endif    /* defined(HASTCPUDPSTATE) */
 
-    if (Fnfs && Fnfs < 2) {
+    if (OptNfs && OptNfs < 2) {
 
         /*
          * Report no NFS files located.
          */
         rv = 1;
-        if (Fverbose)
-            (void) printf("%s: no NFS files located\n", Pn);
+        if (OptVerbose)
+            (void) printf("%s: no NFS files located\n", ProgramName);
     }
-    for (i = 0; i < Npid; i++) {
+    for (i = 0; i < NumPidSelections; i++) {
 
         /*
          * Check inclusionary process ID specifications.
          */
-        if (Spid[i].f || Spid[i].x)
+        if (SearchPidList[i].f || SearchPidList[i].x)
             continue;
         rv = 1;
-        if (Fverbose)
+        if (OptVerbose)
             (void) printf("%s: process ID not located: %d\n",
-                          Pn, Spid[i].i);
+                          ProgramName, SearchPidList[i].i);
     }
 
 #if    defined(HASTASKS)
-    if (Ftask && Ftask < 2) {
+    if (OptTask && OptTask < 2) {
 
     /*
      * Report no tasks located.
      */
         rv = 1;
-        if (Fverbose)
-        (void) printf("%s: no tasks located\n", Pn);
+        if (OptVerbose)
+        (void) printf("%s: no tasks located\n", ProgramName);
     }
 #endif    /* defined(HASTASKS) */
 
@@ -1557,8 +1557,8 @@ main(argc, argv)
         for (zp = ZoneArg[i]; zp; zp = zp->next) {
             if (!zp->f) {
             rv = 1;
-            if (Fverbose) {
-                (void) printf("%s: zone not located: ", Pn);
+            if (OptVerbose) {
+                (void) printf("%s: zone not located: ", ProgramName);
                 safestrprt(zp->zn, stdout, 1);
             }
             }
@@ -1568,16 +1568,16 @@ main(argc, argv)
 #endif    /* defined(HASZONES) */
 
 #if    defined(HASSELINUX)
-    if (CntxArg) {
+    if (ContextArgList) {
 
     /*
      * Check context argument results.
      */
-        for (cntxp = CntxArg; cntxp; cntxp = cntxp->next) {
+        for (cntxp = ContextArgList; cntxp; cntxp = cntxp->next) {
         if (!cntxp->f) {
             rv = 1;
-            if (Fverbose) {
-            (void) printf("%s: context not located: ", Pn);
+            if (OptVerbose) {
+            (void) printf("%s: context not located: ", ProgramName);
             safestrprt(cntxp->cntx, stdout, 1);
             }
         }
@@ -1585,39 +1585,39 @@ main(argc, argv)
     }
 #endif    /* defined(HASSELINUX) */
 
-    for (i = 0; i < Npgid; i++) {
+    for (i = 0; i < NumPgidSelections; i++) {
 
         /*
          * Check inclusionary process group ID specifications.
          */
-        if (Spgid[i].f || Spgid[i].x)
+        if (SearchPgidList[i].f || SearchPgidList[i].x)
             continue;
         rv = 1;
-        if (Fverbose)
+        if (OptVerbose)
             (void) printf("%s: process group ID not located: %d\n",
-                          Pn, Spgid[i].i);
+                          ProgramName, SearchPgidList[i].i);
     }
-    for (i = 0; i < Nuid; i++) {
+    for (i = 0; i < NumUidSelections; i++) {
 
         /*
          * Check inclusionary user ID specifications.
          */
-        if (Suid[i].excl || Suid[i].f)
+        if (SearchUidList[i].excl || SearchUidList[i].f)
             continue;
         rv = 1;
-        if (Fverbose) {
-            if (Suid[i].lnm) {
+        if (OptVerbose) {
+            if (SearchUidList[i].lnm) {
                 (void) printf("%s: login name (UID %lu) not located: ",
-                              Pn, (unsigned long) Suid[i].uid);
-                safestrprt(Suid[i].lnm, stdout, 1);
+                              ProgramName, (unsigned long) SearchUidList[i].uid);
+                safestrprt(SearchUidList[i].lnm, stdout, 1);
             } else
-                (void) printf("%s: user ID not located: %lu\n", Pn,
-                              (unsigned long) Suid[i].uid);
+                (void) printf("%s: user ID not located: %lu\n", ProgramName,
+                              (unsigned long) SearchUidList[i].uid);
         }
     }
     if (!rv && rc)
         rv = ev;
-    if (!rv && ErrStat)
+    if (!rv && PathStatErrorCount)
         rv = 1;
     Exit(rv);
     return (rv);        /* to make code analyzers happy */
@@ -1676,10 +1676,10 @@ GetOpt(ct, opt, rules, err)
     *err = 0;
     if ((c = opt[GOx1][GOx2]) == ':') {
         (void) fprintf(stderr,
-                       "%s: colon is an illegal option character.\n", Pn);
+                       "%s: colon is an illegal option character.\n", ProgramName);
         *err = 1;
     } else if (!(cp = strchr(rules, c))) {
-        (void) fprintf(stderr, "%s: illegal option character: %c\n", Pn, c);
+        (void) fprintf(stderr, "%s: illegal option character: %c\n", ProgramName, c);
         *err = 2;
     }
     if (*err) {
@@ -1766,7 +1766,7 @@ sv_fmt_str(f)
     l = (MALLOC_S)(strlen(f) + 1);
     if (!(cp = (char *) malloc(l))) {
         (void) fprintf(stderr,
-                       "%s: can't allocate %d bytes for format: %s\n", Pn, (int) l, f);
+                       "%s: can't allocate %d bytes for format: %s\n", ProgramName, (int) l, f);
         Exit(1);
     }
     (void) snpf(cp, l, "%s", f);

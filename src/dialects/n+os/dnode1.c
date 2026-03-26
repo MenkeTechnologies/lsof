@@ -109,7 +109,7 @@ alloc_vcache()
 
 void
 ckAFSsym(nl)
-    struct nlist *nl;		/* copy of Nl[] when empty */
+    struct nlist *nl;		/* copy of NlistTable[] when empty */
 {
     char *path = AFSAPATHDEF;
     int i;
@@ -123,37 +123,37 @@ ckAFSsym(nl)
  * See if the alternate AFS name list file can be read.
  */
     if (!is_readable(path, 0)) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: WARNING: can't access AFS name list file: %s\n",
-            Pn, path);
+            ProgramName, path);
         return;
     }
 /*
  * Read the AFS modload symbols and compare its non-zero values with
- * the non-zero values in Nl[].  Quit if there is any mis-match.
+ * the non-zero values in NlistTable[].  Quit if there is any mis-match.
  */
     if (nlist(path, nl) < 0)
         return;
-    for (i = 0; Nl[i].n_un.n_name && Nl[i].n_un.n_name[0]; i++) {
-        if (!nl[i].n_value || !Nl[i].n_value)
+    for (i = 0; NlistTable[i].n_un.n_name && NlistTable[i].n_un.n_name[0]; i++) {
+        if (!nl[i].n_value || !NlistTable[i].n_value)
         continue;
-        if (nl[i].n_value != Nl[i].n_value)
+        if (nl[i].n_value != NlistTable[i].n_value)
         return;
     }
 /*
- * If any AFS kernel name list symbol that doesn't have a value in Nl[] has
- * one from the AFS modload file, copy its modload value to Nl[].
+ * If any AFS kernel name list symbol that doesn't have a value in NlistTable[] has
+ * one from the AFS modload file, copy its modload value to NlistTable[].
  */
     if ((i = get_Nl_value("arFid", Drive_Nl, NULL)) >= 0
-    &&  !Nl[i].n_value && nl[i].n_value)
-        Nl[i].n_value = nl[i].n_value;
+    &&  !NlistTable[i].n_value && nl[i].n_value)
+        NlistTable[i].n_value = nl[i].n_value;
     if ((i = get_Nl_value("avops", Drive_Nl, NULL)) >= 0
-    &&  !Nl[i].n_value && nl[i].n_value)
-        Nl[i].n_value = nl[i].n_value;
+    &&  !NlistTable[i].n_value && nl[i].n_value)
+        NlistTable[i].n_value = nl[i].n_value;
     if ((i = get_Nl_value("avol",  Drive_Nl, NULL)) >= 0
-    &&  !Nl[i].n_value && nl[i].n_value)
-        Nl[i].n_value = nl[i].n_value;
+    &&  !NlistTable[i].n_value && nl[i].n_value)
+        NlistTable[i].n_value = nl[i].n_value;
 }
 
 
@@ -176,9 +176,9 @@ getvolume(f, vols)
     if (!ka) {
         if (get_Nl_value("avol", Drive_Nl, (unsigned long *)&ka) < 0 || !ka)
         {
-        if (!w && !Fwarn) {
+        if (!w && !OptWarnings) {
             (void) fprintf(stderr,
-            "%s: WARNING: no kernel address for afs_volumes\n", Pn);
+            "%s: WARNING: no kernel address for afs_volumes\n", ProgramName);
             (void) fprintf(stderr,
             "      This may hamper AFS node number reporting.\n");
             w = 1;
@@ -297,9 +297,9 @@ is_rootFid(vc, rfid)
 
 rfid_unavailable:
 
-        if (!w && !Fwarn) {
+        if (!w && !OptWarnings) {
             (void) fprintf(stderr,
-            "%s: WARNING: AFS root Fid error: %s\n", Pn, err);
+            "%s: WARNING: AFS root Fid error: %s\n", ProgramName, err);
             (void) fprintf(stderr,
             "      This may hamper AFS node number reporting.\n");
             w = 1;
@@ -351,9 +351,9 @@ readafsnode(va, v, an)
     ka = (KA_T)((char *)va + sizeof(struct vnode));
     len = sizeof(struct vcache) - sizeof(struct vnode);
     if (kread(ka, cp, len)) {
-        (void) snpf(Namech, Namechl,
+        (void) snpf(NameChars, NameCharsLength,
         "vnode at %#x: can't read vcache remainder from %#x", va, ka);
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return(1);
     }
     vc = (struct vcache *)v;

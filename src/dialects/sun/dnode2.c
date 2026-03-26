@@ -149,14 +149,14 @@ add2em(em, fmt, arg)
     } else {
         if (!(eml = (MALLOC_S)strlen(em))) {
         (void) fprintf(stderr, "%s: add2em: previous message empty\n",
-            Pn);
+            ProgramName);
         Exit(1);
         }
         al = eml + nl + 3;
         em = (char *)realloc((MALLOC_P *)em, al);
     }
     if (!em) {
-        (void) fprintf(stderr, "%s: no VxFS error message space\n", Pn);
+        (void) fprintf(stderr, "%s: no VxFS error message space\n", ProgramName);
         Exit(1);
     }
     (void) snpf(em + eml, al - eml, "%s%s%s",
@@ -239,7 +239,7 @@ getioffs(vx, vxl, dev, devl, ino, inol, nl, nll, sz, szl)
     if (!tvl)
         return(add2em((char *)NULL, "zero length %s", "vx_inode"));
     if (!(tv = (char *)malloc((MALLOC_S)tvl))) {
-        (void) fprintf(stderr, "%s: no vx_inode space\n", Pn);
+        (void) fprintf(stderr, "%s: no vx_inode space\n", ProgramName);
         Exit(1);
     }
     *vx = tv;
@@ -312,7 +312,7 @@ print_vxfs_rnl_path(lf)
             rm = (rmc_t *)malloc((MALLOC_S)sz);
         if (!rm) {
             (void) fprintf(stderr,
-            "%s: no RNL mount point cache space\n", Pn);
+            "%s: no RNL mount point cache space\n", ProgramName);
             Exit(1);
         }
         }
@@ -409,20 +409,20 @@ read_vxnode(va, v, vfs, fx, li, vnops)
     &&  vnops[VXVOP_FDDCH] && ((KA_T)v->v_op == vnops[VXVOP_FDDCH]))
     {
         if (kread((KA_T)v->v_data, (char *)&cv, sizeof(cv))) {
-        (void) snpf(Namech, Namechl,
+        (void) snpf(NameChars, NameCharsLength,
             "node at %s: can't read real vx vnode: %s",
             print_kptr(va, tbuf, sizeof(tbuf)),
             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return(1);
         }
 
 # if	defined(HASNCACHE)
-        Lf->na = (KA_T)v->v_data;
+        CurrentLocalFile->na = (KA_T)v->v_data;
 # endif	/* defined(HASNCACHE) */
 
         *v = cv;
-        Ntype = vop2ty(v, fx);
+        NodeType = vop2ty(v, fx);
     }
 
 #  if	defined(HASVXFSUTIL)
@@ -452,8 +452,8 @@ read_vxnode(va, v, vfs, fx, li, vnops)
         }
     }
     if (em) {
-        (void) snpf(Namech, Namechl, "%s", em);
-        (void) enter_nm(Namech);
+        (void) snpf(NameChars, NameCharsLength, "%s", em);
+        (void) enter_nm(NameChars);
         return(1);
     }
 #  endif	/* !defined(HASVXFSUTIL) */
@@ -462,10 +462,10 @@ read_vxnode(va, v, vfs, fx, li, vnops)
  * Read vnode's vx_inode.
  */
     if (!v->v_data || kread((KA_T)v->v_data, vxp, vxl)) {
-        (void) snpf(Namech, Namechl, "node at %s: can't read vx_inode: %s",
+        (void) snpf(NameChars, NameCharsLength, "node at %s: can't read vx_inode: %s",
         print_kptr(va, tbuf, sizeof(tbuf)),
         print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-        (void) enter_nm(Namech);
+        (void) enter_nm(NameChars);
         return(1);
     }
 /*

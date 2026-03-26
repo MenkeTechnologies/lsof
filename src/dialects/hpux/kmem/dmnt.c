@@ -72,7 +72,7 @@ completevfs(vfs, dev)
  * If only Internet socket files are selected, don't bother completing the
  * local vfs structure.
  */
-    if (Selinet)
+    if (SelectInetOnly)
         return;
 
 #if    HPUXV >= 800
@@ -125,7 +125,7 @@ completevfs(vfs, dev)
             struct stat sb;
 
             if (!(vfs->dir = mkstrcpy(v->vfs_name, (MALLOC_S *)NULL))) {
-            (void) fprintf(stderr, "%s: no space for vfs name: ", Pn);
+            (void) fprintf(stderr, "%s: no space for vfs name: ", ProgramName);
             safestrprt(v->vfs_name, stderr, 1);
             Exit(1);
             }
@@ -167,7 +167,7 @@ readvfs(lv)
     }
     if ((vp = (struct l_vfs *) malloc(sizeof(struct l_vfs))) == NULL) {
         (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       Pn, Lp->pid);
+                       ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
     vp->dev = 0;
@@ -185,7 +185,7 @@ readvfs(lv)
 /*
  * Complete the mount information.
  */
-    if (Ntype == N_NFS) {
+    if (NodeType == N_NFS) {
 
         /*
          * The device number for an NFS file is found by following the vfs
@@ -219,7 +219,7 @@ readvfs(lv)
             /*
              * Fake the device number for an AFS device.
              */
-                else if (Ntype == N_AFS) {
+                else if (NodeType == N_AFS) {
                 m.m_dev = AFSDEV;
                 ms = 1;
                 }

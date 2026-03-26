@@ -69,7 +69,7 @@ readmnt() {
  */
     for (sz = sizeof(struct vmount);;) {
         if (!(vt = (struct vmount *) malloc(sz))) {
-            (void) fprintf(stderr, "%s: no space for vmount table\n", Pn);
+            (void) fprintf(stderr, "%s: no space for vmount table\n", ProgramName);
             return (0);
         }
         nm = mntctl(MCTL_QUERY, sz, (unsigned char *) vt);
@@ -77,7 +77,7 @@ readmnt() {
             if (vt->vmt_revision != VMT_REVISION) {
                 (void) fprintf(stderr,
                                "%s: stale file system, rev %d != %d\n",
-                               Pn, vt->vmt_revision, VMT_REVISION);
+                               ProgramName, vt->vmt_revision, VMT_REVISION);
                 return (0);
             }
             break;
@@ -87,7 +87,7 @@ readmnt() {
             (void) free((FREE_P *) vt);
         } else {
             (void) fprintf(stderr, "%s: mntctl error: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             return (0);
         }
     }
@@ -99,7 +99,7 @@ readmnt() {
         fs = (char *) vmt2dataptr(v, VMT_OBJECT);
         h = (char *) vmt2dataptr(v, VMT_HOST);
         if (statsafely(dir, &sb)) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
 
                 /*
                  * Issue stat() failure warning.
@@ -162,7 +162,7 @@ readmnt() {
                 }
                 (void) fprintf(stderr,
                                "%s: WARNING: can't stat() %s file system %s\n",
-                               Pn, ty, dir);
+                               ProgramName, ty, dir);
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }
@@ -211,7 +211,7 @@ readmnt() {
 
                 sb.st_dev = (dev_t) v->vmt_fsid.val[0];
             }
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                                "      assuming \"dev=%#lx\" from mount table\n",
                                sb.st_dev);
@@ -228,11 +228,11 @@ readmnt() {
             no_space_for_mount:
 
             (void) fprintf(stderr, "%s: no space for mount at %s (%s)\n",
-                           Pn, fs, dir);
+                           ProgramName, fs, dir);
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }

@@ -82,7 +82,7 @@
 
 /*
  * HASBLKDEV is defined for those dialects that want block device information
- * recorded in BDevtp[].
+ * recorded in BlockDeviceTable[].
  */
 
 #define    HASBLKDEV    1
@@ -235,7 +235,7 @@
                 (void) free((FREE_P *)lf->V_path); \
                 lf->V_path = (char *)NULL; \
             }
-#define SETLFILEADD Lf->V_path = (char *)NULL;
+#define SETLFILEADD CurrentLocalFile->V_path = (char *)NULL;
 # endif    /* DARWINV>=800 */
 
 
@@ -492,7 +492,7 @@
  * of a successful stat(2) of a file name argument.
  *
  * For example, HASSPECDEVD() for Darwin makes sure that st_dev is set to
- * what stat("/dev") returns -- i.e., what's in DevDev.
+ * what stat("/dev") returns -- i.e., what's in DeviceOfDev.
  *
  * The function takes two arguments:
  *

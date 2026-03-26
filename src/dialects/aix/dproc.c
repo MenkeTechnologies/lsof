@@ -255,7 +255,7 @@ ckkv(d, er, ev, ea)
         char buf[128], *cp;
         struct stat sb;
 
-        if (Fwarn)
+        if (OptWarnings)
             return;
     /*
      * Make sure we can execute OSLEVEL.  If OSLEVEL doesn't exist and the AIX
@@ -273,12 +273,12 @@ ckkv(d, er, ev, ea)
 #  endif	/* AIXV<4100 */
 
             (void) fprintf(stderr, "%s: can't execute %s: %s\n",
-            Pn, OSLEVELPATH, strerror(errno));
+            ProgramName, OSLEVELPATH, strerror(errno));
             Exit(1);
         }
         if ((sb.st_mode & (S_IROTH | S_IXOTH)) != (S_IROTH | S_IXOTH)) {
             (void) fprintf(stderr, "%s: can't execute %s, modes: %o\n",
-            Pn, OSLEVELPATH, sb.st_mode);
+            ProgramName, OSLEVELPATH, sb.st_mode);
             Exit(1);
         }
     /*
@@ -287,7 +287,7 @@ ckkv(d, er, ev, ea)
      */
         if (pipe(p)) {
             (void) fprintf(stderr, "%s: can't create pipe to: %s\n",
-            Pn, OSLEVELPATH);
+            ProgramName, OSLEVELPATH);
             Exit(1);
         }
         if ((pid = fork()) == 0) {
@@ -302,7 +302,7 @@ ckkv(d, er, ev, ea)
         }
         if (pid < 0) {
             (void) fprintf(stderr, "%s: can't fork a child for %s: %s\n",
-            Pn, OSLEVELPATH, strerror(errno));
+            ProgramName, OSLEVELPATH, strerror(errno));
             Exit(1);
         }
         (void) close(p[1]);
@@ -334,7 +334,7 @@ ckkv(d, er, ev, ea)
         if (!ev || strcmp(buf, ev))
             (void) fprintf(stderr,
             "%s: WARNING: compiled for %s version %s; this is %s.\n",
-            Pn, d, ev ? ev : "UNKNOWN", buf);
+            ProgramName, d, ev ? ev : "UNKNOWN", buf);
 #endif    /* defined(HASKERNIDCK) */
 
 }
@@ -395,12 +395,12 @@ gather_proc_info() {
  * conditional skipping of regular file; i.e., regular files will be skipped
  * unless they belong to a process selected by one of the specified options.
  */
-    if (Selflags & SELNW) {
+    if (SelectionFlags & SELNW) {
 
         /*
          * Some network files selection options have been specified.
          */
-        if (Fand || !(Selflags & ~SELNW)) {
+        if (OptAndSelection || !(SelectionFlags & ~SELNW)) {
 
             /*
              * Selection ANDing or only network file options have been
@@ -420,7 +420,7 @@ gather_proc_info() {
              * If only ORed process selection options have been specified,
              * enable conditional file skipping and socket file only checking.
              */
-            if ((Selflags & SELFILE) || !(Selflags & SELPROC))
+            if ((SelectionFlags & SELFILE) || !(SelectionFlags & SELPROC))
                 cckreg = ckscko = 0;
             else
                 cckreg = ckscko = 1;
@@ -441,7 +441,7 @@ gather_proc_info() {
     if (!P) {
         if (!(P = (struct PROCINFO *) malloc((MALLOC_S)PROCSIZE))) {
             (void) fprintf(stderr,
-                           "%s: can't allocate space for 1 proc\n", Pn);
+                           "%s: can't allocate space for 1 proc\n", ProgramName);
             Exit(1);
         }
         Np = 1;
@@ -451,7 +451,7 @@ gather_proc_info() {
         if (!(P = (struct PROCINFO *) realloc((MALLOC_P *) P,
                                               (size_t)(Np * PROCSIZE)))) {
             (void) fprintf(stderr, "%s: no space for %d procinfo's\n",
-                           Pn, Np);
+                           ProgramName, Np);
             Exit(1);
         }
     }
@@ -461,7 +461,7 @@ gather_proc_info() {
         if (!(P = (struct PROCINFO *)malloc(msz))) {
         (void) fprintf(stderr,
             "%s: can't allocate space for %d procs\n",
-            Pn, PROCINFO_INCR);
+            ProgramName, PROCINFO_INCR);
         Exit(1);
         }
         Np = PROCINFO_INCR;
@@ -476,7 +476,7 @@ gather_proc_info() {
             msz = (MALLOC_S)(PROCSIZE * (Np + PROCINFO_INCR));
         if (!(P = (struct PROCINFO *)realloc((MALLOC_P *)P, msz))) {
             (void) fprintf(stderr,
-            "%s: no more space for proc storage\n", Pn);
+            "%s: no more space for proc storage\n", ProgramName);
             Exit(1);
         }
         Np += PROCINFO_INCR;
@@ -508,7 +508,7 @@ gather_proc_info() {
          */
 
 # if    AIXV >= 4110
-        if (Fxopt
+        if (OptCrossoverExt
         &&  kreadx(Uo, (char *)Up, U_SIZE, (KA_T)p->pi_adspace) == 0)
         i = 1;
         else
@@ -574,7 +574,7 @@ gather_proc_info() {
             {
                 (void) fprintf(stderr,
                 "%s: can't allocate fdsinfo struct for PID %d\n",
-                Pn, pid);
+                ProgramName, pid);
                 Exit(1);
             }
             }
@@ -592,7 +592,7 @@ gather_proc_info() {
          * their form affects using readx() to get the loader table pointers
          * from U_loader of the user structure (when -X is specified).
          */
-            if (Fxopt) {
+            if (OptCrossoverExt) {
             for (;;) {
 
             /*
@@ -632,11 +632,11 @@ gather_proc_info() {
                 else if (uo == 48)
                 uo = -48;
                 else {
-                Fxopt = hl = 0;
+                OptCrossoverExt = hl = 0;
                 trx = 1;
-                if (!Fwarn) {
+                if (!OptWarnings) {
                     (void) fprintf(stderr,
-                    "%s: WARNING: user struct mismatch;", Pn);
+                    "%s: WARNING: user struct mismatch;", ProgramName);
                     (void) fprintf(stderr, " -X option disabled.\n");
                 }
                 break;
@@ -644,7 +644,7 @@ gather_proc_info() {
             }
             }
 # else	/* AIXV!=4330 */
-            if (Fxopt
+            if (OptCrossoverExt
             &&  kreadx((KA_T)((char *)Uo + offsetof(struct user, U_loader)),
                    (char *)&Up->U_loader, sizeof(struct la),
                    (KA_T)p->pi_adspace)
@@ -668,14 +668,14 @@ gather_proc_info() {
          */
         alloc_lproc(p->p_pid, (int) p->p_pgid, (int) p->p_ppid,
                     (UID_ARG) p->p_uid, cmd, (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
         if (!ckscko && cdir) {
             alloc_lfile(CWD, -1);
             process_node(cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -684,7 +684,7 @@ gather_proc_info() {
         if (!ckscko && rdir) {
             alloc_lfile(RTD, -1);
             process_node(rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
 
@@ -695,7 +695,7 @@ gather_proc_info() {
         if (!ckscko && pdir) {
             alloc_lfile("  pd", -1);
             process_node(pdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
 #endif    /* AIXV<4100 */
@@ -724,7 +724,7 @@ gather_proc_info() {
                  * set the segment address to zero, forcing text file
                  * information to come from kmem rather than mem.
                  */
-                if (Mypid == p->p_pid)
+                if (MyProcessId == p->p_pid)
                     sid = (KA_T)0;
                 else
                     ck = 0;
@@ -752,15 +752,15 @@ gather_proc_info() {
             if (fp) {
                 alloc_lfile((char *) NULL, i);
                 process_file(fp);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG)
+                    if (OptFileStructValues & FSV_FILE_FLAGS)
 
 # if	AIXV<4300
-                        Lf->pof = (long)(Up->u_ufd[i].flags & 0x7f);
+                        CurrentLocalFile->pof = (long)(Up->u_ufd[i].flags & 0x7f);
 #else	/* AIXV>=4300 */
-                        Lf->pof = (long)(fds->pi_ufd[i].flags & 0x7f);
+                        CurrentLocalFile->pof = (long)(fds->pi_ufd[i].flags & 0x7f);
 #endif	/* AIXV<4300 */
 #endif    /* defined(HASFSTRUCT) */
 
@@ -810,7 +810,7 @@ get_kernel_access() {
         else
         kbb = "unknown";
         (void) fprintf(stderr,
-        "%s: FATAL: compiled for a kernel of %s bit size.\n", Pn, kbb);
+        "%s: FATAL: compiled for a kernel of %s bit size.\n", ProgramName, kbb);
         (void) fprintf(stderr,
         "      The bit size of this kernel is %s.\n", kbr);
         Exit(1);
@@ -822,7 +822,7 @@ get_kernel_access() {
  */
     if ((Km = open("/dev/mem", O_RDONLY, 0)) < 0) {
         (void) fprintf(stderr, "%s: can't open /dev/mem: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         oe++;
     }
 
@@ -845,7 +845,7 @@ get_kernel_access() {
  * Access kernel memory file.
  */
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s: %s\n", Pn,
+        (void) fprintf(stderr, "%s: can't open %s: %s\n", ProgramName,
                        Memory ? Memory : KMEM, strerror(errno));
         oe++;
     }
@@ -863,9 +863,9 @@ get_kernel_access() {
 /*
  * Get kernel symbols.
  */
-    if (knlist(Nl, X_NL_NUM, sizeof(struct nlist)) || !Nl[X_UADDR].n_value) {
+    if (knlist(NlistTable, X_NL_NUM, sizeof(struct nlist)) || !NlistTable[X_UADDR].n_value) {
         (void) fprintf(stderr, "%s: can't get kernel's %s address\n",
-                       Pn, Nl[X_UADDR].n_name);
+                       ProgramName, NlistTable[X_UADDR].n_name);
         Exit(1);
     }
 
@@ -877,7 +877,7 @@ get_kernel_access() {
     /*
      * Get user area and shared library VM offsets for AIX 4.1.1 and above.
      */
-        if (Fxopt) {
+        if (OptCrossoverExt) {
             struct ublock *ub;
 
 # if	AIXA<2
@@ -901,7 +901,7 @@ get_kernel_access() {
             Soff_stat++;
 # endif	/* AIXA<2 */
 
-            ub = (struct ublock *)Nl[X_UADDR].n_value;
+            ub = (struct ublock *)NlistTable[X_UADDR].n_value;
             Uo = (KA_T)((KA_T)&ub->ub_user & RDXMASK);
         }
 #endif    /* AIXV>=4110 */
@@ -935,15 +935,15 @@ getle(a, sid, err)
     static struct le le;
 
 #if    AIXV < 4110
-    if (a < Nl[X_UADDR].n_value) {
+    if (a < NlistTable[X_UADDR].n_value) {
         *err = "address too small";
         return ((struct le *) NULL);
     }
-    if (((char *) a + sizeof(le)) <= ((char *) Nl[X_UADDR].n_value + U_SIZE))
-        return ((struct le *) ((char *) Up + a - Nl[X_UADDR].n_value));
+    if (((char *) a + sizeof(le)) <= ((char *) NlistTable[X_UADDR].n_value + U_SIZE))
+        return ((struct le *) ((char *) Up + a - NlistTable[X_UADDR].n_value));
 #endif    /* AIXV<4110 */
 
-    if (!Fxopt) {
+    if (!OptCrossoverExt) {
         *err = "readx() disabled for Stale Segment ID bug (see -X)";
         return ((struct le *) NULL);
     }
@@ -1035,14 +1035,14 @@ getsoinfo()
  * See if loader information is needed.  Warn if this process has insufficient
  * permission to acquire it from all processes.
  */
-    if (!Fxopt)
+    if (!OptCrossoverExt)
         return;
-    if ((Myuid != 0) && !Setuidroot && !Fwarn) {
+    if ((MyRealUid != 0) && !SetuidRootState && !OptWarnings) {
         (void) fprintf(stderr,
-        "%s: WARNING: insufficient permission to access all", Pn);
+        "%s: WARNING: insufficient permission to access all", ProgramName);
         (void) fprintf(stderr, " /%s/object sub-\n", HASPROCFS);
         (void) fprintf(stderr,
-            "      directories; some loader information may", Pn);
+            "      directories; some loader information may", ProgramName);
         (void) fprintf(stderr, " be unavailable.\n");
     }
 /*
@@ -1053,7 +1053,7 @@ getsoinfo()
     if (!(SoHash = (so_hash_t **)calloc((MALLOC_S)SOHASHBUCKS,
                         sizeof(so_hash_t *))))
     {
-        (void) fprintf(stderr, "%s: no space for *.so hash buckets\n", Pn);
+        (void) fprintf(stderr, "%s: no space for *.so hash buckets\n", ProgramName);
         Exit(1);
     }
 /*
@@ -1076,7 +1076,7 @@ getsoinfo()
      * Make a copy of the loader module name.
      */
         if (!(rn = mkstrcpy(lp->mi_name, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr, "%s: no space for name: %s\n", Pn,
+        (void) fprintf(stderr, "%s: no space for name: %s\n", ProgramName,
             lp->mi_name);
         Exit(1);
         }
@@ -1090,9 +1090,9 @@ getsoinfo()
      * Get stat(2) information.
      */
         if (statsafely(ln, &sb)) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, "%s: WARNING: can't stat: %s\n",
-            Pn, ln);
+            ProgramName, ln);
             continue;
         }
     /*
@@ -1100,7 +1100,7 @@ getsoinfo()
      */
         if (!(sp = (so_hash_t *)malloc((MALLOC_S)sizeof(so_hash_t)))) {
         (void) fprintf(stderr, "%s: no space for *.so hash entry: %s\n",
-            Pn, ln);
+            ProgramName, ln);
         Exit(1);
         }
         sp->dev = sb.st_dev;
@@ -1208,7 +1208,7 @@ static void
 lowpgsp(sig)
     int sig;
 {
-    (void) fprintf(stderr, "%s: FATAL: system paging space is low.\n", Pn);
+    (void) fprintf(stderr, "%s: FATAL: system paging space is low.\n", ProgramName);
     Exit(1);
 }
 #endif    /* defined(SIGDANGER) */
@@ -1251,10 +1251,10 @@ process_text(sid)
         if ((le = getle(ll, sid, &err))) {
             if ((xf = le->fp)) {
                 process_file((KA_T) xf);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    AIXV >= 4110 && AIXV < 4300
-                    if (!Lf->nm || !Lf->nm[0])
+                    if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
                         getlenm(le, sid);
 #endif    /* AIXV>=4110 && AIXV<4300 */
 
@@ -1262,10 +1262,10 @@ process_text(sid)
                 }
             }
         } else {
-            (void) snpf(Namech, Namechl, "text entry at %s: %s",
+            (void) snpf(NameChars, NameCharsLength, "text entry at %s: %s",
                         print_kptr((KA_T) ll, (char *) NULL, 0), err);
-            enter_nm(Namech);
-            if (Lf->sf)
+            enter_nm(NameChars);
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
     }
@@ -1285,10 +1285,10 @@ process_text(sid)
         (void) snpf(fd, sizeof(fd), " L%02d", i);
         alloc_lfile(fd, -1);
         if (!(le = getle(ll, sid, &err))) {
-            (void) snpf(Namech, Namechl, "loader entry at %s: %s",
+            (void) snpf(NameChars, NameCharsLength, "loader entry at %s: %s",
                         print_kptr((KA_T) ll, (char *) NULL, 0), err);
-            enter_nm(Namech);
-            if (Lf->sf)
+            enter_nm(NameChars);
+            if (CurrentLocalFile->sf)
                 link_lfile();
             return;
         }
@@ -1317,7 +1317,7 @@ process_text(sid)
                 f = (struct file **) malloc(msz);
             if (!f) {
                 (void) fprintf(stderr,
-                               "%s: no space for text file pointers\n", Pn);
+                               "%s: no space for text file pointers\n", ProgramName);
                 Exit(1);
             }
         }
@@ -1326,10 +1326,10 @@ process_text(sid)
          * Save the loader entry.
          */
         process_file((KA_T) le->fp);
-        if (Lf->sf) {
+        if (CurrentLocalFile->sf) {
 
 #if    AIXV >= 4110
-            if (!Lf->nm || !Lf->nm[0])
+            if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
                 getlenm(le, sid);
 #endif    /* AIXV>=4110 */
 
@@ -1368,13 +1368,13 @@ process_text(pid)
     &&  le.fp) {
         alloc_lfile(" txt", -1);
         process_file((KA_T)le.fp);
-        if (Lf->dev_def && (Lf->inp_ty == 1)) {
-        xdev = Lf->dev;
-        xnode = Lf->inode;
+        if (CurrentLocalFile->dev_def && (CurrentLocalFile->inp_ty == 1)) {
+        xdev = CurrentLocalFile->dev;
+        xnode = CurrentLocalFile->inode;
         xs = 1;
         }
-        if (Lf->sf) {
-        if (!Lf->nm || !Lf->nm[0])
+        if (CurrentLocalFile->sf) {
+        if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
             getlenm(&le, (KA_T)0);
         link_lfile();
         }
@@ -1425,10 +1425,10 @@ process_text(pid)
      */
         (void) snpf(fd, sizeof(fd), "L%02d", i++);
         alloc_lfile(fd, -1);
-        Lf->dev_def = Lf->inp_ty = Lf->nlink_def = Lf->sz_def = 1;
-        Lf->dev = sb.st_dev;
-        Lf->inode = (INODETYPE)sb.st_ino;
-        (void) snpf(Lf->type, sizeof(Lf->type), "VREG");
+        CurrentLocalFile->dev_def = CurrentLocalFile->inp_ty = CurrentLocalFile->nlink_def = CurrentLocalFile->sz_def = 1;
+        CurrentLocalFile->dev = sb.st_dev;
+        CurrentLocalFile->inode = (INODETYPE)sb.st_ino;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "VREG");
     /*
      * Look for a match on device and node numbers in the *.so cache.
      */
@@ -1444,8 +1444,8 @@ process_text(pid)
          * A match was found; use its name, link count, and size.
          */
             nm = sp->nm;
-            Lf->nlink = sp->nlink;
-            Lf->sz = sp->sz;
+            CurrentLocalFile->nlink = sp->nlink;
+            CurrentLocalFile->sz = sp->sz;
             break;
         }
         }
@@ -1456,23 +1456,23 @@ process_text(pid)
          * count, and its size.
          */
         nm = pp;
-        Lf->nlink_def = sb.st_nlink;
-        Lf->sz = sb.st_size;
+        CurrentLocalFile->nlink_def = sb.st_nlink;
+        CurrentLocalFile->sz = sb.st_size;
         }
     /*
      * Do selection tests: NFS; link count; file name; and file system.
      */
 
 # if	defined(HAS_NFS)
-        if (Fnfs && (GET_MIN_DEV(Lf->dev_def) & SDEV_REMOTE))
-        Lf->sf |= SELNFS;
+        if (OptNfs && (GET_MIN_DEV(CurrentLocalFile->dev_def) & SDEV_REMOTE))
+        CurrentLocalFile->sf |= SELNFS;
 # endif	/* defined(HAS_NFS) */
 
-        if (Nlink && (Lf->nlink < Nlink))
-        Lf->sf |= SELNLINK;
-        if (Sfile && is_file_named(NULL, VREG, 0, 0))
-        Lf->sf |= SELNM;
-        if (Lf->sf) {
+        if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+        CurrentLocalFile->sf |= SELNLINK;
+        if (SearchFileChain && is_file_named(NULL, VREG, 0, 0))
+        CurrentLocalFile->sf |= SELNM;
+        if (CurrentLocalFile->sf) {
 
         /*
          * If the file was selected, enter its name and link it to the

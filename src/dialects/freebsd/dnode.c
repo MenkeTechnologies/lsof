@@ -82,18 +82,18 @@ get_lock_state(f)
         if (!le.lf_owner
         ||  kread((KA_T)le.lf_owner, (char *)&lo, sizeof(lo)))
         continue;
-        if (lo.lo_pid == (pid_t)Lp->pid) {
+        if (lo.lo_pid == (pid_t)CurrentLocalProc->pid) {
         if (le.lf_start == (off_t)0
         &&  le.lf_end == 0x7fffffffffffffffLL)
             lt = 1;
         else
             lt = 0;
         if (le.lf_type == F_RDLCK)
-            Lf->lock = lt ? 'R' : 'r';
+            CurrentLocalFile->lock = lt ? 'R' : 'r';
         else if (le.lf_type == F_WRLCK)
-            Lf->lock = lt ? 'W' : 'w';
+            CurrentLocalFile->lock = lt ? 'W' : 'w';
         else if (le.lf_type == (F_RDLCK | F_WRLCK))
-            Lf->lock = 'u';
+            CurrentLocalFile->lock = 'u';
         return;
         }
     } while ((lep = (KA_T)le.lf_link.le_next) && (lep != lef));
@@ -133,11 +133,11 @@ get_lock_state(f)
             else
             lt = 0;
             if (lf.lf_type == F_RDLCK)
-            Lf->lock = lt ? 'R' : 'r';
+            CurrentLocalFile->lock = lt ? 'R' : 'r';
             else if (lf.lf_type == F_WRLCK)
-            Lf->lock = lt ? 'W' : 'w';
+            CurrentLocalFile->lock = lt ? 'W' : 'w';
             else if (lf.lf_type == (F_RDLCK | F_WRLCK))
-            Lf->lock = 'u';
+            CurrentLocalFile->lock = 'u';
             break;
             } while ((lfp = (KA_T) lf.lf_next) && (lfp != f));
             }
@@ -168,8 +168,8 @@ get_lock_state(f)
                     if (!p->P_VMSPACE
                     ||  kread((KA_T)p->P_VMSPACE, (char *)&vm, sizeof(vm)))
                         return;
-                    Lf->sz = (SZOFFTYPE)ctob(vm.vm_tsize+vm.vm_dsize+vm.vm_ssize);
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE)ctob(vm.vm_tsize+vm.vm_dsize+vm.vm_ssize);
+                    CurrentLocalFile->sz_def = 1;
                     return;
                     }
                 }
@@ -198,22 +198,22 @@ get_lock_state(f)
 
 # endif	/* defined(HASDCACHE) */
 
-                for (i = 0; i < Ndev; i++) {
-                    if (strcmp(Devtp[i].name, "/dev/tty") == 0) {
+                for (i = 0; i < NumDevices; i++) {
+                    if (strcmp(DeviceTable[i].name, "/dev/tty") == 0) {
 
 # if	defined(HASDCACHE)
-                    if (DCunsafe && !Devtp[i].v && !vfy_dev(&Devtp[i]))
+                    if (DevCacheUnsafe && !DeviceTable[i].v && !vfy_dev(&DeviceTable[i]))
                         goto lkup_dev_tty_again;
 # endif	/* defined(HASDCACHE) */
 
-                    *dr = Devtp[i].rdev;
-                    *ir = Devtp[i].inode;
+                    *dr = DeviceTable[i].rdev;
+                    *ir = DeviceTable[i].inode;
                     return(1);
                     }
                 }
 
 # if	defined(HASDCACHE)
-                if (DCunsafe) {
+                if (DevCacheUnsafe) {
                     (void) rereaddev();
                     goto lkup_dev_tty_again;
                 }
@@ -239,13 +239,13 @@ get_lock_state(f)
             {
                 struct kqueue kq;		/* kqueue structure */
 
-                (void) snpf(Lf->type, sizeof(Lf->type), "KQUEUE");
+                (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "KQUEUE");
                 enter_dev_ch(print_kptr(ka, (char *)NULL, 0));
                 if (!ka || kread(ka, (char *)&kq, sizeof(kq)))
                     return;
-                (void) snpf(Namech, Namechl, "count=%d, state=%#x", kq.kq_count,
+                (void) snpf(NameChars, NameCharsLength, "count=%d, state=%#x", kq.kq_count,
                     kq.kq_state);
-                enter_nm(Namech);
+                enter_nm(NameChars);
             }
 #endif    /* defined(HASKQUEUE) */
 
@@ -379,8 +379,8 @@ get_lock_state(f)
                 process_overlaid_node:
 
                     if (++sc > 1024) {
-                        (void) snpf(Namech, Namechl, "too many overlaid nodes");
-                        enter_nm(Namech);
+                        (void) snpf(NameChars, NameCharsLength, "too many overlaid nodes");
+                        enter_nm(NameChars);
                         return;
                     }
 #endif    /* defined(HASNULLFS) */
@@ -392,7 +392,7 @@ get_lock_state(f)
                 devs = rdevs = 0;
                 i = (struct inode *) NULL;
                 n = (struct nfsnode *) NULL;
-                Namech[0] = '\0';
+                NameChars[0] = '\0';
 
 #if    defined(HAS9660FS)
                 iso_dev_def = iso_stat = 0;
@@ -434,20 +434,20 @@ get_lock_state(f)
                 }
                 v = &vb;
                 if (readvnode(va, v)) {
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
 
 #if    defined(HASNCACHE)
-                Lf->na = va;
+                CurrentLocalFile->na = va;
 # if	defined(HASNCVPID)
-                Lf->id = v->v_id;
+                CurrentLocalFile->id = v->v_id;
 # endif	/* defined(HASNCVPID) */
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
-                Lf->fna = va;
-                Lf->fsv |= FSV_NI;
+                CurrentLocalFile->fna = va;
+                CurrentLocalFile->fsv |= FSV_NODE_ID;
 #endif    /* defined(HASFSTRUCT) */
 
 /*
@@ -462,36 +462,36 @@ get_lock_state(f)
 #if    defined(MOUNT_NONE)
                         switch (vfs->type) {
                         case MOUNT_NFS:
-                            Ntype = N_NFS;
+                            NodeType = N_NFS;
                             break;
 
 # if	defined(HASPROCFS)
                         case MOUNT_PROCFS:
-                            Ntype = N_PROC;
+                            NodeType = N_PROC;
                             break;
 # endif	/* defined(HASPROCFS) */
                         }
 #else	/* !defined(MOUNT_NONE) */
                         if (strcasecmp(vfs->typnm, "nfs") == 0)
-                            Ntype = N_NFS;
+                            NodeType = N_NFS;
 
 # if    defined(HASPROCFS)
                         else if (strcasecmp(vfs->typnm, "procfs") == 0)
-                            Ntype = N_PROC;
+                            NodeType = N_PROC;
 # endif    /* defined(HASPROCFS) */
 
 # if    defined(HASPSEUDOFS)
                         else if (strcasecmp(vfs->typnm, "pseudofs") == 0)
-                            Ntype = N_PSEU;
+                            NodeType = N_PSEU;
 # endif    /* defined(HASPSEUDOFS) */
 #endif    /* defined(MOUNT_NONE) */
 
                     }
                 }
-                if (Ntype == N_REGLR) {
+                if (NodeType == N_REGLR) {
                     switch (v->v_type) {
                         case VFIFO:
-                            Ntype = N_FIFO;
+                            NodeType = N_FIFO;
                             break;
                         default:
                             break;
@@ -532,10 +532,10 @@ get_lock_state(f)
                         else if (!strcmp(vtbuf, "zfs")) {
 
 #if	!defined(HAS_ZFS)
-                        if (!Fwarn && !zw) {
+                        if (!OptWarnings && !zw) {
                             (void) fprintf(stderr,
                             "%s: WARNING: no ZFS support has been defined.\n",
-                            Pn);
+                            ProgramName);
                             (void) fprintf(stderr,
                             "      See 00FAQ for more information.\n");
                             zw = 1;
@@ -569,18 +569,18 @@ get_lock_state(f)
                         if (!v->v_data
                         ||  kread((KA_T)v->v_data, (char *)&de, sizeof(de)))
                         {
-                        (void) snpf(Namech, Namechl, "no devfs node: %s",
+                        (void) snpf(NameChars, NameCharsLength, "no devfs node: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         d = &de;
                         if (v->v_type == VDIR) {
                         if (!d->de_dir
                         ||  kread((KA_T)d->de_dir, (char *)&de, sizeof(de))) {
-                            (void) snpf(Namech, Namechl, "no devfs dir node: %s",
+                            (void) snpf(NameChars, NameCharsLength, "no devfs dir node: %s",
                             print_kptr((KA_T)d->de_dir, (char *)NULL, 0));
-                            enter_nm(Namech);
+                            enter_nm(NameChars);
                             return;
                         }
                         }
@@ -594,9 +594,9 @@ get_lock_state(f)
                         f = (struct fdescnode *)v->v_data;
 # else	/* FREEBSDV>=2000 */
                         if (kread((KA_T)v->v_data, (char *)&fb, sizeof(fb)) != 0) {
-                        (void) snpf(Namech, Namechl, "can't read fdescnode at: %s",
+                        (void) snpf(NameChars, NameCharsLength, "can't read fdescnode at: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         f = &fb;
@@ -609,9 +609,9 @@ get_lock_state(f)
                         if (read_iso_node(v, &iso_dev, &iso_dev_def, &iso_ino, &iso_links,
                                   &iso_sz))
                         {
-                        (void) snpf(Namech, Namechl, "no iso node: %s",
+                        (void) snpf(NameChars, NameCharsLength, "no iso node: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         iso_stat = 1;
@@ -626,9 +626,9 @@ get_lock_state(f)
 # else	/* FREEBSDV>=2000 */
                     if (!v->v_data
                     ||  kread((KA_T)v->v_data, (char *)&mb, sizeof(mb))) {
-                    (void) snpf(Namech, Namechl, "no mfs node: %s",
+                    (void) snpf(NameChars, NameCharsLength, "no mfs node: %s",
                         print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                     }
                     m = &mb;
@@ -643,9 +643,9 @@ get_lock_state(f)
 #else	/* FREEBSDV>=2000 */
                     if (!v->v_data
                     ||  kread((KA_T)v->v_data, (char *)&nb, sizeof(nb))) {
-                    (void) snpf(Namech, Namechl, "no nfs node: %s",
+                    (void) snpf(NameChars, NameCharsLength, "no nfs node: %s",
                         print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                     }
                     n = &nb;
@@ -666,7 +666,7 @@ get_lock_state(f)
                             if (vfs->fsid.val[0]) {
 
 #if	defined(HASPRINTDEV)
-                            dp = HASPRINTDEV(Lf, &dev);
+                            dp = HASPRINTDEV(CurrentLocalFile, &dev);
 #else	/* !defined(HASPRINTDEV) */
                             (void) snpf(dbuf, sizeof(dbuf) - 1, "%d,%d",
                                 GET_MAJ_DEV(dev), GET_MIN_DEV(dev));
@@ -693,14 +693,14 @@ get_lock_state(f)
                         }
                         if (!v->v_data
                         ||  kread((KA_T)v->v_data, (char *)&nu, sizeof(nu))) {
-                        (void) snpf(Namech, Namechl, "can't read null_node at: %s",
+                        (void) snpf(NameChars, NameCharsLength, "can't read null_node at: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         if (!nu.null_lowervp) {
-                        (void) snpf(Namech, Namechl, "null_node overlays nothing");
-                        enter_nm(Namech);
+                        (void) snpf(NameChars, NameCharsLength, "null_node overlays nothing");
+                        enter_nm(NameChars);
                         return;
                         }
                         va = (KA_T)nu.null_lowervp;
@@ -715,9 +715,9 @@ get_lock_state(f)
 # else	/* FREEBSDV>=2000 */
                         if (!v->v_data
                         ||  kread((KA_T)v->v_data, (char *)&pb, sizeof(pb))) {
-                        (void) snpf(Namech, Namechl, "no pfs node: %s",
+                        (void) snpf(NameChars, NameCharsLength, "no pfs node: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         p = &pb;
@@ -730,9 +730,9 @@ get_lock_state(f)
                     case VT_PSEUDOFS:
                         if (!v->v_data
                         ||  kread((KA_T)v->v_data, (char *)&pn, sizeof(pn))) {
-                        (void) snpf(Namech, Namechl, "no pfs_node: %s",
+                        (void) snpf(NameChars, NameCharsLength, "no pfs_node: %s",
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         pnp = &pn;
@@ -746,9 +746,9 @@ get_lock_state(f)
 #else	/* FREEBSDV>=2000 */
                     if (!v->v_data
                     ||  kread((KA_T)v->v_data, (char *)&ib, sizeof(ib))) {
-                    (void) snpf(Namech, Namechl, "no ufs node: %s",
+                    (void) snpf(NameChars, NameCharsLength, "no ufs node: %s",
                         print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                     }
                     i = &ib;
@@ -784,9 +784,9 @@ get_lock_state(f)
                         ||  (zm = readzfsnode((KA_T)v->v_data, &zi,
                                   ((v->v_vflag & VV_ROOT) ? 1 : 0)))
                         ) {
-                        (void) snpf(Namech, Namechl, "%s: %s", zm,
+                        (void) snpf(NameChars, NameCharsLength, "%s: %s", zm,
                             print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                         }
                         z = &zi;
@@ -807,12 +807,12 @@ get_lock_state(f)
                             break;
 
 #if    FREEBSDV < 5000
-                        (void) snpf(Namech, Namechl, "unknown file system type: %d", v->v_tag);
+                        (void) snpf(NameChars, NameCharsLength, "unknown file system type: %d", v->v_tag);
 #else	/* FREEBSDV>=5000 */
-                        (void) snpf(Namech, Namechl, "unknown file system type: %s", vtbp);
+                        (void) snpf(NameChars, NameCharsLength, "unknown file system type: %s", vtbp);
 #endif    /* FREEBSDV<5000 */
 
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                         return;
                 }
 /*
@@ -913,8 +913,8 @@ get_lock_state(f)
 
 # if	defined(HASFDLINK)
                     if (f->fd_link
-                    &&  kread((KA_T)f->fd_link, Namech, Namechl - 1) == 0)
-                    Namech[Namechl - 1] = '\0';
+                    &&  kread((KA_T)f->fd_link, NameChars, NameCharsLength - 1) == 0)
+                    NameChars[NameCharsLength - 1] = '\0';
 
 #  if	HASFDESCFS==1
                     else
@@ -927,8 +927,8 @@ get_lock_state(f)
                         f_tty_s = lkup_dev_tty(&f_tty_dev, &f_tty_ino);
                         if (f_tty_s == 1) {
                         dev = f_tty_dev;
-                        Lf->inode = f_tty_ino;
-                        devs = Lf->inp_ty = 1;
+                        CurrentLocalFile->inode = f_tty_ino;
+                        devs = CurrentLocalFile->inp_ty = 1;
                         }
                     }
 # endif	/* HASFDESFS==1 */
@@ -939,7 +939,7 @@ get_lock_state(f)
 #if    defined(HAS9660FS)
                 else if (iso_stat && iso_dev_def) {
                     dev = iso_dev;
-                    devs = Lf->inp_ty = 1;
+                    devs = CurrentLocalFile->inp_ty = 1;
                 }
 #endif    /* defined(HAS9660FS) */
 
@@ -949,7 +949,7 @@ get_lock_state(f)
                     dev = vfs->fsid.val[0];
                     devs = 1;
                     } else {
-                    dev = DevDev;
+                    dev = DeviceOfDev;
                     devs = 1;
                     }
                     if ((type == VCHR)) {
@@ -995,69 +995,69 @@ get_lock_state(f)
  * Obtain the inode number.
  */
                 if (i) {
-                    Lf->inode = (INODETYPE) i->i_number;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE) i->i_number;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 
 #if    defined(HAS_ZFS)
                     else if (z) {
                         if (z->ino_def) {
-                        Lf->inode = z->ino;
-                        Lf->inp_ty = 1;
+                        CurrentLocalFile->inode = z->ino;
+                        CurrentLocalFile->inp_ty = 1;
                         }
                     }
 #endif    /* defined(HAS_ZFS) */
 
                 else if (n) {
-                    Lf->inode = (INODETYPE) n->n_vattr.va_fileid;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE) n->n_vattr.va_fileid;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 
 #if    defined(HAS9660FS)
                 else if (iso_stat) {
-                    Lf->inode = iso_ino;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = iso_ino;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 #endif    /* defined(HAS9660FS) */
 
 #if    defined(HASPROCFS)
 # if	FREEBSDV>=2000
                 else if (p) {
-                    Lf->inode = (INODETYPE)p->pfs_fileno;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE)p->pfs_fileno;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 # endif	/* FREEBSDV>=2000 */
 #endif    /* defined(HASPROCFS) */
 
 #if    defined(HASPSEUDOFS)
                 else if (pnp) {
-                    Lf->inode = (INODETYPE)pnp->pn_fileno;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE)pnp->pn_fileno;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 #endif    /* defined(HASPSEUDOFS) */
 
 #if    FREEBSDV >= 5000
                 else if (d) {
-                    Lf->inode = (INODETYPE)d->de_inode;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = (INODETYPE)d->de_inode;
+                    CurrentLocalFile->inp_ty = 1;
                 }
 #endif    /* FREEBSDV>=5000 */
 
 /*
  * Obtain the file size.
  */
-                if (Foffset)
-                    Lf->off_def = 1;
+                if (OptOffset)
+                    CurrentLocalFile->off_def = 1;
                 else {
-                    switch (Ntype) {
+                    switch (NodeType) {
                         case N_FIFO:
-                            if (!Fsize)
-                                Lf->off_def = 1;
+                            if (!OptSize)
+                                CurrentLocalFile->off_def = 1;
                             break;
                         case N_NFS:
                             if (n) {
-                                Lf->sz = (SZOFFTYPE) n->n_vattr.va_size;
-                                Lf->sz_def = 1;
+                                CurrentLocalFile->sz = (SZOFFTYPE) n->n_vattr.va_size;
+                                CurrentLocalFile->sz_def = 1;
                             }
                             break;
 
@@ -1070,29 +1070,29 @@ get_lock_state(f)
                             break;
                         if (pgsz < 0)
                             pgsz = getpagesize();
-                        Lf->sz = (SZOFFTYPE)((pgsz * vm.vm_tsize)
+                        CurrentLocalFile->sz = (SZOFFTYPE)((pgsz * vm.vm_tsize)
                                +         (pgsz * vm.vm_dsize)
                                +         (pgsz * vm.vm_ssize));
-                        Lf->sz_def = 1;
+                        CurrentLocalFile->sz_def = 1;
                         break;
 # else	/* FREEBSDV>=2000 */
                         if (p) {
                             switch(p->pfs_type) {
                             case Proot:
                             case Pproc:
-                            Lf->sz = (SZOFFTYPE)DEV_BSIZE;
-                            Lf->sz_def = 1;
+                            CurrentLocalFile->sz = (SZOFFTYPE)DEV_BSIZE;
+                            CurrentLocalFile->sz_def = 1;
                             break;
                             case Pmem:
                             (void) getmemsz(p->pfs_pid);
                             break;
                             case Pregs:
-                            Lf->sz = (SZOFFTYPE)sizeof(struct reg);
-                            Lf->sz_def = 1;
+                            CurrentLocalFile->sz = (SZOFFTYPE)sizeof(struct reg);
+                            CurrentLocalFile->sz_def = 1;
                             break;
                             case Pfpregs:
-                            Lf->sz = (SZOFFTYPE)sizeof(struct fpreg);
-                            Lf->sz_def = 1;
+                            CurrentLocalFile->sz = (SZOFFTYPE)sizeof(struct fpreg);
+                            CurrentLocalFile->sz_def = 1;
                             break;
                             }
                         }
@@ -1101,8 +1101,8 @@ get_lock_state(f)
 
 #if    defined(HASPSEUDOFS)
                         case N_PSEU:
-                        Lf->sz = 0;
-                        Lf->sz_def = 1;
+                        CurrentLocalFile->sz = 0;
+                        CurrentLocalFile->sz_def = 1;
                         break;
 #endif    /* defined(PSEUDOFS) */
 
@@ -1112,88 +1112,88 @@ get_lock_state(f)
 
 #if    defined(HAS_UFS1_2)
                                     if (ufst == 1)
-                                        Lf->sz = (SZOFFTYPE)d1.di_size;
+                                        CurrentLocalFile->sz = (SZOFFTYPE)d1.di_size;
                                     else if (ufst == 2)
-                                        Lf->sz = (SZOFFTYPE)d2.di_size;
+                                        CurrentLocalFile->sz = (SZOFFTYPE)d2.di_size;
                                     else
 #endif    /* defined(HAS_UFS1_2) */
 
-                                    Lf->sz = (SZOFFTYPE) i->i_size;
-                                    Lf->sz_def = 1;
+                                    CurrentLocalFile->sz = (SZOFFTYPE) i->i_size;
+                                    CurrentLocalFile->sz_def = 1;
                                 }
 
 
 #if     defined(HAS_ZFS)
                                     else if (z) {
                                     if (z->sz_def) {
-                                        Lf->sz = z->sz;
-                                        Lf->sz_def = 1;
+                                        CurrentLocalFile->sz = z->sz;
+                                        CurrentLocalFile->sz_def = 1;
                                     }
                                     }
 #endif  /* defined(HAS_ZFS) */
 
 #if    FREEBSDV < 5000
                                 else if (m) {
-                                    Lf->sz = (SZOFFTYPE) m->mfs_size;
-                                    Lf->sz_def = 1;
+                                    CurrentLocalFile->sz = (SZOFFTYPE) m->mfs_size;
+                                    CurrentLocalFile->sz_def = 1;
                                 }
 #endif    /* FREEBSDV<5000 */
 
 #if    defined(HAS9660FS)
                                 else if (iso_stat) {
-                                Lf->sz = (SZOFFTYPE)iso_sz;
-                                Lf->sz_def = 1;
+                                CurrentLocalFile->sz = (SZOFFTYPE)iso_sz;
+                                CurrentLocalFile->sz_def = 1;
                                 }
 #endif    /* defined(HAS9660FS) */
 
-                            } else if ((type == VCHR || type == VBLK) && !Fsize)
-                                Lf->off_def = 1;
+                            } else if ((type == VCHR || type == VBLK) && !OptSize)
+                                CurrentLocalFile->off_def = 1;
                             break;
                     }
                 }
 /*
  * Record the link count.
  */
-                if (Fnlink) {
-                    switch (Ntype) {
+                if (OptLinkCount) {
+                    switch (NodeType) {
                         case N_NFS:
                             if (n) {
-                                Lf->nlink = (long) n->n_vattr.va_nlink;
-                                Lf->nlink_def = 1;
+                                CurrentLocalFile->nlink = (long) n->n_vattr.va_nlink;
+                                CurrentLocalFile->nlink_def = 1;
                             }
                             break;
                         case N_REGLR:
                             if (i) {
 
 #if    defined(HASEFFNLINK)
-                                Lf->nlink = (long)i->HASEFFNLINK;
+                                CurrentLocalFile->nlink = (long)i->HASEFFNLINK;
 #else	/* !defined(HASEFFNLINK) */
-                                Lf->nlink = (long) i->i_nlink;
+                                CurrentLocalFile->nlink = (long) i->i_nlink;
 #endif    /* defined(HASEFFNLINK) */
 
-                                Lf->nlink_def = 1;
+                                CurrentLocalFile->nlink_def = 1;
                             }
 
 #if    defined(HAS_ZFS)
                         else if (z) {
                             if (z->nl_def) {
-                            Lf->nlink = z->nl;
-                            Lf->nlink_def = 1;
+                            CurrentLocalFile->nlink = z->nl;
+                            CurrentLocalFile->nlink_def = 1;
                             }
                         }
 #endif    /* defined(HAS_ZFS) */
 
 #if    defined(HAS9660FS)
                         else if (iso_stat) {
-                            Lf->nlink = iso_links;
-                            Lf->nlink_def = 1;
+                            CurrentLocalFile->nlink = iso_links;
+                            CurrentLocalFile->nlink_def = 1;
                         }
 #endif    /* defined(HAS9660FS) */
 
 #if    FREEBSDV >= 5000
                         else if (d) {
-                            Lf->nlink = d->de_links;
-                            Lf->nlink_def = 1;
+                            CurrentLocalFile->nlink = d->de_links;
+                            CurrentLocalFile->nlink_def = 1;
                         }
 #endif    /* FREEBSDV>=5000 */
 
@@ -1202,37 +1202,37 @@ get_lock_state(f)
 #if    defined(HASPSEUODOFS)
                         case N_PSEU:
                         if (pnp) {
-                            Lf->nlink = 1L;
-                            Lf->nlink_def = 1;
+                            CurrentLocalFile->nlink = 1L;
+                            CurrentLocalFile->nlink_def = 1;
                         }
                         break;
 #endif    /* defined(HASPSEUODOFS) */
 
                     }
-                    if (Lf->nlink_def && Nlink && (Lf->nlink < Nlink))
-                        Lf->sf |= SELNLINK;
+                    if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+                        CurrentLocalFile->sf |= SELNLINK;
                 }
 /*
  * Record an NFS file selection.
  */
-                if (Ntype == N_NFS && Fnfs)
-                    Lf->sf |= SELNFS;
+                if (NodeType == N_NFS && OptNfs)
+                    CurrentLocalFile->sf |= SELNFS;
 /*
  * Save the file system names.
  */
                 if (vfs) {
-                    Lf->fsdir = vfs->dir;
-                    Lf->fsdev = vfs->fsname;
+                    CurrentLocalFile->fsdir = vfs->dir;
+                    CurrentLocalFile->fsdev = vfs->fsname;
                 }
 /*
  * Save the device numbers and their states.
  *
  * Format the vnode type, and possibly the device name.
  */
-                Lf->dev = dev;
-                Lf->dev_def = devs;
-                Lf->rdev = rdev;
-                Lf->rdev_def = rdevs;
+                CurrentLocalFile->dev = dev;
+                CurrentLocalFile->dev_def = devs;
+                CurrentLocalFile->rdev = rdev;
+                CurrentLocalFile->rdev_def = rdevs;
                 switch (type) {
                     case VNON:
                         ty = "VNON";
@@ -1243,11 +1243,11 @@ get_lock_state(f)
                         break;
                     case VBLK:
                         ty = "VBLK";
-                        Ntype = N_BLK;
+                        NodeType = N_BLK;
                         break;
                     case VCHR:
                         ty = "VCHR";
-                        Ntype = N_CHR;
+                        NodeType = N_CHR;
                         break;
                     case VLNK:
                         ty = "VLNK";
@@ -1266,12 +1266,12 @@ get_lock_state(f)
                         ty = "FIFO";
                         break;
                     default:
-                        (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
+                        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
                         ty = (char *) NULL;
                 }
                 if (ty)
-                    (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
-                Lf->ntype = Ntype;
+                    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
+                CurrentLocalFile->ntype = NodeType;
 /*
  * Handle some special cases:
  *
@@ -1281,12 +1281,12 @@ get_lock_state(f)
  */
 
                 if (type == VBAD)
-                    (void) snpf(Namech, Namechl, "(revoked)");
+                    (void) snpf(NameChars, NameCharsLength, "(revoked)");
 
 #if    FREEBSDV < 5000
                 else if (m) {
-                    Lf->dev_def = Lf->rdev_def = 0;
-                    (void) snpf(Namech, Namechl, "%#x", m->mfs_baseoff);
+                    CurrentLocalFile->dev_def = CurrentLocalFile->rdev_def = 0;
+                    (void) snpf(NameChars, NameCharsLength, "%#x", m->mfs_baseoff);
                     (void) snpf(dev_ch, sizeof(dev_ch), "    memory");
                     enter_dev_ch(dev_ch);
                 }
@@ -1295,18 +1295,18 @@ get_lock_state(f)
 
 #if    defined(HASPROCFS)
                 else if (p) {
-                    Lf->dev_def = Lf->rdev_def = 0;
+                    CurrentLocalFile->dev_def = CurrentLocalFile->rdev_def = 0;
 
 # if	FREEBSDV<2000
                     if (type == VDIR)
-                    (void) snpf(Namech, Namechl, "/%s", HASPROCFS);
+                    (void) snpf(NameChars, NameCharsLength, "/%s", HASPROCFS);
                     else
-                    (void) snpf(Namech, Namechl, "/%s/%0*d", HASPROCFS, PNSIZ,
+                    (void) snpf(NameChars, NameCharsLength, "/%s/%0*d", HASPROCFS, PNSIZ,
                         p->pfs_pid);
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
 # else	/* FREEBSDV>=2000 */
                     ty = (char *)NULL;
-                    (void) snpf(Namech, Namechl, "/%s", HASPROCFS);
+                    (void) snpf(NameChars, NameCharsLength, "/%s", HASPROCFS);
                     switch (p->pfs_type) {
                     case Proot:
                     ty = "PDIR";
@@ -1372,8 +1372,8 @@ get_lock_state(f)
 
                     }
                     if (ty)
-                    (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
-                    enter_nm(Namech);
+                    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
+                    enter_nm(NameChars);
 
 # endif	/* FREEBSDV<2000 */
                 }
@@ -1384,7 +1384,7 @@ get_lock_state(f)
                  * If this is a VBLK file and it's missing an inode number, try to
                  * supply one.
                  */
-                    if ((Lf->inp_ty == 0) && (type == VBLK))
+                    if ((CurrentLocalFile->inp_ty == 0) && (type == VBLK))
                         find_bl_ino();
 #endif    /* defined(HASBLKDEV) */
 
@@ -1392,32 +1392,32 @@ get_lock_state(f)
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
-                if ((Lf->inp_ty == 0) && (type == VCHR))
+                if ((CurrentLocalFile->inp_ty == 0) && (type == VCHR))
                     find_ch_ino();
 /*
  * Test for specified file.
  */
 
 #if    defined(HASPROCFS)
-                if (Ntype == N_PROC) {
-                    if (Procsrch) {
-                    Procfind = 1;
-                    Lf->sf |= SELNM;
+                if (NodeType == N_PROC) {
+                    if (ProcFsSearching) {
+                    ProcFsFound = 1;
+                    CurrentLocalFile->sf |= SELNM;
                     } else {
-                    for (pfi = Procfsid; pfi; pfi = pfi->next) {
+                    for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
                         if ((pfi->pid && pfi->pid == p->pfs_pid)
 
 # if	defined(HASPINODEN)
-                        ||  (Lf->inp_ty == 1 && Lf->inode == pfi->inode)
+                        ||  (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->inode == pfi->inode)
 # else	/* !defined(HASPINODEN) */
                             if (pfi->pid == p->pfs_pid)
 # endif	/* defined(HASPINODEN) */
 
                         ) {
                         pfi->f = 1;
-                        if (!Namech[0])
-                            (void) snpf(Namech, Namechl, "%s", pfi->nm);
-                        Lf->sf |= SELNM;
+                        if (!NameChars[0])
+                            (void) snpf(NameChars, NameCharsLength, "%s", pfi->nm);
+                        CurrentLocalFile->sf |= SELNM;
                         break;
                         }
                     }
@@ -1426,16 +1426,16 @@ get_lock_state(f)
 #endif    /* defined(HASPROCFS) */
 
                 {
-                    if (Sfile && is_file_named((char *) NULL,
+                    if (SearchFileChain && is_file_named((char *) NULL,
                                                ((type == VCHR) || (type == VBLK)) ? 1
                                                                                   : 0))
-                        Lf->sf |= SELNM;
+                        CurrentLocalFile->sf |= SELNM;
                 }
 /*
  * Enter name characters.
  */
-                if (Namech[0])
-                    enter_nm(Namech);
+                if (NameChars[0])
+                    enter_nm(NameChars);
             }
 
 
@@ -1453,27 +1453,27 @@ get_lock_state(f)
                 size_t sz;
 
                 if (!pa || kread(pa, (char *)&p, sizeof(p))) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                     "can't read DTYPE_PIPE pipe struct: %s",
                     print_kptr((KA_T)pa, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
-                (void) snpf(Lf->type, sizeof(Lf->type), "PIPE");
+                (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PIPE");
                 (void) snpf(dev_ch, sizeof(dev_ch), "%s",
                     print_kptr(pa, (char *)NULL, 0));
                 enter_dev_ch(dev_ch);
-                if (Foffset)
-                    Lf->off_def = 1;
+                if (OptOffset)
+                    CurrentLocalFile->off_def = 1;
                 else {
-                    Lf->sz = (SZOFFTYPE)p.pipe_buffer.size;
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE)p.pipe_buffer.size;
+                    CurrentLocalFile->sz_def = 1;
                 }
                 if (p.pipe_peer)
-                    (void) snpf(Namech, Namechl, "->%s",
+                    (void) snpf(NameChars, NameCharsLength, "->%s",
                     print_kptr((KA_T)p.pipe_peer, (char *)NULL, 0));
                 else
-                    Namech[0] = '\0';
+                    NameChars[0] = '\0';
                 if (p.pipe_buffer.cnt) {
                     ep = endnm(&sz);
                     (void) snpf(ep, sz, ", cnt=%d", p.pipe_buffer.cnt);
@@ -1489,7 +1489,7 @@ get_lock_state(f)
             /*
              * Enter name characters.
              */
-                if (Namech[0])
-                    enter_nm(Namech);
+                if (NameChars[0])
+                    enter_nm(NameChars);
             }
 #endif    /* FREEBSDV>=2020 */

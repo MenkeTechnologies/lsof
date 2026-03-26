@@ -71,7 +71,7 @@ readmnt() {
  * Open access to the mount table and read mount table entries.
  */
     if (!(mfp = fopen(MNTTAB, "r"))) {
-        (void) fprintf(stderr, "%s: can't access %s\n", Pn, MNTTAB);
+        (void) fprintf(stderr, "%s: can't access %s\n", ProgramName, MNTTAB);
         return (0);
     }
     while (!getmntent(mfp, &me)) {
@@ -98,7 +98,7 @@ readmnt() {
 
             no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount at ", Pn);
+            (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(me.mnt_special, stderr, 0);
             (void) fprintf(stderr, " (");
             safestrprt(me.mnt_mountp, stderr, 0);
@@ -106,7 +106,7 @@ readmnt() {
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }
@@ -122,8 +122,8 @@ readmnt() {
          * Stat() the directory.
          */
         if (statsafely(dn, &sb)) {
-            if (!Fwarn) {
-                (void) fprintf(stderr, "%s: can't stat()", Pn);
+            if (!OptWarnings) {
+                (void) fprintf(stderr, "%s: can't stat()", ProgramName);
 
 #if    defined(HASFSTYPE)
                 putc(' ', stderr);
@@ -146,7 +146,7 @@ readmnt() {
                     sb.st_fstype[sizeof(sb.st_fstype) - 1 ] = '\0';
 #endif    /* HASFSTYPE */
 
-                    if (!Fwarn) {
+                    if (!OptWarnings) {
                         (void) fprintf(stderr,
                                        "      assuming \"%.*s\" from %s\n",
                                        (opte - opt), opt, MNTTAB);

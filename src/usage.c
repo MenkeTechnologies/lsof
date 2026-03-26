@@ -132,9 +132,9 @@ report_HASDCACHE(type, ttl, det)
     int dx;
 
 # if	defined(WILLDROPGID)
-    int saved_Setgid = Setgid;
+    int saved_Setgid = SetgidState;
 
-    Setgid = 0;
+    SetgidState = 0;
 # endif	/* defined(WILLDROPGID) */
 
     if (type) {
@@ -149,21 +149,21 @@ report_HASDCACHE(type, ttl, det)
         else {
         (void) fprintf(stderr, "%sNamed via -D: %s\n",
             det ? det : "",
-            DCpath[0] ? DCpath[0] : "none");
+            DevCachePath[0] ? DevCachePath[0] : "none");
 
 # if	defined(HASENVDC)
         (void) fprintf(stderr,
             "%sNamed in environment variable %s: %s\n",
             det ? det : "",
-            HASENVDC, DCpath[1] ? DCpath[1] : "none");
+            HASENVDC, DevCachePath[1] ? DevCachePath[1] : "none");
 # endif	/* defined(HASENVDC) */
 
 # if	defined(HASSYSDC)
-        if (DCpath[2])
+        if (DevCachePath[2])
             (void) fprintf(stderr,
             "%sSystem-wide device cache: %s\n",
             det ? det : "",
-            DCpath[2]);
+            DevCachePath[2]);
 # endif	/* defined(HASSYSDC) */
 
 # if	defined(HASPERSDC)
@@ -183,7 +183,7 @@ report_HASDCACHE(type, ttl, det)
 #  endif	/* defined(HASPERSDCPATH) */
         (void) fprintf(stderr, "%sPersonal path: %s\n",
             det ? det : "",
-            DCpath[3] ? DCpath[3] : "none");
+            DevCachePath[3] ? DevCachePath[3] : "none");
 # endif	/* defined(HASPERSDC) */
         }
         (void) fprintf(stderr, "%sDevice cache file write paths:\n",
@@ -193,14 +193,14 @@ report_HASDCACHE(type, ttl, det)
         else {
         (void) fprintf(stderr, "%sNamed via -D: %s\n",
             det ? det : "",
-            DCstate == 2 ? "none"
-                 : DCpath[0] ? DCpath[0] : "none");
+            DevCacheState == 2 ? "none"
+                 : DevCachePath[0] ? DevCachePath[0] : "none");
 
 # if	defined(HASENVDC)
         (void) fprintf(stderr,
             "%sNamed in environment variable %s: %s\n",
             det ? det : "",
-            HASENVDC, DCpath[1] ? DCpath[1] : "none");
+            HASENVDC, DevCachePath[1] ? DevCachePath[1] : "none");
 # endif	/* defined(HASENVDC) */
 
 # if	defined(HASPERSDC)
@@ -220,7 +220,7 @@ report_HASDCACHE(type, ttl, det)
 #  endif	/* defined(HASPERSDCPATH) */
          (void) fprintf(stderr, "%sPersonal path: %s\n",
             det ? det : "",
-            DCpath[3] ? DCpath[3] : "none");
+            DevCachePath[3] ? DevCachePath[3] : "none");
 # endif	/* defined(HASPERSDC) */
         }
     } else {
@@ -233,7 +233,7 @@ report_HASDCACHE(type, ttl, det)
         cp = NULL;
 #  if	defined(HASENVDC)
         if ((dx = dcpath(1, 0)) >= 0)
-        cp = DCpath[1];
+        cp = DevCachePath[1];
 #  endif	/* defined(HASENVDC) */
 #  if	defined(HASSYSDC)
         if (!cp)
@@ -241,7 +241,7 @@ report_HASDCACHE(type, ttl, det)
 #  endif	/* defined(HASSYSDC) */
 #  if	defined(HASPERSDC)
         if (!cp && dx != -1 && (dx = dcpath(1, 0)) >= 0)
-        cp = DCpath[3];
+        cp = DevCachePath[3];
 #  endif	/* defined(HASPERSDC) */
         if (cp)
         (void) fprintf(stderr,
@@ -253,7 +253,7 @@ report_HASDCACHE(type, ttl, det)
     }
 
 # if	defined(WILLDROPGID)
-    Setgid = saved_Setgid;
+    SetgidState = saved_Setgid;
 # endif	/* defined(WILLDROPGID) */
 
 #endif    /* defined(HASDCACHE) */
@@ -352,7 +352,7 @@ usage(xv, fh, version)
     char buf[MAXPATHLEN + 1], *cp, *cp1, *cp2;
     int i;
 
-    if (Fhelp || xv) {
+    if (OptHelp || xv) {
         (void) fprintf(stderr,
             "\n"
             "\033[36m  ██▓     ██████  ▒█████    █████▒\033[0m\n"
@@ -369,15 +369,15 @@ usage(xv, fh, version)
             ANSI_MAGENTA "  [ mapping the topology of open files ]" ANSI_RESET "\n"
             "\n"
             ANSI_YELLOW "  USAGE:" ANSI_RESET " %s [OPTION]... [FILE]...\n",
-            Pn);
+            ProgramName);
     }
-    if (xv && !Fhelp) {
+    if (xv && !OptHelp) {
         (void) fprintf(stderr,
-            "\n  " ANSI_YELLOW ">>" ANSI_RESET " Try '" ANSI_CYAN "%s -h" ANSI_RESET "' for more information.\n", Pn);
+            "\n  " ANSI_YELLOW ">>" ANSI_RESET " Try '" ANSI_CYAN "%s -h" ANSI_RESET "' for more information.\n", ProgramName);
         if (!fh)
             Exit(xv);
     }
-    if (Fhelp) {
+    if (OptHelp) {
         (void) fprintf(stderr, "\n"
             ANSI_CYAN "  ── SELECTION ──────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
@@ -468,10 +468,10 @@ usage(xv, fh, version)
             ANSI_GREEN "   +|-L [COUNT]      " ANSI_RESET "list (+) or suppress (-) link counts < COUNT\n");
 
 #if    defined(HASDCACHE)
-        if (Setuidroot)
+        if (SetuidRootState)
             cp = "?|i|r";
 # if	!defined(WILLDROPGID)
-        else if (Myuid)
+        else if (MyRealUid)
             cp = "?|i|r<path>";
 # endif	/* !defined(WILLDROPGID) */
         else
@@ -543,11 +543,11 @@ usage(xv, fh, version)
         (void) fprintf(stderr,
             ANSI_GREEN "   -k FILE           " ANSI_RESET "kernel symbols file");
         (void) fprintf(stderr, " " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n",
-            Nmlst ? Nmlst
+            NamelistFilePath ? NamelistFilePath
 # if	defined(N_UNIX)
                   : N_UNIX
 # else	/* !defined(N_UNIX) */
-                  : (Nmlst = get_nlist_path(1)) ? Nmlst : "none found"
+                  : (NamelistFilePath = get_nlist_path(1)) ? NamelistFilePath : "none found"
 # endif	/* defined(N_UNIX) */
         );
 #endif    /* defined(HASKOPT) */
@@ -572,7 +572,7 @@ usage(xv, fh, version)
 
 #if    defined(HASXOPT)
 # if	defined(HASXOPT_ROOT)
-        if (Myuid == 0)
+        if (MyRealUid == 0)
 # endif	/* defined(HASXOPT_ROOT) */
         (void) fprintf(stderr,
             ANSI_GREEN "   -X                " ANSI_RESET "%s\n", HASXOPT);
@@ -584,7 +584,7 @@ usage(xv, fh, version)
 #endif    /* defined(HASZONES) */
 
 #if    defined(HASSELINUX)
-        if (CntxStatus)
+        if (ContextStatus)
         (void) fprintf(stderr,
             ANSI_GREEN "   -Z [CONTEXT]      " ANSI_RESET "select by security context\n");
 #endif    /* defined(HASSELINUX) */
@@ -598,15 +598,15 @@ usage(xv, fh, version)
         (void) fprintf(stderr, "\n"
             ANSI_CYAN "  ── EXAMPLES ──────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            ANSI_GREEN "   %s -i :8080       " ANSI_RESET "list files using port 8080\n", Pn);
+            ANSI_GREEN "   %s -i :8080       " ANSI_RESET "list files using port 8080\n", ProgramName);
         (void) fprintf(stderr,
-            ANSI_GREEN "   %s -p 1234        " ANSI_RESET "list files opened by PID 1234\n", Pn);
+            ANSI_GREEN "   %s -p 1234        " ANSI_RESET "list files opened by PID 1234\n", ProgramName);
         (void) fprintf(stderr,
-            ANSI_GREEN "   %s -u root        " ANSI_RESET "list files opened by root\n", Pn);
+            ANSI_GREEN "   %s -u root        " ANSI_RESET "list files opened by root\n", ProgramName);
         (void) fprintf(stderr,
-            ANSI_GREEN "   %s /var/log/syslog" ANSI_RESET "  list processes using this file\n", Pn);
+            ANSI_GREEN "   %s /var/log/syslog" ANSI_RESET "  list processes using this file\n", ProgramName);
         (void) fprintf(stderr,
-            ANSI_GREEN "   %s -i TCP         " ANSI_RESET "list all TCP connections\n", Pn);
+            ANSI_GREEN "   %s -i TCP         " ANSI_RESET "list all TCP connections\n", ProgramName);
 
         (void) fprintf(stderr, "\n"
             ANSI_CYAN "  ── INFO ──────────────────────────────────────────" ANSI_RESET "\n");
@@ -625,68 +625,68 @@ usage(xv, fh, version)
 
     }
     if (fh) {
-        (void) fprintf(stderr, "\n%s: output field IDs:\n", Pn);
+        (void) fprintf(stderr, "\n%s: output field IDs:\n", ProgramName);
         (void) fprintf(stderr, "  ID    Description\n");
-        for (i = 0; FieldSel[i].nm; i++) {
+        for (i = 0; FieldSelection[i].nm; i++) {
 
 #if    !defined(HASPPID)
-            if (FieldSel[i].id == LSOF_FID_PPID)
+            if (FieldSelection[i].id == LSOF_FID_PPID)
                 continue;
 #endif    /* !defined(HASPPID) */
 
 #if    !defined(HASFSTRUCT)
-            if (FieldSel[i].id == LSOF_FID_FA
-                || FieldSel[i].id == LSOF_FID_CT
-                || FieldSel[i].id == LSOF_FID_FG
-                || FieldSel[i].id == LSOF_FID_NI)
+            if (FieldSelection[i].id == LSOF_FID_FILE_STRUCT_ADDR
+                || FieldSelection[i].id == LSOF_FID_FILE_STRUCT_COUNT
+                || FieldSelection[i].id == LSOF_FID_FILE_FLAGS
+                || FieldSelection[i].id == LSOF_FID_NODE_ID)
                 continue;
 #else	/* defined(HASFSTRUCT) */
 # if	defined(HASNOFSADDR)
-            if (FieldSel[i].id == LSOF_FID_FA)
+            if (FieldSelection[i].id == LSOF_FID_FILE_STRUCT_ADDR)
                 continue;
 # endif	/* defined(HASNOFSADDR) */
 
 # if	defined(HASNOFSCOUNT)
-            if (FieldSel[i].id == LSOF_FID_CT)
+            if (FieldSelection[i].id == LSOF_FID_FILE_STRUCT_COUNT)
                 continue;
 # endif	/* !defined(HASNOFSCOUNT) */
 
 # if	defined(HASNOFSFLAGS)
-            if (FieldSel[i].id == LSOF_FID_FG)
+            if (FieldSelection[i].id == LSOF_FID_FILE_FLAGS)
                 continue;
 # endif	/* defined(HASNOFSFLAGS) */
 
 # if	defined(HASNOFSNADDR)
-            if (FieldSel[i].id == LSOF_FID_NI)
+            if (FieldSelection[i].id == LSOF_FID_NODE_ID)
                 continue;
 # endif	/* defined(HASNOFSNADDR) */
 #endif    /* !defined(HASFSTRUCT) */
 
 #if    !defined(HASZONES)
-            if (FieldSel[i].id == LSOF_FID_ZONE)
+            if (FieldSelection[i].id == LSOF_FID_ZONE)
                 continue;
 #endif    /* !defined(HASZONES) */
 
 #if    defined(HASSELINUX)
-            if ((FieldSel[i].id == LSOF_FID_CNTX) && !CntxStatus)
+            if ((FieldSelection[i].id == LSOF_FID_SEC_CONTEXT) && !ContextStatus)
                 continue;
 #else	/* !defined(HASSELINUX) */
-            if (FieldSel[i].id == LSOF_FID_CNTX)
+            if (FieldSelection[i].id == LSOF_FID_SEC_CONTEXT)
                 continue;
 #endif    /* !defined(HASSELINUX) */
 
             (void) fprintf(stderr, "   %c    %s\n",
-                           FieldSel[i].id, FieldSel[i].nm);
+                           FieldSelection[i].id, FieldSelection[i].nm);
         }
     }
 
 #if    defined(HASDCACHE)
-    if (DChelp)
+    if (DevCacheHelp)
         report_HASDCACHE(1, NULL, "    ");
 #endif    /* defined(HASDCACHE) */
 
     if (version) {
-        (void) fprintf(stderr, "\n%s %s\n", Pn, LSOF_VERSION);
+        (void) fprintf(stderr, "\n%s %s\n", ProgramName, LSOF_VERSION);
 
 #if    defined(LSOF_CINFO)
         if ((cp = isnullstr(LSOF_CINFO)))

@@ -78,13 +78,13 @@ ckkv(d, er, ev, ea)
     kern_return_t kr;
     char *vt = (char *)NULL;
 
-    if (Fwarn)
+    if (OptWarnings)
         return;
 /*
  * Read Mach kernel version.
  */
     if ((kr = host_kernel_version(host_self(), kv)) != KERN_SUCCESS) {
-        (void) snpf(m, sizeof(m), "%s: can't get kernel version:", Pn);
+        (void) snpf(m, sizeof(m), "%s: can't get kernel version:", ProgramName);
         mach_error(m, kr);
         Exit(1);
     }
@@ -115,7 +115,7 @@ ckkv(d, er, ev, ea)
     if (!ev || !vt || strcmp(ev, vt))
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s version %s; this is %s\n",
-        Pn, d, ev ? ev : "UNKNOWN", vt ? vt : "UNKNOWN");
+        ProgramName, d, ev ? ev : "UNKNOWN", vt ? vt : "UNKNOWN");
 #endif    /* defined(HASKERNIDCK) */
 
 }
@@ -183,7 +183,7 @@ gather_proc_info() {
             continue;
         alloc_lproc(P[px].p_pid, (int) P[px].p_pgrp, (int) P[px].p_ppid,
                     (UID_ARG) P[px].p_uid, u->u_comm, (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
@@ -191,7 +191,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) u->u_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -201,7 +201,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) u->u_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -224,7 +224,7 @@ gather_proc_info() {
             else
                 uf = (struct file **) realloc((MALLOC_P *) uf, nb);
             if (!uf) {
-                (void) fprintf(stderr, "%s: no uu_ofile space\n", Pn);
+                (void) fprintf(stderr, "%s: no uu_ofile space\n", ProgramName);
                 Exit(1);
             }
             ufb = nb;
@@ -233,7 +233,7 @@ gather_proc_info() {
             continue;
 
 #if    defined(HASFSTRUCT)
-        if (Fsv & FSV_FG) {
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
         nb = (MALLOC_S)(sizeof(char) * nf);
         if (nb > pofb) {
             if (!pof)
@@ -241,7 +241,7 @@ gather_proc_info() {
             else
             pof = (char *)realloc((MALLOC_P *)pof, nb);
             if (!pof) {
-            (void) fprintf(stderr, "%s: no uu_pofile space\n", Pn);
+            (void) fprintf(stderr, "%s: no uu_pofile space\n", ProgramName);
             Exit(1);
             }
             pofb = nb;
@@ -255,11 +255,11 @@ gather_proc_info() {
             if (uf[i]) {
                 alloc_lfile((char *) NULL, i);
                 process_file((KA_T) uf[i]);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG)
-                        Lf->pof = (long)pof[i];
+                    if (OptFileStructValues & FSV_FILE_FLAGS)
+                        CurrentLocalFile->pof = (long)pof[i];
 #endif    /* defined(HASFSTRUCT) */
 
                     link_lfile();
@@ -313,7 +313,7 @@ get_kernel_access() {
  * Access the kernel memory file.
  */
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s: %s\n", Pn,
+        (void) fprintf(stderr, "%s: can't open %s: %s\n", ProgramName,
                        Memory ? Memory : KMEM, strerror(errno));
         Exit(1);
     }
@@ -326,42 +326,42 @@ get_kernel_access() {
             (void) dropgid();
 #else	/* !defined(WILLDROPGID) */
 /*
- * See if the name list file is readable.  Build Nl.
+ * See if the name list file is readable.  Build NlistTable.
  */
-    if (Nmlst && !is_readable(Nmlst, 1))
+    if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
         Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
     (void) build_Nl(Drive_Nl);
 
 #if    defined(HAS_AFS)
-    if (!Nmlst) {
+    if (!NamelistFilePath) {
 
     /*
      * If AFS is defined and we're getting kernel symbol values from
-     * from N_UNIX, make a copy of Nl[] for possible use with the AFS
+     * from N_UNIX, make a copy of NlistTable[] for possible use with the AFS
      * module name list file.
      */
-        if (!(nl = (struct nlist *)malloc(Nll))) {
+        if (!(nl = (struct nlist *)malloc(NlistLength))) {
             (void) fprintf(stderr,
-                "%s: no space (%d) for Nl[] copy\n", Pn, Nll);
+                "%s: no space (%d) for NlistTable[] copy\n", ProgramName, NlistLength);
             Exit(1);
         }
-        (void) bcopy((char *)Nl, (char *)nl, Nll);
+        (void) bcopy((char *)NlistTable, (char *)nl, NlistLength);
     }
 #endif    /* defined(HAS_AFS) */
 
 /*
  * Access the name list file.
  */
-    if (nlist(Nmlst ? Nmlst : VMUNIX, Nl) < 0) {
+    if (nlist(NamelistFilePath ? NamelistFilePath : VMUNIX, NlistTable) < 0) {
         (void) fprintf(stderr, "%s: can't read namelist from %s\n",
-                       Pn, Nmlst ? Nmlst : VMUNIX);
+                       ProgramName, NamelistFilePath ? NamelistFilePath : VMUNIX);
         Exit(1);
     }
     if (get_Nl_value("aproc", Drive_Nl, &lv) < 0 || !lv) {
         (void) fprintf(stderr, "%s: can't get proc table address\n",
-                       Pn);
+                       ProgramName);
         Exit(1);
     }
 
@@ -606,7 +606,7 @@ process_map(map)
         alloc_lfile("txt", -1);
         FILEPTR = (struct file *) NULL;
         process_node((KA_T) vmp.vs_vp);
-        if (Lf->sf)
+        if (CurrentLocalFile->sf)
             link_lfile();
         /*
          * Allocate space for remembering the vnode.
@@ -615,7 +615,7 @@ process_map(map)
             if (!(Vp = (KA_T *) malloc((MALLOC_S)
                                                (sizeof(struct vnode *) * 10)))) {
                 (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                               Pn, Lp->pid);
+                               ProgramName, CurrentLocalProc->pid);
                 Exit(1);
             }
             Nv = 10;
@@ -624,7 +624,7 @@ process_map(map)
             if (!(Vp = (KA_T *) realloc((MALLOC_P *) Vp,
                                         (MALLOC_S)(Nv * sizeof(struct vnode *))))) {
                 (void) fprintf(stderr,
-                               "%s: no more txt ptr space, PID %d\n", Pn, Lp->pid);
+                               "%s: no more txt ptr space, PID %d\n", ProgramName, CurrentLocalProc->pid);
                 Exit(1);
             }
         }
@@ -657,15 +657,15 @@ read_proc() {
         if (apax < 0) {
             if ((apax = get_Nl_value("aproc", Drive_Nl, &apav)) < 0) {
                 (void) fprintf(stderr,
-                               "%s: can't get process table address pointer\n", Pn);
+                               "%s: can't get process table address pointer\n", ProgramName);
                 Exit(1);
             }
         }
         if (kread((KA_T) apav, (char *) &Kp, sizeof(Kp))) {
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                                "%s: WARNING: can't read %s from %#x\n",
-                               Pn, Nl[apax].n_un.n_name, apav);
+                               ProgramName, NlistTable[apax].n_un.n_name, apav);
             continue;
         }
 
@@ -677,12 +677,12 @@ read_proc() {
             if (!(P = (struct proc *) malloc((MALLOC_S)
                                                      (sz * sizeof(struct proc))))) {
                 (void) fprintf(stderr, "%s: no proc table space\n",
-                               Pn);
+                               ProgramName);
                 Exit(1);
             }
             if (!(Pa = (KA_T *) malloc((MALLOC_S)(sz * sizeof(KA_T))))) {
                 (void) fprintf(stderr, "%s: no proc pointer space\n",
-                               Pn);
+                               ProgramName);
                 Exit(1);
             }
         }
@@ -709,14 +709,14 @@ read_proc() {
                                                   (MALLOC_S)(sizeof(struct proc) * sz)))) {
                     (void) fprintf(stderr,
                                    "%s: no more (%d) proc space\n",
-                                   Pn, sz);
+                                   ProgramName, sz);
                     Exit(1);
                 }
                 if (!(Pa = (KA_T *) realloc((MALLOC_P *) Pa,
                                             (MALLOC_S)(sizeof(KA_T) * sz)))) {
                     (void) fprintf(stderr,
                                    "%s: no more (%d) proc ptr space\n",
-                                   Pn, sz);
+                                   ProgramName, sz);
                     Exit(1);
                 }
             }
@@ -731,10 +731,10 @@ read_proc() {
  * Quit if no proc structures were stored in the local table.
  */
     if (try >= PROCTRYLM) {
-        (void) fprintf(stderr, "%s: can't read proc table\n", Pn);
+        (void) fprintf(stderr, "%s: can't read proc table\n", ProgramName);
         Exit(1);
     }
-    if (Np < sz && !RptTm) {
+    if (Np < sz && !RepeatTime) {
 
         /*
          * Reduce the local proc structure table size to a minimum if
@@ -744,14 +744,14 @@ read_proc() {
                                           (MALLOC_S)(sizeof(struct proc) * Np)))) {
             (void) fprintf(stderr,
                            "%s: can't reduce proc table to %d\n",
-                           Pn, Np);
+                           ProgramName, Np);
             Exit(1);
         }
         if (!(Pa = (KA_T *) realloc((MALLOC_P *) Pa,
                                     (MALLOC_S)(sizeof(KA_T) * Np)))) {
             (void) fprintf(stderr,
                            "%s: can't reduce proc ptrs to %d\n",
-                           Pn, Np);
+                           ProgramName, Np);
             Exit(1);
         }
     }

@@ -72,14 +72,14 @@ finddev(dev, rdev, stream)
  */
     if (stream && Clone) {
         for (c = Clone; c; c = c->next) {
-            if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(Devtp[c->dx].rdev)) {
+            if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(DeviceTable[c->dx].rdev)) {
 
 #if    defined(HASDCACHE)
-                if (DCunsafe && !Devtp[c->dx].v && !vfy_dev(&Devtp[c->dx]))
+                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
                 goto finddev_again;
 #endif    /* defined(HASDCACHE) */
 
-                return (&Devtp[c->dx]);
+                return (&DeviceTable[c->dx]);
             }
         }
     }
@@ -140,17 +140,17 @@ process_node(na)
         return;
     }
     if (readinode(na, &i)) {
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 
 #if    defined(HASNCACHE)
-    Lf->na = na;
+    CurrentLocalFile->na = na;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
-    Lf->fna = na;
-    Lf->fsv |= FSV_NI;
+    CurrentLocalFile->fna = na;
+    CurrentLocalFile->fsv |= FSV_NODE_ID;
 #endif    /* defined(HASFSTRUCT) */
 
 /*
@@ -165,7 +165,7 @@ process_node(na)
         process_socket(&i);
         return;
     }
-    if (Selinet)
+    if (SelectInetOnly)
         return;
     ity = i.i_fstyp;
     type = i.i_ftype & IFMT;
@@ -175,8 +175,8 @@ process_node(na)
         if (ity) {
 #endif    /* OSRV>=500 */
 
-        (void) snpf(Namech, Namechl, "unknown fstyp (%d) in inode", ity);
-        enter_nm(Namech);
+        (void) snpf(NameChars, NameCharsLength, "unknown fstyp (%d) in inode", ity);
+        enter_nm(NameChars);
         return;
 
 #if    OSRV >= 500
@@ -185,7 +185,7 @@ process_node(na)
 
     }
     if (ity && strcasecmp(Fsinfo[ity - 1], "HS") == 0)
-        Ntype = N_HSFS;
+        NodeType = N_HSFS;
 
 #if    defined(HAS_NFS)
         else if (ity && strcasecmp(Fsinfo[ity-1], "NFS") == 0) {
@@ -193,19 +193,19 @@ process_node(na)
        /*
         * Get information on NFS file.
         */
-           Ntype = N_NFS;
-           Lf->is_nfs = 1;
-           if (Fnfs)
-               Lf->sf |= SELNFS;
+           NodeType = N_NFS;
+           CurrentLocalFile->is_nfs = 1;
+           if (OptNfs)
+               CurrentLocalFile->sf |= SELNFS;
            if (!i.i_fsptr || readrnode((KA_T)i.i_fsptr, &r)) {
-           (void) snpf(Namech, Namechl, "can't read rnode (%s)",
+           (void) snpf(NameChars, NameCharsLength, "can't read rnode (%s)",
                print_kptr((KA_T)i.i_fsptr, (char *)NULL, 0));
-           enter_nm(Namech);
+           enter_nm(NameChars);
            return;
            }
 
 # if    defined(HASNCACHE)
-           Lf->na = (KA_T)i.i_fsptr;
+           CurrentLocalFile->na = (KA_T)i.i_fsptr;
 # endif /* defined(HASNCACHE) */
 
        }
@@ -218,20 +218,20 @@ process_node(na)
          */
         switch (type) {
             case IFBLK:
-                Ntype = N_BLK;
+                NodeType = N_BLK;
                 break;
             case IFCHR:
-                Ntype = N_CHR;
+                NodeType = N_CHR;
                 break;
             case IFIFO:
-                Ntype = N_FIFO;
+                NodeType = N_FIFO;
                 break;
             case IFMPB:
             case IFMPC:
-                Ntype = N_MPC;
+                NodeType = N_MPC;
                 break;
             case IFNAM:
-                Ntype = N_NM;
+                NodeType = N_NM;
                 break;
         }
     }
@@ -243,7 +243,7 @@ process_node(na)
         do {
             if ((kread(flp, (char *) &fl, sizeof(fl))))
                 break;
-            if (fl.set.l_pid != (pid_t) Lp->pid)
+            if (fl.set.l_pid != (pid_t) CurrentLocalProc->pid)
                 continue;
             if (fl.set.l_whence == (short) 0 && fl.set.l_start == (off_t) 0
                 && fl.set.l_len == 0x7fffffff)
@@ -257,13 +257,13 @@ process_node(na)
                 if (fl.flags & F_XOUT)
 #endif    /* OSRV<500 */
 
-                Lf->lock = l ? 'X' : 'x';
+                CurrentLocalFile->lock = l ? 'X' : 'x';
             else if (fl.set.l_type == F_RDLCK)
-                Lf->lock = l ? 'R' : 'r';
+                CurrentLocalFile->lock = l ? 'R' : 'r';
             else if (fl.set.l_type == F_WRLCK)
-                Lf->lock = l ? 'W' : 'w';
+                CurrentLocalFile->lock = l ? 'W' : 'w';
             else if (fl.set.l_type == (F_RDLCK | F_WRLCK))
-                Lf->lock = 'u';
+                CurrentLocalFile->lock = 'u';
             break;
         } while ((flp = (KA_T) fl.next) && flp != flf);
     }
@@ -272,7 +272,7 @@ process_node(na)
     /*
      * See if a FIFO node is an HPPS node -- 3.2v5.0.0 and higher.
      */
-        if (Ntype == N_FIFO && ity && strcasecmp(Fsinfo[ity-1], "HPPS") == 0)
+        if (NodeType == N_FIFO && ity && strcasecmp(Fsinfo[ity-1], "HPPS") == 0)
         {
             hpps = 1;
             if (i.i_fsptr) {
@@ -286,11 +286,11 @@ process_node(na)
 /*
  * Determine the device.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_BLK:
-            Lf->dev = i.i_dev;
-            Lf->rdev = i.i_rdev;
-            Lf->dev_def = Lf->rdev_def = 1;
+            CurrentLocalFile->dev = i.i_dev;
+            CurrentLocalFile->rdev = i.i_rdev;
+            CurrentLocalFile->dev_def = CurrentLocalFile->rdev_def = 1;
             break;
         case N_FIFO:
         case N_HSFS:
@@ -302,33 +302,33 @@ process_node(na)
             break;
 #endif    /* OSRV>=500 */
 
-            Lf->dev = i.i_dev;
-            Lf->dev_def = 1;
+            CurrentLocalFile->dev = i.i_dev;
+            CurrentLocalFile->dev_def = 1;
             break;
         case N_CHR:
-            Lf->dev = i.i_dev;
-            Lf->rdev = i.i_rdev;
-            Lf->dev_def = Lf->rdev_def = 1;
+            CurrentLocalFile->dev = i.i_dev;
+            CurrentLocalFile->rdev = i.i_rdev;
+            CurrentLocalFile->dev_def = CurrentLocalFile->rdev_def = 1;
             if (i.i_sptr) {
 
                 /*
-                 * Namech may be:
+                 * NameChars may be:
                  *    /dev/* name if it exists for i.i_rdev;
                  *    cdevsw[].d_name if it exists for GET_MAJ_DEV(i.i_rdev);
                  *    "STR:" otherwise.
                  */
-                (void) snpf(Namech, Namechl, "STR:");
-                Lf->is_stream = 1;
-                k = strlen(Namech);
+                (void) snpf(NameChars, NameCharsLength, "STR:");
+                CurrentLocalFile->is_stream = 1;
+                k = strlen(NameChars);
                 cp = (char *) NULL;
-                if ((dp = finddev(&Lf->dev, &Lf->rdev, 1))) {
-                    (void) snpf(&Namech[k], Namechl - k, dp->name);
+                if ((dp = finddev(&CurrentLocalFile->dev, &CurrentLocalFile->rdev, 1))) {
+                    (void) snpf(&NameChars[k], NameCharsLength - k, dp->name);
                     k += strlen(dp->name);
                     if ((cp = strrchr(dp->name, '/')))
                         cp++;
                 } else if ((j = GET_MAJ_DEV(i.i_rdev))
                            < Cdevcnt && (cp = Cdevsw[j])) {
-                    (void) snpf(Namech, Namechl, "%s", cp);
+                    (void) snpf(NameChars, NameCharsLength, "%s", cp);
                     k += strlen(cp);
                 }
                 /*
@@ -368,12 +368,12 @@ process_node(na)
                                  */
                                 if (strcasecmp(cp, "tcp") == 0) {
                                     pt = 0;
-                                    (void) snpf(Lf->iproto,
-                                                sizeof(Lf->iproto), "TCP");
+                                    (void) snpf(CurrentLocalFile->iproto,
+                                                sizeof(CurrentLocalFile->iproto), "TCP");
                                 } else if (strcasecmp(cp, "udp") == 0) {
                                     pt = 1;
-                                    (void) snpf(Lf->iproto,
-                                                sizeof(Lf->iproto), "UDP");
+                                    (void) snpf(CurrentLocalFile->iproto,
+                                                sizeof(CurrentLocalFile->iproto), "UDP");
                                 }
                                 if (pt >= 0)
                                     p = (KA_T) q.q_ptr;
@@ -383,14 +383,14 @@ process_node(na)
                             continue;
                         }
                         if (k) {
-                            if ((k + 2) > (Namechl - 1))
+                            if ((k + 2) > (NameCharsLength - 1))
                                 break;
-                            (void) snpf(&Namech[k], Namechl - k, "->");
+                            (void) snpf(&NameChars[k], NameCharsLength - k, "->");
                             k += 2;
                         }
-                        if ((k + l) > (Namechl - 1))
+                        if ((k + l) > (NameCharsLength - 1))
                             break;
-                        (void) snpf(&Namech[k], Namechl - k, tbuf);
+                        (void) snpf(&NameChars[k], NameCharsLength - k, tbuf);
                         k += l;
                     }
                 }
@@ -402,9 +402,9 @@ process_node(na)
                      */
                     if (kread(p, (char *) &pcb, sizeof(pcb)))
                         break;
-                    if (Fnet)
-                        Lf->sf |= SELNET;
-                    if ((k + 1) > (Namechl - 1))
+                    if (OptNetwork)
+                        CurrentLocalFile->sf |= SELNET;
+                    if ((k + 1) > (NameCharsLength - 1))
                         break;
                     if (pt == 1 && pcb.inp_ppcb) {
 
@@ -463,24 +463,24 @@ process_node(na)
                     }
                     if (fa || la) {
                         (void) ent_inaddr(la, lp, fa, fp, AF_INET);
-                        if (udptm && !Lf->nma)
+                        if (udptm && !CurrentLocalFile->nma)
                             (void) udp_tm(udp.ud_ftime);
                     }
                     if (!i.i_number)
-                        Lf->inp_ty = 2;
+                        CurrentLocalFile->inp_ty = 2;
                 }
             } else {
                 if (ity) {
                     if (strcasecmp(Fsinfo[ity - 1], "COM") == 0)
-                        Ntype = N_COM;
+                        NodeType = N_COM;
                     else
-                        Ntype = N_CHR;
+                        NodeType = N_CHR;
                 } else {
-                    Ntype = N_CHR;
+                    NodeType = N_CHR;
                     if (!finddev(&i.i_dev, &i.i_rdev, 0)
                         && HaveEventMajor
                         && GET_MAJ_DEV(i.i_rdev) == EventMajor)
-                        (void) snpf(Namech, Namechl,
+                        (void) snpf(NameChars, NameCharsLength,
                                     "clone %d:/dev/event", GET_MIN_DEV(i.i_rdev));
                 }
             }
@@ -490,16 +490,16 @@ process_node(na)
         case N_NFS:
 
 #if	OSRV<500
-            Lf->dev = (dev_t)_makedev(~GET_MAJ_DEV(i.i_dev),
+            CurrentLocalFile->dev = (dev_t)_makedev(~GET_MAJ_DEV(i.i_dev),
                           GET_MIN_DEV(i.i_dev));
-            Lf->rdev = (dev_t)_makedev(~GET_MAJ_DEV(i.i_rdev),
+            CurrentLocalFile->rdev = (dev_t)_makedev(~GET_MAJ_DEV(i.i_rdev),
                            GET_MIN_DEV(i.i_rdev));
 #else	/* OSRV>=500 */
-            Lf->dev = i.i_dev;
-            Lf->rdev = i.i_rdev;
+            CurrentLocalFile->dev = i.i_dev;
+            CurrentLocalFile->rdev = i.i_rdev;
 #endif	/* OSRV<500 */
 
-            Lf->dev_def = Lf->rdev_def = 1;
+            CurrentLocalFile->dev_def = CurrentLocalFile->rdev_def = 1;
             break;
 #endif    /* defined(HAS_NFS) */
 
@@ -507,7 +507,7 @@ process_node(na)
 /*
  * Determine the inode number.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_HSFS:
 
 #if    OSRV < 500
@@ -515,12 +515,12 @@ process_node(na)
              * High Sierra inode numbers for versions below 5.0.0, as reported
              * by "ls -i" and stat(2), are the lower 16 bits of i_number.
              */
-            if ((Lf->inode = (unsigned long) (i.i_number & 0xffff)))
+            if ((CurrentLocalFile->inode = (unsigned long) (i.i_number & 0xffff)))
 #else	/* OSRV>=500 */
-                if ((Lf->inode = (unsigned long)i.i_number))
+                if ((CurrentLocalFile->inode = (unsigned long)i.i_number))
 #endif    /* OSRV<500 */
 
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inp_ty = 1;
             break;
 
 #if    defined(HAS_NFS)
@@ -528,18 +528,18 @@ process_node(na)
 
 #if	OSRV<500
             n = (unsigned short *)&r.r_fh.fh_pad[14];
-            if ((Lf->inode = (unsigned long)ntohs(*n)))
-            Lf->inp_ty = 1;
-            else if ((Lf->inode = (unsigned long)r.r_fh.fh_u.fh_fgen_u))
+            if ((CurrentLocalFile->inode = (unsigned long)ntohs(*n)))
+            CurrentLocalFile->inp_ty = 1;
+            else if ((CurrentLocalFile->inode = (unsigned long)r.r_fh.fh_u.fh_fgen_u))
 #else	/* OSRV>=500 */
             n = (unsigned short *)&r.r_fh.fh_u.fh_fid_u[4];
             n1 = (unsigned short *)&r.r_fh.fh_u.fh_fid_u[2];
-            if ((Lf->inode = (unsigned long)*n))
-            Lf->inp_ty = 1;
-            else if ((Lf->inode = (unsigned long)*n1))
+            if ((CurrentLocalFile->inode = (unsigned long)*n))
+            CurrentLocalFile->inp_ty = 1;
+            else if ((CurrentLocalFile->inode = (unsigned long)*n1))
 #endif	/* OSRV<500 */
 
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inp_ty = 1;
             break;
 #endif    /* defined(HAS_NFS) */
 
@@ -562,53 +562,53 @@ process_node(na)
 #endif    /* OSRV>=500 */
 
             if (i.i_number) {
-                Lf->inode = (unsigned long) i.i_number;
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inode = (unsigned long) i.i_number;
+                CurrentLocalFile->inp_ty = 1;
             }
             break;
     }
 /*
  * Determine the file size.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        switch (Ntype) {
+        switch (NodeType) {
             case N_BLK:
-                if (!Fsize)
-                    Lf->off_def = 1;
+                if (!OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
             case N_CHR:
             case N_COM:
-                if (!Fsize)
-                    Lf->off_def = 1;
+                if (!OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
             case N_FIFO:
 
 #if    OSRV >= 500
                 if (hpps == 2) {
-                    Lf->sz = (SZOFFTYPE)pi.count;
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE)pi.count;
+                    CurrentLocalFile->sz_def = 1;
                     break;
                 }
 #endif    /* OSRV>=500 */
 
-                if (!Fsize)
-                    Lf->off_def = 1;
+                if (!OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
             case N_HSFS:
 
 #if    defined(HAS_NFS)
                 case N_NFS:
-                Lf->sz = (SZOFFTYPE)i.i_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE)i.i_size;
+                CurrentLocalFile->sz_def = 1;
                 break;
 #endif    /* defined(HAS_NFS) */
 
             case N_REGLR:
                 if (type == IFREG || type == IFDIR) {
-                    Lf->sz = (SZOFFTYPE) i.i_size;
-                    Lf->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE) i.i_size;
+                    CurrentLocalFile->sz_def = 1;
                 }
                 break;
         }
@@ -616,11 +616,11 @@ process_node(na)
 /*
  * Record link count.
  */
-    if (Fnlink) {
-        Lf->nlink = (long) i.i_nlink;
-        Lf->nlink_def = 1;
-        if (Nlink && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+    if (OptLinkCount) {
+        CurrentLocalFile->nlink = (long) i.i_nlink;
+        CurrentLocalFile->nlink_def = 1;
+        if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 /*
  * Format the type name.
@@ -651,7 +651,7 @@ process_node(na)
                 tn = "XSD";
             else {
                 tn = "XNAM";
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                             "unknown Xenix special file type: %x", i.i_rdev);
             }
             break;
@@ -666,16 +666,16 @@ process_node(na)
 #endif    /* defined(IFLNK) */
 
         default:
-            (void) snpf(Lf->type, sizeof(Lf->type), "%04o",
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o",
                         ((type >> 12) & 0xfff));
             tn = NULL;
     }
     if (tn)
-        (void) snpf(Lf->type, sizeof(Lf->type), "%s", tn);
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", tn);
 /*
  * Save the file system names.
  */
-    switch (Ntype) {
+    switch (NodeType) {
         case N_BLK:
         case N_CHR:
         case N_FIFO:
@@ -687,23 +687,23 @@ process_node(na)
 
         case N_NM:
         case N_REGLR:
-            if (Lf->dev_def) {
+            if (CurrentLocalFile->dev_def) {
 
                 /*
                  * Defer the local mount info table search until printname().
                  */
-                Lf->lmi_srch = 1;
+                CurrentLocalFile->lmi_srch = 1;
             }
             break;
     }
-    Lf->ntype = Ntype;
+    CurrentLocalFile->ntype = NodeType;
 
 #if     defined(HASBLKDEV)
     /*
      * If this is a IFBLK file and it's missing an inode number, try to
      * supply one.
      */
-        if ((Lf->inp_ty == 0) && (type == IFBLK))
+        if ((CurrentLocalFile->inp_ty == 0) && (type == IFBLK))
             find_bl_ino();
 #endif  /* defined(HASBLKDEV) */
 
@@ -711,28 +711,28 @@ process_node(na)
  * If this is a IFCHR file and it's missing an inode number, try to
  * supply one.
  */
-    if ((Lf->inp_ty == 0) && (type == IFCHR))
+    if ((CurrentLocalFile->inp_ty == 0) && (type == IFCHR))
         find_ch_ino();
 /*
  * Test for specified file.
  */
-    if (Sfile && is_file_named((char *) NULL,
+    if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == IFCHR) || (type == IFBLK) || (type == IFNAM)) ? 1
                                                                                        : 0))
-        Lf->sf |= SELNM;
+        CurrentLocalFile->sf |= SELNM;
 
 #if    OSRV >= 500
     /*
      * If this is an HPPS node and no other name characters have been
      * entered, enter HPPS as the name.
      */
-        if (hpps && Namech[0] == '\0')
-            (void) snpf(Namech, Namechl, "HPPS");
+        if (hpps && NameChars[0] == '\0')
+            (void) snpf(NameChars, NameCharsLength, "HPPS");
 #endif    /* OSRV>=500 */
 
 /*
  * Enter name characters.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }

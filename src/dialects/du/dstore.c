@@ -43,7 +43,7 @@ int CloneMaj;                /* clone major device number */
 
 
 /*
- * Drive_Nl -- table to drive the building of Nl[] via build_Nl()
+ * Drive_Nl -- table to drive the building of NlistTable[] via build_Nl()
  *             (See lsof.h and misc.c.)
  */
 

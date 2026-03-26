@@ -69,12 +69,12 @@ process_file(fp)
 #endif  /* defined(FILEPTR) */
 
     if (kread(fp, (char *) &f, sizeof(f))) {
-        (void) snpf(Namech, Namechl, "can't read file struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
                     print_kptr(fp, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
-    Lf->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
 
     if (f.f_count
 
@@ -88,31 +88,31 @@ process_file(fp)
          * Construct access code.
          */
         if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
-            Lf->access = 'r';
+            CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
-            Lf->access = 'w';
+            CurrentLocalFile->access = 'w';
         else if (flag == (FREAD | FWRITE))
-            Lf->access = 'u';
+            CurrentLocalFile->access = 'u';
 
 #if    defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (Fsv & FSV_CT) {
-            Lf->fct = (long)f.f_count;
-            Lf->fsv |= FSV_CT;
+            if (OptFileStructValues & FSV_FILE_COUNT) {
+            CurrentLocalFile->fct = (long)f.f_count;
+            CurrentLocalFile->fsv |= FSV_FILE_COUNT;
             }
-            if (Fsv & FSV_FA) {
-            Lf->fsa = fp;
-            Lf->fsv |= FSV_FA;
+            if (OptFileStructValues & FSV_FILE_ADDR) {
+            CurrentLocalFile->fsa = fp;
+            CurrentLocalFile->fsv |= FSV_FILE_ADDR;
             }
-            if (Fsv & FSV_FG) {
-            Lf->ffg = (long)f.f_flag;
-            Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+            CurrentLocalFile->ffg = (long)f.f_flag;
+            CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
-            if (Fsv & FSV_NI) {
-            Lf->fna = (KA_T)f.f_vnode;
-            Lf->fsv |= FSV_NI;
+            if (OptFileStructValues & FSV_NODE_ID) {
+            CurrentLocalFile->fna = (KA_T)f.f_vnode;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
             }
 #endif    /* defined(HASFSTRUCT) */
 

@@ -68,7 +68,7 @@ int Kd = -1;                /* /dev/kmem file descriptor */
 struct l_vfs *Lvfs = NULL;        /* local vfs structure table */
 int Km = -1;                /* /dev/mem file descriptor */
 
-struct nlist Nl[] = {
+struct nlist NlistTable[] = {
 
 #if    AIXV < 4100
         {"u", 0, 0, 0, 0, 0},

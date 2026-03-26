@@ -149,14 +149,14 @@ gather_proc_info() {
             continue;
         alloc_lproc(pid, pgid, (int) p->p_ppid, (UID_ARG) uid, ex.ei_comm,
                     (int) pss, (int) sf);
-        Plf = NULL;
+        PrevLocalFile = NULL;
         /*
          * Save current working directory information.
          */
         if (p->p_cdir) {
             alloc_lfile(CWD, -1);
             process_node((KA_T) p->p_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -165,7 +165,7 @@ gather_proc_info() {
         if (p->p_rdir) {
             alloc_lfile(RTD, -1);
             process_node((KA_T) p->p_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -187,7 +187,7 @@ gather_proc_info() {
             if (!fe) {
                 (void) fprintf(stderr,
                                "%s: PID %d; no space for %d file descriptors\n",
-                               Pn, pid, nf);
+                               ProgramName, pid, nf);
                 Exit(1);
             }
             nfea = nf;
@@ -207,11 +207,11 @@ gather_proc_info() {
 
                 alloc_lfile(NULL, i);
                 process_file(fa);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG)
-                        Lf->pof = (long)f->fd_flag;
+                    if (OptFileStructValues & FSV_FILE_FLAGS)
+                        CurrentLocalFile->pof = (long)f->fd_flag;
 #endif    /* defined(HASFSTRUCT) */
 
                     link_lfile();
@@ -250,7 +250,7 @@ get_clonemaj() {
     len = (MALLOC_S)(sz * sizeof(struct cdevsw));
     if (!(cd = (struct cdevsw *) malloc(len))) {
         (void) fprintf(stderr, "%s: can't allocate %d bytes for cdevsw\n",
-                       Pn);
+                       ProgramName);
         Exit(1);
     }
 /*
@@ -323,7 +323,7 @@ get_kernel_access() {
  * Open kernel memory access.
  */
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s: %s\n", Pn,
+        (void) fprintf(stderr, "%s: can't open %s: %s\n", ProgramName,
                        Memory ? Memory : KMEM, strerror(errno));
         Exit(1);
     }
@@ -338,7 +338,7 @@ get_kernel_access() {
 /*
  * See if the name list file is readable.
  */
-    if (Nmlst && !is_readable(Nmlst, 1))
+    if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
         Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
@@ -346,20 +346,20 @@ get_kernel_access() {
  * Access kernel symbols and values.
  */
     (void) build_Nl(Drive_Nl);
-    if (nlist(Nmlst ? Nmlst : N_UNIX, Nl) < 0) {
+    if (nlist(NamelistFilePath ? NamelistFilePath : N_UNIX, NlistTable) < 0) {
         (void) fprintf(stderr, "%s: can't read kernel name list from %s\n",
-                       Pn, Nmlst ? Nmlst : N_UNIX);
+                       ProgramName, NamelistFilePath ? NamelistFilePath : N_UNIX);
         Exit(1);
     }
     if (get_Nl_value("var", Drive_Nl, &v) < 0 || !v
         || kread((KA_T) v, (char *) &Var, sizeof(Var))) {
         (void) fprintf(stderr,
-                       "%s: can't read system configuration info\n", Pn);
+                       "%s: can't read system configuration info\n", ProgramName);
         Exit(1);
     }
     if (get_Nl_value("proc", Drive_Nl, &Pract) < 0 || !Pract) {
         (void) fprintf(stderr,
-                       "%s: can't find active process chain pointer\n", Pn);
+                       "%s: can't find active process chain pointer\n", ProgramName);
         Exit(1);
     }
     if (get_Nl_value("sgdnops", Drive_Nl, &Sgdnops) < 0 || !Sgdnops)
@@ -370,10 +370,10 @@ get_kernel_access() {
  * Identify the clone major device number.
  */
     if (!get_clonemaj()) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
                            "%s: WARNING; can't identify major clone device number\n",
-                           Pn);
+                           ProgramName);
     }
 }
 
@@ -482,7 +482,7 @@ process_text(pa)
             if (l >= k) {
                 alloc_lfile(fd, -1);
                 process_node(vp);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
                     link_lfile();
                     i++;
                 }
@@ -511,26 +511,26 @@ readfsinfo() {
 
     if ((Fsinfomax = sysfs(GETNFSTYP)) == -1) {
         (void) fprintf(stderr, "%s: sysfs(GETNFSTYP) error: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         Exit(1);
     }
     if (Fsinfomax == 0)
         return;
     if (!(Fsinfo = (char **) malloc((MALLOC_S)(Fsinfomax * sizeof(char *))))) {
-        (void) fprintf(stderr, "%s: no space for sysfs info\n", Pn);
+        (void) fprintf(stderr, "%s: no space for sysfs info\n", ProgramName);
         Exit(1);
     }
     for (i = 1; i <= Fsinfomax; i++) {
         if (sysfs(GETFSTYP, i, buf) == -1) {
             (void) fprintf(stderr, "%s: sysfs(GETFSTYP) error: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             Exit(1);
         }
         buf[FSTYPSZ] = '\0';
         len = strlen(buf) + 1;
         if (!(Fsinfo[i - 1] = (char *) malloc((MALLOC_S) len))) {
             (void) fprintf(stderr,
-                           "%s: no space for file system entry %s\n", Pn, buf);
+                           "%s: no space for file system entry %s\n", ProgramName, buf);
             Exit(1);
         }
         (void) snpf(Fsinfo[i - 1], len, "%s", buf);
@@ -557,14 +557,14 @@ read_proc() {
          */
         if ((Npa = Var.v_proc) < 1) {
             (void) fprintf(stderr, "%s: bad proc table size: %d\n",
-                           Pn, Var.v_proc);
+                           ProgramName, Var.v_proc);
             Exit(1);
         }
         Npa += PROCINCR;
         len = (MALLOC_S)(Npa * sizeof(struct proc));
         if (!(P = (struct proc *) malloc(len))) {
             (void) fprintf(stderr, "%s: no space for %d proc structures\n",
-                           Pn, Npa);
+                           ProgramName, Npa);
             Exit(1);
         }
     }
@@ -578,10 +578,10 @@ read_proc() {
          */
         pa = (KA_T) NULL;
         if (!Pract || kread((KA_T) Pract, (char *) &pa, sizeof(pa)) || !pa) {
-            if (!Fwarn)
+            if (!OptWarnings)
                 (void) fprintf(stderr,
                                "%s: active proc chain ptr err; addr=%s, val=%s\n",
-                               Pn, print_kptr(Pract, tbuf, sizeof(tbuf)),
+                               ProgramName, print_kptr(Pract, tbuf, sizeof(tbuf)),
                                print_kptr(pa, (char *) NULL, 0));
             continue;
         }
@@ -599,7 +599,7 @@ read_proc() {
                 if (!(P = (struct proc *) realloc((MALLOC_P *) P, len))) {
                     (void) fprintf(stderr,
                                    "%s: can't realloc %d proc table entries (%d)\n",
-                                   Pn, Npa, len);
+                                   ProgramName, Npa, len);
                     Exit(1);
                 }
                 p = &P[Np];
@@ -629,10 +629,10 @@ read_proc() {
  * Quit if not enough proc structures could be collected.
  */
     if (try >= PROCTRYLM) {
-        (void) fprintf(stderr, "%s: can't read proc table\n", Pn);
+        (void) fprintf(stderr, "%s: can't read proc table\n", ProgramName);
         Exit(1);
     }
-    if (Np < Npa && !RptTm) {
+    if (Np < Npa && !RepeatTime) {
 
         /*
          * If not repeating, reduce the local proc table size to a minimum.
@@ -640,7 +640,7 @@ read_proc() {
         len = (MALLOC_S)(Np * sizeof(struct proc));
         if (!(P = (struct proc *) realloc((MALLOC_P *) P, len))) {
             (void) fprintf(stderr,
-                           "%s: can't reduce proc table to %d entries\n", Pn, Np);
+                           "%s: can't reduce proc table to %d entries\n", ProgramName, Np);
             Exit(1);
         }
         Npa = Np;

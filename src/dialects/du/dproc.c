@@ -123,7 +123,7 @@ enter_vn_text(va, n)
     alloc_lfile(" txt", -1);
     FILEPTR = (struct file *) NULL;
     process_node(va);
-    if (Lf->sf)
+    if (CurrentLocalFile->sf)
         link_lfile();
     if (i >= Nv) {
 
@@ -137,7 +137,7 @@ enter_vn_text(va, n)
             Vp = (KA_T *) realloc((MALLOC_P *) Vp, (MALLOC_S)(Nv * sizeof(KA_T)));
         if (!Vp) {
             (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                           Pn, Lp->pid);
+                           ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
     }
@@ -201,7 +201,7 @@ gather_proc_info() {
     for (p = Ps, px = 0, utp = &ut; px < Psn; p++, px++) {
         if (p->p_stat == 0 || p->p_stat == SZOMB)
             continue;
-        if (Fpgid) {
+        if (OptProcessGroup) {
             if (!p->p_pgrp
                 || kread((KA_T) p->p_pgrp, (char *) &pg, sizeof(pg)))
                 continue;
@@ -231,7 +231,7 @@ gather_proc_info() {
             continue;
         alloc_lproc((int) p->p_pid, pgid, (int) p->p_ppid, (UID_ARG) uid,
                     utp->u_comm, (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
@@ -239,7 +239,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) utp->uu_utnd.utnd_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -249,7 +249,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) utp->uu_utnd.utnd_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -273,7 +273,7 @@ gather_proc_info() {
                 fp = utp->uu_file_state.uf_ofile[i];
 
 # if    defined(HASFSTRUCT) && DUV >= 40000
-                if (Fsv & FSV_FG)
+                if (OptFileStructValues & FSV_FILE_FLAGS)
                 pv = (long)utp->uu_file_state.uf_pofile[i];
 # endif    /* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -290,7 +290,7 @@ gather_proc_info() {
                         if (!ufb) {
                             (void) fprintf(stderr,
                                            "%s: PID %d, no file * space\n",
-                                           Pn, Lp->pid);
+                                           ProgramName, CurrentLocalProc->pid);
                             Exit(1);
                         }
                         nufb = b;
@@ -300,7 +300,7 @@ gather_proc_info() {
                         break;
 
 # if    defined(HASFSTRUCT) && DUV >= 40000
-                    if (Fsv & FSV_FG) {
+                    if (OptFileStructValues & FSV_FILE_FLAGS) {
                         b = (MALLOC_S)(utp->uu_file_state.uf_of_count
                           *		   sizeof(char));
                         if (b > pofb) {
@@ -311,7 +311,7 @@ gather_proc_info() {
                         if (!pof) {
                             (void) fprintf(stderr,
                             "%s: PID %d: no file flags space\n",
-                            Pn, Lp->pid);
+                            ProgramName, CurrentLocalProc->pid);
                             Exit(1);
                         }
                         pofb = b;
@@ -326,7 +326,7 @@ gather_proc_info() {
                 fp = ufb[j];
 
 # if    defined(HASFSTRUCT) && DUV >= 40000
-                if (Fsv & FSV_FG)
+                if (OptFileStructValues & FSV_FILE_FLAGS)
                 pv = pof[j];
 # endif    /* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -335,12 +335,12 @@ gather_proc_info() {
             if (fp && (ulong) fp != 0xffffffffffffffff) {
                 alloc_lfile(NULL, i);
                 process_file((KA_T) fp);
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 # if    defined(HASFSTRUCT) && DUV >= 40000
-                    if (Fsv & FSV_FG) {
-                        if ((Lf->pof = pv))
-                        Lf->fsv |= FSV_FG;
+                    if (OptFileStructValues & FSV_FILE_FLAGS) {
+                        if ((CurrentLocalFile->pof = pv))
+                        CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
                     }
 # endif    /* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -378,7 +378,7 @@ gather_proc_info() {
             fp = ufeo[k].ufe_ofile;
 
 # if	defined(HASFSTRUCT) && DUV>=40000
-            if (Fsv & FSV_FG)
+            if (OptFileStructValues & FSV_FILE_FLAGS)
             pv = ufeo[k].ufe_oflags;
 # endif	/* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -394,7 +394,7 @@ gather_proc_info() {
             fp = ufe[k].ufe_ofile;
 
 # if	defined(HASFSTRUCT) && DUV>=40000
-            if (Fsv & FSV_FG)
+            if (OptFileStructValues & FSV_FILE_FLAGS)
             pv = ufe[k].ufe_oflags;
 # endif	/* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -404,12 +404,12 @@ gather_proc_info() {
         if (fp && (ulong)fp != 0xffffffffffffffff) {
             alloc_lfile(NULL, i);
             process_file((KA_T)fp);
-            if (Lf->sf) {
+            if (CurrentLocalFile->sf) {
 
 # if	defined(HASFSTRUCT) && DUV>=40000
-            if (Fsv & FSV_FG) {
-                if ((Lf->pof = pv))
-                Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+                if ((CurrentLocalFile->pof = pv))
+                CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
 # endif	/* defined(HASFSTRUCT) && DUV>=40000 */
 
@@ -446,10 +446,10 @@ get_kernel_access() {
  */
 
 #if    DUV < 40000
-    if (!Nmlst) {
-        if (!(Nmlst = get_nlist_path(1))) {
+    if (!NamelistFilePath) {
+        if (!(NamelistFilePath = get_nlist_path(1))) {
             (void) fprintf(stderr, "%s: can't get kernel name list path\n",
-                           Pn);
+                           ProgramName);
             Exit(1);
         }
     }
@@ -474,7 +474,7 @@ get_kernel_access() {
  * Open kernel memory access.
  */
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s: %s\n", Pn,
+        (void) fprintf(stderr, "%s: can't open %s: %s\n", ProgramName,
                        Memory ? Memory : KMEM, sys_errlist[errno]);
         Exit(1);
     }
@@ -489,7 +489,7 @@ get_kernel_access() {
 /*
  * See if the name list file is readable.
  */
-    if (Nmlst && !is_readable(Nmlst, 1))
+    if (NamelistFilePath && !is_readable(NamelistFilePath, 1))
         Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
@@ -499,16 +499,16 @@ get_kernel_access() {
     (void) build_Nl(Drive_Nl);
 
 #if    DUV >= 40000
-    if (!Nmlst)
-        rv = knlist(Nl);
+    if (!NamelistFilePath)
+        rv = knlist(NlistTable);
     else
 #endif    /* DUV>=40000 */
 
-    rv = nlist(Nmlst, Nl);
+    rv = nlist(NamelistFilePath, NlistTable);
     if (rv == -1) {
         (void) fprintf(stderr,
                        "%s: can't read kernel name list from %s: %s\n",
-                       Pn, Nmlst ? Nmlst : "knlist(3)", strerror(errno));
+                       ProgramName, NamelistFilePath ? NamelistFilePath : "knlist(3)", strerror(errno));
         Exit(1);
     }
 
@@ -525,19 +525,19 @@ get_kernel_access() {
 #endif    /* DUV<30000 */
 
     {
-        (void) fprintf(stderr, "%s: can't read proc table info\n", Pn);
+        (void) fprintf(stderr, "%s: can't read proc table info\n", ProgramName);
         Exit(1);
     }
     if (get_Nl_value("vnmaxp", Drive_Nl, &v) < 0 || !v
         || kread(v, (char *) &Vnmxp, sizeof(Vnmxp))) {
-        (void) fprintf(stderr, "%s: can't determine vnode length\n", Pn);
+        (void) fprintf(stderr, "%s: can't determine vnode length\n", ProgramName);
         Exit(1);
     }
     if (get_Nl_value("cldev", Drive_Nl, &v) < 0 || !v
         || kread(v, (char *) &dev, sizeof(dev))) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr, "%s: can't read clone device number\n",
-                           Pn);
+                           ProgramName);
         HaveCloneMaj = 0;
     } else {
         CloneMaj = GET_MAJ_DEV(dev);
@@ -568,7 +568,7 @@ get_nlist_path(ap)
         != 1) {
         if (rv < 0) {
             (void) fprintf(stderr, "%s: can't get booted file name: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             Exit(1);
         }
         return ((char *) NULL);
@@ -603,7 +603,7 @@ get_nlist_path(ap)
     if (!(ps = (char *) malloc(len))) {
         (void) fprintf(stderr,
                        "%s: can't allocate %d bytes for boot file path: %s\n",
-                       Pn, len, ba);
+                       ProgramName, len, ba);
         Exit(1);
     }
     (void) snpf(ps, len, "%s", ba);
@@ -814,13 +814,13 @@ read_proc() {
          * Allocate local proc table space.
          */
         if (Np < 1) {
-            (void) fprintf(stderr, "%s: proc table has no entries\n", Pn);
+            (void) fprintf(stderr, "%s: proc table has no entries\n", ProgramName);
             Exit(1);
         }
         len = (MALLOC_S)(PAPSINIT * sizeof(struct proc));
         if (!(Ps = (struct proc *) malloc(len))) {
             (void) fprintf(stderr, "%s: no proc table space (%d bytes)\n",
-                           Pn, len);
+                           ProgramName, len);
             Exit(1);
         }
 
@@ -831,7 +831,7 @@ read_proc() {
             len = (MALLOC_S)(PAPSINIT * sizeof(KA_T));
             if (!(Pa = (KA_T *)malloc(len))) {
             (void) fprintf(stderr,
-                "%s: no proc address table space (%d bytes)\n", Pn, len);
+                "%s: no proc address table space (%d bytes)\n", ProgramName, len);
             Exit(1);
             }
 #endif    /* DUV>=30000 */
@@ -854,7 +854,7 @@ read_proc() {
                 if (!(Ps = (struct proc *) realloc((MALLOC_P *) Ps, len))) {
                     (void) fprintf(stderr,
                                    "%s: no more proc table space (%d bytes)\n",
-                                   Pn, len);
+                                   ProgramName, len);
                     Exit(1);
                 }
                 p = &Ps[Psn];
@@ -864,7 +864,7 @@ read_proc() {
                 if (!(Pa = (KA_T *)realloc((MALLOC_P *)Pa, len))) {
                 (void) fprintf(stderr,
                     "%s: no more proc address table space (%d bytes)\n",
-                    Pn, len);
+                    ProgramName, len);
                 Exit(1);
                 }
 #endif    /* DUV>=30000 */
@@ -900,10 +900,10 @@ read_proc() {
  * Quit if not enough proc structures could be accumulated.
  */
     if (try >= PROCTRYLM) {
-        (void) fprintf(stderr, "%s: can't read proc table\n", Pn);
+        (void) fprintf(stderr, "%s: can't read proc table\n", ProgramName);
         Exit(1);
     }
-    if (Psn < Np && !RptTm) {
+    if (Psn < Np && !RepeatTime) {
 
         /*
          * Reduce the local proc structure tables to their minimum if
@@ -914,7 +914,7 @@ read_proc() {
         if (!(Ps = (struct proc *) realloc((MALLOC_P *) Ps, len))) {
             (void) fprintf(stderr,
                            "%s: can't reduce proc table to %d bytes\n",
-                           Pn, len);
+                           ProgramName, len);
             Exit(1);
         }
 
@@ -923,7 +923,7 @@ read_proc() {
         if (!(Pa = (KA_T *)realloc((MALLOC_P *)Pa, len))) {
         (void) fprintf(stderr,
             "%s: can't reduce proc address table to %d bytes\n",
-            Pn, len);
+            ProgramName, len);
         Exit(1);
         }
 #endif    /* DUV>=30000 */
@@ -1206,7 +1206,7 @@ ncache_ckrootid(na, id)
         }
         if (!ic) {
         (void) fprintf(stderr,
-            "%s: no space for root node VPID table\n", Pn);
+            "%s: no space for root node VPID table\n", ProgramName);
         Exit(1);
         }
         nia += 10;
@@ -1259,25 +1259,25 @@ ncache_isroot(na, cp)
     /*
      * The vnode tests failed.  Try the inode tests.
      */
-        if (Lf->inp_ty != 1 || !Lf->inode
-        ||  !Lf->fsdir || (len = strlen(Lf->fsdir)) < 1)
+        if (CurrentLocalFile->inp_ty != 1 || !CurrentLocalFile->inode
+        ||  !CurrentLocalFile->fsdir || (len = strlen(CurrentLocalFile->fsdir)) < 1)
         return(0);
         if ((len + 1 + strlen(cp) + 1) > sizeof(buf))
         return(0);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if (strcmp(Lf->fsdir, mtp->dir) == 0)
+        if (strcmp(CurrentLocalFile->fsdir, mtp->dir) == 0)
             break;
         }
         if (!mtp)
         return(0);
-        (void) strcpy(buf, Lf->fsdir);
+        (void) strcpy(buf, CurrentLocalFile->fsdir);
         if (buf[len - 1] != '/')
         buf[len++] = '/';
         (void) strcpy(&buf[len], cp);
         if (statsafely(buf, &sb) != 0
-        ||  (INODETYPE)sb.st_ino != Lf->inode)
+        ||  (INODETYPE)sb.st_ino != CurrentLocalFile->inode)
         return(0);
     }
 /*
@@ -1293,7 +1293,7 @@ ncache_isroot(na, cp)
         }
         if (!nc) {
         (void) fprintf(stderr,
-            "%s: no space for root node address table\n", Pn);
+            "%s: no space for root node address table\n", ProgramName);
         Exit(1);
         }
         nca += 10;
@@ -1323,7 +1323,7 @@ ncache_load()
     register struct namecache *np;
     static KA_T *pp = (KA_T *)NULL;
 
-    if (!Fncache)
+    if (!OptNameCache)
         return;
     if (Ncfirst) {
 
@@ -1339,17 +1339,17 @@ ncache_load()
         ||  !ka
         ||  kread(ka, (char *)&ncpus, sizeof(ncpus)))
         {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't read processor count: %s\n",
-            Pn, print_kptr(ka, (char *)NULL, 0));
+            ProgramName, print_kptr(ka, (char *)NULL, 0));
         ncl = nchsz = ncpc = ncpus = 0;
         return;
         }
         if (ncpus < 1) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-            "%s: WARNING: processor count: %d\n", Pn, ncpus);
+            "%s: WARNING: processor count: %d\n", ProgramName, ncpus);
         ncl = nchsz = ncpc = ncpus = 0;
         return;
         }
@@ -1362,10 +1362,10 @@ ncache_load()
         ||  kread(ka, (char *)&ka, sizeof(ka))
         ||  !ka)
         {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: per processor table address: %s\n",
-            Pn, print_kptr(ka, (char *)NULL, 0));
+            ProgramName, print_kptr(ka, (char *)NULL, 0));
         ncl = nchsz = ncpc = ncpus = 0;
         return;
         }
@@ -1376,14 +1376,14 @@ ncache_load()
         if (!(pp = (KA_T *)malloc((MALLOC_S)len))) {
         (void) fprintf(stderr,
             "%s: can't allocate %d bytes for processor addresses\n",
-            Pn, len);
+            ProgramName, len);
         Exit(1);
         }
         if (kread(ka, (char *)pp, len)) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: can't read processor addresses: %s\n",
-            Pn, print_kptr(ka, (char *)NULL, 0));
+            ProgramName, print_kptr(ka, (char *)NULL, 0));
         ncl = nchsz = ncpc = ncpus = 0;
         return;
         }
@@ -1400,18 +1400,18 @@ ncache_load()
         ||  !ka
         ||  kread((KA_T)ka, (char *)&nchsz, sizeof(nchsz)))
         {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: processor nchash count address: %s\n",
-            Pn, print_kptr(ka, (char *)NULL, 0));
+            ProgramName, print_kptr(ka, (char *)NULL, 0));
         ncl = nchsz = ncpc = ncpus = 0;
         return;
         }
         if (nchsz < 1) {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
             "%s: WARNING: bad per processor nchash count: %d\n",
-            Pn, nchsz);
+            ProgramName, nchsz);
         nchsz = ncpus = 1;
         return;
         }
@@ -1424,7 +1424,7 @@ ncache_load()
         if (!(nc = (struct namecache *)malloc((MALLOC_S)len))) {
         (void) fprintf(stderr,
             "%s: no space for %d namecache entries (%d bytes)\n",
-            Pn, ncpc * ncpus, len);
+            ProgramName, ncpc * ncpus, len);
         Exit(1);
         }
     } else {
@@ -1468,10 +1468,10 @@ ncache_load()
     i += i;
     Hmsk = i - 1;
     if (!(Nchash = (struct l_nch **)calloc(i, sizeof(struct l_nch *)))) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: no space for %d byte name cache hash buckets\n",
-            Pn, (int)(i * sizeof(struct l_nch *)));
+            ProgramName, (int)(i * sizeof(struct l_nch *)));
         Exit(1);
     }
 /*
@@ -1504,7 +1504,7 @@ ncache_load()
      * Allocate and fill a new local name cache entry.
      */
         if (!(lp = (struct l_nch *)malloc(sizeof(struct l_nch)))) {
-        (void) fprintf(stderr, "%s: can't allocate l_nch entry\n", Pn);
+        (void) fprintf(stderr, "%s: can't allocate l_nch entry\n", ProgramName);
         Exit(1);
         }
         lp->nc = &nc[i];
@@ -1540,27 +1540,27 @@ ncache_lookup(buf, blen, fp)
  * file system mount point, return an empty path reply.  That tells the
  * caller to print the file system mount point name only.
  */
-    if (Lf->inp_ty == 1 && Lf->fs_ino && Lf->inode == Lf->fs_ino)
+    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino && CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
         return(cp);
 # endif	/* defined(HASFSINO) */
 
 /*
  * Look up the name cache entry for the node address.
  */
-    if (Nc == 0 || !(lc = ncache_addr(Lf->id)) || !(nc = lc->nc)) {
+    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->id)) || !(nc = lc->nc)) {
 
     /*
      * If the node has no cache entry, see if it's the mount
      * point of a known file system.
      */
-        if (!Lf->fsdir || !Lf->dev_def || Lf->inp_ty != 1)
+        if (!CurrentLocalFile->fsdir || !CurrentLocalFile->dev_def || CurrentLocalFile->inp_ty != 1)
         return((char *)NULL);
         for (mtp = readmnt(); mtp; mtp = mtp->next) {
         if (!mtp->dir || !mtp->inode)
             continue;
-        if ((Lf->dev == mtp->dev)
-        &&  (mtp->inode == Lf->inode)
-        &&  (strcmp(mtp->dir, Lf->fsdir) == 0))
+        if ((CurrentLocalFile->dev == mtp->dev)
+        &&  (mtp->inode == CurrentLocalFile->inode)
+        &&  (strcmp(mtp->dir, CurrentLocalFile->fsdir) == 0))
             return(cp);
         }
         return((char *)NULL);

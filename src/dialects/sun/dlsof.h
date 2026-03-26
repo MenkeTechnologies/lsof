@@ -587,11 +587,11 @@ extern struct pseudo *Pseudo;
  * Solaris 11 sdev definitions
  */
 
-#define    SDVOP_IP    0        /* Sdev[] devipnet_vnodeops index */
-#define    SDVOP_NET    1        /* Sdev[] devnet_vnodeops index */
-#define    SDVOP_PTS    2        /* Sdev[] devpts_vnodeops index */
-#define    SDVOP_VT    3        /* Sdev[] devvt_vnodeops index */
-#define    SDVOP_NUM    4        /* number of Sdev[] entries */
+#define    SDVOP_IP    0        /* SortedDevices[] devipnet_vnodeops index */
+#define    SDVOP_NET    1        /* SortedDevices[] devnet_vnodeops index */
+#define    SDVOP_PTS    2        /* SortedDevices[] devpts_vnodeops index */
+#define    SDVOP_VT    3        /* SortedDevices[] devvt_vnodeops index */
+#define    SDVOP_NUM    4        /* number of SortedDevices[] entries */
 
 
 struct sfile {

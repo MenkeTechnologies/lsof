@@ -226,10 +226,10 @@ extern int optind;
 					 * column */
 #define    CWD        " cwd"        /* current working directory fd name */
 #define    FDLEN        8        /* fd printing array length */
-#define    FSV_FA        0x1        /* file struct addr status */
-#define    FSV_CT        0x2        /* file struct count status */
-#define    FSV_FG        0x4        /* file struct flags */
-#define    FSV_NI        0x8        /* file struct node ID status */
+#define    FSV_FILE_ADDR        0x1        /* file struct addr status */
+#define    FSV_FILE_COUNT        0x2        /* file struct count status */
+#define    FSV_FILE_FLAGS        0x4        /* file struct flags */
+#define    FSV_NODE_ID        0x8        /* file struct node ID status */
 
 # if    !defined(GET_MAJ_DEV)
 #define    GET_MAJ_DEV    major        /* if no dialect specific macro has
@@ -278,7 +278,7 @@ static struct utmp dummy_utmp;        /* to get login name length */
 #  endif    /* defined(HASUTMPX) */
 # endif    /* !defined(LOGINML) */
 
-#define    LPROCINCR    128        /* Lproc[] allocation increment */
+#define    LPROCINCR    128        /* LocalProcTable[] allocation increment */
 #define    LSOF_URL    "ftp://lsof.itap.purdue.edu/pub/tools/unix/lsof/"
 #define    MIN_AF_ADDR    sizeof(struct in_addr)
 /* minimum AF_* address length */
@@ -290,7 +290,7 @@ static struct utmp dummy_utmp;        /* to get login name length */
 #define    MAX_AF_ADDR    MIN_AF_ADDR    /* maximum AF_* address length */
 # endif    /* defined(HASIPv6) */
 
-#define    MAXDCPATH    4        /* paths in DCpath[] */
+#define    MAXDCPATH    4        /* paths in DevCachePath[] */
 #define    MAXNWAD        100        /* maximum network addresses */
 
 # if    !defined(MEMMOVE)
@@ -406,46 +406,46 @@ static struct utmp dummy_utmp;        /* to get login name length */
  */
 
 #define    CMDTTL        "COMMAND"
-extern int CmdColW;
+extern int CommandColWidth;
 #define    CNTXTTL        "SECURITY-CONTEXT"
-extern int CntxColW;
+extern int ContextColWidth;
 #define DEVTTL        "DEVICE"
-extern int DevColW;
+extern int DeviceColWidth;
 #define    FCTTL        "FCT"
-extern int FcColW;
+extern int FileCountColWidth;
 #define    FDTTL        "FD"
-extern int FdColW;
+extern int FileDescColWidth;
 #define    FGTTL        "FILE-FLAG"
-extern int FgColW;
+extern int FileFlagColWidth;
 #define    FSTTL        "FILE-ADDR"
-extern int FsColW;
-#define    NITTL        "NODE-ID"
-extern int NiColW;
-extern char *NiTtl;
+extern int FileStructAddrColWidth;
+#define    NODE_ID_TITLE        "NODE-ID"
+extern int NodeIdColWidth;
+extern char *NodeIdTitle;
 #define    NLTTL        "NLINK"
-extern int NlColW;
+extern int LinkCountColWidth;
 #define    NMTTL        "NAME"
-extern int NmColW;
+extern int NameColWidth;
 #define NODETTL        "NODE"
-extern int NodeColW;
+extern int NodeColWidth;
 #define OFFTTL        "OFFSET"
 #define    PGIDTTL        "PGID"
-extern int PgidColW;
+extern int PgidColWidth;
 #define    PIDTTL        "PID"
-extern int PidColW;
+extern int PidColWidth;
 #define    PPIDTTL        "PPID"
-extern int PpidColW;
+extern int PpidColWidth;
 #define SZTTL        "SIZE"
 #define    SZOFFTTL    "SIZE/OFF"
-extern int SzOffColW;
+extern int SizeOffColWidth;
 #define    TIDTTL        "TID"
-extern int TidColW;
+extern int TidColWidth;
 #define TYPETTL        "TYPE"
-extern int TypeColW;
+extern int TypeColWidth;
 #define    USERTTL        "USER"
-extern int UserColW;
+extern int UserColWidth;
 #define ZONETTL        "ZONE"
-extern int ZoneColW;
+extern int ZoneColWidth;
 
 
 /*
@@ -494,7 +494,7 @@ struct afsnode {			/* AFS pseudo-node structure */
 
 # if    defined(HAS_STD_CLONE)
 struct clone {
-    int dx;			/* index of device entry in Devtp[] */
+    int dx;			/* index of device entry in DeviceTable[] */
     struct clone *next;	/* forward link */
 };
 extern struct clone *Clone;
@@ -521,7 +521,7 @@ typedef struct efsys_list {
     struct mounts *mp;        /* local mount table entry pointer */
     struct efsys_list *next;    /* next efsys_list entry pointer */
 } efsys_list_t;
-extern efsys_list_t *Efsysl;        /* file systems for which kernel blocks
+extern efsys_list_t *ExcludedFileSysList;        /* file systems for which kernel blocks
 					 * are to be eliminated */
 
 struct int_lst {
@@ -536,8 +536,8 @@ typedef struct lsof_rx {        /* regular expression table entry */
     regex_t cx;            /* compiled expression */
     int mc;                /* match count */
 } lsof_rx_t;
-extern lsof_rx_t *CmdRx;
-extern int NCmdRxU;
+extern lsof_rx_t *CommandRegexTable;
+extern int NumCommandRegexUsed;
 
 # if    defined(HASFSTRUCT)
 struct pff_tab {			/* print file flags table structure */
@@ -555,11 +555,11 @@ struct seluid {
 };
 
 # if    defined(HASBLKDEV)
-extern struct l_dev *BDevtp, **BSdev;
-extern int BNdev;
+extern struct l_dev *BlockDeviceTable, **BlockSortedDevices;
+extern int BlockNumDevices;
 # endif    /* defined(HASBLKDEV) */
 
-extern int CkPasswd;
+extern int CheckPasswdChange;
 
 struct str_lst {
     char *str;            /* string */
@@ -568,86 +568,86 @@ struct str_lst {
     short x;            /* exclusion (if non-zero) */
     struct str_lst *next;        /* next list entry */
 };
-extern struct str_lst *Cmdl;
-extern int CmdLim;
-extern int Cmdni;
-extern int Cmdnx;
+extern struct str_lst *CommandNameList;
+extern int CommandColLimit;
+extern int CommandNameInclusions;
+extern int CommandNameExclusions;
 
 # if    defined(HASSELINUX)
 typedef struct cntxlist {
     char *cntx;			/* zone name */
-    int f;				/* "find" flag (used only in CntxArg) */
+    int f;				/* "find" flag (used only in ContextArgList) */
     struct cntxlist *next;		/* next zone hash entry */
 } cntxlist_t;
-extern cntxlist_t *CntxArg;
-extern int CntxStatus;
+extern cntxlist_t *ContextArgList;
+extern int ContextStatus;
 # endif    /* defined(HASSELINUX) */
 
 # if    defined(HASDCACHE)
-extern unsigned DCcksum;
-extern int DCfd;
-extern FILE *DCfs;
-extern char *DCpathArg;
-extern char *DCpath[];
-extern int DCpathX;
-extern int DCrebuilt;
-extern int DCstate;
-extern int DCunsafe;
+extern unsigned DevCacheChecksum;
+extern int DevCacheFd;
+extern FILE *DevCacheStream;
+extern char *DevCachePathArg;
+extern char *DevCachePath[];
+extern int DevCachePathIndex;
+extern int DevCacheRebuilt;
+extern int DevCacheState;
+extern int DevCacheUnsafe;
 # endif    /* defined(HASDCACHE) */
 
-extern int DChelp;
-extern dev_t DevDev;
-extern struct l_dev *Devtp;
-extern char **Dstk;
-extern int Dstkn;
-extern int Dstkx;
-extern int ErrStat;
-extern uid_t Euid;
-extern int Fand;
-extern int Fblock;
-extern int Fcntx;
-extern int Ffield;
-extern int Ffilesys;
-extern int Fhelp;
-extern int Fhost;
+extern int DevCacheHelp;
+extern dev_t DeviceOfDev;
+extern struct l_dev *DeviceTable;
+extern char **DirStack;
+extern int DirStackAlloc;
+extern int DirStackIndex;
+extern int PathStatErrorCount;
+extern uid_t EffectiveUid;
+extern int OptAndSelection;
+extern int OptBlockDevice;
+extern int OptSecContext;
+extern int OptFieldOutput;
+extern int OptFileSystem;
+extern int OptHelp;
+extern int OptHostLookup;
 
 # if    defined(HASNCACHE)
-extern int Fncache;
-extern int NcacheReload;
+extern int OptNameCache;
+extern int NameCacheReload;
 # endif    /* defined(HASNCACHE) */
 
-extern int Fnet;
-extern int FnetTy;
-extern int Fnfs;
-extern int Fnlink;
-extern int Foffset;
-extern int Fovhd;
-extern int Fport;
+extern int OptNetwork;
+extern int OptNetworkType;
+extern int OptNfs;
+extern int OptLinkCount;
+extern int OptOffset;
+extern int OptOverhead;
+extern int OptPortLookup;
 
 # if    !defined(HASNORPC_H)
-extern int FportMap;
+extern int OptPortMap;
 # endif    /* !defined(HASNORPC_H) */
 
-extern int Fpgid;
-extern int Fppid;
-extern int Fsize;
-extern int Fsv;
-extern int FsvByf;
-extern int FsvFlagX;
-extern int Ftask;
-extern int Ftcptpi;
-extern int Fterse;
-extern int Funix;
-extern int Futol;
-extern int Fverbose;
-extern int Fwarn;
+extern int OptProcessGroup;
+extern int OptParentPid;
+extern int OptSize;
+extern int OptFileStructValues;
+extern int OptFileStructSetByFlag;
+extern int OptFileStructFlagHex;
+extern int OptTask;
+extern int OptTcpTpiInfo;
+extern int OptTerse;
+extern int OptUnixSocket;
+extern int OptUserToLogin;
+extern int OptVerbose;
+extern int OptWarnings;
 
 # if    defined(HASXOPT_VALUE)
-extern int Fxopt;
+extern int OptCrossoverExt;
 # endif    /* defined(HASXOPT_VALUE) */
 
-extern int Fxover;
-extern int Fzone;
+extern int OptCrossover;
+extern int OptZone;
 
 struct fd_lst {
     char *nm;            /* file descriptor name -- range if
@@ -656,8 +656,8 @@ struct fd_lst {
     int hi;                /* range end (if nm NULL) */
     struct fd_lst *next;
 };
-extern struct fd_lst *Fdl;
-extern int FdlTy;            /* Fdl[] type: -1 == none
+extern struct fd_lst *FdList;
+extern int FdListType;            /* FdList[] type: -1 == none
 					 *		0 == include
 					 *		1 == exclude */
 
@@ -668,15 +668,15 @@ struct fieldsel {
     int *opt;            /* option variable address */
     int ov;                /* value to OR with option variable */
 };
-extern struct fieldsel FieldSel[];
+extern struct fieldsel FieldSelection[];
 
-extern int Hdr;
+extern int HeaderPrinted;
 
 enum IDType {
     PGID, PID
 };
-extern char *InodeFmt_d;
-extern char *InodeFmt_x;
+extern char *InodeFormatDecimal;
+extern char *InodeFormatHex;
 
 struct lfile {
     char access;
@@ -826,7 +826,7 @@ struct lfile {
 
     struct lfile *next;
 };
-extern struct lfile *Lf, *Plf;
+extern struct lfile *CurrentLocalFile, *PrevLocalFile;
 
 
 struct lproc {
@@ -856,47 +856,47 @@ struct lproc {
 
     struct lfile *file;        /* open files of process */
 };
-extern struct lproc *Lp, *Lproc;
+extern struct lproc *CurrentLocalProc, *LocalProcTable;
 
 extern char *Memory;
-extern int MntSup;
-extern char *MntSupP;
+extern int MountSupplementState;
+extern char *MountSupplementPath;
 
 # if    defined(HASPROCFS)
 extern struct mounts *Mtprocfs;
 # endif
 
-extern int Mxpgid;
-extern int Mxpid;
-extern int Mxuid;
-extern gid_t Mygid;
-extern int Mypid;
-extern uid_t Myuid;
-extern char *Namech;
-extern size_t Namechl;
-extern int Ndev;
+extern int MaxPgidEntries;
+extern int MaxPidEntries;
+extern int MaxUidEntries;
+extern gid_t MyRealGid;
+extern int MyProcessId;
+extern uid_t MyRealUid;
+extern char *NameChars;
+extern size_t NameCharsLength;
+extern int NumDevices;
 
 # if    defined(HASNLIST)
 #  if	!defined(NLIST_TYPE)
 #define	NLIST_TYPE	nlist
 #  endif	/* !defined(NLIST_TYPE) */
-extern struct NLIST_TYPE *Nl;
-extern int Nll;
+extern struct NLIST_TYPE *NlistTable;
+extern int NlistLength;
 # endif    /* defined(HASNLIST) */
-extern long Nlink;
-extern int Nlproc;
-extern char *Nmlst;
-extern int Npgid;
-extern int Npgidi;
-extern int Npgidx;
-extern int Npid;
-extern int Npidi;
-extern int Npidx;
-extern int Npuns;
-extern int Ntype;
-extern int Nuid;
-extern int Nuidexcl;
-extern int Nuidincl;
+extern long LinkCountThreshold;
+extern int NumLocalProcs;
+extern char *NamelistFilePath;
+extern int NumPgidSelections;
+extern int NumPgidInclusions;
+extern int NumPgidExclusions;
+extern int NumPidSelections;
+extern int NumPidInclusions;
+extern int NumPidExclusions;
+extern int NumUnselectedPids;
+extern int NodeType;
+extern int NumUidSelections;
+extern int NumUidExclusions;
+extern int NumUidInclusions;
 
 struct nwad {
     char *arg;            /* argument */
@@ -909,10 +909,10 @@ struct nwad {
     int f;                /* find state */
     struct nwad *next;        /* forward link */
 };
-extern struct nwad *Nwad;
+extern struct nwad *NetworkAddrList;
 
-extern int OffDecDig;
-extern char *Pn;
+extern int OffsetDecDigitLimit;
+extern char *ProgramName;
 
 # if    defined(HASFSTRUCT)
 extern struct pff_tab Pff_tab[];	/* file flags table */
@@ -932,46 +932,46 @@ struct procfsid {
     struct procfsid *next;		/* forward link */
 };
 
-extern int Procfind;
-extern struct procfsid *Procfsid;
-extern int Procsrch;
+extern int ProcFsFound;
+extern struct procfsid *ProcFsIdTable;
+extern int ProcFsSearching;
 # endif    /* defined(HASPROCFS) */
 
-extern int PrPass;
-extern int RptTm;
-extern struct l_dev **Sdev;
-extern int Selall;
-extern int Selflags;
-extern int Setgid;
-extern int Selinet;
-extern int Setuidroot;
-extern struct sfile *Sfile;
-extern struct int_lst *Spgid;
-extern struct int_lst *Spid;
-extern struct seluid *Suid;
-extern char *SzOffFmt_0t;
-extern char *SzOffFmt_d;
-extern char *SzOffFmt_dv;
-extern char *SzOffFmt_x;
-extern int TaskPrtFl;
-extern int TcpStAlloc;
-extern unsigned char *TcpStI;
-extern int TcpStIn;
-extern int TcpStOff;
-extern unsigned char *TcpStX;
-extern int TcpStXn;
-extern int TcpNstates;
-extern char **TcpSt;
+extern int PrintPass;
+extern int RepeatTime;
+extern struct l_dev **SortedDevices;
+extern int SelectAll;
+extern int SelectionFlags;
+extern int SetgidState;
+extern int SelectInetOnly;
+extern int SetuidRootState;
+extern struct sfile *SearchFileChain;
+extern struct int_lst *SearchPgidList;
+extern struct int_lst *SearchPidList;
+extern struct seluid *SearchUidList;
+extern char *SizeOffFormat0t;
+extern char *SizeOffFormatD;
+extern char *SizeOffFormatDv;
+extern char *SizeOffFormatX;
+extern int TaskPrintFlag;
+extern int TcpStateAlloc;
+extern unsigned char *TcpStateInclude;
+extern int TcpStateIncludeCount;
+extern int TcpStateOffset;
+extern unsigned char *TcpStateExclude;
+extern int TcpStateExcludeCount;
+extern int TcpNumStates;
+extern char **TcpStateNames;
 extern char Terminator;
-extern int TmLimit;
-extern int UdpStAlloc;
-extern unsigned char *UdpStI;
-extern int UdpStIn;
-extern int UdpStOff;
-extern unsigned char *UdpStX;
-extern int UdpStXn;
-extern int UdpNstates;
-extern char **UdpSt;
+extern int TimeoutLimit;
+extern int UdpStateAlloc;
+extern unsigned char *UdpStateInclude;
+extern int UdpStateIncludeCount;
+extern int UdpStateOffset;
+extern unsigned char *UdpStateExclude;
+extern int UdpStateExcludeCount;
+extern int UdpNumStates;
+extern char **UdpStateNames;
 
 # if    defined(HASZONES)
 typedef struct znhash {

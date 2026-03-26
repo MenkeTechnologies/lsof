@@ -242,7 +242,7 @@ readdosfslino(v, i)
             +  strlen(DOS_NAME_SFX) + 1);
         if (!(nm = (char *)malloc(nml))) {
             (void) fprintf(stderr,
-            "%s: can't allocate %d bytes for DOS name\n", nml, Pn);
+            "%s: can't allocate %d bytes for DOS name\n", nml, ProgramName);
             Exit(1);
         }
         }

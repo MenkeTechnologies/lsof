@@ -125,7 +125,7 @@ readmnt() {
  * Open access to the mount table and read mount table entries.
  */
     if (!(mfp = fopen(MNTTAB, "r"))) {
-        (void) fprintf(stderr, "%s: can't access %s\n", Pn, MNTTAB);
+        (void) fprintf(stderr, "%s: can't access %s\n", ProgramName, MNTTAB);
         return (0);
     }
     for (mp = &me; getmntent(mfp, mp) == 0;) {
@@ -163,7 +163,7 @@ readmnt() {
 
             no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount ", Pn);
+            (void) fprintf(stderr, "%s: no space for mount ", ProgramName);
             safestrprt(fs, stderr, 0);
             (void) fprintf(stderr, " (");
             safestrprt(dir, stderr, 0);
@@ -171,7 +171,7 @@ readmnt() {
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }
@@ -219,7 +219,7 @@ readmnt() {
                     dopt = (char *) NULL;
             } else
                 dopte = (char *) NULL;
-            if (!Fwarn) {
+            if (!OptWarnings) {
 
 #if    defined(HASZONES)
                 if ((zopt = hasmntopt(mp, "zone")) && dopte)
@@ -230,7 +230,7 @@ readmnt() {
 
                 if (!zopt || !dopte) {
                     (void) fprintf(stderr,
-                                   "%s: WARNING: can't stat() ", Pn);
+                                   "%s: WARNING: can't stat() ", ProgramName);
                     safestrprt(mp->mnt_fstype, stderr, 0);
                     (void) fprintf(stderr, " file system ");
                     safestrprt(dir, stderr, 1);
@@ -328,9 +328,9 @@ readmnt() {
     /*
      * If some zone file systems were encountered, issue a warning.
      */
-        if (!Fwarn && zwarn) {
+        if (!OptWarnings && zwarn) {
             (void) fprintf(stderr,
-            "%s: WARNING: can't stat() %d zone file system%s", Pn, zwarn,
+            "%s: WARNING: can't stat() %d zone file system%s", ProgramName, zwarn,
                 (zwarn == 1) ? "" : "s");
             (void) fprintf(stderr, "; using dev= option%s\n",
                 (zwarn == 1) ? "" : "s");
@@ -370,7 +370,7 @@ readvfs(ka, la, lv)
     }
     if (!(vp = (struct l_vfs *) malloc(sizeof(struct l_vfs)))) {
         (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       Pn, Lp->pid);
+                       ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
     vp->dir = (char *) NULL;

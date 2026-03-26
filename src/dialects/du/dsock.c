@@ -63,8 +63,8 @@ process_socket(sa)
     struct sockaddr_un *ua = NULL;
     struct sockaddr_un un;
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "sock");
-    Lf->inp_ty = 2;
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "sock");
+    CurrentLocalFile->inp_ty = 2;
 /*
  * Read the socket, protocol, and domain structures.
  */
@@ -73,9 +73,9 @@ process_socket(sa)
         return;
     }
     if (kread(sa, (char *) &s, sizeof(s))) {
-        (void) snpf(Namech, Namechl, "can't read socket struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read socket struct from %s",
                     print_kptr(sa, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
     if (!s.so_type) {
@@ -84,52 +84,52 @@ process_socket(sa)
     }
     if (!s.so_proto
         || kread((KA_T) s.so_proto, (char *) &p, sizeof(p))) {
-        (void) snpf(Namech, Namechl, "can't read protocol switch from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read protocol switch from %s",
                     print_kptr((KA_T) s.so_proto, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
     if (!p.pr_domain
         || kread((KA_T) p.pr_domain, (char *) &d, sizeof(d))) {
-        (void) snpf(Namech, Namechl, "can't read domain struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read domain struct from %s",
                     print_kptr((KA_T) p.pr_domain, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 /*
  * Save size information.
  */
-    if (Fsize) {
-        if (Lf->access == 'r')
-            Lf->sz = (SZOFFTYPE) s.so_rcv.sb_cc;
-        else if (Lf->access == 'w')
-            Lf->sz = (SZOFFTYPE) s.so_snd.sb_cc;
+    if (OptSize) {
+        if (CurrentLocalFile->access == 'r')
+            CurrentLocalFile->sz = (SZOFFTYPE) s.so_rcv.sb_cc;
+        else if (CurrentLocalFile->access == 'w')
+            CurrentLocalFile->sz = (SZOFFTYPE) s.so_snd.sb_cc;
         else
-            Lf->sz = (SZOFFTYPE) (s.so_rcv.sb_cc + s.so_snd.sb_cc);
-        Lf->sz_def = 1;
+            CurrentLocalFile->sz = (SZOFFTYPE) (s.so_rcv.sb_cc + s.so_snd.sb_cc);
+        CurrentLocalFile->sz_def = 1;
     } else
-        Lf->off_def = 1;
+        CurrentLocalFile->off_def = 1;
 
 #if    defined(HASTCPTPIQ)
-    Lf->lts.rq = s.so_rcv.sb_cc;
-    Lf->lts.sq = s.so_snd.sb_cc;
-    Lf->lts.rqs = Lf->lts.sqs = 1;
+    CurrentLocalFile->lts.rq = s.so_rcv.sb_cc;
+    CurrentLocalFile->lts.sq = s.so_snd.sb_cc;
+    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
-    Lf->lts.ltm = (unsigned int)s.so_linger;
-    Lf->lts.opt = (unsigned int)s.so_options;
-    Lf->lts.pqlen = (unsigned int)s.so_q0len;
-    Lf->lts.qlen = (unsigned int)s.so_qlen;
-    Lf->lts.qlim = (unsigned int)s.so_qlimit;
-    Lf->lts.rbsz = (unsigned long)s.so_rcv.sb_mbmax;
-    Lf->lts.sbsz = (unsigned long)s.so_snd.sb_mbmax;
-    Lf->lts.pqlens = Lf->lts.qlens = Lf->lts.qlims = Lf->lts.rbszs
-               = Lf->lts.sbszs = (unsigned char)1;
+    CurrentLocalFile->lts.ltm = (unsigned int)s.so_linger;
+    CurrentLocalFile->lts.opt = (unsigned int)s.so_options;
+    CurrentLocalFile->lts.pqlen = (unsigned int)s.so_q0len;
+    CurrentLocalFile->lts.qlen = (unsigned int)s.so_qlen;
+    CurrentLocalFile->lts.qlim = (unsigned int)s.so_qlimit;
+    CurrentLocalFile->lts.rbsz = (unsigned long)s.so_rcv.sb_mbmax;
+    CurrentLocalFile->lts.sbsz = (unsigned long)s.so_snd.sb_mbmax;
+    CurrentLocalFile->lts.pqlens = CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims = CurrentLocalFile->lts.rbszs
+               = CurrentLocalFile->lts.sbszs = (unsigned char)1;
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-    Lf->lts.ss = (unsigned int)s.so_state;
+    CurrentLocalFile->lts.ss = (unsigned int)s.so_state;
 #endif    /* defined(HASSOSTATE) */
 
 /*
@@ -143,22 +143,22 @@ process_socket(sa)
 
 #if    defined(HASIPv6)
             case AF_INET6:
-                (void) snpf(Lf->type, sizeof(Lf->type),
+                (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type),
                 (fam == AF_INET) ? "IPv4" : "IPv6");
 #else	/* !defined(HASIPv6) */
-            (void) snpf(Lf->type, sizeof(Lf->type), "inet");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
 #endif    /* defined(HASIPv6) */
 
-            if (Fnet) {
-                if (!FnetTy
-                    || ((FnetTy == 4) && (fam == AF_INET))
+            if (OptNetwork) {
+                if (!OptNetworkType
+                    || ((OptNetworkType == 4) && (fam == AF_INET))
 
 #if    defined(HASIPv6)
-                    ||  ((FnetTy == 6) && (fam == AF_INET6))
+                    ||  ((OptNetworkType == 6) && (fam == AF_INET6))
 #endif    /* defined(HASIPv6) */
                         )
 
-                    Lf->sf |= SELNET;
+                    CurrentLocalFile->sf |= SELNET;
             }
             printiproto(p.pr_protocol);
             /*
@@ -166,9 +166,9 @@ process_socket(sa)
              */
             if (!s.so_pcb
                 || kread((KA_T) s.so_pcb, (char *) &inp, sizeof(inp))) {
-                (void) snpf(Namech, Namechl, "can't read inpcb at %s",
+                (void) snpf(NameChars, NameCharsLength, "can't read inpcb at %s",
                             print_kptr((KA_T) s.so_pcb, (char *) NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             /*
@@ -218,17 +218,17 @@ process_socket(sa)
                 (void) ent_inaddr(la, lp, fa, fp, fam);
             if (p.pr_protocol == IPPROTO_TCP && inp.inp_ppcb
                 && !kread((KA_T) inp.inp_ppcb, (char *) &t, sizeof(t))) {
-                Lf->lts.type = 0;
-                Lf->lts.state.i = (int) t.t_state;
+                CurrentLocalFile->lts.type = 0;
+                CurrentLocalFile->lts.state.i = (int) t.t_state;
 
 #if    defined(HASSOOPT)
-                Lf->lts.kai = (unsigned int)t.t_timer[TCPT_KEEP];
+                CurrentLocalFile->lts.kai = (unsigned int)t.t_timer[TCPT_KEEP];
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASTCPOPT)
-                Lf->lts.mss = (unsigned long)t.t_maxseg;
-                Lf->lts.msss = (unsigned char)1;
-                Lf->lts.topt = (unsigned int)t.t_flags;
+                CurrentLocalFile->lts.mss = (unsigned long)t.t_maxseg;
+                CurrentLocalFile->lts.msss = (unsigned char)1;
+                CurrentLocalFile->lts.topt = (unsigned int)t.t_flags;
 #endif    /* defined(HASTCPOPT) */
 
             }
@@ -237,39 +237,39 @@ process_socket(sa)
  * Process a ROUTE domain socket.
  */
         case AF_ROUTE:
-            (void) snpf(Lf->type, sizeof(Lf->type), "rte");
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "rte");
             if (s.so_pcb) {
                 ka = (KA_T)(s.so_pcb);
                 enter_dev_ch(print_kptr((ka & 0xffffffff), (char *) NULL, 0));
             } else
-                (void) snpf(Namech, Namechl, "no protocol control block");
-            if (!Fsize)
-                Lf->off_def = 1;
+                (void) snpf(NameChars, NameCharsLength, "no protocol control block");
+            if (!OptSize)
+                CurrentLocalFile->off_def = 1;
             break;
 /*
  * Process a Unix domain socket.
  */
         case AF_UNIX:
-            if (Funix)
-                Lf->sf |= SELUNX;
-            (void) snpf(Lf->type, sizeof(Lf->type), "unix");
+            if (OptUnixSocket)
+                CurrentLocalFile->sf |= SELUNX;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
             /*
              * Read Unix protocol control block and the Unix address structure.
              */
             enter_dev_ch(print_kptr((sa & 0xffffffff), (char *) NULL, 0));
             if (kread((KA_T) s.so_pcb, (char *) &unp, sizeof(unp))) {
-                (void) snpf(Namech, Namechl, "can't read unpcb at %s",
+                (void) snpf(NameChars, NameCharsLength, "can't read unpcb at %s",
                             print_kptr((KA_T) s.so_pcb, (char *) NULL, 0));
                 break;
             }
             if ((struct socket *) sa != unp.unp_socket) {
-                (void) snpf(Namech, Namechl, "unp_socket (%s) mismatch",
+                (void) snpf(NameChars, NameCharsLength, "unp_socket (%s) mismatch",
                             print_kptr((KA_T) unp.unp_socket, (char *) NULL, 0));
                 break;
             }
             if (unp.unp_addr) {
                 if (kread((KA_T) unp.unp_addr, (char *) &mb, sizeof(mb))) {
-                    (void) snpf(Namech, Namechl, "can't read unp_addr at %s",
+                    (void) snpf(NameChars, NameCharsLength, "can't read unp_addr at %s",
                                 print_kptr((KA_T) unp.unp_addr, (char *) NULL, 0));
                     break;
                 }
@@ -291,18 +291,18 @@ process_socket(sa)
                 if (ua->sun_family == AF_UNSPEC) {
                     if (unp.unp_conn) {
                         if (kread((KA_T) unp.unp_conn, (char *) &uc, sizeof(uc)))
-                            (void) snpf(Namech, Namechl,
+                            (void) snpf(NameChars, NameCharsLength,
                                         "can't read unp_conn at %s",
                                         print_kptr((KA_T) unp.unp_conn, (char *) NULL, 0));
                         else {
                             ka = (KA_T) uc.unp_socket;
-                            (void) snpf(Namech, Namechl, "->%s",
+                            (void) snpf(NameChars, NameCharsLength, "->%s",
                                         print_kptr((ka & 0xffffffff), (char *) NULL, 0));
                         }
                     } else
-                        (void) snpf(Namech, Namechl, "->(none)");
+                        (void) snpf(NameChars, NameCharsLength, "->(none)");
                 } else
-                    (void) snpf(Namech, Namechl, "unknown sun_family (%d)",
+                    (void) snpf(NameChars, NameCharsLength, "unknown sun_family (%d)",
                                 ua->sun_family);
                 break;
             }
@@ -310,16 +310,16 @@ process_socket(sa)
                 if (mb.m_len >= sizeof(struct sockaddr_un))
                     mb.m_len = sizeof(struct sockaddr_un) - 1;
                 *((char *) ua + mb.m_len) = '\0';
-                if (Sfile && is_file_named(ua->sun_path, 0))
-                    Lf->sf |= SELNM;
-                if (!Namech[0])
-                    (void) snpf(Namech, Namechl, "%s", ua->sun_path);
+                if (SearchFileChain && is_file_named(ua->sun_path, 0))
+                    CurrentLocalFile->sf |= SELNM;
+                if (!NameChars[0])
+                    (void) snpf(NameChars, NameCharsLength, "%s", ua->sun_path);
             } else
-                (void) snpf(Namech, Namechl, "no address");
+                (void) snpf(NameChars, NameCharsLength, "no address");
             break;
         default:
             printunkaf(fam, 1);
     }
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }

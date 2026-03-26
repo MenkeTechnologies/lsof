@@ -69,7 +69,7 @@ completevfs(vfs, dev)
  * If only Internet socket files are selected, don't bother completing the
  * local vfs structure.
  */
-    if (Selinet)
+    if (SelectInetOnly)
         return;
 /*
  * Search for a match on device number.

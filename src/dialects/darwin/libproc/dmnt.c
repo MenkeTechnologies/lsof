@@ -70,7 +70,7 @@ readmnt() {
  * Access mount information.
  */
     if ((n = getmntinfo(&mb, MNT_NOWAIT)) <= 0) {
-        (void) fprintf(stderr, "%s: no mount information\n", Pn);
+        (void) fprintf(stderr, "%s: no mount information\n", ProgramName);
         return (0);
     }
 /*
@@ -98,7 +98,7 @@ readmnt() {
 
             no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount at ", Pn);
+            (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(mb->f_mntonname, stderr, 0);
             (void) fprintf(stderr, " (");
             safestrprt(mb->f_mntfromname, stderr, 0);
@@ -106,7 +106,7 @@ readmnt() {
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      Output information may be incomplete.\n");
             }
@@ -122,8 +122,8 @@ readmnt() {
          * Stat() the directory.
          */
         if (statsafely(dn, &sb)) {
-            if (!Fwarn) {
-                (void) fprintf(stderr, "%s: WARNING: can't stat() ", Pn);
+            if (!OptWarnings) {
+                (void) fprintf(stderr, "%s: WARNING: can't stat() ", ProgramName);
 
                 safestrprt(mb->f_fstypename, stderr, 0);
 
@@ -135,7 +135,7 @@ readmnt() {
             (void) bzero((char *) &sb, sizeof(sb));
             sb.st_dev = (dev_t) mb->f_fsid.val[0];
             sb.st_mode = S_IFDIR | 0777;
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr,
                                "      assuming \"dev=%x\" from mount table\n",
                                sb.st_dev);

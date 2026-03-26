@@ -142,7 +142,7 @@ isglocked(ga)
         return (' ');
 
 #if    AIXV >= 4140
-    if (f.set.l_sysid || f.set.l_pid != (pid_t)Lp->pid)
+    if (f.set.l_sysid || f.set.l_pid != (pid_t)CurrentLocalProc->pid)
     continue;
 #endif    /* AIXV>=4140 */
 
@@ -291,7 +291,7 @@ process_node(va)
 #endif    /* defined(HAS_AFS) */
 
         if (!v) {
-            (void) fprintf(stderr, "%s: can't allocate %s space\n", Pn,
+            (void) fprintf(stderr, "%s: can't allocate %s space\n", ProgramName,
 
 #if    defined(HAS_AFS)
                     "vcache"
@@ -307,26 +307,26 @@ process_node(va)
  * Read the vnode.
  */
     if (readvnode(va, v)) {
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 
 #if    defined(HASFSTRUCT)
-    Lf->fsv |= FSV_NI;
-    Lf->fna = va;
+    CurrentLocalFile->fsv |= FSV_NODE_ID;
+    CurrentLocalFile->fna = va;
 #endif    /* defined(HASFSTRUCT) */
 
 /*
  * Read the gnode.
  */
     if (!v->v_gnode || readgnode((KA_T) v->v_gnode, &g)) {
-        if (Selinet) {
-            Lf->sf = SELEXCLF;
+        if (SelectInetOnly) {
+            CurrentLocalFile->sf = SELEXCLF;
             return;
         }
-        (void) snpf(Namech, Namechl, "vnode at %s has no gnode\n",
+        (void) snpf(NameChars, NameCharsLength, "vnode at %s has no gnode\n",
                     print_kptr(va, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 
@@ -340,69 +340,69 @@ process_node(va)
         if (ISVDEV(g.gn_type)) {
             switch (g.gn_type) {
             case VBLK:
-            Ntype = N_BLK;
+            NodeType = N_BLK;
             break;
             case VCHR:
-            Ntype = N_CHR;
+            NodeType = N_CHR;
             break;
             case VFIFO:
-            Ntype = N_FIFO;
+            NodeType = N_FIFO;
             break;
             case VMPC:
-            Ntype = N_MPC;
+            NodeType = N_MPC;
             break;
             default:
-            (void) snpf(Namech, Namechl, "vnode at %s: unknown ISVDEV(%#x)",
+            (void) snpf(NameChars, NameCharsLength, "vnode at %s: unknown ISVDEV(%#x)",
                 print_kptr(va, (char *)NULL, 0), g.gn_type);
-            enter_nm(Namech);
+            enter_nm(NameChars);
             return;
             }
         /*
          * Read the special node.
          */
             if (!g.gn_data || kread((KA_T)g.gn_data, (char *)&sn, sizeof(sn))) {
-            if (Selinet) {
-                Lf->sf = SELEXCLF;
+            if (SelectInetOnly) {
+                CurrentLocalFile->sf = SELEXCLF;
                 return;
             }
-            (void) snpf(Namech, Namechl,
+            (void) snpf(NameChars, NameCharsLength,
                 "vnode at %s: can't read specnode (%s)",
                 print_kptr(va, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)g.gn_data, (char *)NULL, 0));
-            enter_nm(Namech);
+            enter_nm(NameChars);
             return;
            }
         /*
          * Read the PFS gnode and its inode and vnode.
          */
             if (sn.sn_pfsgnode) {
-            if (Selinet) {
-                Lf->sf = SELEXCLF;
+            if (SelectInetOnly) {
+                CurrentLocalFile->sf = SELEXCLF;
                 return;
             }
             if (readgnode((KA_T)sn.sn_pfsgnode, &g)) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                 "vnode at %s: can't read pfsgnode (%s)",
                 print_kptr(va, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)sn.sn_pfsgnode, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             if (!g.gn_data || readlino(&g, &i)) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                 "pfsgnode at %s: can't read inode (%s)",
                 print_kptr((KA_T)sn.sn_pfsgnode, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)g.gn_data, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             ins = 1;
             if (!g.gn_vnode || readvnode((KA_T)g.gn_vnode, v)) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                 "pfsgnode at %s: can't read vnode (%s)",
                 print_kptr((KA_T)sn.sn_pfsgnode, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)g.gn_vnode, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             } else {
@@ -433,7 +433,7 @@ process_node(va)
                 {
 
 # if	defined(HASDCACHE)
-                    if (DCunsafe && !cl->cd.v && !vfy_dev(&cl->cd))
+                    if (DevCacheUnsafe && !cl->cd.v && !vfy_dev(&cl->cd))
                     goto process_clone_again;
 # endif	/* defined(HASDCACHE) */
 
@@ -442,19 +442,19 @@ process_node(va)
                  * device inode number as the file's inode number.
                  */
                     ic = 1;
-                    Lf->inode = cl->cd.inode;
-                    Lf->inp_ty = 1;
+                    CurrentLocalFile->inode = cl->cd.inode;
+                    CurrentLocalFile->inp_ty = 1;
                     if (ClonePtc >= 0
                     &&  GET_MAJ_DEV(g.gn_rdev) == ClonePtc) {
-                    if (Selinet) {
-                        Lf->sf = SELEXCLF;
+                    if (SelectInetOnly) {
+                        CurrentLocalFile->sf = SELEXCLF;
                         return;
                     }
                     /*
                      * If this is a /dev/ptc stream, enter the device
                      * name and the channel.
                      */
-                        (void) snpf(Namech, Namechl, "%s/%d",
+                        (void) snpf(NameChars, NameCharsLength, "%s/%d",
                         cl->cd.name, (int)GET_MIN_DEV(g.gn_rdev));
                     break;
                     }
@@ -464,8 +464,8 @@ process_node(va)
                  * head and look for an "xtiso" module.  Limit the
                  * module depth to 25.
                  */
-                    (void) snpf(Namech, Namechl, "STR:%s", cl->cd.name);
-                    nx = (int) strlen(Namech);
+                    (void) snpf(NameChars, NameCharsLength, "STR:%s", cl->cd.name);
+                    nx = (int) strlen(NameChars);
                     if (!kread(ka, (char *)&sh, sizeof(sh)))
                     qp = (KA_T)sh.sth_wq;
                     else
@@ -511,8 +511,8 @@ process_node(va)
                      * leads to an xticb with a non-NULL socket
                      * pointer.  Process the stream as a socket.
                      */
-                        Namech[0] = '\0';
-                        Lf->inp_ty = 0;
+                        NameChars[0] = '\0';
+                        CurrentLocalFile->inp_ty = 0;
                         (void) process_socket(ka);
                         return;
                     }
@@ -520,9 +520,9 @@ process_node(va)
                      * Save the module name in Mamech[] as a "->"
                      * prefixed chain, beginning with "STR:<device>".
                      */
-                    if ((nx + ml + 2) > (Namechl - 1))
+                    if ((nx + ml + 2) > (NameCharsLength - 1))
                         continue;
-                    (void) snpf(&Namech[nx], Namechl, "->%s", mn);
+                    (void) snpf(&NameChars[nx], NameCharsLength, "->%s", mn);
                     nx += (ml + 2);
                     }
                     break;
@@ -531,21 +531,21 @@ process_node(va)
             }
 #endif	/* AIXV>=4140 */
 
-            if (Selinet) {
-                Lf->sf = SELEXCLF;
+            if (SelectInetOnly) {
+                CurrentLocalFile->sf = SELEXCLF;
                 return;
             }
             }
         /*
          * If it's a FIFO, read its fifonode.
          */
-            if (Ntype == N_FIFO) {
+            if (NodeType == N_FIFO) {
             if (!sn.sn_fifonode ||readfifonode((KA_T)sn.sn_fifonode, &f)) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                 "vnode at %s: can't read fifonode (%s)",
                 print_kptr(va, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)sn.sn_fifonode, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
         /*
@@ -554,11 +554,11 @@ process_node(va)
             } else {
             if (!sn.sn_devnode
             || kread((KA_T)sn.sn_devnode,(char *)&dn,sizeof(dn))) {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                 "vnode at %s: can't read devnode (%s)",
                 print_kptr(va, tbuf, sizeof(tbuf)),
                 print_kptr((KA_T)sn.sn_devnode, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
             g = dn.dv_gnode;
@@ -569,15 +569,15 @@ process_node(va)
 /*
  * Read the AIX virtual file system structure.
  */
-    if (Ntype != N_AFS && g.gn_rdev == NODEVICE) {
+    if (NodeType != N_AFS && g.gn_rdev == NODEVICE) {
         vfs = (struct l_vfs *) NULL;
         enter_dev_ch(print_kptr(va, (char *) NULL, 0));
     } else {
         if (!(vfs = readvfs(v))) {
-            (void) snpf(Namech, Namechl, "can't read vfs for %s at %s",
+            (void) snpf(NameChars, NameCharsLength, "can't read vfs for %s at %s",
                         print_kptr(va, tbuf, sizeof(tbuf)),
                         print_kptr((KA_T) v->v_vfsp, (char *) NULL, 0));
-            enter_nm(Namech);
+            enter_nm(NameChars);
             return;
         }
     }
@@ -604,13 +604,13 @@ process_node(va)
         if (!AFSVfsp || (KA_T)v->v_vfsp != AFSVfsp)
 #  endif	/* defined(HAS_AFS) && defined(HAS_NFS) */
 
-            Ntype = N_NFS;
+            NodeType = N_NFS;
 # endif	/* defined(HAS_NFS) */
         break;
 
 # if	defined(HAS_SANFS) && defined(MNT_SANFS)
         case MNT_SANFS:
-        Ntype = N_SANFS;
+        NodeType = N_SANFS;
         break;
 # endif	/* defined(HAS_SANFS) && defined(MNT_SANFS) */
 
@@ -620,14 +620,14 @@ process_node(va)
 
 #if    defined(HASPROCFS)
     if (vfs && (vfs->vmt_gfstype == MNT_PROCFS))
-        Ntype = N_PROC;
+        NodeType = N_PROC;
 #endif    /* defined(HASPROCFS) */
 
 /*
  * Get the lock status.
  */
-    Lf->lock = isglocked(&g);
-    switch (Ntype) {
+    CurrentLocalFile->lock = isglocked(&g);
+    switch (NodeType) {
 
 #if    defined(HAS_NFS)
         /*
@@ -653,9 +653,9 @@ process_node(va)
                 } else if (__KERNEL_32()) {
                     width = 32;
                 } else {
-                    if (!Fwarn)
+                    if (!OptWarnings)
                     (void) fprintf(stderr,
-                        "%s: WARNING: unknown kernel bit size\n", Pn);
+                        "%s: WARNING: unknown kernel bit size\n", ProgramName);
                     width = -2;
                 }
 #  endif	/* AIXV<-4330 */
@@ -665,10 +665,10 @@ process_node(va)
 
                 if (width > 0) {
                 if (!g.gn_data || kread((KA_T)g.gn_data, rp, rsz)) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                     "remote gnode at %s has no rnode",
                     print_kptr((KA_T)v->v_gnode, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
 
@@ -700,9 +700,9 @@ process_node(va)
                 if (!g.gn_data
                 ||  kread((KA_T)g.gn_data, &san, sizeof(san))
                 ) {
-                (void) snpf(Namech, Namechl, "gnode at %s has no SANFS node",
+                (void) snpf(NameChars, NameCharsLength, "gnode at %s has no SANFS node",
                     print_kptr((KA_T)v->v_gnode, (char *)NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
                 }
             /*
@@ -725,9 +725,9 @@ process_node(va)
                  * Read a CD-ROM cdrnode.
                  */
                 if (!g.gn_data || readcdrnode((KA_T) g.gn_data, &c)) {
-                    (void) snpf(Namech, Namechl, "gnode at %s has no cdrnode",
+                    (void) snpf(NameChars, NameCharsLength, "gnode at %s has no cdrnode",
                                 print_kptr((KA_T) v->v_gnode, (char *) NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
                 (void) zeromem((char *) &i, sizeof(i));
@@ -740,11 +740,11 @@ process_node(va)
 
             } else if (g.gn_data) {
                 if (readlino(&g, &i)) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "gnode at %s can't read inode: %s",
                                 print_kptr((KA_T) v->v_gnode, tbuf, sizeof(tbuf)),
                                 print_kptr((KA_T) g.gn_data, (char *) NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
                 ins = 1;
@@ -757,7 +757,7 @@ process_node(va)
                  * See if this is an AFS node.
                  */
                 if (AFSVfsp && (KA_T)v->v_vfsp == AFSVfsp)
-                    Ntype = N_AFS;
+                    NodeType = N_AFS;
                 else if (v->v_vfsp) {
                     switch (afs) {
                     case -1:
@@ -768,32 +768,32 @@ process_node(va)
                         break;
                     }
                     afs = 1;
-                    Ntype = N_AFS;
+                    NodeType = N_AFS;
                     break;
                     case 1:
                     if ((KA_T)v->v_vfsp == AFSVfsp)
-                        Ntype = N_AFS;
+                        NodeType = N_AFS;
                      }
                 }
                 /*
                  * If this is an AFS node, read the afsnode.
                  */
-                if (Ntype == N_AFS) {
+                if (NodeType == N_AFS) {
                     if (readafsnode(va, v, &an))
                     return;
                 } else {
-                    (void) snpf(Namech, Namechl, "gnode at %s has no inode",
+                    (void) snpf(NameChars, NameCharsLength, "gnode at %s has no inode",
                     print_kptr((KA_T)v->v_gnode, (char *)NULL, 0));
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
                 }
 #else	/* !defined(HAS_AFS) */
 
             else {
-                (void) snpf(Namech, Namechl, "gnode at %s has no inode",
+                (void) snpf(NameChars, NameCharsLength, "gnode at %s has no inode",
                             print_kptr((KA_T) v->v_gnode, (char *) NULL, 0));
-                enter_nm(Namech);
+                enter_nm(NameChars);
                 return;
             }
 #endif    /* defined(HAS_AFS) */
@@ -804,7 +804,7 @@ process_node(va)
  */
 
 #if    defined(HAS_NFS)
-    if (Ntype == N_NFS) {
+    if (NodeType == N_NFS) {
         if (vfs) {
         dev = vfs->dev;
         devs = 1;
@@ -813,14 +813,14 @@ process_node(va)
 #endif    /* defined(HAS_NFS) */
 
 #if    defined(HAS_AFS)
-    if (Ntype == N_AFS) {
+    if (NodeType == N_AFS) {
         dev = an.dev;
         devs = 1;
     } else
 #endif    /* defined(HAS_AFS) */
 
 #if    defined(HASPROCFS)
-    if (Ntype == N_PROC) {
+    if (NodeType == N_PROC) {
 
 /* WARNING!!!   WARNING!!!   The following hack should be removed ASAP!!! */
         dev = vfs ? (vfs->dev & 0x7fffffffffffffff) : 0;
@@ -832,7 +832,7 @@ process_node(va)
 #endif    /* defined(HASPROCFS) */
 
 #if    defined(HAS_SANFS)
-    if ((Ntype == N_SANFS) && vfs) {
+    if ((NodeType == N_SANFS) && vfs) {
         dev = vfs->dev;
         devs = 1;
     }
@@ -849,7 +849,7 @@ process_node(va)
     }
 
 #if    AIXV >= 3200
-    if (Ntype == N_MPC)
+    if (NodeType == N_MPC)
         type = VMPC;
     else
 #endif    /* AIXV>=3200 */
@@ -858,13 +858,13 @@ process_node(va)
 /*
  * Obtain the inode number.
  */
-    switch (Ntype) {
+    switch (NodeType) {
 
 #if    defined(HAS_AFS)
         case N_AFS:
             if (an.ino_st) {
-            Lf->inode = (INODETYPE)an.inode;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE)an.inode;
+            CurrentLocalFile->inp_ty = 1;
             }
             break;
 #endif    /* defined(HAS_AFS) */
@@ -872,8 +872,8 @@ process_node(va)
 #if    defined(HAS_NFS)
         case N_NFS:
             if (nfss) {
-            Lf->inode = (INODETYPE)nfs_attr.va_serialno;
-            Lf->inp_ty = 1;
+            CurrentLocalFile->inode = (INODETYPE)nfs_attr.va_serialno;
+            CurrentLocalFile->inp_ty = 1;
             }
             break;
 #endif    /* defined(HAS_NFS) */
@@ -886,8 +886,8 @@ process_node(va)
              * DEBUG: this code is insufficient.  It can't be completed until
              * IBM makes the SANFS header files available in /usr/include.
              */
-            /* Lf->inode = ???	DEBUG */
-            Lf->inp_ty = 1;
+            /* CurrentLocalFile->inode = ???	DEBUG */
+            CurrentLocalFile->inp_ty = 1;
             }
             break;
 #endif    /* defined(HAS_SANFS) */
@@ -901,37 +901,37 @@ process_node(va)
 
         case N_REGLR:
             if (ins) {
-                Lf->inode = (INODETYPE) i.number;
-                Lf->inp_ty = i.number_def;
+                CurrentLocalFile->inode = (INODETYPE) i.number;
+                CurrentLocalFile->inp_ty = i.number_def;
             }
     }
 /*
  * Obtain the file size.
  */
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else {
-        switch (Ntype) {
+        switch (NodeType) {
 
 #if    defined(HAS_AFS)
             case N_AFS:
-            Lf->sz = (SZOFFTYPE)an.size;
-            Lf->sz_def = 1;
+            CurrentLocalFile->sz = (SZOFFTYPE)an.size;
+            CurrentLocalFile->sz_def = 1;
             break;
 #endif    /* defined(HAS_AFS) */
 
 #if    AIXV >= 3200
             case N_FIFO:
-            Lf->sz = (SZOFFTYPE)f.ff_size;
-            Lf->sz_def = 1;
+            CurrentLocalFile->sz = (SZOFFTYPE)f.ff_size;
+            CurrentLocalFile->sz_def = 1;
             break;
 #endif    /* AIXV>=3200 */
 
 #if    defined(HAS_NFS)
             case N_NFS:
             if (nfss) {
-                Lf->sz = (SZOFFTYPE)nfs_attr.va_size;
-                Lf->sz_def = 1;
+                CurrentLocalFile->sz = (SZOFFTYPE)nfs_attr.va_size;
+                CurrentLocalFile->sz_def = 1;
             }
             break;
 #endif    /* defined(HAS_NFS) */
@@ -945,54 +945,54 @@ process_node(va)
              * until IBM makes the SANFS header files available in
              * /usr/include.
              */
-                /* Lf->sz = (SZOFFTYPE)???	DEBUG */
-                Lf->sz_def = 1;
+                /* CurrentLocalFile->sz = (SZOFFTYPE)???	DEBUG */
+                CurrentLocalFile->sz_def = 1;
             }
             break;
 #endif    /* defined(HAS_SANFS) */
 
 #if     AIXV >= 3200
             case N_BLK:
-            if (!Fsize)
-                Lf->off_def = 1;
+            if (!OptSize)
+                CurrentLocalFile->off_def = 1;
             break;
             case N_CHR:
             case N_MPC:
-            if (!Fsize)
-                Lf->off_def = 1;
+            if (!OptSize)
+                CurrentLocalFile->off_def = 1;
             break;
 #endif    /* AIXV>=3200 */
 
             case N_REGLR:
                 if (type == VREG || type == VDIR) {
                     if (ins) {
-                        Lf->sz = (SZOFFTYPE) i.size;
-                        Lf->sz_def = i.size_def;
+                        CurrentLocalFile->sz = (SZOFFTYPE) i.size;
+                        CurrentLocalFile->sz_def = i.size_def;
                     }
                 } else if (((type == VBLK) || (type == VCHR) || (type == VMPC))
-                           && !Fsize)
-                    Lf->off_def = 1;
+                           && !OptSize)
+                    CurrentLocalFile->off_def = 1;
                 break;
         }
     }
 /*
  * Record link count.
  */
-    if (Fnlink) {
-        switch (Ntype) {
+    if (OptLinkCount) {
+        switch (NodeType) {
 
 #if    defined(HAS_AFS)
             case N_AFS:
-            Lf->nlink = an.nlink;
-            Lf->nlink_def = an.nlink_st;
+            CurrentLocalFile->nlink = an.nlink;
+            CurrentLocalFile->nlink_def = an.nlink_st;
             break;
 #endif    /* defined(HAS_AFS) */
 
 #if    defined(HAS_NFS)
             case N_NFS:
             if (nfss) {
-                Lf->nlink = (long)nfs_attr.va_nlink;
-                Lf->nlink_def = 1;
+                CurrentLocalFile->nlink = (long)nfs_attr.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
             }
             break;
 #endif    /* defined(HAS_NFS) */
@@ -1006,8 +1006,8 @@ process_node(va)
              * until IBM makes the SANFS header files available in
              * /usr/include.
              */
-                /* Lf->nlink = (long)???	DEBUG */
-                Lf->nlink_def = 1;
+                /* CurrentLocalFile->nlink = (long)???	DEBUG */
+                CurrentLocalFile->nlink_def = 1;
             }
             break;
 #endif    /* defined(HAS_SANFS) */
@@ -1021,29 +1021,29 @@ process_node(va)
 
             case N_REGLR:
                 if (ins) {
-                    Lf->nlink = (long) i.nlink;
-                    Lf->nlink_def = i.nlink_def;
+                    CurrentLocalFile->nlink = (long) i.nlink;
+                    CurrentLocalFile->nlink_def = i.nlink_def;
                 }
                 break;
         }
-        if (Nlink && Lf->nlink_def && (Lf->nlink < Nlink))
-            Lf->sf |= SELNLINK;
+        if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
+            CurrentLocalFile->sf |= SELNLINK;
     }
 
 #if    defined(HAS_NFS)
     /*
      * Record an NFS file selection.
      */
-        if (Ntype == N_NFS && Fnfs)
-            Lf->sf |= SELNFS;
+        if (NodeType == N_NFS && OptNfs)
+            CurrentLocalFile->sf |= SELNFS;
 #endif    /* defined(HAS_NFS) */
 
 /*
  * Save the file system names.
  */
     if (vfs) {
-        Lf->fsdir = vfs->dir;
-        Lf->fsdev = vfs->fsname;
+        CurrentLocalFile->fsdir = vfs->dir;
+        CurrentLocalFile->fsdev = vfs->fsname;
     }
 /*
  * Save the device numbers and their states.
@@ -1054,103 +1054,103 @@ process_node(va)
 
         case VNON:
             ty = "VNON";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VREG:
         case VDIR:
             ty = (type == VREG) ? "VREG" : "VDIR";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VBLK:
             ty = "VBLK";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
-            Ntype = N_BLK;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
+            NodeType = N_BLK;
             break;
         case VCHR:
             ty = "VCHR";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
-            Ntype = N_CHR;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
+            NodeType = N_CHR;
             break;
         case VLNK:
             ty = "VLNK";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
 
 #if    defined(VSOCK)
         case VSOCK:
             ty = "SOCK";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
 #endif
 
         case VBAD:
             ty = "VBAD";
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
             break;
         case VFIFO:
-            if (!Lf->dev_ch || Lf->dev_ch[0] == '\0') {
-                Lf->dev = dev;
-                Lf->dev_def = devs;
-                Lf->rdev = rdev;
-                Lf->rdev_def = rdevs;
+            if (!CurrentLocalFile->dev_ch || CurrentLocalFile->dev_ch[0] == '\0') {
+                CurrentLocalFile->dev = dev;
+                CurrentLocalFile->dev_def = devs;
+                CurrentLocalFile->rdev = rdev;
+                CurrentLocalFile->rdev_def = rdevs;
             }
             ty = "FIFO";
             break;
         case VMPC:
-            Lf->rdev = g.gn_rdev;
-            Lf->rdev_def = 1;
+            CurrentLocalFile->rdev = g.gn_rdev;
+            CurrentLocalFile->rdev_def = 1;
             if (vfs) {
-                Lf->dev = vfs->dev;
-                Lf->dev_def = 1;
+                CurrentLocalFile->dev = vfs->dev;
+                CurrentLocalFile->dev_def = 1;
             }
-            Lf->ch = g.gn_chan;
+            CurrentLocalFile->ch = g.gn_chan;
 
 #if    AIXV < 3200
-            Lf->inp_ty = 0;
+            CurrentLocalFile->inp_ty = 0;
 #endif    /* AIXV<3200 */
 
-            Ntype = N_CHR;
+            NodeType = N_CHR;
             ty = "VMPC";
             break;
         default:
-            Lf->dev = dev;
-            Lf->dev_def = devs;
-            Lf->rdev = rdev;
-            Lf->rdev_def = rdevs;
-            (void) snpf(Lf->type, sizeof(Lf->type), "%04o", (type & 0xfff));
+            CurrentLocalFile->dev = dev;
+            CurrentLocalFile->dev_def = devs;
+            CurrentLocalFile->rdev = rdev;
+            CurrentLocalFile->rdev_def = rdevs;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
             ty = (char *) NULL;
     }
     if (ty)
-        (void) snpf(Lf->type, sizeof(Lf->type), "%s", ty);
-    Lf->ntype = Ntype;
+        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
+    CurrentLocalFile->ntype = NodeType;
 
 #if    defined(HASBLKDEV)
     /*
      * If this is a VBLK file and it's missing an inode number, try to
      * supply one.
      */
-        if ((Lf->inp_ty == 0) && (type == VBLK))
+        if ((CurrentLocalFile->inp_ty == 0) && (type == VBLK))
             find_bl_ino();
 #endif    /* defined(HASBLKDEV) */
 
@@ -1158,18 +1158,18 @@ process_node(va)
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
-    if ((Lf->inp_ty == 0) && (type == VCHR))
+    if ((CurrentLocalFile->inp_ty == 0) && (type == VCHR))
         find_ch_ino();
 /*
  * Test for specified file.
  */
-    if (Sfile && is_file_named(NULL, type, g.gn_chan, ic))
-        Lf->sf |= SELNM;
+    if (SearchFileChain && is_file_named(NULL, type, g.gn_chan, ic))
+        CurrentLocalFile->sf |= SELNM;
 /*
  * Enter name characters.
  */
-    if (Namech[0])
-        enter_nm(Namech);
+    if (NameChars[0])
+        enter_nm(NameChars);
 }
 
 
@@ -1197,18 +1197,18 @@ process_shmt(sa)
 /*
  * Ignore this file if only Internet files are selected.
  */
-    if (Selinet) {
-        Lf->sf |= SELEXCLF;
+    if (SelectInetOnly) {
+        CurrentLocalFile->sf |= SELEXCLF;
         return;
     }
 /*
  * Set type to " SMT" and put shmtnode structure address in device column.
  */
-    (void) snpf(Lf->type, sizeof(Lf->type), " SMT");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), " SMT");
     if (!sa || kread((KA_T)sa, (char *)&mn, sizeof(mn))) {
-        (void) snpf(Namech, Namechl, "can't read shmtnode: %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read shmtnode: %s",
         print_kptr(sa, (char *)NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
     enter_dev_ch(print_kptr(sa, (char *)NULL, 0));
@@ -1217,31 +1217,31 @@ process_shmt(sa)
  * negative, enable offset display.  Otherwise set the  file size as buffer
  * size less free bytes.
  */
-    if (Foffset || mn.free > mn.sz)
-        Lf->off_def = 1;
+    if (OptOffset || mn.free > mn.sz)
+        CurrentLocalFile->off_def = 1;
     else {
-        Lf->sz = (SZOFFTYPE)(mn.sz - mn.free);
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE)(mn.sz - mn.free);
+        CurrentLocalFile->sz_def = 1;
     }
 /*
  * If there is a peer, read its shmtnode structure.
  */
     if (!mn.peer)
-        (void) snpf(Namech, Namechl, "->(unknown)");
+        (void) snpf(NameChars, NameCharsLength, "->(unknown)");
     else {
         if (kread((KA_T)mn.peer, (char *)&pn, sizeof(pn)))
-        (void) snpf(Namech, Namechl, "can't read peer shmtnode: %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read peer shmtnode: %s",
             print_kptr((KA_T)mn.peer, (char *)NULL, 0));
         else {
         if (pn.pid)
-            (void) snpf(Namech, Namechl, "->%s (PID %d)",
+            (void) snpf(NameChars, NameCharsLength, "->%s (PID %d)",
             print_kptr((KA_T)mn.peer, (char *)NULL, 0), pn.pid);
         else
-            (void) snpf(Namech, Namechl, "->%s",
+            (void) snpf(NameChars, NameCharsLength, "->%s",
             print_kptr((KA_T)mn.peer, (char *)NULL, 0));
         }
     }
-    enter_nm(Namech);
+    enter_nm(NameChars);
 }
 #endif    /* AIXV>=4200 */
 
@@ -1280,9 +1280,9 @@ readlino(ga, li)
 
         if (nlist(N_UNIX, j2nl) == 0)
         j2va = (struct vnodeops *)j2nl[0].n_value;
-        if (!j2va && !Fwarn) {
+        if (!j2va && !OptWarnings) {
         (void) fprintf(stderr,
-            "%s: WARNING: can't identify jfs2 files\n", Pn);
+            "%s: WARNING: can't identify jfs2 files\n", ProgramName);
         }
         j2vas = 1;
     }

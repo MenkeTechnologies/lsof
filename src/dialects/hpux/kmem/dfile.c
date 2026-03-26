@@ -99,12 +99,12 @@ process_file(fp)
     int flag;
 
     if (kread((KA_T) fp, (char *) &f, sizeof(f))) {
-        (void) snpf(Namech, Namechl, "can't read file struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
                     print_kptr(fp, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
-    Lf->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
 
     if (f.f_count) {
 
@@ -112,21 +112,21 @@ process_file(fp)
         /*
          * Save file structure values.
          */
-            if (Fsv & FSV_CT) {
-            Lf->fct = (long)f.f_count;
-            Lf->fsv |= FSV_CT;
+            if (OptFileStructValues & FSV_FILE_COUNT) {
+            CurrentLocalFile->fct = (long)f.f_count;
+            CurrentLocalFile->fsv |= FSV_FILE_COUNT;
             }
-            if (Fsv & FSV_FA) {
-            Lf->fsa = fp;
-            Lf->fsv |= FSV_FA;
+            if (OptFileStructValues & FSV_FILE_ADDR) {
+            CurrentLocalFile->fsa = fp;
+            CurrentLocalFile->fsv |= FSV_FILE_ADDR;
             }
-            if (Fsv & FSV_FG) {
-            Lf->ffg = (long)f.f_flag;
-            Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+            CurrentLocalFile->ffg = (long)f.f_flag;
+            CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
-            if (Fsv & FSV_NI) {
-            Lf->fna = (KA_T)f.f_data;
-            Lf->fsv |= FSV_NI;
+            if (OptFileStructValues & FSV_NODE_ID) {
+            CurrentLocalFile->fna = (KA_T)f.f_data;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
             }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -134,11 +134,11 @@ process_file(fp)
          * Construct access code.
          */
         if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
-            Lf->access = 'r';
+            CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
-            Lf->access = 'w';
+            CurrentLocalFile->access = 'w';
         else if (flag == (FREAD | FWRITE))
-            Lf->access = 'u';
+            CurrentLocalFile->access = 'u';
         /*
          * Process structure by its type.
          */
@@ -158,10 +158,10 @@ process_file(fp)
                 return;
             default:
                 if (!f.f_type || (f.f_ops && (KA_T) f.f_ops != Vnfops)) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "%s file struct, ty=%#x, op=%#x",
                                 print_kptr(fp, (char *) NULL, 0), f.f_type, f.f_ops);
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
         }
@@ -188,7 +188,7 @@ read_mi(sh, ip, pcb, pn)
     char **pn;			/* returned protocol name */
 {
     struct l_dev *dp;
-    char *ep = Namech;
+    char *ep = NameChars;
     struct sth_s hd;
     int i;
     size_t len, ml;
@@ -197,18 +197,18 @@ read_mi(sh, ip, pcb, pn)
     struct module_info mi;
     struct queue q;
     struct qinit qi;
-    size_t sz = Namechl;
+    size_t sz = NameCharsLength;
 
     if (!sh
     ||  kread(sh, (char *)&hd, sizeof(hd))) {
-        (void) snpf(Namech, Namechl, "can't read stream head: %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read stream head: %s",
         print_kptr(sh, (char *)NULL, 0));
         return(1);
     }
-    if (!Lf->rdev_def)
+    if (!CurrentLocalFile->rdev_def)
         dp = (struct l_dev *)NULL;
     else
-        dp = lkupdev(&DevDev, &Lf->rdev, 1, 0);
+        dp = lkupdev(&DeviceOfDev, &CurrentLocalFile->rdev, 1, 0);
     if (dp)
         (void) snpf(ep, sz, "%s", dp->name);
     else
@@ -243,7 +243,7 @@ read_mi(sh, ip, pcb, pn)
         if (len >= 3 && !strcmp(&mn[len - 3], "sth"))
         continue;
         ep = endnm(&sz);
-        (void) snpf(ep, sz, "%s%s", (ep == Namech) ? "" : "->", mn);
+        (void) snpf(ep, sz, "%s%s", (ep == NameChars) ? "" : "->", mn);
         if (!q.q_ptr)
         continue;
         if (!*ip && !strcmp(mn, "ip")) {

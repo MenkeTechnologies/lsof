@@ -122,7 +122,7 @@ enter_vn_text(vip, n)
     alloc_lfile(" txt", -1);
     Cfp = (struct file *) NULL;
     (void) enter_vnode_info(vip);
-    if (Lf->sf)
+    if (CurrentLocalFile->sf)
         link_lfile();
 /*
  * Record the entry of the vnode information.
@@ -141,7 +141,7 @@ enter_vn_text(vip, n)
                                                 (MALLOC_S) NbVips);
         if (!Vips) {
             (void) fprintf(stderr, "%s: PID %d: no text recording space\n",
-                           Pn, Lp->pid);
+                           ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
     }
@@ -185,12 +185,12 @@ gather_proc_info() {
  * conditional skipping of regular file; i.e., regular files will be skipped
  * unless they belong to a process selected by one of the specified options.
  */
-    if (Selflags & SELNW) {
+    if (SelectionFlags & SELNW) {
 
         /*
          * Some network files selection options have been specified.
          */
-        if (Fand || !(Selflags & ~SELNW)) {
+        if (OptAndSelection || !(SelectionFlags & ~SELNW)) {
 
             /*
              * Selection ANDing or only network file options have been
@@ -210,7 +210,7 @@ gather_proc_info() {
              * If only ORed process selection options have been specified,
              * enable conditional file skipping and socket file only checking.
              */
-            if ((Selflags & SELFILE) || !(Selflags & SELPROC))
+            if ((SelectionFlags & SELFILE) || !(SelectionFlags & SELPROC))
                 cckreg = ckscko = 0;
             else
                 cckreg = ckscko = 1;
@@ -230,7 +230,7 @@ gather_proc_info() {
  */
     if ((nb = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0)) <= 0) {
         (void) fprintf(stderr, "%s: can't get PID byte count: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         Exit(1);
     }
     if (nb > NbPids) {
@@ -243,7 +243,7 @@ gather_proc_info() {
             Pids = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
         if (!Pids) {
             (void) fprintf(stderr,
-                           "%s: can't allocate space for %d PIDs\n", Pn,
+                           "%s: can't allocate space for %d PIDs\n", ProgramName,
                            (int) (NbPids / sizeof(int *)));
             Exit(1);
         }
@@ -254,7 +254,7 @@ gather_proc_info() {
     for (ef = 0; !ef;) {
         if ((nb = proc_listpids(PROC_ALL_PIDS, 0, Pids, NbPids)) <= 0) {
             (void) fprintf(stderr, "%s: can't get list of PIDs: %s\n",
-                           Pn, strerror(errno));
+                           ProgramName, strerror(errno));
             Exit(1);
         }
 
@@ -274,7 +274,7 @@ gather_proc_info() {
             Pids = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
             if (!Pids) {
                 (void) fprintf(stderr,
-                               "%s: can't allocate space for %d PIDs\n", Pn,
+                               "%s: can't allocate space for %d PIDs\n", ProgramName,
                                (int) (NbPids / sizeof(int *)));
                 Exit(1);
             }
@@ -290,15 +290,15 @@ gather_proc_info() {
         if (nb <= 0) {
             if ((errno == EPERM) || (errno == ESRCH))
                 continue;
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 (void) fprintf(stderr, "%s: PID %d information error: %s\n",
-                               Pn, pid, strerror(errno));
+                               ProgramName, pid, strerror(errno));
             }
             continue;
         } else if (nb < sizeof(tai)) {
             (void) fprintf(stderr,
                            "%s: PID %d: proc_pidinfo(PROC_PIDTASKALLINFO);\n",
-                           Pn, pid);
+                           ProgramName, pid);
             (void) fprintf(stderr,
                            "      too few bytes; expected %ld, got %d\n",
                            sizeof(tai), nb);
@@ -340,7 +340,7 @@ gather_proc_info() {
             } else if (nb < sizeof(vpi)) {
                 (void) fprintf(stderr,
                                "%s: PID %d: proc_pidinfo(PROC_PIDVNODEPATHINFO);\n",
-                               Pn, pid);
+                               ProgramName, pid);
                 (void) fprintf(stderr,
                                "      too few bytes; expected %ld, got %d\n",
                                sizeof(vpi), nb);
@@ -356,7 +356,7 @@ gather_proc_info() {
                     (tai.pbsd.pbi_name[0] != '\0') ? tai.pbsd.pbi_name
                                                    : tai.pbsd.pbi_comm,
                     (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
@@ -372,16 +372,16 @@ gather_proc_info() {
                      * CWD's NAME  column.
                      */
                     if (cre != ESRCH) {
-                        (void) snpf(Namech, Namechl, "%s|%s info error: %s",
+                        (void) snpf(NameChars, NameCharsLength, "%s|%s info error: %s",
                                     &CWD[1], &RTD[1], strerror(cre));
-                        Namech[Namechl - 1] = '\0';
-                        enter_nm(Namech);
-                        if (Lf->sf)
+                        NameChars[NameCharsLength - 1] = '\0';
+                        enter_nm(NameChars);
+                        if (CurrentLocalFile->sf)
                             link_lfile();
                     }
                 } else {
                     (void) enter_vnode_info(&vpi.pvi_cdir);
-                    if (Lf->sf)
+                    if (CurrentLocalFile->sf)
                         link_lfile();
                 }
             }
@@ -394,7 +394,7 @@ gather_proc_info() {
                 alloc_lfile(RTD, -1);
                 Cfp = (struct file *) NULL;
                 (void) enter_vnode_info(&vpi.pvi_rdir);
-                if (Lf->sf)
+                if (CurrentLocalFile->sf)
                     link_lfile();
             }
         }
@@ -467,7 +467,7 @@ process_fds(pid, n, ckscko)
     if (!Fds) {
         (void) fprintf(stderr,
                        "%s: PID %d: can't allocate space for %d FDs\n",
-                       Pn, pid, (int) (NbFds / sizeof(struct proc_fdinfo)));
+                       ProgramName, pid, (int) (NbFds / sizeof(struct proc_fdinfo)));
         Exit(1);
     }
 /*
@@ -486,10 +486,10 @@ process_fds(pid, n, ckscko)
          * Make a dummy file entry with an error message in its NAME column.
          */
         alloc_lfile(" err", -1);
-        (void) snpf(Namech, Namechl, "FD info error: %s", strerror(errno));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
-        if (Lf->sf)
+        (void) snpf(NameChars, NameCharsLength, "FD info error: %s", strerror(errno));
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
+        if (CurrentLocalFile->sf)
             link_lfile();
         return;
     }
@@ -536,13 +536,13 @@ process_fds(pid, n, ckscko)
                 (void) process_vnode(pid, fdp->proc_fd);
                 break;
             default:
-                (void) snpf(Namech, Namechl - 1, "unknown file type: %d",
+                (void) snpf(NameChars, NameCharsLength - 1, "unknown file type: %d",
                             fdp->proc_fdtype);
-                Namech[Namechl - 1] = '\0';
-                (void) enter_nm(Namech);
+                NameChars[NameCharsLength - 1] = '\0';
+                (void) enter_nm(NameChars);
                 break;
         }
-        if (Lf->sf) {
+        if (CurrentLocalFile->sf) {
             if (!ckscko || isock)
                 link_lfile();
         }
@@ -579,17 +579,17 @@ process_text(pid)
              */
             alloc_lfile(" txt", -1);
             Cfp = (struct file *) NULL;
-            (void) snpf(Namech, Namechl,
+            (void) snpf(NameChars, NameCharsLength,
                         "region info error: %s", strerror(errno));
-            Namech[Namechl - 1] = '\0';
-            enter_nm(Namech);
-            if (Lf->sf)
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
+            if (CurrentLocalFile->sf)
                 link_lfile();
             return;
         } else if (nb < sizeof(rwpi)) {
             (void) fprintf(stderr,
                            "%s: PID %d: proc_pidinfo(PROC_PIDREGIONPATHINFO);\n",
-                           Pn, pid);
+                           ProgramName, pid);
             (void) fprintf(stderr,
                            "      too few bytes; expected %ld, got %d\n",
                            sizeof(rwpi), nb);
@@ -631,7 +631,7 @@ process_threads(pid, n)
                           (MALLOC_S)NbThreads);
         if (!Threads) {
         (void) fprintf(stderr,
-            "%s: can't allocate space for %d Threads\n", Pn,
+            "%s: can't allocate space for %d Threads\n", ProgramName,
             (int)(NbThreads / sizeof(int *)));
         Exit(1);
         }
@@ -675,17 +675,17 @@ process_threads(pid, n)
          */
         alloc_lfile(TWD, -1);
         Cfp = (struct file *)NULL;
-        (void) snpf(Namech, Namechl,
+        (void) snpf(NameChars, NameCharsLength,
             "thread info error: %s", strerror(errno));
-        Namech[Namechl - 1] = '\0';
-        enter_nm(Namech);
-        if (Lf->sf)
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
+        if (CurrentLocalFile->sf)
             link_lfile();
         return;
         } else if (nb < sizeof(tpi)) {
         (void) fprintf(stderr,
             "%s: PID %d: proc_pidinfo(PROC_PIDTHREADPATHINFO);\n",
-            Pn, pid);
+            ProgramName, pid);
         (void) fprintf(stderr,
             "      too few bytes; expected %ld, got %d\n",
             sizeof(tpi), nb);
@@ -695,7 +695,7 @@ process_threads(pid, n)
         alloc_lfile(TWD, -1);
         Cfp = (struct file *)NULL;
         (void) enter_vnode_info(&tpi.pvip);
-        if (Lf->sf)
+        if (CurrentLocalFile->sf)
             link_lfile();
         }
     }

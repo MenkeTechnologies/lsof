@@ -126,7 +126,7 @@ enter_vn_text(va, n)
     alloc_lfile(" txt", -1);
     Cfp = (struct file *) NULL;
     process_node(va);
-    if (Lf->sf)
+    if (CurrentLocalFile->sf)
         link_lfile();
     if (i >= Nv) {
 
@@ -140,7 +140,7 @@ enter_vn_text(va, n)
             Vp = (KA_T *) realloc((MALLOC_P *) Vp, (MALLOC_S)(Nv * sizeof(KA_T)));
         if (!Vp) {
             (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                           Pn, Lp->pid);
+                           ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
     }
@@ -183,7 +183,7 @@ gather_proc_info() {
  * Read the process table.
  */
     if (read_procs()) {
-        (void) fprintf(stderr, "%s: can't read process table\n", Pn);
+        (void) fprintf(stderr, "%s: can't read process table\n", ProgramName);
         Exit(1);
     }
 /*
@@ -241,7 +241,7 @@ gather_proc_info() {
             continue;
         alloc_lproc(p->p_pid, pgid, ppid, (UID_ARG) uid, cmd, (int) pss,
                     (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         Kpa = Pa[px];
         /*
          * Save current working directory information.
@@ -250,7 +250,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) fd.fd_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -260,7 +260,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) fd.fd_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -280,7 +280,7 @@ gather_proc_info() {
                 ofb = (struct file **) realloc((MALLOC_P *) ofb, nb);
             if (!ofb) {
                 (void) fprintf(stderr, "%s: PID %d, no file * space\n",
-                               Pn, p->p_pid);
+                               ProgramName, p->p_pid);
                 Exit(1);
             }
             ofbb = nb;
@@ -296,7 +296,7 @@ gather_proc_info() {
                 pof = (char *) realloc((MALLOC_P *) pof, nb);
             if (!pof) {
                 (void) fprintf(stderr, "%s: PID %d, no file flag space\n",
-                               Pn, p->p_pid);
+                               ProgramName, p->p_pid);
                 Exit(1);
             }
             pofb = nb;
@@ -311,11 +311,11 @@ gather_proc_info() {
             if (ofb[i] && !(pof[i] & UF_RESERVED)) {
                 alloc_lfile(NULL, i);
                 process_file((KA_T)(Cfp = ofb[i]));
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG)
-                        Lf->pof = (long)pof[i];
+                    if (OptFileStructValues & FSV_FILE_FLAGS)
+                        CurrentLocalFile->pof = (long)pof[i];
 #endif    /* defined(HASFSTRUCT) */
 
                     link_lfile();
@@ -352,12 +352,12 @@ getcmdnm(pid)
         sz = sizeof(am);
         if (sysctl(mib, 2, &am, &sz, NULL, 0) == -1) {
         (void) fprintf(stderr, "%s: can't get arg max, PID %d\n",
-            Pn, pid);
+            ProgramName, pid);
         Exit(1);
         }
         if (!(ap = (char *)malloc((MALLOC_S)am))) {
         (void) fprintf(stderr, "%s: no arg ptr (%d) space, PID %d\n",
-            Pn, am, pid);
+            ProgramName, am, pid);
         Exit(1);
         }
     }
@@ -422,8 +422,8 @@ get_kernel_access() {
 /*
  * Set name list file path.
  */
-    if (!Nmlst)
-        Nmlst = N_UNIX;
+    if (!NamelistFilePath)
+        NamelistFilePath = N_UNIX;
 
 #if    defined(WILLDROPGID)
     /*
@@ -437,7 +437,7 @@ get_kernel_access() {
  * See if the non-KMEM memory and the name list files are readable.
  */
     if ((Memory && !is_readable(Memory, 1))
-        || (Nmlst && !is_readable(Nmlst, 1)))
+        || (NamelistFilePath && !is_readable(NamelistFilePath, 1)))
         Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
@@ -445,15 +445,15 @@ get_kernel_access() {
  * Open kernel memory access.
  */
     if ((Kd = open(Memory ? Memory : KMEM, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: open(%s): %s\n", Pn,
+        (void) fprintf(stderr, "%s: open(%s): %s\n", ProgramName,
                        Memory ? Memory : KMEM,
                        strerror(errno));
         Exit(1);
     }
     (void) build_Nl(Drive_Nl);
-    if (nlist(Nmlst, Nl) < 0) {
+    if (nlist(NamelistFilePath, NlistTable) < 0) {
         (void) fprintf(stderr, "%s: can't read namelist from %s\n",
-                       Pn, Nmlst);
+                       ProgramName, NamelistFilePath);
         Exit(1);
     }
 
@@ -625,7 +625,7 @@ read_procs() {
          */
         if (get_Nl_value("aproc", Drive_Nl, &Akp) < 0 || !Akp) {
             (void) fprintf(stderr, "%s: can't get proc table address\n",
-                           Pn);
+                           ProgramName);
             Exit(1);
         }
     }
@@ -634,12 +634,12 @@ read_procs() {
  * sizes large enough to handle it.
  */
     if (get_Nl_value("nproc", Drive_Nl, &kp) < 0 || !kp) {
-        (void) fprintf(stderr, "%s: can't get nproc address\n", Pn);
+        (void) fprintf(stderr, "%s: can't get nproc address\n", ProgramName);
         Exit(1);
     }
     if (kread(kp, (char *) &np, sizeof(np))) {
         (void) fprintf(stderr, "%s: can't read process count from %s\n",
-                       Pn, print_kptr(kp, (char *) NULL, 0));
+                       ProgramName, print_kptr(kp, (char *) NULL, 0));
         Exit(1);
     }
     for (np += np, pe = PINCRSZ; pe < np; pe += PINCRSZ);
@@ -652,7 +652,7 @@ read_procs() {
     else if (pe > Npa)
         Proc = (struct proc *) realloc((MALLOC_P *) Proc, msz);
     if (!Proc) {
-        (void) fprintf(stderr, "%s: no space for proc table\n", Pn);
+        (void) fprintf(stderr, "%s: no space for proc table\n", ProgramName);
         Exit(1);
     }
     msz = (MALLOC_S)(pe * sizeof(KA_T));
@@ -661,7 +661,7 @@ read_procs() {
     else if (pe > Npa)
         Pa = (KA_T *) realloc((MALLOC_P *) Pa, msz);
     if (!Pa) {
-        (void) fprintf(stderr, "%s: no space for proc addr table\n", Pn);
+        (void) fprintf(stderr, "%s: no space for proc addr table\n", ProgramName);
         Exit(1);
     }
     Npa = pe;
@@ -680,7 +680,7 @@ read_procs() {
         }
     }
     if (!Phash) {
-        (void) fprintf(stderr, "%s: no space for proc address hash\n", Pn);
+        (void) fprintf(stderr, "%s: no space for proc address hash\n", ProgramName);
         Exit(1);
     }
 /*
@@ -701,7 +701,7 @@ read_procs() {
         h = PHASH(kp);
         if (!(ph = (struct phash *) malloc((MALLOC_S)sizeof(struct phash))))
         {
-            (void) fprintf(stderr, "%s: no space for phash struct\n", Pn);
+            (void) fprintf(stderr, "%s: no space for phash struct\n", ProgramName);
             Exit(1);
         }
         ph->ka = kp;
@@ -718,13 +718,13 @@ read_procs() {
             msz = (int) ((Npa + PINCRSZ) * sizeof(struct proc));
             if (!(Proc = (struct proc *) realloc((MALLOC_P *) Proc, msz))) {
                 (void) fprintf(stderr, "%s: no additional proc space\n",
-                               Pn);
+                               ProgramName);
                 Exit(1);
             }
             msz = (int) ((Npa + PINCRSZ) * sizeof(KA_T));
             if (!(Pa = (KA_T *) realloc((MALLOC_P *) Pa, msz))) {
                 (void) fprintf(stderr,
-                               "%s: no additional proc addr space\n", Pn);
+                               "%s: no additional proc addr space\n", ProgramName);
                 Exit(1);
             }
             Npa += PINCRSZ;
@@ -735,22 +735,22 @@ read_procs() {
  * report that and exit.
  */
     if (i >= pe) {
-        (void) fprintf(stderr, "%s: can't follow kernel proc chain\n", Pn);
+        (void) fprintf(stderr, "%s: can't follow kernel proc chain\n", ProgramName);
         Exit(1);
     }
 /*
  * If not in repeat mode, reduce Pa[] and Proc[] to their minimums.
  */
-    if (Np < Npa && !RptTm) {
+    if (Np < Npa && !RepeatTime) {
         msz = (MALLOC_S)(Np * sizeof(struct proc));
         if (!(Proc = (struct proc *) realloc((MALLOC_P *) Proc, msz))) {
-            (void) fprintf(stderr, "%s: can't reduce proc table\n", Pn);
+            (void) fprintf(stderr, "%s: can't reduce proc table\n", ProgramName);
             Exit(1);
         }
         msz = (MALLOC_S)(Np * sizeof(KA_T));
         if (!(Pa = (KA_T *) realloc((MALLOC_P *) Pa, msz))) {
             (void) fprintf(stderr, "%s: can't reduce proc addr table\n",
-                           Pn);
+                           ProgramName);
             Exit(1);
         }
         Npa = Np;

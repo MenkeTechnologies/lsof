@@ -44,7 +44,7 @@ static char *rcsid = "$Id: dfile.c,v 1.21 2009/03/25 19:22:16 abe Exp $";
  */
 
 struct hsfile {
-    struct sfile *s;        /* the Sfile table address */
+    struct sfile *s;        /* the SearchFileChain table address */
     struct hsfile *next;        /* the next hash bucket entry */
 };
 
@@ -74,21 +74,21 @@ static int HbyNmCt = 0;            /* HbyNm entry count */
  * Local definitions
  */
 
-#define    SFCDHASH    1024        /* Sfile hash by clone device */
-#define    SFDIHASH    4094        /* Sfile hash by (device,inode) number
+#define    SFCDHASH    1024        /* SearchFileChain hash by clone device */
+#define    SFDIHASH    4094        /* SearchFileChain hash by (device,inode) number
 					 * pair bucket count (power of 2!) */
-#define    SFFSHASH    128        /* Sfile hash by file system device
+#define    SFFSHASH    128        /* SearchFileChain hash by file system device
 					 * number bucket count (power of 2!) */
 #define SFHASHDEVINO(maj, min, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
-/* hash for Sfile by major device,
+/* hash for SearchFileChain by major device,
  * minor device, and inode, modulo m
  * (m must be a power of 2) */
-#define    SFNMHASH    4096        /* Sfile hash by name bucket count
+#define    SFNMHASH    4096        /* SearchFileChain hash by name bucket count
 					   (power of 2!) */
-#define    SFRDHASH    1024        /* Sfile hash by raw device number
+#define    SFRDHASH    1024        /* SearchFileChain hash by raw device number
 					 * bucket count (power of 2!) */
 #define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+((int)(rmaj+1)*(int)(rmin+1))+ino)*31415)&(mod-1)))
-/* hash for Sfile by major device,
+/* hash for SearchFileChain by major device,
  * minor device, major raw device,
  * minor raw device, and inode, modulo
  * mod (mod must be a power of 2) */
@@ -113,7 +113,7 @@ get_max_fd() {
 
 
 /*
- * hashSfile() - hash Sfile entries for use in is_file_named() searches
+ * hashSfile() - hash SearchFileChain entries for use in is_file_named() searches
  */
 
 void
@@ -126,7 +126,7 @@ hashSfile() {
  * Do nothing if there are no file search arguments cached or if the
  * hashes have already been constructed.
  */
-    if (!Sfile || hs)
+    if (!SearchFileChain || hs)
         return;
 /*
  * Preset the clone major device for Solaris.
@@ -145,7 +145,7 @@ hashSfile() {
                                                sizeof(struct hsfile)))) {
             (void) fprintf(stderr,
                            "%s: can't allocate space for %d clone hash buckets\n",
-                           Pn, SFCDHASH);
+                           ProgramName, SFCDHASH);
             Exit(1);
         }
     }
@@ -153,36 +153,36 @@ hashSfile() {
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d (dev,ino) hash buckets\n",
-                       Pn, SFDIHASH);
+                       ProgramName, SFDIHASH);
         Exit(1);
     }
     if (!(HbyFrd = (struct hsfile *) calloc((MALLOC_S) SFRDHASH,
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d rdev hash buckets\n",
-                       Pn, SFRDHASH);
+                       ProgramName, SFRDHASH);
         Exit(1);
     }
     if (!(HbyFsd = (struct hsfile *) calloc((MALLOC_S) SFFSHASH,
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d file sys hash buckets\n",
-                       Pn, SFFSHASH);
+                       ProgramName, SFFSHASH);
         Exit(1);
     }
     if (!(HbyNm = (struct hsfile *) calloc((MALLOC_S) SFNMHASH,
                                            sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d name hash buckets\n",
-                       Pn, SFNMHASH);
+                       ProgramName, SFNMHASH);
         Exit(1);
     }
     hs++;
 /*
- * Scan the Sfile chain, building file, file system, and file name hash
+ * Scan the SearchFileChain chain, building file, file system, and file name hash
  * bucket chains.
  */
-    for (s = Sfile; s; s = s->next) {
+    for (s = SearchFileChain; s; s = s->next) {
         for (i = 0; i < 4; i++) {
             if (i == 0) {
                 if (!s->aname)
@@ -233,7 +233,7 @@ hashSfile() {
                 {
                     (void) fprintf(stderr,
                                    "%s: can't allocate hsfile bucket for: %s\n",
-                                   Pn, s->aname);
+                                   ProgramName, s->aname);
                     Exit(1);
                 }
                 sn->s = s;
@@ -252,11 +252,11 @@ hashSfile() {
 int
 is_file_named(p, nt, vt, ps)
         char *p;            /* path name; NULL = search by device
-					 * and inode (from *Lf) */
+					 * and inode (from *CurrentLocalFile) */
         int nt;                /* node type -- e.g., N_* */
         enum vtype vt;            /* vnode type */
         int ps;                /* print status: 0 = don't copy name
-					 * to Namech */
+					 * to NameChars */
 {
     char *ep;
     int f = 0;
@@ -277,13 +277,13 @@ is_file_named(p, nt, vt, ps)
 /*
  * Check for a Solaris clone file.
  */
-    if (!f && HbyCdCt && nt == N_STREAM && Lf->dev_def && Lf->rdev_def
-        && (Lf->dev == DevDev)) {
-        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(Lf->rdev), 0,
+    if (!f && HbyCdCt && nt == N_STREAM && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
+        && (CurrentLocalFile->dev == DeviceOfDev)) {
+        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(CurrentLocalFile->rdev), 0,
                                       SFCDHASH)];
              sh;
              sh = sh->next) {
-            if ((s = sh->s) && (GET_MAJ_DEV(Lf->rdev)
+            if ((s = sh->s) && (GET_MAJ_DEV(CurrentLocalFile->rdev)
                                 == GET_MIN_DEV(s->rdev))) {
                 f = 1;
                 break;
@@ -293,16 +293,16 @@ is_file_named(p, nt, vt, ps)
 /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && Lf->dev_def
-        && (Lf->inp_ty == 1 || Lf->inp_ty == 3)) {
-        for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(Lf->dev),
-                                       GET_MIN_DEV(Lf->dev),
-                                       Lf->inode,
+    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
+        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
+                                       GET_MIN_DEV(CurrentLocalFile->dev),
+                                       CurrentLocalFile->inode,
                                        SFDIHASH)];
              sh;
              sh = sh->next) {
-            if ((s = sh->s) && (Lf->dev == s->dev)
-                && (Lf->inode == s->i)) {
+            if ((s = sh->s) && (CurrentLocalFile->dev == s->dev)
+                && (CurrentLocalFile->inode == s->i)) {
                 f = 1;
                 break;
             }
@@ -311,12 +311,12 @@ is_file_named(p, nt, vt, ps)
 /*
  * Check for a file system match.
  */
-    if (!f && HbyFsdCt && Lf->dev_def) {
-        for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(Lf->dev),
-                                       GET_MIN_DEV(Lf->dev), 0, SFFSHASH)];
+    if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
+        for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
+                                       GET_MIN_DEV(CurrentLocalFile->dev), 0, SFFSHASH)];
              sh;
              sh = sh->next) {
-            if ((s = sh->s) && Lf->dev == s->dev) {
+            if ((s = sh->s) && CurrentLocalFile->dev == s->dev) {
                 f = 1;
                 break;
             }
@@ -327,18 +327,18 @@ is_file_named(p, nt, vt, ps)
  */
     if (!f && HbyFrdCt
         && ((vt = VCHR) || (vt = VBLK))
-        && Lf->dev_def && (Lf->dev == DevDev)
-        && Lf->rdev_def
-        && (Lf->inp_ty == 1 || Lf->inp_ty == 3)) {
-        for (sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(Lf->dev),
-                                      GET_MIN_DEV(Lf->dev),
-                                      GET_MAJ_DEV(Lf->rdev),
-                                      GET_MIN_DEV(Lf->rdev),
-                                      Lf->inode, SFRDHASH)];
+        && CurrentLocalFile->dev_def && (CurrentLocalFile->dev == DeviceOfDev)
+        && CurrentLocalFile->rdev_def
+        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(CurrentLocalFile->dev),
+                                      GET_MIN_DEV(CurrentLocalFile->dev),
+                                      GET_MAJ_DEV(CurrentLocalFile->rdev),
+                                      GET_MIN_DEV(CurrentLocalFile->rdev),
+                                      CurrentLocalFile->inode, SFRDHASH)];
              sh;
              sh = sh->next) {
-            if ((s = sh->s) && (s->dev == Lf->dev)
-                && (s->rdev == Lf->rdev) && (s->i == Lf->inode)) {
+            if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)
+                && (s->rdev == CurrentLocalFile->rdev) && (s->i == CurrentLocalFile->inode)) {
                 f = 1;
                 break;
             }
@@ -350,15 +350,15 @@ is_file_named(p, nt, vt, ps)
     if (f) {
         if (f == 2) {
             if (ps)
-                (void) snpf(Namech, Namechl, "%s", p);
+                (void) snpf(NameChars, NameCharsLength, "%s", p);
         } else {
             if (ps && s->type) {
 
                 /*
                  * If the search argument isn't a file system, propagate it
-                 * to Namech[]; otherwise, let printname() compose the name.
+                 * to NameChars[]; otherwise, let printname() compose the name.
                  */
-                (void) snpf(Namech, Namechl, "%s", s->name);
+                (void) snpf(NameChars, NameCharsLength, "%s", s->name);
                 if (s->devnm) {
                     ep = endnm(&sz);
                     (void) snpf(ep, sz, " (%s)", s->devnm);
@@ -482,7 +482,7 @@ print_v_path(lf)
             case ENOENT:
 
 # if	defined(HASXOPT)
-            if (Fxopt && lf->nlink_def && !lf->nlink) {
+            if (OptCrossoverExt && lf->nlink_def && !lf->nlink) {
                 del = 1;
                 break;
             }
@@ -583,12 +583,12 @@ process_file(fp)
 #endif    /* defined(FILEPTR) */
 
     if (kread(fp, (char *) &f, sizeof(f))) {
-        (void) snpf(Namech, Namechl, "can't read file struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
                     print_kptr(fp, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
-    Lf->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
 
     if (f.f_count) {
 
@@ -596,31 +596,31 @@ process_file(fp)
          * Construct access code.
          */
         if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
-            Lf->access = 'r';
+            CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
-            Lf->access = 'w';
+            CurrentLocalFile->access = 'w';
         else if (flag == (FREAD | FWRITE))
-            Lf->access = 'u';
+            CurrentLocalFile->access = 'u';
 
 #if    defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (Fsv & FSV_CT) {
-            Lf->fct = (long)f.f_count;
-            Lf->fsv |= FSV_CT;
+            if (OptFileStructValues & FSV_FILE_COUNT) {
+            CurrentLocalFile->fct = (long)f.f_count;
+            CurrentLocalFile->fsv |= FSV_FILE_COUNT;
             }
-            if (Fsv & FSV_FA) {
-            Lf->fsa = fp;
-            Lf->fsv |= FSV_FA;
+            if (OptFileStructValues & FSV_FILE_ADDR) {
+            CurrentLocalFile->fsa = fp;
+            CurrentLocalFile->fsv |= FSV_FILE_ADDR;
             }
-            if (Fsv & FSV_FG) {
-            Lf->ffg = (long)f.f_flag;
-            Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+            CurrentLocalFile->ffg = (long)f.f_flag;
+            CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
-            if (Fsv & FSV_NI) {
-            Lf->fna = (KA_T)f.f_vnode;
-            Lf->fsv |= FSV_NI;
+            if (OptFileStructValues & FSV_NODE_ID) {
+            CurrentLocalFile->fna = (KA_T)f.f_vnode;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
             }
 #endif    /* defined(HASFSTRUCT) */
 

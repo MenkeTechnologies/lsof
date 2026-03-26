@@ -16,68 +16,68 @@
 
 #include "../src/lsof_fields.h"
 
-/* ===== x2dev() benchmark ===== */
+/* ===== hex_to_device() benchmark ===== */
 static char *
-bench_x2dev(char *s, dev_t *d)
+bench_hex_to_device(char *hex_input, dev_t *device_out)
 {
-    char *cp, *cp1;
-    int n;
-    dev_t r;
+    char *scan_pos, *prefix_check;
+    int digit_count;
+    dev_t accumulated;
 
-    if (strncasecmp(s, "0x", 2) == 0)
-        s += 2;
-    for (cp = s, n = 0; *cp; cp++, n++) {
-        if (isdigit((unsigned char)*cp)) continue;
-        if ((unsigned char)*cp >= 'a' && (unsigned char)*cp <= 'f') continue;
-        if ((unsigned char)*cp >= 'A' && (unsigned char)*cp <= 'F') continue;
-        if (*cp == ' ' || *cp == ',') break;
+    if (strncasecmp(hex_input, "0x", 2) == 0)
+        hex_input += 2;
+    for (scan_pos = hex_input, digit_count = 0; *scan_pos; scan_pos++, digit_count++) {
+        if (isdigit((unsigned char)*scan_pos)) continue;
+        if ((unsigned char)*scan_pos >= 'a' && (unsigned char)*scan_pos <= 'f') continue;
+        if ((unsigned char)*scan_pos >= 'A' && (unsigned char)*scan_pos <= 'F') continue;
+        if (*scan_pos == ' ' || *scan_pos == ',') break;
         return NULL;
     }
-    if (!n) return NULL;
-    if (n > (2 * (int)sizeof(dev_t))) {
-        cp1 = s;
-        s += (n - (2 * sizeof(dev_t)));
-        while (cp1 < s) {
-            if (*cp1 != 'f' && *cp1 != 'F') return NULL;
-            cp1++;
+    if (!digit_count) return NULL;
+    if (digit_count > (2 * (int)sizeof(dev_t))) {
+        prefix_check = hex_input;
+        hex_input += (digit_count - (2 * sizeof(dev_t)));
+        while (prefix_check < hex_input) {
+            if (*prefix_check != 'f' && *prefix_check != 'F') return NULL;
+            prefix_check++;
         }
     }
     {
-        static const signed char hv[256] = {
+        static const signed char hex_values[256] = {
             ['0']=0, ['1']=1, ['2']=2, ['3']=3, ['4']=4,
             ['5']=5, ['6']=6, ['7']=7, ['8']=8, ['9']=9,
             ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
             ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
         };
-        for (r = 0; s < cp; s++) {
-            r = (r << 4) | (hv[(unsigned char)*s] & 0xf);
+        for (accumulated = 0; hex_input < scan_pos; hex_input++) {
+            accumulated = (accumulated << 4) | (hex_values[(unsigned char)*hex_input] & 0xf);
         }
     }
-    *d = r;
-    return s;
+    *device_out = accumulated;
+    return hex_input;
 }
 
 BENCH(x2dev_short, 1000000) {
-    dev_t d;
+    dev_t device;
     for (int i = 0; i < bf_iters; i++) {
-        bench_x2dev("ff", &d);
-        BENCH_SINK_INT(d);
+        bench_hex_to_device("ff", &device);
+        BENCH_SINK_INT(device);
     }
 }
 
 BENCH(x2dev_with_prefix, 1000000) {
-    dev_t d;
+    dev_t device;
     for (int i = 0; i < bf_iters; i++) {
-        bench_x2dev("0x1a2b3c4d", &d);
-        BENCH_SINK_INT(d);
+        bench_hex_to_device("0x1a2b3c4d", &device);
+        BENCH_SINK_INT(device);
     }
 }
 
 BENCH(x2dev_long_hex, 1000000) {
-    dev_t d;
+    dev_t device;
     for (int i = 0; i < bf_iters; i++) {
-        bench_x2dev("0xdeadbeefcafe1234", &d);
-        BENCH_SINK_INT(d);
+        bench_hex_to_device("0xdeadbeefcafe1234", &device);
+        BENCH_SINK_INT(device);
     }
 }
 
@@ -104,42 +104,42 @@ BENCH(hashport_common_ports, 10000000) {
 }
 
 
-/* ===== safestrlen benchmark ===== */
+/* ===== safe_string_length benchmark ===== */
 static int
-bench_safestrlen(char *sp, int flags)
+bench_safe_string_length(char *string_ptr, int flags)
 {
-    char c;
-    int len = 0;
-    c = (flags & 2) ? ' ' : '\0';
-    if (sp) {
-        for (; *sp; sp++) {
-            if (!isprint((unsigned char)*sp) || *sp == c) {
-                if (*sp < 0x20 || (unsigned char)*sp == 0xff)
-                    len += 2;
+    char non_print_marker;
+    int safe_len = 0;
+    non_print_marker = (flags & 2) ? ' ' : '\0';
+    if (string_ptr) {
+        for (; *string_ptr; string_ptr++) {
+            if (!isprint((unsigned char)*string_ptr) || *string_ptr == non_print_marker) {
+                if (*string_ptr < 0x20 || (unsigned char)*string_ptr == 0xff)
+                    safe_len += 2;
                 else
-                    len += 4;
+                    safe_len += 4;
             } else
-                len++;
+                safe_len++;
         }
     }
-    return len;
+    return safe_len;
 }
 
 BENCH(safestrlen_short, 10000000) {
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_INT(bench_safestrlen("hello world", 0));
+        BENCH_SINK_INT(bench_safe_string_length("hello world", 0));
     }
 }
 
 BENCH(safestrlen_with_escapes, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_INT(bench_safestrlen("hello\tworld\n", 0));
+        BENCH_SINK_INT(bench_safe_string_length("hello\tworld\n", 0));
     }
 }
 
 BENCH(safestrlen_long_path, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_INT(bench_safestrlen(
+        BENCH_SINK_INT(bench_safe_string_length(
             "/usr/local/share/applications/very/long/path/to/some/file.txt", 0));
     }
 }
@@ -149,7 +149,7 @@ BENCH(safestrlen_binary_data, 2000000) {
     for (int i = 0; i < 63; i++) data[i] = (char)(i + 1);
     data[63] = '\0';
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_INT(bench_safestrlen(data, 0));
+        BENCH_SINK_INT(bench_safe_string_length(data, 0));
     }
 }
 
@@ -164,15 +164,15 @@ struct bench_l_dev {
 };
 
 static int
-bench_compdev(const void *a1, const void *a2)
+bench_compare_devices(const void *first, const void *second)
 {
-    struct bench_l_dev **p1 = (struct bench_l_dev **)a1;
-    struct bench_l_dev **p2 = (struct bench_l_dev **)a2;
-    if ((*p1)->rdev < (*p2)->rdev) return -1;
-    if ((*p1)->rdev > (*p2)->rdev) return 1;
-    if ((*p1)->inode < (*p2)->inode) return -1;
-    if ((*p1)->inode > (*p2)->inode) return 1;
-    return strcmp((*p1)->name, (*p2)->name);
+    struct bench_l_dev **dev_ptr1 = (struct bench_l_dev **)first;
+    struct bench_l_dev **dev_ptr2 = (struct bench_l_dev **)second;
+    if ((*dev_ptr1)->rdev < (*dev_ptr2)->rdev) return -1;
+    if ((*dev_ptr1)->rdev > (*dev_ptr2)->rdev) return 1;
+    if ((*dev_ptr1)->inode < (*dev_ptr2)->inode) return -1;
+    if ((*dev_ptr1)->inode > (*dev_ptr2)->inode) return 1;
+    return strcmp((*dev_ptr1)->name, (*dev_ptr2)->name);
 }
 
 BENCH(compdev_sort_100, 100000) {
@@ -192,7 +192,7 @@ BENCH(compdev_sort_100, 100000) {
     }
     for (int j = 0; j < bf_iters; j++) {
         for (int i = 0; i < 100; i++) ptrs[i] = &devs[i];
-        qsort(ptrs, 100, sizeof(struct bench_l_dev *), bench_compdev);
+        qsort(ptrs, 100, sizeof(struct bench_l_dev *), bench_compare_devices);
         BENCH_SINK_PTR(ptrs[0]);
     }
 }
@@ -214,64 +214,64 @@ BENCH(compdev_sort_1000, 10000) {
     }
     for (int j = 0; j < bf_iters; j++) {
         for (int i = 0; i < 1000; i++) ptrs[i] = &devs[i];
-        qsort(ptrs, 1000, sizeof(struct bench_l_dev *), bench_compdev);
+        qsort(ptrs, 1000, sizeof(struct bench_l_dev *), bench_compare_devices);
         BENCH_SINK_PTR(ptrs[0]);
     }
 }
 
 
-/* ===== safepup benchmark ===== */
-static char safepup_buf[8];
+/* ===== safe_print_unprintable benchmark ===== */
+static char unprintable_buf[8];
 static char *
-bench_safepup(unsigned int c, int *cl)
+bench_safe_print_unprintable(unsigned int char_code, int *output_length)
 {
-    int len;
-    char *rp;
-    if (c < 0x20) {
-        switch (c) {
-        case '\b': rp = "\\b"; break;
-        case '\f': rp = "\\f"; break;
-        case '\n': rp = "\\n"; break;
-        case '\r': rp = "\\r"; break;
-        case '\t': rp = "\\t"; break;
+    int encoded_len;
+    char *result_str;
+    if (char_code < 0x20) {
+        switch (char_code) {
+        case '\b': result_str = "\\b"; break;
+        case '\f': result_str = "\\f"; break;
+        case '\n': result_str = "\\n"; break;
+        case '\r': result_str = "\\r"; break;
+        case '\t': result_str = "\\t"; break;
         default:
-            safepup_buf[0] = '^';
-            safepup_buf[1] = (char)(c + 0x40);
-            safepup_buf[2] = '\0';
-            rp = safepup_buf;
+            unprintable_buf[0] = '^';
+            unprintable_buf[1] = (char)(char_code + 0x40);
+            unprintable_buf[2] = '\0';
+            result_str = unprintable_buf;
         }
-        len = 2;
-    } else if (c == 0xff) {
-        rp = "^?";
-        len = 2;
+        encoded_len = 2;
+    } else if (char_code == 0xff) {
+        result_str = "^?";
+        encoded_len = 2;
     } else {
         {
-            static const char hex[] = "0123456789abcdef";
-            unsigned int v = c & 0xff;
-            safepup_buf[0] = '\\';
-            safepup_buf[1] = 'x';
-            safepup_buf[2] = hex[(v >> 4) & 0xf];
-            safepup_buf[3] = hex[v & 0xf];
-            safepup_buf[4] = '\0';
+            static const char hex_digits[] = "0123456789abcdef";
+            unsigned int byte_val = char_code & 0xff;
+            unprintable_buf[0] = '\\';
+            unprintable_buf[1] = 'x';
+            unprintable_buf[2] = hex_digits[(byte_val >> 4) & 0xf];
+            unprintable_buf[3] = hex_digits[byte_val & 0xf];
+            unprintable_buf[4] = '\0';
         }
-        rp = safepup_buf;
-        len = 4;
+        result_str = unprintable_buf;
+        encoded_len = 4;
     }
-    if (cl) *cl = len;
-    return rp;
+    if (output_length) *output_length = encoded_len;
+    return result_str;
 }
 
 BENCH(safepup_control_chars, 10000000) {
-    int cl;
+    int char_len;
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_PTR(bench_safepup((unsigned int)(i % 0x20), &cl));
+        BENCH_SINK_PTR(bench_safe_print_unprintable((unsigned int)(i % 0x20), &char_len));
     }
 }
 
 BENCH(safepup_high_bytes, 5000000) {
-    int cl;
+    int char_len;
     for (int i = 0; i < bf_iters; i++) {
-        BENCH_SINK_PTR(bench_safepup(0x80 + (unsigned int)(i % 0x7f), &cl));
+        BENCH_SINK_PTR(bench_safe_print_unprintable(0x80 + (unsigned int)(i % 0x7f), &char_len));
     }
 }
 
@@ -398,37 +398,37 @@ BENCH(safe_realloc_pattern, 1000000) {
 
 
 /* ===== String copy benchmarks (mkstrcpy pattern) ===== */
-static char *bench_mkstrcpy(const char *src) {
-    size_t len = src ? strlen(src) : 0;
-    char *ns = (char *)malloc(len + 1);
-    if (ns) {
-        if (src) memcpy(ns, src, len + 1);
-        else *ns = '\0';
+static char *bench_make_string_copy(const char *source) {
+    size_t length = source ? strlen(source) : 0;
+    char *new_str = (char *)malloc(length + 1);
+    if (new_str) {
+        if (source) memcpy(new_str, source, length + 1);
+        else *new_str = '\0';
     }
-    return ns;
+    return new_str;
 }
 
 BENCH(mkstrcpy_short, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
-        char *s = bench_mkstrcpy("hello");
-        BENCH_SINK_PTR(s);
-        free(s);
+        char *copy = bench_make_string_copy("hello");
+        BENCH_SINK_PTR(copy);
+        free(copy);
     }
 }
 
 BENCH(mkstrcpy_path, 2000000) {
     for (int i = 0; i < bf_iters; i++) {
-        char *s = bench_mkstrcpy("/usr/local/share/applications/very/long/path/to/some/file.txt");
-        BENCH_SINK_PTR(s);
-        free(s);
+        char *copy = bench_make_string_copy("/usr/local/share/applications/very/long/path/to/some/file.txt");
+        BENCH_SINK_PTR(copy);
+        free(copy);
     }
 }
 
 BENCH(mkstrcpy_null, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
-        char *s = bench_mkstrcpy(NULL);
-        BENCH_SINK_PTR(s);
-        free(s);
+        char *copy = bench_make_string_copy(NULL);
+        BENCH_SINK_PTR(copy);
+        free(copy);
     }
 }
 
@@ -453,8 +453,8 @@ BENCH(linked_list_traverse_100, 1000000) {
     }
     for (int j = 0; j < bf_iters; j++) {
         int sum = 0;
-        for (struct bench_node *n = &nodes[0]; n; n = n->next)
-            sum += n->value;
+        for (struct bench_node *node = &nodes[0]; node; node = node->next)
+            sum += node->value;
         BENCH_SINK_INT(sum);
     }
 }
@@ -473,8 +473,8 @@ BENCH(linked_list_traverse_1000, 100000) {
     }
     for (int j = 0; j < bf_iters; j++) {
         int sum = 0;
-        for (struct bench_node *n = &nodes[0]; n; n = n->next)
-            sum += n->value;
+        for (struct bench_node *node = &nodes[0]; node; node = node->next)
+            sum += node->value;
         BENCH_SINK_INT(sum);
     }
 }
@@ -498,20 +498,20 @@ BENCH(hash_lookup_hit, 5000000) {
         for (int i = 0; i < 10; i++) {
             entries[i].port = ports[i];
             entries[i].name = "service";
-            int h = HASHPORT(ports[i]);
-            entries[i].next = buckets[h];
-            buckets[h] = &entries[i];
+            int hash_bucket = HASHPORT(ports[i]);
+            entries[i].next = buckets[hash_bucket];
+            buckets[hash_bucket] = &entries[i];
         }
         initialized = 1;
     }
     for (int i = 0; i < bf_iters; i++) {
-        int p = ports[i % 10];
-        int h = HASHPORT(p);
-        struct bench_porttab *pt;
-        for (pt = buckets[h]; pt; pt = pt->next) {
-            if (pt->port == p) break;
+        int port_num = ports[i % 10];
+        int hash_bucket = HASHPORT(port_num);
+        struct bench_porttab *port_entry;
+        for (port_entry = buckets[hash_bucket]; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port == port_num) break;
         }
-        BENCH_SINK_PTR(pt);
+        BENCH_SINK_PTR(port_entry);
     }
 }
 
@@ -526,31 +526,31 @@ BENCH(hash_lookup_miss, 5000000) {
         for (int i = 0; i < 10; i++) {
             entries[i].port = ports[i];
             entries[i].name = "service";
-            int h = HASHPORT(ports[i]);
-            entries[i].next = buckets[h];
-            buckets[h] = &entries[i];
+            int hash_bucket = HASHPORT(ports[i]);
+            entries[i].next = buckets[hash_bucket];
+            buckets[hash_bucket] = &entries[i];
         }
         initialized = 1;
     }
     /* Look up ports that don't exist */
     for (int i = 0; i < bf_iters; i++) {
-        int p = 60000 + (i % 1000);
-        int h = HASHPORT(p);
-        struct bench_porttab *pt;
-        for (pt = buckets[h]; pt; pt = pt->next) {
-            if (pt->port == p) break;
+        int port_num = 60000 + (i % 1000);
+        int hash_bucket = HASHPORT(port_num);
+        struct bench_porttab *port_entry;
+        for (port_entry = buckets[hash_bucket]; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port == port_num) break;
         }
-        BENCH_SINK_PTR(pt);
+        BENCH_SINK_PTR(port_entry);
     }
 }
 
 
-/* ===== PID binary search benchmark (comppid / qsort + bsearch) ===== */
-static int bench_comppid(const void *a, const void *b) {
-    int pa = *(const int *)a;
-    int pb = *(const int *)b;
-    if (pa < pb) return -1;
-    if (pa > pb) return 1;
+/* ===== PID binary search benchmark (compare_pids / qsort + bsearch) ===== */
+static int bench_compare_pids(const void *first, const void *second) {
+    int pid_a = *(const int *)first;
+    int pid_b = *(const int *)second;
+    if (pid_a < pid_b) return -1;
+    if (pid_a > pid_b) return 1;
     return 0;
 }
 
@@ -558,7 +558,7 @@ BENCH(pid_sort_1000, 50000) {
     static int pids[1000];
     for (int j = 0; j < bf_iters; j++) {
         for (int i = 0; i < 1000; i++) pids[i] = 1000 - i;
-        qsort(pids, 1000, sizeof(int), bench_comppid);
+        qsort(pids, 1000, sizeof(int), bench_compare_pids);
         BENCH_SINK_INT(pids[0]);
     }
 }
@@ -572,7 +572,7 @@ BENCH(pid_bsearch_1000, 5000000) {
     }
     for (int i = 0; i < bf_iters; i++) {
         int key = (i % 1000) * 3;
-        int *found = (int *)bsearch(&key, pids, 1000, sizeof(int), bench_comppid);
+        int *found = (int *)bsearch(&key, pids, 1000, sizeof(int), bench_compare_pids);
         BENCH_SINK_PTR(found);
     }
 }
@@ -581,11 +581,11 @@ BENCH(pid_bsearch_1000, 5000000) {
 /* ===== Field ID lookup benchmark ===== */
 BENCH(field_id_lookup, 10000000) {
     char fields[] = "acdfginoprstunR";
-    int nf = (int)strlen(fields);
+    int num_fields = (int)strlen(fields);
     for (int i = 0; i < bf_iters; i++) {
-        char target = fields[i % nf];
+        char target = fields[i % num_fields];
         int found = 0;
-        for (int j = 0; j < nf; j++) {
+        for (int j = 0; j < num_fields; j++) {
             if (fields[j] == target) { found = 1; break; }
         }
         BENCH_SINK_INT(found);
@@ -619,11 +619,11 @@ BENCH(strcasecmp_proto, 10000000) {
 BENCH(readdir_dev, 1000) {
     for (int i = 0; i < bf_iters; i++) {
         int count = 0;
-        DIR *d = opendir("/dev");
-        if (d) {
-            struct dirent *e;
-            while ((e = readdir(d)) != NULL) count++;
-            closedir(d);
+        DIR *dir_handle = opendir("/dev");
+        if (dir_handle) {
+            struct dirent *dir_entry;
+            while ((dir_entry = readdir(dir_handle)) != NULL) count++;
+            closedir(dir_handle);
         }
         BENCH_SINK_INT(count);
     }
@@ -785,7 +785,7 @@ BENCH(bsearch_pid_scan_100, 5000000) {
     }
     for (int i = 0; i < bf_iters; i++) {
         int target = (i % 200) * 5;
-        int *found = (int *)bsearch(&target, pids, 100, sizeof(int), bench_comppid);
+        int *found = (int *)bsearch(&target, pids, 100, sizeof(int), bench_compare_pids);
         BENCH_SINK_PTR(found);
     }
 }
@@ -816,7 +816,7 @@ BENCH(bsearch_pid_scan_1000, 5000000) {
     }
     for (int i = 0; i < bf_iters; i++) {
         int target = (i % 2000) * 5;
-        int *found = (int *)bsearch(&target, pids, 1000, sizeof(int), bench_comppid);
+        int *found = (int *)bsearch(&target, pids, 1000, sizeof(int), bench_compare_pids);
         BENCH_SINK_PTR(found);
     }
 }
@@ -1162,7 +1162,7 @@ BENCH(safestrprt_dirty, 500000) {
                 putc((int)c, f);
             else {
                 int cl;
-                char *r = bench_safepup((unsigned int)c, &cl);
+                char *r = bench_safe_print_unprintable((unsigned int)c, &cl);
                 fputs(r, f);
             }
         }
@@ -1469,11 +1469,11 @@ BENCH(hash_lookup_deep_chain, 2000000) {
     for (int i = 0; i < bf_iters; i++) {
         /* Search for entry near the end of the chain */
         int target = (i % 50) * 100;
-        struct bench_porttab *pt;
-        for (pt = head; pt; pt = pt->next) {
-            if (pt->port == target) break;
+        struct bench_porttab *port_entry;
+        for (port_entry = head; port_entry; port_entry = port_entry->next) {
+            if (port_entry->port == target) break;
         }
-        BENCH_SINK_PTR(pt);
+        BENCH_SINK_PTR(port_entry);
     }
 }
 

@@ -79,7 +79,7 @@ enter_vn_text(va, n)
     alloc_lfile(" txt", -1);
     Cfp = (struct file *) NULL;
     process_node(va);
-    if (Lf->sf)
+    if (CurrentLocalFile->sf)
         link_lfile();
     if (i >= Nv) {
 
@@ -93,7 +93,7 @@ enter_vn_text(va, n)
             Vp = (KA_T *) realloc((MALLOC_P *) Vp, (MALLOC_S)(Nv * sizeof(KA_T)));
         if (!Vp) {
             (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                           Pn, Lp->pid);
+                           ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
     }
@@ -156,12 +156,12 @@ gather_proc_info() {
  * conditional skipping of regular file; i.e., regular files will be skipped
  * unless they belong to a process selected by one of the specified options.
  */
-    if (Selflags & SELNW) {
+    if (SelectionFlags & SELNW) {
 
         /*
          * Some network files selection options have been specified.
          */
-        if (Fand || !(Selflags & ~SELNW)) {
+        if (OptAndSelection || !(SelectionFlags & ~SELNW)) {
 
             /*
              * Selection ANDing or only network file options have been
@@ -181,7 +181,7 @@ gather_proc_info() {
              * If only ORed process selection options have been specified,
              * enable conditional file skipping and socket file only checking.
              */
-            if ((Selflags & SELFILE) || !(Selflags & SELPROC))
+            if ((SelectionFlags & SELFILE) || !(SelectionFlags & SELPROC))
                 cckreg = ckscko = 0;
             else
                 cckreg = ckscko = 1;
@@ -206,7 +206,7 @@ gather_proc_info() {
 
     {
         (void) fprintf(stderr, "%s: can't read process table: %s\n",
-                       Pn,
+                       ProgramName,
 
 #if    FREEBSDV < 2000
                        kvm_geterr()
@@ -239,7 +239,7 @@ gather_proc_info() {
         if (p->P_STAT == 0 || p->P_STAT == SZOMB)
             continue;
         pg.pg_id = 0;
-        if (Fpgid && p->P_PGID) {
+        if (OptProcessGroup && p->P_PGID) {
             if (kread((KA_T) p->P_PGID, (char *) &pg, sizeof(pg)))
                 continue;
         }
@@ -291,7 +291,7 @@ gather_proc_info() {
         }
         alloc_lproc(p->P_PID, pgid, ppid, (UID_ARG) uid, p->P_COMM,
                     (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
 
 #if    defined(P_ADDR)
         /*
@@ -307,7 +307,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) fd.fd_cdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -317,7 +317,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) fd.fd_rdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
 
@@ -329,7 +329,7 @@ gather_proc_info() {
             alloc_lfile("jld", -1);
             Cfp = (struct file *)NULL;
             process_node((KA_T)fd.fd_jdir);
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
             }
 #endif    /* FREEBSDV>=5000 */
@@ -352,7 +352,7 @@ gather_proc_info() {
                 ofb = (struct file **) realloc((MALLOC_P *) ofb, nb);
             if (!ofb) {
                 (void) fprintf(stderr, "%s: PID %d, no file * space\n",
-                               Pn, p->P_PID);
+                               ProgramName, p->P_PID);
                 Exit(1);
             }
             ofbb = nb;
@@ -361,7 +361,7 @@ gather_proc_info() {
             continue;
 
 #if    defined(HASFSTRUCT)
-        if (Fsv & FSV_FG) {
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
         nb = (MALLOC_S)(sizeof(char) * nf);
         if (nb > pofb) {
             if (!pof)
@@ -370,7 +370,7 @@ gather_proc_info() {
             pof = (char *)realloc((MALLOC_P *)pof, nb);
             if (!pof) {
             (void) fprintf(stderr,
-                "%s: PID %d, no file flag space\n", Pn, p->P_PID);
+                "%s: PID %d, no file flag space\n", ProgramName, p->P_PID);
             Exit(1);
             }
             pofb = nb;
@@ -387,11 +387,11 @@ gather_proc_info() {
             if (ofb[i]) {
                 alloc_lfile(NULL, i);
                 process_file((KA_T)(Cfp = ofb[i]));
-                if (Lf->sf) {
+                if (CurrentLocalFile->sf) {
 
 #if    defined(HASFSTRUCT)
-                    if (Fsv & FSV_FG)
-                        Lf->pof = (long)pof[i];
+                    if (OptFileStructValues & FSV_FILE_FLAGS)
+                        CurrentLocalFile->pof = (long)pof[i];
 #endif    /* defined(HASFSTRUCT) */
 
                     link_lfile();
@@ -421,15 +421,15 @@ get_kernel_access() {
 /*
  * Set name list file path.
  */
-    if (!Nmlst)
+    if (!NamelistFilePath)
 
 #if    defined(N_UNIX)
-        Nmlst = N_UNIX;
+        NamelistFilePath = N_UNIX;
 #else	/* !defined(N_UNIX) */
     {
-        if (!(Nmlst = get_nlist_path(1))) {
+        if (!(NamelistFilePath = get_nlist_path(1))) {
             (void) fprintf(stderr,
-                           "%s: can't get kernel name list path\n", Pn);
+                           "%s: can't get kernel name list path\n", ProgramName);
             Exit(1);
         }
     }
@@ -447,7 +447,7 @@ get_kernel_access() {
  * See if the non-KMEM memory and the name list files are readable.
  */
     if ((Memory && !is_readable(Memory, 1))
-        || (Nmlst && !is_readable(Nmlst, 1)))
+        || (NamelistFilePath && !is_readable(NamelistFilePath, 1)))
         Exit(1);
 #endif    /* defined(WILLDROPGID) */
 
@@ -456,15 +456,15 @@ get_kernel_access() {
  */
 
 #if    FREEBSDV < 2000
-    if (kvm_openfiles(Nmlst, Memory, NULL) == -1)
+    if (kvm_openfiles(NamelistFilePath, Memory, NULL) == -1)
 #else	/* FREEBSDV>=2000 */
-        if ((Kd = kvm_open(Nmlst, Memory, NULL, O_RDONLY, NULL)) == NULL)
+        if ((Kd = kvm_open(NamelistFilePath, Memory, NULL, O_RDONLY, NULL)) == NULL)
 #endif    /* FREEBSDV<2000 */
 
     {
         (void) fprintf(stderr,
                        "%s: kvm_open%s(execfile=%s, corefile=%s): %s\n",
-                       Pn,
+                       ProgramName,
 
 #if    FREEBSDV < 2000
                        "files",
@@ -472,7 +472,7 @@ get_kernel_access() {
                 "",
 #endif    /* FREEBSDV<2000 */
 
-                       Nmlst ? Nmlst : "default",
+                       NamelistFilePath ? NamelistFilePath : "default",
                        Memory ? Memory :
 
                        #if    defined(_PATH_MEM)
@@ -485,9 +485,9 @@ get_kernel_access() {
         Exit(1);
     }
     (void) build_Nl(Drive_Nl);
-    if (kvm_nlist(Kd, Nl) < 0) {
+    if (kvm_nlist(Kd, NlistTable) < 0) {
         (void) fprintf(stderr, "%s: can't read namelist from %s\n",
-                       Pn, Nmlst);
+                       ProgramName, NamelistFilePath);
         Exit(1);
     }
 
@@ -527,7 +527,7 @@ get_nlist_path(ap)
         if (!(bfc = (char *) malloc(bfl))) {
             (void) fprintf(stderr,
                            "%s: can't allocate %d bytes for boot file path: %s\n",
-                           Pn, bfl, bf);
+                           ProgramName, bfl, bf);
             Exit(1);
         }
         (void) snpf(bfc, bfl, "%s", bf);

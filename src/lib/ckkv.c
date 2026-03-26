@@ -60,30 +60,30 @@ ckkv(d, er, ev, ea)
 # if	defined(HASKERNIDCK)
     struct utsname u;
 
-    if (Fwarn)
+    if (OptWarnings)
         return;
 /*
  * Read the system information via uname(2).
  */
     if (uname(&u) < 0) {
         (void) fprintf(stderr, "%s: uname error: %s\n",
-        Pn, strerror(errno));
+        ProgramName, strerror(errno));
         Exit(1);
     }
     if (er && strcmp(er, u.release)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s release %s; this is %s.\n",
-        Pn, d, er, u.release);
+        ProgramName, d, er, u.release);
     }
     if (ev && strcmp(ev, u.version)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s version %s; this is %s.\n",
-        Pn, d, ev, u.version);
+        ProgramName, d, ev, u.version);
     }
     if (ea && strcmp(ea, u.machine)) {
         (void) fprintf(stderr,
         "%s: WARNING: compiled for %s architecture %s; this is %s.\n",
-        Pn, d, ea, u.machine);
+        ProgramName, d, ea, u.machine);
     }
 # endif	/* defined(HASKERNIDCK) */
 

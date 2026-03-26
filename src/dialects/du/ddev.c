@@ -109,17 +109,17 @@ printdevname(dev, rdev, f, nty)
 
 #endif  /* defined(HASDCACHE) */
 
-    if ((nty == N_CHR) && Clone && HAVECLONEMAJ && (*dev == DevDev)
+    if ((nty == N_CHR) && Clone && HAVECLONEMAJ && (*dev == DeviceOfDev)
         && (GET_MAJ_DEV(*rdev) == CLONEMAJ)) {
         for (c = Clone; c; c = c->next) {
-            if (Devtp[c->dx].rdev == *rdev) {
+            if (DeviceTable[c->dx].rdev == *rdev) {
 
 #if     defined(HASDCACHE)
-                if (DCunsafe && !Devtp[c->dx].v && !vfy_dev(&Devtp[c->dx]))
+                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
                 goto printdevname_again;
 #endif  /* defined(HASDCACHE) */
 
-                safestrprt(Devtp[c->dx].name, stdout, f);
+                safestrprt(DeviceTable[c->dx].name, stdout, f);
                 return (1);
             }
         }
@@ -145,11 +145,11 @@ printdevname(dev, rdev, f, nty)
 
 #if    defined(HASBLKDEV)
     if (nty == N_BLK)
-        dp = lkupbdev(&DevDev, rdev, 0, 0);
+        dp = lkupbdev(&DeviceOfDev, rdev, 0, 0);
     else
 #endif    /* defined(HASBLKDEV) */
 
-    dp = lkupdev(&DevDev, rdev, 0, 0);
+    dp = lkupdev(&DeviceOfDev, rdev, 0, 0);
     if (dp) {
 
         /*
@@ -162,7 +162,7 @@ printdevname(dev, rdev, f, nty)
         len = (int) (1 + strlen(ttl) + 1 + strlen(dp->name) + 1);
         if (!(cp = (char *) malloc((MALLOC_S)(len + 1)))) {
             (void) fprintf(stderr, "%s: no nma space for: (%s %s)\n",
-                           Pn, ttl, dp->name);
+                           ProgramName, ttl, dp->name);
             Exit(1);
         }
         (void) snpf(cp, len + 1, "(%s %s)", ttl, dp->name);
@@ -176,7 +176,7 @@ printdevname(dev, rdev, f, nty)
      * If the device cache is "unsafe" and we haven't found any match, reload
      * the device cache.
      */
-        if (DCunsafe) {
+        if (DevCacheUnsafe) {
             (void) rereaddev();
             goto printdevname_again;
         }
@@ -213,7 +213,7 @@ readdev(skip)
     MALLOC_S pl;
     struct stat sb;
 
-    if (Sdev)
+    if (SortedDevices)
         return;
 
 #if    defined(HASDCACHE)
@@ -221,7 +221,7 @@ readdev(skip)
      * Read device cache, as directed.
      */
         if (!skip) {
-            if (DCstate == 2 || DCstate == 3) {
+            if (DevCacheState == 2 || DevCacheState == 3) {
             if ((dcrd = read_dcache()) == 0)
                 return;
             }
@@ -229,38 +229,38 @@ readdev(skip)
             dcrd = 1;
 #endif    /* defined(HASDCACHE) */
 
-    Dstk = (char **) NULL;
-    Dstkn = Dstkx = 0;
+    DirStack = (char **) NULL;
+    DirStackAlloc = DirStackIndex = 0;
     (void) stkdir("/dev");
 /*
  * Unstack the next /dev or /dev/<subdirectory> directory.
  */
-    while (--Dstkx >= 0) {
-        if (!(dfp = OpenDir(Dstk[Dstkx]))) {
+    while (--DirStackIndex >= 0) {
+        if (!(dfp = OpenDir(DirStack[DirStackIndex]))) {
 
 #if    defined(WARNDEVACCESS)
-            if (!Fwarn) {
-                (void) fprintf(stderr, "%s: WARNING: can't open: ", Pn);
-                safestrprt(Dstk[Dstkx], stderr, 1);
+            if (!OptWarnings) {
+                (void) fprintf(stderr, "%s: WARNING: can't open: ", ProgramName);
+                safestrprt(DirStack[DirStackIndex], stderr, 1);
             }
 #endif    /* defined(WARNDEVACCESS) */
 
-            (void) free((FREE_P *) Dstk[Dstkx]);
-            Dstk[Dstkx] = (char *) NULL;
+            (void) free((FREE_P *) DirStack[DirStackIndex]);
+            DirStack[DirStackIndex] = (char *) NULL;
             continue;
         }
         if (path) {
             (void) free((FREE_P *) path);
             path = (char *) NULL;
         }
-        if (!(path = mkstrcat(Dstk[Dstkx], -1, "/", 1, (char *) NULL, -1,
+        if (!(path = mkstrcat(DirStack[DirStackIndex], -1, "/", 1, (char *) NULL, -1,
                               &pl))) {
-            (void) fprintf(stderr, "%s: no space for: ", Pn);
-            safestrprt(Dstk[Dstkx], stderr, 1);
+            (void) fprintf(stderr, "%s: no space for: ", ProgramName);
+            safestrprt(DirStack[DirStackIndex], stderr, 1);
             Exit(1);
         }
-        (void) free((FREE_P *) Dstk[Dstkx]);
-        Dstk[Dstkx] = (char *) NULL;
+        (void) free((FREE_P *) DirStack[DirStackIndex]);
+        DirStack[DirStackIndex] = (char *) NULL;
         /*
          * Scan the directory.
          */
@@ -276,7 +276,7 @@ readdev(skip)
             }
             if (!(fp = mkstrcat(path, (int) pl, dp->d_name, dp->d_namlen,
                                 (char *) NULL, -1, (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr, "%s: no space for: ", Pn);
+                (void) fprintf(stderr, "%s: no space for: ", ProgramName);
                 safestrprt(path, stderr, 0);
                 safestrprt(dp->d_name, stderr, 1);
                 Exit(1);
@@ -293,10 +293,10 @@ readdev(skip)
                     continue;
 
 #if    defined(WARNDEVACCESS)
-                if (!Fwarn) {
+                if (!OptWarnings) {
                 int errno_save = errno;
 
-                (void) fprintf(stderr, "%s: can't stat ", Pn);
+                (void) fprintf(stderr, "%s: can't stat ", ProgramName);
                 safestrprt(fp, stderr, 0);
                 (void) fprintf(stderr, ": %s\n", strerror(errno_save));
                 }
@@ -314,39 +314,39 @@ readdev(skip)
             if ((sb.st_mode & S_IFMT) == S_IFCHR) {
 
                 /*
-                 * Save character device information in Devtp[].
+                 * Save character device information in DeviceTable[].
                  */
-                if (i >= Ndev) {
-                    Ndev += DEVINCR;
-                    if (!Devtp)
-                        Devtp = (struct l_dev *) malloc(
-                                (MALLOC_S)(sizeof(struct l_dev) * Ndev));
+                if (i >= NumDevices) {
+                    NumDevices += DEVINCR;
+                    if (!DeviceTable)
+                        DeviceTable = (struct l_dev *) malloc(
+                                (MALLOC_S)(sizeof(struct l_dev) * NumDevices));
                     else
-                        Devtp = (struct l_dev *) realloc(
-                                (MALLOC_P *) Devtp,
-                                (MALLOC_S)(sizeof(struct l_dev) * Ndev));
-                    if (!Devtp) {
+                        DeviceTable = (struct l_dev *) realloc(
+                                (MALLOC_P *) DeviceTable,
+                                (MALLOC_S)(sizeof(struct l_dev) * NumDevices));
+                    if (!DeviceTable) {
                         (void) fprintf(stderr,
-                                       "%s: no space for character device\n", Pn);
+                                       "%s: no space for character device\n", ProgramName);
                         Exit(1);
                     }
                 }
-                Devtp[i].inode = (INODETYPE) sb.st_ino;
-                if (!(Devtp[i].name = mkstrcpy(fp, (MALLOC_S *) NULL))) {
-                    (void) fprintf(stderr, "%s: no space for: ", Pn);
+                DeviceTable[i].inode = (INODETYPE) sb.st_ino;
+                if (!(DeviceTable[i].name = mkstrcpy(fp, (MALLOC_S *) NULL))) {
+                    (void) fprintf(stderr, "%s: no space for: ", ProgramName);
                     safestrprt(fp, stderr, 1);
                     Exit(1);
                 }
-                Devtp[i].rdev = sb.st_rdev;
-                Devtp[i].v = 0;
+                DeviceTable[i].rdev = sb.st_rdev;
+                DeviceTable[i].v = 0;
                 /*
                  * Save clone device location.
                  */
                 if (HAVECLONEMAJ
-                    && GET_MAJ_DEV(Devtp[i].rdev) == CLONEMAJ) {
+                    && GET_MAJ_DEV(DeviceTable[i].rdev) == CLONEMAJ) {
                     if (!(c = (struct clone *) malloc(sizeof(struct clone)))) {
                         (void) fprintf(stderr,
-                                       "%s: no space for clone device: ", Pn);
+                                       "%s: no space for clone device: ", ProgramName);
                         safestrprt(fp, stderr, 1);
                         Exit(1);
                     }
@@ -361,28 +361,28 @@ readdev(skip)
             if ((sb.st_mode & S_IFMT) == S_IFBLK) {
 
             /*
-             * Save block device information in BDevtp[].
+             * Save block device information in BlockDeviceTable[].
              */
-                if (j >= BNdev) {
-                BNdev += DEVINCR;
-                if (!BDevtp)
-                    BDevtp = (struct l_dev *)malloc(
-                         (MALLOC_S)(sizeof(struct l_dev)*BNdev));
+                if (j >= BlockNumDevices) {
+                BlockNumDevices += DEVINCR;
+                if (!BlockDeviceTable)
+                    BlockDeviceTable = (struct l_dev *)malloc(
+                         (MALLOC_S)(sizeof(struct l_dev)*BlockNumDevices));
                 else
-                    BDevtp = (struct l_dev *)realloc(
-                         (MALLOC_P *)BDevtp,
-                         (MALLOC_S)(sizeof(struct l_dev)*BNdev));
-                if (!BDevtp) {
+                    BlockDeviceTable = (struct l_dev *)realloc(
+                         (MALLOC_P *)BlockDeviceTable,
+                         (MALLOC_S)(sizeof(struct l_dev)*BlockNumDevices));
+                if (!BlockDeviceTable) {
                     (void) fprintf(stderr,
-                    "%s: no space for block device\n", Pn);
+                    "%s: no space for block device\n", ProgramName);
                     Exit(1);
                 }
                 }
-                BDevtp[j].inode = (INODETYPE)sb.st_ino;
-                BDevtp[j].name = fp;
+                BlockDeviceTable[j].inode = (INODETYPE)sb.st_ino;
+                BlockDeviceTable[j].name = fp;
                 fp = (char *)NULL;
-                BDevtp[j].rdev = sb.st_rdev;
-                BDevtp[j].v = 0;
+                BlockDeviceTable[j].rdev = sb.st_rdev;
+                BlockDeviceTable[j].v = 0;
                 j++;
             }
 #endif    /* defined(HASBLKDEV) */
@@ -393,73 +393,73 @@ readdev(skip)
 /*
  * Free any allocated space.
  */
-    if (Dstk) {
-        (void) free((FREE_P *) Dstk);
-        Dstk = (char **) NULL;
-        Dstkn = Dstkx = 0;
+    if (DirStack) {
+        (void) free((FREE_P *) DirStack);
+        DirStack = (char **) NULL;
+        DirStackAlloc = DirStackIndex = 0;
     }
     if (fp)
         (void) free((FREE_P *) fp);
     if (path)
         (void) free((FREE_P *) path);
 /*
- * Reduce the BDevtp[] (optional) and Devtp[] tables to their minimum
+ * Reduce the BlockDeviceTable[] (optional) and DeviceTable[] tables to their minimum
  * sizes; allocate and build sort pointer lists; and sort the tables by
  * device number.
  */
 
 #if    defined(HASBLKDEV)
-    if (BNdev) {
-        if (BNdev > j) {
-        BNdev = j;
-        BDevtp = (struct l_dev *)realloc((MALLOC_P *)BDevtp,
-             (MALLOC_S)(sizeof(struct l_dev) * BNdev));
+    if (BlockNumDevices) {
+        if (BlockNumDevices > j) {
+        BlockNumDevices = j;
+        BlockDeviceTable = (struct l_dev *)realloc((MALLOC_P *)BlockDeviceTable,
+             (MALLOC_S)(sizeof(struct l_dev) * BlockNumDevices));
         }
-        if (!(BSdev = (struct l_dev **)malloc(
-         (MALLOC_S)(sizeof(struct l_dev *) * BNdev))))
+        if (!(BlockSortedDevices = (struct l_dev **)malloc(
+         (MALLOC_S)(sizeof(struct l_dev *) * BlockNumDevices))))
         {
         (void) fprintf(stderr,
-            "%s: no space for block device sort pointers\n", Pn);
+            "%s: no space for block device sort pointers\n", ProgramName);
         Exit(1);
         }
-        for (j = 0; j < BNdev; j++) {
-        BSdev[j] = &BDevtp[j];
+        for (j = 0; j < BlockNumDevices; j++) {
+        BlockSortedDevices[j] = &BlockDeviceTable[j];
         }
-        (void) qsort((QSORT_P *)BSdev, (size_t)BNdev,
+        (void) qsort((QSORT_P *)BlockSortedDevices, (size_t)BlockNumDevices,
         (size_t)sizeof(struct l_dev *), compdev);
-        BNdev = rmdupdev(&BSdev, BNdev, "block");
+        BlockNumDevices = rmdupdev(&BlockSortedDevices, BlockNumDevices, "block");
     }
 
 # if	!defined(NOWARNBLKDEV)
     else {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
-            "%s: WARNING: no block devices found\n", Pn);
+            "%s: WARNING: no block devices found\n", ProgramName);
     }
 # endif	/* !defined(NOWARNBLKDEV) */
 #endif    /* defined(HASBLKDEV) */
 
-    if (Ndev) {
-        if (Ndev > i) {
-            Ndev = i;
-            Devtp = (struct l_dev *) realloc((MALLOC_P *) Devtp,
-                                             (MALLOC_S)(sizeof(struct l_dev) * Ndev));
+    if (NumDevices) {
+        if (NumDevices > i) {
+            NumDevices = i;
+            DeviceTable = (struct l_dev *) realloc((MALLOC_P *) DeviceTable,
+                                             (MALLOC_S)(sizeof(struct l_dev) * NumDevices));
         }
-        if (!(Sdev = (struct l_dev **) malloc(
-                (MALLOC_S)(sizeof(struct l_dev *) * Ndev)))) {
+        if (!(SortedDevices = (struct l_dev **) malloc(
+                (MALLOC_S)(sizeof(struct l_dev *) * NumDevices)))) {
             (void) fprintf(stderr,
-                           "%s: no space for character device sort pointers\n", Pn);
+                           "%s: no space for character device sort pointers\n", ProgramName);
             Exit(1);
         }
-        for (i = 0; i < Ndev; i++) {
-            Sdev[i] = &Devtp[i];
+        for (i = 0; i < NumDevices; i++) {
+            SortedDevices[i] = &DeviceTable[i];
         }
-        (void) qsort((QSORT_P *) Sdev, (size_t) Ndev,
+        (void) qsort((QSORT_P *) SortedDevices, (size_t) NumDevices,
                      (size_t)
         sizeof(struct l_dev *), compdev);
-        Ndev = rmdupdev(&Sdev, Ndev, "char");
+        NumDevices = rmdupdev(&SortedDevices, NumDevices, "char");
     } else {
-        (void) fprintf(stderr, "%s: no character devices found\n", Pn);
+        (void) fprintf(stderr, "%s: no character devices found\n", ProgramName);
         Exit(1);
     }
 
@@ -467,7 +467,7 @@ readdev(skip)
     /*
      * Write device cache file, as required.
      */
-        if (DCstate == 1 || (DCstate == 3 && dcrd))
+        if (DevCacheState == 1 || (DevCacheState == 3 && dcrd))
             write_dcache();
 #endif    /* defined(HASDCACHE) */
 
@@ -580,9 +580,9 @@ OpenDir(dir)
         if (statsafely(dir, &Dirsb)) {
         int en = errno;
 
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
-            "%s: WARNING: can't statsafely(", Pn);
+            "%s: WARNING: can't statsafely(", ProgramName);
             safestrprt(dir, stderr, 0);
             (void) fprintf(stderr, "): %s\n", strerror(en));
         }
@@ -662,7 +662,7 @@ rereaddev()
 # endif	/* defined(DCACHE_CLR) */
 
     readdev(1);
-    DCunsafe = 0;
+    DevCacheUnsafe = 0;
 }
 #endif    /* defined(HASDCACHE) */
 
@@ -692,7 +692,7 @@ rmdupdev(dp, n, nm)
             for (c = Clone, cp = (struct clone *) NULL;
                  c;
                  cp = c, c = c->next) {
-                if (&Devtp[c->dx] != p[k])
+                if (&DeviceTable[c->dx] != p[k])
                     continue;
                 if (!cp)
                     Clone = c->next;
@@ -712,7 +712,7 @@ rmdupdev(dp, n, nm)
     if (!(*dp = (struct l_dev **) realloc((MALLOC_P * ) * dp,
                                           (MALLOC_S)(j * sizeof(struct l_dev *))))) {
         (void) fprintf(stderr, "%s: can't realloc %s device pointers\n",
-                       Pn, nm);
+                       ProgramName, nm);
         Exit(1);
     }
     return (j);
@@ -721,7 +721,7 @@ rmdupdev(dp, n, nm)
 
 #if    defined(HASDCACHE)
 /*
- * vfy_dev() - verify a device table entry (usually when DCunsafe == 1)
+ * vfy_dev() - verify a device table entry (usually when DevCacheUnsafe == 1)
  *
  * Note: rereads entire device table when an entry can't be verified.
  */
@@ -732,7 +732,7 @@ vfy_dev(dp)
 {
     struct stat sb;
 
-    if (!DCunsafe || dp->v)
+    if (!DevCacheUnsafe || dp->v)
         return(1);
 
 #if	defined(USE_STAT)

@@ -138,13 +138,13 @@ process_kqueue(ka)
 {
     struct kqueue kq;		/* kqueue structure */
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "KQUEUE");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "KQUEUE");
     enter_dev_ch(print_kptr(ka, (char *)NULL, 0));
     if (!ka || kread(ka, (char *)&kq, sizeof(kq)))
         return;
-    (void) snpf(Namech, Namechl, "count=%d, state=%#x", kq.kq_count,
+    (void) snpf(NameChars, NameCharsLength, "count=%d, state=%#x", kq.kq_count,
         kq.kq_state);
-    enter_nm(Namech);
+    enter_nm(NameChars);
 }
 #endif    /* defined(HASKQUEUE) */
 
@@ -158,9 +158,9 @@ void
 process_pipe(pa)
     KA_T pa;			/* pipe structure address */
 {
-    (void) snpf(Lf->type, sizeof(Lf->type), "PIPE");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PIPE");
     enter_dev_ch(print_kptr(pa, (char *)NULL, 0));
-    Namech[0] = '\0';
+    NameChars[0] = '\0';
 }
 #endif    /* DARWINV>=800 */
 
@@ -177,16 +177,16 @@ process_psxsem(pa)
     struct pseminfo pi;
      struct psemnode pn;
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "PSXSEM");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PSXSEM");
     enter_dev_ch(print_kptr(pa, (char *)NULL, 0));
-    if (!Fsize)
-        Lf->off_def = 1;
+    if (!OptSize)
+        CurrentLocalFile->off_def = 1;
     if (pa && !kread(pa, (char *)&pn, sizeof(pn))) {
         if (pn.pinfo && !kread((KA_T)pn.pinfo, (char *)&pi, sizeof(pi))) {
         if (pi.psem_name[0]) {
             pi.psem_name[PSEMNAMLEN] = '\0';
-            (void) snpf(Namech, Namechl, "%s", pi.psem_name);
-            enter_nm(Namech);
+            (void) snpf(NameChars, NameCharsLength, "%s", pi.psem_name);
+            enter_nm(NameChars);
         }
         }
     }
@@ -207,27 +207,27 @@ process_psxshm(pa)
     struct pshmnode pn;
     int pns = 0;
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "PSXSHM");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "PSXSHM");
     enter_dev_ch(print_kptr(pa, (char *)NULL, 0));
     if (pa && !kread(pa, (char *)&pn, sizeof(pn))) {
         pns = 1;
         if (pn.pinfo && !kread((KA_T)pn.pinfo, (char *)&pi, sizeof(pi))) {
         if (pi.pshm_name[0]) {
             pi.pshm_name[PSEMNAMLEN] = '\0';
-            (void) snpf(Namech, Namechl, "%s", pi.pshm_name);
-            enter_nm(Namech);
+            (void) snpf(NameChars, NameCharsLength, "%s", pi.pshm_name);
+            enter_nm(NameChars);
         } else if (pi.pshm_memobject) {
-            (void) snpf(Namech, Namechl, "obj=%s",
+            (void) snpf(NameChars, NameCharsLength, "obj=%s",
             print_kptr((KA_T)pi.pshm_memobject, (char *)NULL, 0));
-            enter_nm(Namech);
+            enter_nm(NameChars);
         }
         }
     }
-    if (Foffset)
-        Lf->off_def = 1;
+    if (OptOffset)
+        CurrentLocalFile->off_def = 1;
     else if (pns) {
-        Lf->sz = (SZOFFTYPE)pn.map_size;
-        Lf->sz_def = 1;
+        CurrentLocalFile->sz = (SZOFFTYPE)pn.map_size;
+        CurrentLocalFile->sz_def = 1;
     }
 }
 #endif    /* defined(HASPSXSHM) */
@@ -274,58 +274,58 @@ process_file(fp)
 
 #if    DARWINV < 800
     if (kread((KA_T) fp, (char *) &f, sizeof(f))) {
-        (void) snpf(Namech, Namechl, "can't read file struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
                     print_kptr(fp, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 #else	/* DARWINV>=800 */
     if (kread((KA_T)fp, (char *)&fileproc, sizeof(fileproc))) {
-        (void) snpf(Namech, Namechl, "can't read fileproc struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read fileproc struct from %s",
         print_kptr(fp, (char *)NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
     if (kread((KA_T)fileproc.f_fglob, (char *)&f, sizeof(f))) {
-        (void) snpf(Namech, Namechl, "can't read fileglob struct from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read fileglob struct from %s",
         print_kptr((KA_T)fileproc.f_fglob, (char *)NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 #endif    /* DARWINV>=800 */
 
-    Lf->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
     if (f.f_count) {
 
         /*
          * Construct access code.
          */
         if ((flag = (f.f_flag & (FREAD | FWRITE))) == FREAD)
-            Lf->access = 'r';
+            CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
-            Lf->access = 'w';
+            CurrentLocalFile->access = 'w';
         else if (flag == (FREAD | FWRITE))
-            Lf->access = 'u';
+            CurrentLocalFile->access = 'u';
 
 #if    defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (Fsv & FSV_CT) {
-            Lf->fct = (long)f.f_count;
-            Lf->fsv |= FSV_CT;
+            if (OptFileStructValues & FSV_FILE_COUNT) {
+            CurrentLocalFile->fct = (long)f.f_count;
+            CurrentLocalFile->fsv |= FSV_FILE_COUNT;
             }
-            if (Fsv & FSV_FA) {
-            Lf->fsa = fp;
-            Lf->fsv |= FSV_FA;
+            if (OptFileStructValues & FSV_FILE_ADDR) {
+            CurrentLocalFile->fsa = fp;
+            CurrentLocalFile->fsv |= FSV_FILE_ADDR;
             }
-            if (Fsv & FSV_FG) {
-            Lf->ffg = (long)f.f_flag;
-            Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+            CurrentLocalFile->ffg = (long)f.f_flag;
+            CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
-            if (Fsv & FSV_NI) {
-            Lf->fna = (KA_T)f.f_data;
-            Lf->fsv |= FSV_NI;
+            if (OptFileStructValues & FSV_NODE_ID) {
+            CurrentLocalFile->fna = (KA_T)f.f_data;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
             }
 #endif    /* defined(HASFSTRUCT) */
 
@@ -338,14 +338,14 @@ process_file(fp)
 #if    defined(DTYPE_PIPE)
             case DTYPE_PIPE:
 # if	defined(HASPIPEFN)
-            if (!Selinet)
+            if (!SelectInetOnly)
                 HASPIPEFN((KA_T)f.f_data);
 # endif	/* defined(HASPIPEFN) */
             return;
 #endif    /* defined(DTYPE_PIPE) */
 
             case DTYPE_VNODE:
-                if (!Selinet)
+                if (!SelectInetOnly)
                     process_node((KA_T) f.f_data);
                 return;
             case DTYPE_SOCKET:
@@ -378,10 +378,10 @@ process_file(fp)
 
             default:
                 if (f.f_type || f.f_ops) {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "%s file struct, ty=%#x, op=%p",
                                 print_kptr(fp, (char *) NULL, 0), f.f_type, f.f_ops);
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                     return;
                 }
         }

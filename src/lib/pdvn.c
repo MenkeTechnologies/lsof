@@ -99,20 +99,20 @@ printdevname_again:
  * Search for clone if this is a character device on the same device as
  * /dev (or /devices).
  */
-    if ((nty == N_CHR) && Lf->is_stream && Clone && (*dev == DevDev)) {
+    if ((nty == N_CHR) && CurrentLocalFile->is_stream && Clone && (*dev == DeviceOfDev)) {
         r = 0;	/* Don't let lkupdev() rebuild the device cache,
 			 * because when it has been rebuilt we want to
 			 * search again for clones. */
         readdev(0);
         for (c = Clone; c; c = c->next) {
-        if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(Devtp[c->dx].rdev)) {
+        if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(DeviceTable[c->dx].rdev)) {
 
 #  if	defined(HASDCACHE)
-            if (DCunsafe && !Devtp[c->dx].v && !vfy_dev(&Devtp[c->dx]))
+            if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
             goto printdevname_again;
 #  endif	/* defined(HASDCACHE) */
 
-            safestrprt(Devtp[c->dx].name, stdout, f);
+            safestrprt(DeviceTable[c->dx].name, stdout, f);
             return(1);
         }
         }
@@ -140,11 +140,11 @@ printdevname_again:
 
 # if	defined(HASBLKDEV)
     if (nty == N_BLK)
-        dp = lkupbdev(&DevDev, rdev, 0, r);
+        dp = lkupbdev(&DeviceOfDev, rdev, 0, r);
     else
 # endif	/* defined(HASBLKDEV) */
 
-    dp = lkupdev(&DevDev, rdev, 0, r);
+    dp = lkupdev(&DeviceOfDev, rdev, 0, r);
     if (dp) {
     /*
      * A match was found.  Record it as a name column addition.
@@ -156,7 +156,7 @@ printdevname_again:
         len = (int)(1 + strlen(ttl) + 1 + strlen(dp->name) + 1);
         if (!(cp = (char *)malloc((MALLOC_S)(len + 1)))) {
         (void) fprintf(stderr, "%s: no nma space for: (%s %s)\n",
-            Pn, ttl, dp->name);
+            ProgramName, ttl, dp->name);
         Exit(1);
         }
         (void) snpf(cp, len + 1, "(%s %s)", ttl, dp->name);
@@ -172,7 +172,7 @@ printdevname_again:
  * If rebuilding the device cache was suppressed and the device cache is
  * "unsafe," rebuild it.
  */
-    if (!r && DCunsafe) {
+    if (!r && DevCacheUnsafe) {
         (void) rereaddev();
         goto printdevname_again;
     }

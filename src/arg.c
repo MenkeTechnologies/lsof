@@ -45,14 +45,14 @@ static char *rcsid = "$Id: arg.c,v 1.50 2011/09/07 19:13:49 abe Exp $";
  * Local definitions
  */
 
-#define    CMDRXINCR    32        /* CmdRx[] allocation increment */
+#define    CMDRXINCR    32        /* CommandRegexTable[] allocation increment */
 
 
 /*
  * Local static variables
  */
 
-static int NCmdRxA = 0;            /* space allocated to CmdRx[] */
+static int NCmdRxA = 0;            /* space allocated to CommandRegexTable[] */
 
 
 /*
@@ -87,7 +87,7 @@ ckfd_range(first, dash, last, lo, hi)
  * See if the range character pointers make sense.
  */
     if (first >= dash || dash >= last) {
-        (void) fprintf(stderr, "%s: illegal FD range for -d: ", Pn);
+        (void) fprintf(stderr, "%s: illegal FD range for -d: ", ProgramName);
         safestrprt(first, stderr, 1);
         return (1);
     }
@@ -99,7 +99,7 @@ ckfd_range(first, dash, last, lo, hi)
 
             FD_range_nondigit:
 
-            (void) fprintf(stderr, "%s: non-digit in -d FD range: ", Pn);
+            (void) fprintf(stderr, "%s: non-digit in -d FD range: ", ProgramName);
             safestrprt(first, stderr, 1);
             return (1);
         }
@@ -111,7 +111,7 @@ ckfd_range(first, dash, last, lo, hi)
         *hi = (*hi * 10) + (int) (*cp - '0');
     }
     if (*lo >= *hi) {
-        (void) fprintf(stderr, "%s: -d FD range's low >= its high: ", Pn);
+        (void) fprintf(stderr, "%s: -d FD range's low >= its high: ", ProgramName);
         safestrprt(first, stderr, 1);
         return (1);
     }
@@ -128,7 +128,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
         int i;            /* first file argument index */
         int ac;            /* argument count */
         char *av[];        /* argument vector */
-        int fv;            /* Ffilesys value (real or temporary) */
+        int fv;            /* OptFileSystem value (real or temporary) */
         int rs;            /* Readlink() status if argument count == 1:
 				 *	0 = undone; 1 = done */
         struct stat *sbp;    /* if non-NULL, pointer to stat(2) buffer
@@ -165,7 +165,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             path = av[i];
         else {
             if (!(path = Readlink(av[i]))) {
-                ErrStat = 1;
+                PathStatErrorCount = 1;
                 continue;
             }
         }
@@ -182,7 +182,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             else {
                 if (!(ap = (char *) malloc((MALLOC_S)(k + 1)))) {
                     (void) fprintf(stderr, "%s: no space for copy of %s\n",
-                                   Pn, path);
+                                   ProgramName, path);
                     Exit(1);
                 }
                 (void) strncpy(ap, path, k);
@@ -237,16 +237,16 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                     mmp = (struct mounts **) malloc(l);
                 if (!mmp) {
                     (void) fprintf(stderr,
-                                   "%s: no space for mount pointers\n", Pn);
+                                   "%s: no space for mount pointers\n", ProgramName);
                     Exit(1);
                 }
             }
             mmp[nm++] = mp;
         }
         if (fv == 2 && nm == 0) {
-            (void) fprintf(stderr, "%s: not a file system: ", Pn);
+            (void) fprintf(stderr, "%s: not a file system: ", ProgramName);
             safestrprt(av[i], stderr, 1);
-            ErrStat = 1;
+            PathStatErrorCount = 1;
             if (path != av[i])
                 (void) free((FREE_P *) path);
             continue;
@@ -262,11 +262,11 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
              * Allocate an sfile structure and fill in the type and link.
              */
             if (!(sfp = (struct sfile *) malloc(sizeof(struct sfile)))) {
-                (void) fprintf(stderr, "%s: no space for files\n", Pn);
+                (void) fprintf(stderr, "%s: no space for files\n", ProgramName);
                 Exit(1);
             }
-            sfp->next = Sfile;
-            Sfile = sfp;
+            sfp->next = SearchFileChain;
+            SearchFileChain = sfp;
             sfp->f = 0;
             if ((sfp->type = ftype)) {
 
@@ -285,12 +285,12 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                     if (statsafely(fnm, &sb) != 0) {
                         int en = errno;
 
-                        (void) fprintf(stderr, "%s: status error on ", Pn);
+                        (void) fprintf(stderr, "%s: status error on ", ProgramName);
                         safestrprt(fnm, stderr, 0);
                         (void) fprintf(stderr, ": %s\n", strerror(en));
-                        Sfile = sfp->next;
+                        SearchFileChain = sfp->next;
                         (void) free((FREE_P *) sfp);
-                        ErrStat = 1;
+                        PathStatErrorCount = 1;
                         if (path != av[i])
                             (void) free((FREE_P *) path);
                         continue;
@@ -335,9 +335,9 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                  * abandon the sfile entry.
                  */
                     if (mp == Mtprocfs) {
-                    Sfile = sfp->next;
+                    SearchFileChain = sfp->next;
                     (void) free((FREE_P *)sfp);
-                    Procsrch = 1;
+                    ProcFsSearching = 1;
                     continue;
                     }
 #endif    /* defined(HASPROCFS) */
@@ -369,7 +369,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             } else {
                 if (!(sfp->name = mkstrcpy(fnm, (MALLOC_S *) NULL))) {
                     (void) fprintf(stderr,
-                                   "%s: no space for file name: ", Pn);
+                                   "%s: no space for file name: ", ProgramName);
                     safestrprt(fnm, stderr, 1);
                     Exit(1);
                 }
@@ -389,7 +389,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             } else {
                 if (!(sfp->devnm = mkstrcpy(fsnm, (MALLOC_S *) NULL))) {
                     (void) fprintf(stderr,
-                                   "%s: no space for file system name: ", Pn);
+                                   "%s: no space for file system name: ", ProgramName);
                     safestrprt(fsnm, stderr, 1);
                     Exit(1);
                 }
@@ -401,7 +401,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             }
             if (!(sfp->aname = mkstrcpy(av[i], (MALLOC_S *) NULL))) {
                 (void) fprintf(stderr,
-                               "%s: no space for argument file name: ", Pn);
+                               "%s: no space for argument file name: ", ProgramName);
                 safestrprt(av[i], stderr, 1);
                 Exit(1);
             }
@@ -410,7 +410,7 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             /*
              * See if this is an individual member of a proc file system.
              */
-            if (!Mtprocfs || Procsrch)
+            if (!Mtprocfs || ProcFsSearching)
                 continue;
 
 # if	defined(HASFSTYPE) && HASFSTYPE==1
@@ -453,24 +453,24 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
                      sizeof(struct procfsid))))
             {
                 (void) fprintf(stderr, "%s: no space for %s ID: ",
-                Pn, Mtprocfs->dir);
+                ProgramName, Mtprocfs->dir);
                 safestrprt(path, stderr, 1);
                 Exit(1);
             }
             pfi->pid = pid;
             pfi->f = 0;
             pfi->nm = sfp->aname;
-            pfi->next = Procfsid;
-            Procfsid = pfi;
+            pfi->next = ProcFsIdTable;
+            ProcFsIdTable = pfi;
 
 # if	defined(HASPINODEN)
             pfi->inode = (INODETYPE)sfp->i;
 # endif	/* defined(HASPINODEN) */
 
             /*
-             * Abandon the Sfile entry, lest it be used in is_file_named().
+             * Abandon the SearchFileChain entry, lest it be used in is_file_named().
              */
-            Sfile = sfp->next;
+            SearchFileChain = sfp->next;
             if (ad)
                 (void) free((FREE_P *)sfp->devnm);
             if (an)
@@ -501,7 +501,7 @@ ctrl_dcache(c)
 
     if (!c) {
         (void) fprintf(stderr,
-        "%s: no device cache option control string\n", Pn);
+        "%s: no device cache option control string\n", ProgramName);
         return(1);
     }
 /*
@@ -510,58 +510,58 @@ ctrl_dcache(c)
     switch (*c) {
     case '?':
         if (*(c+1) != '\0') {
-        (void) fprintf(stderr, "%s: nothing should follow -D?\n", Pn);
+        (void) fprintf(stderr, "%s: nothing should follow -D?\n", ProgramName);
         return(1);
         }
-        DChelp = 1;
+        DevCacheHelp = 1;
         return(0);
     case 'b':
     case 'B':
-        if (Setuidroot
+        if (SetuidRootState
 
 #if	!defined(WILLDROPGID)
-        ||  Myuid
+        ||  MyRealUid
 #endif	/* !defined(WILLDROPGID) */
 
         )
         rc = 1;
         else
-        DCstate = 1;
+        DevCacheState = 1;
         break;
     case 'r':
     case 'R':
-        if (Setuidroot && *(c+1))
+        if (SetuidRootState && *(c+1))
         rc = 1;
         else
-        DCstate = 2;
+        DevCacheState = 2;
         break;
     case 'u':
     case 'U':
-        if (Setuidroot
+        if (SetuidRootState
 
 #if	!defined(WILLDROPGID)
-        ||  Myuid
+        ||  MyRealUid
 #endif	/* !defined(WILLDROPGID) */
 
         )
         rc = 1;
         else
-        DCstate = 3;
+        DevCacheState = 3;
         break;
     case 'i':
     case 'I':
         if (*(c+1) == '\0') {
-        DCstate = 0;
+        DevCacheState = 0;
         return(0);
         }
         /* fall through */
     default:
-        (void) fprintf(stderr, "%s: unknown -D option: ", Pn);
+        (void) fprintf(stderr, "%s: unknown -D option: ", ProgramName);
         safestrprt(c, stderr, 1);
         return(1);
     }
     if (rc) {
-        (void) fprintf(stderr, "%s: -D option restricted to root: ", Pn);
+        (void) fprintf(stderr, "%s: -D option restricted to root: ", ProgramName);
         safestrprt(c, stderr, 1);
         return(1);
     }
@@ -571,8 +571,8 @@ ctrl_dcache(c)
     for (c++; *c && (*c == ' ' || *c == '\t'); c++)
         ;
     if (strlen(c)) {
-        if (!(DCpathArg = mkstrcpy(c, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr, "%s: no space for -D path: ", Pn);
+        if (!(DevCachePathArg = mkstrcpy(c, (MALLOC_S *)NULL))) {
+        (void) fprintf(stderr, "%s: no space for -D path: ", ProgramName);
         safestrprt(c, stderr, 1);
         Exit(1);
         }
@@ -603,7 +603,7 @@ enter_cmd_rx(x)
  * Make sure the supplied string starts a regular expression.
  */
     if (!*x || (*x != '/')) {
-        (void) fprintf(stderr, "%s: regexp doesn't begin with '/': ", Pn);
+        (void) fprintf(stderr, "%s: regexp doesn't begin with '/': ", ProgramName);
         if (x)
             safestrprt(x, stderr, 1);
         return (1);
@@ -617,7 +617,7 @@ enter_cmd_rx(x)
             break;
     }
     if (*xe != '/') {
-        (void) fprintf(stderr, "%s: regexp doesn't end with '/': ", Pn);
+        (void) fprintf(stderr, "%s: regexp doesn't end with '/': ", ProgramName);
         safestrprt(x, stderr, 1);
         return (1);
     }
@@ -630,14 +630,14 @@ enter_cmd_rx(x)
                 if (++bmod > 1) {
                     if (bmod == 2) {
                         (void) fprintf(stderr,
-                                       "%s: b regexp modifier already used: ", Pn);
+                                       "%s: b regexp modifier already used: ", ProgramName);
                         safestrprt(x, stderr, 1);
                     }
                     i = 1;
                 } else if (xmod) {
                     if (++bxmod == 1) {
                         (void) fprintf(stderr,
-                                       "%s: b and x regexp modifiers conflict: ", Pn);
+                                       "%s: b and x regexp modifiers conflict: ", ProgramName);
                         safestrprt(x, stderr, 1);
                     }
                     i = 1;
@@ -648,7 +648,7 @@ enter_cmd_rx(x)
                 if (++imod > 1) {
                     if (imod == 2) {
                         (void) fprintf(stderr,
-                                       "%s: i regexp modifier already used: ", Pn);
+                                       "%s: i regexp modifier already used: ", ProgramName);
                         safestrprt(x, stderr, 1);
                     }
                     i = 1;
@@ -659,14 +659,14 @@ enter_cmd_rx(x)
                 if (++xmod > 1) {
                     if (xmod == 2) {
                         (void) fprintf(stderr,
-                                       "%s: x regexp modifier already used: ", Pn);
+                                       "%s: x regexp modifier already used: ", ProgramName);
                         safestrprt(x, stderr, 1);
                     }
                     i = 1;
                 } else if (bmod) {
                     if (++bxmod == 1) {
                         (void) fprintf(stderr,
-                                       "%s: b and x regexp modifiers conflict: ", Pn);
+                                       "%s: b and x regexp modifiers conflict: ", ProgramName);
                         safestrprt(x, stderr, 1);
                     }
                     i = 1;
@@ -675,7 +675,7 @@ enter_cmd_rx(x)
                 break;
             default:
                 (void) fprintf(stderr, "%s: invalid regexp modifier: %c\n",
-                               Pn, (int) *xm);
+                               ProgramName, (int) *xm);
                 i = 1;
         }
     }
@@ -686,46 +686,46 @@ enter_cmd_rx(x)
  */
     xl = (MALLOC_S)(xe - xb);
     if (!(xp = (char *) malloc(xl + 1))) {
-        (void) fprintf(stderr, "%s: no regexp space for: ", Pn);
+        (void) fprintf(stderr, "%s: no regexp space for: ", ProgramName);
         safestrprt(x, stderr, 1);
         Exit(1);
     }
     (void) strncpy(xp, xb, xl);
     xp[(int) xl] = '\0';
 /*
- * Assign a new CmdRx[] slot for this expression.
+ * Assign a new CommandRegexTable[] slot for this expression.
  */
-    if (NCmdRxA >= NCmdRxU) {
+    if (NCmdRxA >= NumCommandRegexUsed) {
 
         /*
-         * More CmdRx[] space must be assigned.
+         * More CommandRegexTable[] space must be assigned.
          */
         NCmdRxA += CMDRXINCR;
         xl = (MALLOC_S)(NCmdRxA * sizeof(lsof_rx_t));
-        if (CmdRx) {
-            lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CmdRx, xl);
+        if (CommandRegexTable) {
+            lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CommandRegexTable, xl);
             if (!tmp) {
-                (void) free((FREE_P *) CmdRx);
-                CmdRx = (lsof_rx_t *) NULL;
+                (void) free((FREE_P *) CommandRegexTable);
+                CommandRegexTable = (lsof_rx_t *) NULL;
             } else
-                CmdRx = tmp;
+                CommandRegexTable = tmp;
         } else
-            CmdRx = (lsof_rx_t *) malloc(xl);
-        if (!CmdRx) {
-            (void) fprintf(stderr, "%s: no space for regexp: ", Pn);
+            CommandRegexTable = (lsof_rx_t *) malloc(xl);
+        if (!CommandRegexTable) {
+            (void) fprintf(stderr, "%s: no space for regexp: ", ProgramName);
             safestrprt(x, stderr, 1);
             Exit(1);
         }
     }
-    i = NCmdRxU;
-    CmdRx[i].exp = xp;
+    i = NumCommandRegexUsed;
+    CommandRegexTable[i].exp = xp;
 /*
  * Compile the expression.
  */
-    if ((re = regcomp(&CmdRx[i].cx, xp, co))) {
-        (void) fprintf(stderr, "%s: regexp error: ", Pn);
+    if ((re = regcomp(&CommandRegexTable[i].cx, xp, co))) {
+        (void) fprintf(stderr, "%s: regexp error: ", ProgramName);
         safestrprt(x, stderr, 0);
-        (void) regerror(re, &CmdRx[i].cx, &reb[0], sizeof(reb));
+        (void) regerror(re, &CommandRegexTable[i].cx, &reb[0], sizeof(reb));
         (void) fprintf(stderr, ": %s\n", reb);
         if (xp) {
             (void) free((FREE_P *) xp);
@@ -734,11 +734,11 @@ enter_cmd_rx(x)
         return (1);
     }
 /*
- * Complete the CmdRx[] table entry.
+ * Complete the CommandRegexTable[] table entry.
  */
-    CmdRx[i].mc = 0;
-    CmdRx[i].exp = xp;
-    NCmdRxU++;
+    CommandRegexTable[i].mc = 0;
+    CommandRegexTable[i].exp = xp;
+    NumCommandRegexUsed++;
     return (0);
 }
 
@@ -760,14 +760,14 @@ enter_efsys(e, rdlnk)
     char *path;			/* Readlink() of file system path */
 
     if (!e || (*e != '/')) {
-        if (!Fwarn)
+        if (!OptWarnings)
         (void) fprintf(stderr,
             "%s: -e not followed by a file system path: \"%s\"\n",
-            Pn, e);
+            ProgramName, e);
         return(1);
     }
     if (!(ec = mkstrcpy(e, (MALLOC_S *)NULL))) {
-        (void) fprintf(stderr, "%s: no space for -e string: ", Pn);
+        (void) fprintf(stderr, "%s: no space for -e string: ", ProgramName);
         safestrprt(e, stderr, 1);
         Exit(1);
     }
@@ -788,7 +788,7 @@ enter_efsys(e, rdlnk)
 /*
  * Enter file system path on list, avoiding duplicates.
  */
-    for (ep = Efsysl; ep; ep = ep->next) {
+    for (ep = ExcludedFileSysList; ep; ep = ep->next) {
        if (!strcmp(ep->path, path)) {
         if (path != ec)
             (void) free((FREE_P *) ec);
@@ -797,7 +797,7 @@ enter_efsys(e, rdlnk)
     }
     if (!(ep = (efsys_list_t *)malloc((MALLOC_S)(sizeof(efsys_list_t))))) {
        (void) fprintf(stderr, "%s: no space for \"-e %s\" entry\n",
-        Pn, e);
+        ProgramName, e);
        Exit(1);
     }
     ep->path = path;
@@ -806,8 +806,8 @@ enter_efsys(e, rdlnk)
     ep->mp = (struct mounts *)NULL;
     if (path != ec)
         (void) free((FREE_P *) ec);
-    if (!(ep->next = Efsysl))
-        Efsysl = ep;
+    if (!(ep->next = ExcludedFileSysList))
+        ExcludedFileSysList = ep;
     return(0);
 }
 #endif    /* defined(HASEOPT) */
@@ -828,11 +828,11 @@ enter_fd(f)
  *  Check for non-empty list and make a copy.
  */
     if (!f || (strlen(f) + 1) < 2) {
-        (void) fprintf(stderr, "%s: no file descriptor specified\n", Pn);
+        (void) fprintf(stderr, "%s: no file descriptor specified\n", ProgramName);
         return (1);
     }
     if (!(fc = mkstrcpy(f, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: no space for fd string: ", Pn);
+        (void) fprintf(stderr, "%s: no space for fd string: ", ProgramName);
         safestrprt(f, stderr, 1);
         Exit(1);
     }
@@ -881,7 +881,7 @@ enter_fd(f)
 
 
 /*
- * enter_fd_lst() - make an entry in the FD list, Fdl
+ * enter_fd_lst() - make an entry in the FD list, FdList
  */
 
 static int
@@ -897,9 +897,9 @@ enter_fd_lst(nm, lo, hi, excl)
 /*
  * Don't allow a mixture of exclusions and inclusions.
  */
-    if (FdlTy >= 0) {
-        if (FdlTy != excl) {
-            if (!Fwarn) {
+    if (FdListType >= 0) {
+        if (FdListType != excl) {
+            if (!OptWarnings) {
 
                 /*
                  * If warnings are enabled, report a mixture.
@@ -918,9 +918,9 @@ enter_fd_lst(nm, lo, hi, excl)
                 }
                 buf[sizeof(buf) - 1] = '\0';
                 (void) fprintf(stderr,
-                               "%s: %s in an %s -d list: %s\n", Pn,
+                               "%s: %s in an %s -d list: %s\n", ProgramName,
                                excl ? "exclude" : "include",
-                               FdlTy ? "exclude" : "include",
+                               FdListType ? "exclude" : "include",
                                buf);
             }
             return (1);
@@ -930,7 +930,7 @@ enter_fd_lst(nm, lo, hi, excl)
  * Allocate an fd_lst entry.
  */
     if (!(f = (struct fd_lst *) malloc((MALLOC_S)sizeof(struct fd_lst)))) {
-        (void) fprintf(stderr, "%s: no space for FD list entry\n", Pn);
+        (void) fprintf(stderr, "%s: no space for FD list entry\n", ProgramName);
         Exit(1);
     }
     if (nm) {
@@ -951,7 +951,7 @@ enter_fd_lst(nm, lo, hi, excl)
         if (*cp) {
             if (!(f->nm = mkstrcpy(nm, (MALLOC_S *) NULL))) {
                 (void) fprintf(stderr,
-                               "%s: no space for copy of: %s\n", Pn, nm);
+                               "%s: no space for copy of: %s\n", ProgramName, nm);
                 Exit(1);
             }
             lo = 1;
@@ -965,7 +965,7 @@ enter_fd_lst(nm, lo, hi, excl)
 /*
  * Skip duplicates.
  */
-    for (ft = Fdl; ft; ft = ft->next) {
+    for (ft = FdList; ft; ft = ft->next) {
         if (f->nm) {
             if (!ft->nm || strcmp(f->nm, ft->nm))
                 continue;
@@ -981,9 +981,9 @@ enter_fd_lst(nm, lo, hi, excl)
  */
     f->hi = hi;
     f->lo = lo;
-    f->next = Fdl;
-    Fdl = f;
-    FdlTy = excl;
+    f->next = FdList;
+    FdList = f;
+    FdListType = excl;
     return (0);
 }
 
@@ -1018,17 +1018,17 @@ enter_dir(d, descend)
  * really a directory.
  */
     if (!d || !*d || *d == '+' || *d == '-') {
-        if (!Fwarn)
+        if (!OptWarnings)
             (void) fprintf(stderr,
-                           "%s: +d not followed by a directory path\n", Pn);
+                           "%s: +d not followed by a directory path\n", ProgramName);
         return (1);
     }
     if (!(dn = Readlink(d)))
         return (1);
     if (statsafely(dn, &sb)) {
-        if (!Fwarn) {
+        if (!OptWarnings) {
             en = errno;
-            (void) fprintf(stderr, "%s: WARNING: can't stat(", Pn);
+            (void) fprintf(stderr, "%s: WARNING: can't stat(", ProgramName);
             safestrprt(dn, stderr, 0);
             (void) fprintf(stderr, "): %s\n", strerror(en));
         }
@@ -1039,8 +1039,8 @@ enter_dir(d, descend)
         return (1);
     }
     if ((sb.st_mode & S_IFMT) != S_IFDIR) {
-        if (!Fwarn) {
-            (void) fprintf(stderr, "%s: WARNING: not a directory: ", Pn);
+        if (!OptWarnings) {
+            (void) fprintf(stderr, "%s: WARNING: not a directory: ", ProgramName);
             safestrprt(dn, stderr, 1);
         }
         if (dn && dn != d) {
@@ -1056,10 +1056,10 @@ enter_dir(d, descend)
 
     ddev = sb.st_dev;
 /*
- * Stack the directory and record it in Sfile for searching.
+ * Stack the directory and record it in SearchFileChain for searching.
  */
-    Dstkn = Dstkx = 0;
-    Dstk = (char **) NULL;
+    DirStackAlloc = DirStackIndex = 0;
+    DirStack = (char **) NULL;
     (void) stkdir(dn);
     av[0] = (dn == d) ? mkstrcpy(dn, (MALLOC_S *) NULL) : dn;
     av[1] = (char *) NULL;
@@ -1071,19 +1071,19 @@ enter_dir(d, descend)
 /*
  * Unstack the next directory and examine it.
  */
-    while (--Dstkx >= 0) {
-        if (!(dn = Dstk[Dstkx]))
+    while (--DirStackIndex >= 0) {
+        if (!(dn = DirStack[DirStackIndex]))
             continue;
-        Dstk[Dstkx] = (char *) NULL;
+        DirStack[DirStackIndex] = (char *) NULL;
         /*
          * Open the directory path and prepare its name for use with the
          * files in the directory.
          */
         if (!(dfp = OpenDir(dn))) {
-            if (!Fwarn) {
+            if (!OptWarnings) {
                 if ((en = errno) != ENOENT) {
                     (void) fprintf(stderr,
-                                   "%s: WARNING: can't opendir(", Pn);
+                                   "%s: WARNING: can't opendir(", ProgramName);
                     safestrprt(dn, stderr, 0);
                     (void) fprintf(stderr, "): %s\n", strerror(en));
                 }
@@ -1107,7 +1107,7 @@ enter_dir(d, descend)
             if (!fp) {
                 (void) fprintf(stderr,
                                "%s: no space for path to entries in directory: %s\n",
-                               Pn, dn);
+                               ProgramName, dn);
                 (void) CloseDir(dfp);
                 Exit(1);
             }
@@ -1150,7 +1150,7 @@ enter_dir(d, descend)
             if ((int) fpli > 0) {
                 fpl += fpli;
                 if (!(fp = (char *) realloc(fp, fpl))) {
-                    (void) fprintf(stderr, "%s: no space for: ", Pn);
+                    (void) fprintf(stderr, "%s: no space for: ", ProgramName);
                     safestrprt(dn, stderr, 0);
                     putc('/', stderr);
                     safestrprtn(dp->d_name, dnamlen, stderr, 1);
@@ -1166,9 +1166,9 @@ enter_dir(d, descend)
              */
             if (lstatsafely(fp, &sb)) {
                 if ((en = errno) != ENOENT) {
-                    if (!Fwarn) {
+                    if (!OptWarnings) {
                         (void) fprintf(stderr,
-                                       "%s: WARNING: can't lstat(", Pn);
+                                       "%s: WARNING: can't lstat(", ProgramName);
                         safestrprt(fp, stderr, 0);
                         (void) fprintf(stderr, "): %s\n", strerror(en));
                     }
@@ -1180,7 +1180,7 @@ enter_dir(d, descend)
             (void) HASSPECDEVD(fp, &sb);
 #endif    /* defined(HASSPECDEVD) */
 
-            if (!(Fxover & XO_FILESYS)) {
+            if (!(OptCrossover & XO_FILESYS)) {
 
                 /*
                  * Unless "-x" or "-x f" was specified, don't cross over file
@@ -1197,12 +1197,12 @@ enter_dir(d, descend)
                  *
                  * Otherwise skip symbolic links.
                  */
-                if (Fxover & XO_SYMLINK) {
+                if (OptCrossover & XO_SYMLINK) {
                     if (statsafely(fp, &sb)) {
                         if ((en = errno) != ENOENT) {
-                            if (!Fwarn) {
+                            if (!OptWarnings) {
                                 (void) fprintf(stderr,
-                                               "%s: WARNING: can't stat(", Pn);
+                                               "%s: WARNING: can't stat(", ProgramName);
                                 safestrprt(fp, stderr, 0);
                                 (void) fprintf(stderr,
                                                ") symbolc link: %s\n", strerror(en));
@@ -1254,18 +1254,18 @@ enter_dir(d, descend)
         (void) free((FREE_P *) fp);
         fp = (char *) NULL;
     }
-    if (Dstk) {
-        (void) free((FREE_P *) Dstk);
-        Dstk = (char **) NULL;
+    if (DirStack) {
+        (void) free((FREE_P *) DirStack);
+        DirStack = (char **) NULL;
     }
     if (!fct) {
 
         /*
          * Warn if no files were recorded for searching.
          */
-        if (!Fwarn) {
+        if (!OptWarnings) {
             (void) fprintf(stderr,
-                           "%s: WARNING: no files found in directory: ", Pn);
+                           "%s: WARNING: no files found in directory: ", ProgramName);
             safestrprt(d, stderr, 1);
         }
         return (1);
@@ -1289,7 +1289,7 @@ enter_id(ty, p)
 
     if (!p) {
         (void) fprintf(stderr, "%s: no process%s ID specified\n",
-                       Pn, (ty == PGID) ? " group" : "");
+                       ProgramName, (ty == PGID) ? " group" : "");
         return (1);
     }
 /*
@@ -1297,21 +1297,21 @@ enter_id(ty, p)
  */
     switch (ty) {
         case PGID:
-            mx = Mxpgid;
-            n = Npgid;
-            ni = Npgidi;
-            nx = Npgidx;
-            s = Spgid;
+            mx = MaxPgidEntries;
+            n = NumPgidSelections;
+            ni = NumPgidInclusions;
+            nx = NumPgidExclusions;
+            s = SearchPgidList;
             break;
         case PID:
-            mx = Mxpid;
-            n = Npid;
-            ni = Npidi;
-            nx = Npidx;
-            s = Spid;
+            mx = MaxPidEntries;
+            n = NumPidSelections;
+            ni = NumPidInclusions;
+            nx = NumPidExclusions;
+            s = SearchPidList;
             break;
         default:
-            (void) fprintf(stderr, "%s: enter_id \"", Pn);
+            (void) fprintf(stderr, "%s: enter_id \"", ProgramName);
             safestrprt(p, stderr, 0);
             (void) fprintf(stderr, "\", invalid type: %d\n", ty);
             Exit(1);
@@ -1341,7 +1341,7 @@ enter_id(ty, p)
 
             {
                 (void) fprintf(stderr, "%s: illegal process%s ID: ",
-                               Pn, (ty == PGID) ? " group" : "");
+                               ProgramName, (ty == PGID) ? " group" : "");
                 safestrprt(p, stderr, 1);
                 return (1);
             }
@@ -1360,7 +1360,7 @@ enter_id(ty, p)
                 }
                 (void) fprintf(stderr,
                                "%s: P%sID %d has been included and excluded.\n",
-                               Pn,
+                               ProgramName,
                                (ty == PGID) ? "G" : "",
                                id);
                 err = j = 1;
@@ -1388,7 +1388,7 @@ enter_id(ty, p)
             }
             if (!s) {
                 (void) fprintf(stderr, "%s: no space for %d process%s IDs",
-                               Pn, mx, (ty == PGID) ? " group" : "");
+                               ProgramName, mx, (ty == PGID) ? " group" : "");
                 Exit(1);
             }
         }
@@ -1404,17 +1404,17 @@ enter_id(ty, p)
  * Save variables for the type of ID.
  */
     if (ty == PGID) {
-        Mxpgid = mx;
-        Npgid = n;
-        Npgidi = ni;
-        Npgidx = nx;
-        Spgid = s;
+        MaxPgidEntries = mx;
+        NumPgidSelections = n;
+        NumPgidInclusions = ni;
+        NumPgidExclusions = nx;
+        SearchPgidList = s;
     } else {
-        Mxpid = mx;
-        Npid = Npuns = n;
-        Npidi = ni;
-        Npidx = nx;
-        Spid = s;
+        MaxPidEntries = mx;
+        NumPidSelections = NumUnselectedPids = n;
+        NumPidInclusions = ni;
+        NumPidExclusions = nx;
+        SearchPidList = s;
     }
     return (err);
 }
@@ -1448,7 +1448,7 @@ enter_network_address(na)
 #endif    /* defined(HASIPv6) */
 
     if (!na) {
-        (void) fprintf(stderr, "%s: no network address specified\n", Pn);
+        (void) fprintf(stderr, "%s: no network address specified\n", ProgramName);
         return (1);
     }
     zeromem((char *) &n, sizeof(n));
@@ -1466,7 +1466,7 @@ enter_network_address(na)
 #if    defined(HASIPv6)
             ft = 6;
 #else	/* !defined(HASIPv6) */
-            (void) fprintf(stderr, "%s: IPv6 not supported: -i ", Pn);
+            (void) fprintf(stderr, "%s: IPv6 not supported: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
 #endif    /* defined(HASIPv6) */
@@ -1481,20 +1481,20 @@ enter_network_address(na)
              * -i6 specifications interact logically -- e.g., -i[46] followed
              * by -i[64] is the same as -i.
              */
-            if (!Fnet) {
-                Fnet = 1;
-                FnetTy = ft;
+            if (!OptNetwork) {
+                OptNetwork = 1;
+                OptNetworkType = ft;
             } else {
-                if (FnetTy) {
-                    if (FnetTy != ft)
-                        FnetTy = 0;
+                if (OptNetworkType) {
+                    if (OptNetworkType != ft)
+                        OptNetworkType = 0;
                 } else
-                    FnetTy = ft;
+                    OptNetworkType = ft;
             }
             return (0);
         }
-    } else if (Fnet)
-        ft = FnetTy;
+    } else if (OptNetwork)
+        ft = OptNetworkType;
 /*
  * If an IP version has been specified, use it to set the address family.
  */
@@ -1520,7 +1520,7 @@ enter_network_address(na)
             if (!(n.proto = mkstrcat(p, l, (char *) NULL, -1, (char *) NULL,
                                      -1, (MALLOC_S *) NULL))) {
                 (void) fprintf(stderr,
-                               "%s: no space for protocol name from: -i ", Pn);
+                               "%s: no space for protocol name from: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 nwad_exit:
                 if (n.proto)
@@ -1538,7 +1538,7 @@ enter_network_address(na)
                 && (strcasecmp(n.proto, "udp") != 0)
                 && (strcasecmp(n.proto, "udplite") != 0)) {
                 (void) fprintf(stderr,
-                               "%s: unknown protocol name (%s) in: -i ", Pn, n.proto);
+                               "%s: unknown protocol name (%s) in: -i ", ProgramName, n.proto);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
             }
@@ -1565,7 +1565,7 @@ enter_network_address(na)
 #endif    /* defined(HASIPv6) */
 
             (void) fprintf(stderr,
-                           "%s: unacceptable Internet address in: -i ", Pn);
+                           "%s: unacceptable Internet address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
         }
@@ -1577,7 +1577,7 @@ enter_network_address(na)
              */
             if (ft == 6) {
                 (void) fprintf(stderr,
-                               "%s: IPv4 addresses are prohibited: -i ", Pn);
+                               "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
             }
@@ -1592,7 +1592,7 @@ enter_network_address(na)
              */
             if (ft == 4) {
                 (void) fprintf(stderr,
-                "%s: IPv6 addresses are prohibited: -i ", Pn);
+                "%s: IPv6 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
             }
@@ -1612,7 +1612,7 @@ enter_network_address(na)
             if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.a[0])) {
                 if (ft == 6) {
                 (void) fprintf(stderr,
-                    "%s: IPv4 addresses are prohibited: -i ", Pn);
+                    "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 goto nwad_exit;
                 }
@@ -1625,7 +1625,7 @@ enter_network_address(na)
             wa = cp + 1;
 #else	/* !defined(HASIPv6) */
             (void) fprintf(stderr,
-                           "%s: unsupported IPv6 address in: -i ", Pn);
+                           "%s: unsupported IPv6 address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
             goto nwad_exit;
 #endif    /* defined(HASIPv6) */
@@ -1640,7 +1640,7 @@ enter_network_address(na)
                 if (!(hn = mkstrcat(wa, l, (char *) NULL, -1, (char *) NULL,
                                     -1, (MALLOC_S *) NULL))) {
                     (void) fprintf(stderr,
-                                   "%s: no space for host name: -i ", Pn);
+                                   "%s: no space for host name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
@@ -1668,7 +1668,7 @@ enter_network_address(na)
 
                 if (!he) {
                     fprintf(stderr, "%s: unknown host name (%s) in: -i ",
-                            Pn, hn);
+                            ProgramName, hn);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
@@ -1694,7 +1694,7 @@ enter_network_address(na)
 
         unacc_port:
         (void) fprintf(stderr,
-                       "%s: unacceptable port specification in: -i ", Pn);
+                       "%s: unacceptable port specification in: -i ", ProgramName);
         safestrprt(na, stderr, 1);
         goto nwad_exit;
     }
@@ -1710,7 +1710,7 @@ enter_network_address(na)
                 for (p = wa; *wa && *wa != ','; wa++);
                 if (!(l = wa - p)) {
                     (void) fprintf(stderr,
-                                   "%s: invalid service name: -i ", Pn);
+                                   "%s: invalid service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
@@ -1730,7 +1730,7 @@ enter_network_address(na)
                 }
                 if (!sn) {
                     (void) fprintf(stderr,
-                                   "%s: no space for service name: -i ", Pn);
+                                   "%s: no space for service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
                     goto nwad_exit;
                 }
@@ -1745,7 +1745,7 @@ enter_network_address(na)
                     if (!(se = getservbyname(sn, n.proto))) {
                         (void) fprintf(stderr,
                                        "%s: unknown service %s for %s in: -i ",
-                                       Pn, sn, n.proto);
+                                       ProgramName, sn, n.proto);
                         safestrprt(na, stderr, 1);
                         goto nwad_exit;
                     }
@@ -1762,14 +1762,14 @@ enter_network_address(na)
                         pu = (int) ntohs(se1->s_port);
                     if (!se && !se1) {
                         (void) fprintf(stderr,
-                                       "%s: unknown service %s in: -i ", Pn, sn);
+                                       "%s: unknown service %s in: -i ", ProgramName, sn);
                         safestrprt(na, stderr, 1);
                         goto nwad_exit;
                     }
                     if (se && se1 && pt != pu) {
                         (void) fprintf(stderr,
                                        "%s: TCP=%d and UDP=%d %s ports conflict;\n",
-                                       Pn, pt, pu, sn);
+                                       ProgramName, pt, pu, sn);
                         (void) fprintf(stderr,
                                        "      specify \"tcp:%s\" or \"udp:%s\": -i ",
                                        sn, sn);
@@ -1877,7 +1877,7 @@ enter_nwad(n, sp, ep, s, he)
     if (strlen(s)) {
         if (!(n->arg = mkstrcpy(s, (MALLOC_S *) NULL))) {
             (void) fprintf(stderr,
-                           "%s: no space for Internet argument: -i ", Pn);
+                           "%s: no space for Internet argument: -i ", ProgramName);
             safestrprt(s, stderr, 1);
             Exit(1);
         }
@@ -1905,7 +1905,7 @@ enter_nwad(n, sp, ep, s, he)
 
             && sp == -1) {
             (void) fprintf(stderr,
-                           "%s: incomplete Internet address specification: -i ", Pn);
+                           "%s: incomplete Internet address specification: -i ", ProgramName);
             safestrprt(s, stderr, 1);
             return (1);
         }
@@ -1916,7 +1916,7 @@ enter_nwad(n, sp, ep, s, he)
         if (na >= MAXNWAD) {
             (void) fprintf(stderr,
                            "%s: network address limit (%d) exceeded: -i ",
-                           Pn, MAXNWAD);
+                           ProgramName, MAXNWAD);
             safestrprt(s, stderr, 1);
             return (1);
         }
@@ -1925,7 +1925,7 @@ enter_nwad(n, sp, ep, s, he)
          */
         if ((np = (struct nwad *) malloc(sizeof(struct nwad))) == NULL) {
             (void) fprintf(stderr,
-                           "%s: no space for network address from: -i ", Pn);
+                           "%s: no space for network address from: -i ", ProgramName);
             safestrprt(s, stderr, 1);
             return (1);
         }
@@ -1936,8 +1936,8 @@ enter_nwad(n, sp, ep, s, he)
         np->sport = sp;
         np->eport = ep;
         np->f = 0;
-        np->next = Nwad;
-        Nwad = np;
+        np->next = NetworkAddrList;
+        NetworkAddrList = np;
         na++;
         /*
          * If the network address came from gethostbyname(), advance to
@@ -2004,28 +2004,28 @@ enter_state_spec(ss)
 
     else {
         (void) fprintf(stderr, "%s: unknown -s protocol: \"%s\"\n",
-        Pn, ss);
+        ProgramName, ss);
         return(1);
     }
     cp = ss + 4;
     if (!*cp) {
         (void) fprintf(stderr, "%s: no %s state names in: %s\n",
-        Pn, pr, ss);
+        ProgramName, pr, ss);
         return(1);
     }
     (void) build_IPstates();
-    if (!(tx ? UdpSt : TcpSt)) {
+    if (!(tx ? UdpStateNames : TcpStateNames)) {
         (void) fprintf(stderr, "%s: no %s state names available: %s\n",
-        Pn, pr, ss);
+        ProgramName, pr, ss);
         return(1);
     }
 /*
  * Allocate the inclusion and exclusion tables for the protocol.
  */
     if (tx) {
-        if (UdpNstates) {
-        if (!UdpStI) {
-            if (!(UdpStI = (unsigned char *)calloc((MALLOC_S)UdpNstates,
+        if (UdpNumStates) {
+        if (!UdpStateInclude) {
+            if (!(UdpStateInclude = (unsigned char *)calloc((MALLOC_S)UdpNumStates,
                    sizeof(unsigned char))))
             {
             ty = "UDP state inclusion";
@@ -2033,12 +2033,12 @@ enter_state_spec(ss)
 no_IorX_space:
 
             (void) fprintf(stderr, "%s: no %s table space\n",
-                Pn, ty);
+                ProgramName, ty);
             Exit(1);
             }
         }
-        if (!UdpStX) {
-            if (!(UdpStX = (unsigned char *)calloc((MALLOC_S)UdpNstates,
+        if (!UdpStateExclude) {
+            if (!(UdpStateExclude = (unsigned char *)calloc((MALLOC_S)UdpNumStates,
                    sizeof(unsigned char))))
             {
             ty = "UDP state exclusion";
@@ -2047,17 +2047,17 @@ no_IorX_space:
         }
         }
     } else {
-        if (TcpNstates) {
-        if (!TcpStI) {
-            if (!(TcpStI = (unsigned char *)calloc((MALLOC_S)TcpNstates,
+        if (TcpNumStates) {
+        if (!TcpStateInclude) {
+            if (!(TcpStateInclude = (unsigned char *)calloc((MALLOC_S)TcpNumStates,
                    sizeof(unsigned char))))
             {
             ty = "TCP state inclusion";
             goto no_IorX_space;
             }
         }
-        if (!TcpStX) {
-            if (!(TcpStX = (unsigned char *)calloc((MALLOC_S)TcpNstates,
+        if (!TcpStateExclude) {
+            if (!(TcpStateExclude = (unsigned char *)calloc((MALLOC_S)TcpNumStates,
                    sizeof(unsigned char))))
             {
             ty = "TCP state exclusion";
@@ -2074,7 +2074,7 @@ no_IorX_space:
         (void) free((MALLOC_P *)ssc);
     if (!(ssc = mkstrcpy(cp, (MALLOC_S *)NULL))) {
         (void) fprintf(stderr,
-        "%s: no temporary state argument space for: %s\n", Pn, ss);
+        "%s: no temporary state argument space for: %s\n", ProgramName, ss);
         Exit(1);
     }
     cp = ssc;
@@ -2104,7 +2104,7 @@ no_IorX_space:
         }
         if (!(len = (size_t)(ne - ns))) {
         (void) fprintf(stderr, "%s: NULL %s state name in: %s\n",
-            Pn, pr, ss);
+            ProgramName, pr, ss);
         err = 1;
         continue;
         }
@@ -2113,18 +2113,18 @@ no_IorX_space:
      */
         f = 0;
         if (tx) {
-        if (UdpSt) {
-            for (i = 0; i < UdpNstates; i++) {
-            if (!strcasecmp(ns, UdpSt[i])) {
+        if (UdpStateNames) {
+            for (i = 0; i < UdpNumStates; i++) {
+            if (!strcasecmp(ns, UdpStateNames[i])) {
                 f = 1;
                 break;
             }
             }
         }
         } else {
-        if (TcpSt) {
-            for (i = 0; i < TcpNstates; i++) {
-            if (!strcasecmp(ns, TcpSt[i])) {
+        if (TcpStateNames) {
+            for (i = 0; i < TcpNumStates; i++) {
+            if (!strcasecmp(ns, TcpStateNames[i])) {
                 f = 1;
                 break;
             }
@@ -2133,7 +2133,7 @@ no_IorX_space:
         }
         if (!f) {
         (void) fprintf(stderr, "%s: unknown %s state name: %s\n",
-            Pn, pr, ns);
+            ProgramName, pr, ns);
         err = 1;
         continue;
         }
@@ -2143,29 +2143,29 @@ no_IorX_space:
         d = 0;
         if (x) {
         if (tx) {
-            if (!UdpStX[i]) {
-            UdpStX[i] = 1;
-            UdpStXn++;
+            if (!UdpStateExclude[i]) {
+            UdpStateExclude[i] = 1;
+            UdpStateExcludeCount++;
             } else
             d = 1;
         } else {
-            if (!TcpStX[i]) {
-            TcpStX[i] = 1;
-            TcpStXn++;
+            if (!TcpStateExclude[i]) {
+            TcpStateExclude[i] = 1;
+            TcpStateExcludeCount++;
             } else
             d = 1;
         }
         } else {
         if (tx) {
-            if (!UdpStI[i]) {
-            UdpStI[i] = 1;
-            UdpStIn++;
+            if (!UdpStateInclude[i]) {
+            UdpStateInclude[i] = 1;
+            UdpStateIncludeCount++;
             } else
             d = 1;
         } else {
-            if (!TcpStI[i]) {
-            TcpStI[i] = 1;
-            TcpStIn++;
+            if (!TcpStateInclude[i]) {
+            TcpStateInclude[i] = 1;
+            TcpStateIncludeCount++;
             } else
             d = 1;
         }
@@ -2176,7 +2176,7 @@ no_IorX_space:
          * Report a duplicate.
          */
         (void) fprintf(stderr, "%s: duplicate %s %sclusion: %s\n",
-            Pn, pr,
+            ProgramName, pr,
             x ? "ex" : "in",
             ns);
         err = 1;
@@ -2213,7 +2213,7 @@ enter_str_lst(opt, s, lp, incl, excl)
 
     if (!s || *s == '-' || *s == '+') {
         (void) fprintf(stderr, "%s: missing %s option value\n",
-                       Pn, opt);
+                       ProgramName, opt);
         return (1);
     }
     if (*s == '^') {
@@ -2225,12 +2225,12 @@ enter_str_lst(opt, s, lp, incl, excl)
         x = 0;
     }
     if (!(cp = mkstrcpy(s, &len))) {
-        (void) fprintf(stderr, "%s: no string copy space: ", Pn);
+        (void) fprintf(stderr, "%s: no string copy space: ", ProgramName);
         safestrprt(s, stderr, 1);
         return (1);
     }
     if ((lpt = (struct str_lst *) malloc(sizeof(struct str_lst))) == NULL) {
-        (void) fprintf(stderr, "%s: no list space: ", Pn);
+        (void) fprintf(stderr, "%s: no list space: ", ProgramName);
         safestrprt(s, stderr, 1);
         (void) free((FREE_P *) cp);
         return (1);
@@ -2266,7 +2266,7 @@ enter_uid(us)
     uid_t uid;
 
     if (!us) {
-        (void) fprintf(stderr, "%s: no UIDs specified\n", Pn);
+        (void) fprintf(stderr, "%s: no UIDs specified\n", ProgramName);
         return (1);
     }
     for (err = 0, s = us; *s;) {
@@ -2283,7 +2283,7 @@ enter_uid(us)
                     lnml++;
                 }
                 (void) fprintf(stderr,
-                               "%s: -u login name > %d characters: ", Pn,
+                               "%s: -u login name > %d characters: ", ProgramName,
                                (int) LOGINML);
                 safestrprtn(st, lnml, stderr, 1);
                 err = j = 1;
@@ -2314,7 +2314,7 @@ enter_uid(us)
         if (nn) {
             lnm[lnml++] = '\0';
             if ((pw = getpwnam(lnm)) == NULL) {
-                (void) fprintf(stderr, "%s: can't get UID for ", Pn);
+                (void) fprintf(stderr, "%s: can't get UID for ", ProgramName);
                 safestrprt(lnm, stderr, 1);
                 err = 1;
                 continue;
@@ -2329,10 +2329,10 @@ enter_uid(us)
          * process.  If HASNOSOCKSECURITY is also defined, then anyone may
          * list anyone else's socket files.
          */
-            if (Myuid && uid != Myuid) {
+            if (MyRealUid && uid != MyRealUid) {
             (void) fprintf(stderr,
                 "%s: ID %d request rejected because of security mode.\n",
-                Pn, uid);
+                ProgramName, uid);
             err = 1;
             continue;
             }
@@ -2341,16 +2341,16 @@ enter_uid(us)
         /*
          * Avoid entering duplicates.
          */
-        for (i = j = 0; i < Nuid; i++) {
-            if (uid != Suid[i].uid)
+        for (i = j = 0; i < NumUidSelections; i++) {
+            if (uid != SearchUidList[i].uid)
                 continue;
-            if (Suid[i].excl == excl) {
+            if (SearchUidList[i].excl == excl) {
                 j = 1;
                 continue;
             }
             (void) fprintf(stderr,
                            "%s: UID %d has been included and excluded.\n",
-                           Pn, (int) uid);
+                           ProgramName, (int) uid);
             err = j = 1;
             break;
         }
@@ -2359,39 +2359,39 @@ enter_uid(us)
         /*
          * Allocate space for User IDentifier.
          */
-        if (Nuid >= Mxuid) {
-            Mxuid += UIDINCR;
-            len = (MALLOC_S)(Mxuid * sizeof(struct seluid));
-            if (!Suid)
-                Suid = (struct seluid *) malloc(len);
+        if (NumUidSelections >= MaxUidEntries) {
+            MaxUidEntries += UIDINCR;
+            len = (MALLOC_S)(MaxUidEntries * sizeof(struct seluid));
+            if (!SearchUidList)
+                SearchUidList = (struct seluid *) malloc(len);
             else {
-                struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) Suid, len);
+                struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) SearchUidList, len);
                 if (!tmp) {
-                    (void) free((FREE_P *) Suid);
-                    Suid = (struct seluid *) NULL;
+                    (void) free((FREE_P *) SearchUidList);
+                    SearchUidList = (struct seluid *) NULL;
                 } else
-                    Suid = tmp;
+                    SearchUidList = tmp;
             }
-            if (!Suid) {
-                (void) fprintf(stderr, "%s: no space for UIDs", Pn);
+            if (!SearchUidList) {
+                (void) fprintf(stderr, "%s: no space for UIDs", ProgramName);
                 Exit(1);
             }
         }
         if (nn) {
             if (!(lp = mkstrcpy(lnm, (MALLOC_S *) NULL))) {
-                (void) fprintf(stderr, "%s: no space for login: ", Pn);
+                (void) fprintf(stderr, "%s: no space for login: ", ProgramName);
                 safestrprt(lnm, stderr, 1);
                 Exit(1);
             }
-            Suid[Nuid].lnm = lp;
+            SearchUidList[NumUidSelections].lnm = lp;
         } else
-            Suid[Nuid].lnm = (char *) NULL;
-        Suid[Nuid].uid = uid;
-        Suid[Nuid++].excl = excl;
+            SearchUidList[NumUidSelections].lnm = (char *) NULL;
+        SearchUidList[NumUidSelections].uid = uid;
+        SearchUidList[NumUidSelections++].excl = excl;
         if (excl)
-            Nuidexcl++;
+            NumUidExclusions++;
         else
-            Nuidincl++;
+            NumUidInclusions++;
     }
     return (err);
 }

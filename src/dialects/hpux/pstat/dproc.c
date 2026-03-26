@@ -162,18 +162,18 @@ gather_proc_info() {
  * Compute current working and root directory statuses and the statuses of
  * the first FDS_ALLOC_INIT FDs.
  */
-    if (Fand && Fdl) {
+    if (OptAndSelection && FdList) {
         cwds = (ck_fd_status(CWD, -1) != 2) ? 0 : 1;
         rtds = (ck_fd_status(RTD, -1) != 2) ? 0 : 1;
         nb = (MALLOC_S)(sizeof(int) * FDS_ALLOC_INIT);
         if (!(fds = (int *) malloc(nb))) {
             (void) fprintf(stderr,
-                           "%s: can't allocate %d FD status entries\n", Pn,
+                           "%s: can't allocate %d FD status entries\n", ProgramName,
                            FDS_ALLOC_INIT);
             Exit(1);
         }
         for (fdsa = 0; fdsa < FDS_ALLOC_INIT; fdsa++) {
-            if (Fand && Fdl)
+            if (OptAndSelection && FdList)
                 fds[fdsa] = (ck_fd_status(NULL, fdsa) == 2) ? 1 : 0;
             else
                 fds[fdsa] = 1;
@@ -191,12 +191,12 @@ gather_proc_info() {
  * conditional skipping of regular file; i.e., regular files will be skipped
  * unless they belong to a process selected by one of the specified options.
  */
-    if (Selflags & SELNW) {
+    if (SelectionFlags & SELNW) {
 
         /*
          * Some network files selection options have been specified.
          */
-        if (Fand || !(Selflags & ~SELNW)) {
+        if (OptAndSelection || !(SelectionFlags & ~SELNW)) {
 
             /*
              * Selection ANDing or only network file options have been
@@ -215,7 +215,7 @@ gather_proc_info() {
              * If only ORed process selection options have been specified,
              * enable conditional file skipping and socket file only checking.
              */
-            if ((Selflags & SELFILE) || !(Selflags & SELPROC))
+            if ((SelectionFlags & SELFILE) || !(SelectionFlags & SELPROC))
                 cckreg = ckscko = 0;
             else
                 cckreg = ckscko = 1;
@@ -254,7 +254,7 @@ gather_proc_info() {
         }
         alloc_lproc((int) p->pst_pid, (int) p->pst_pgrp, (int) p->pst_ppid,
                     (UID_ARG) p->pst_uid, p->pst_ucomm, (int) pss, (int) sf);
-        Plf = (struct lfile *) NULL;
+        PrevLocalFile = (struct lfile *) NULL;
         /*
          * Save current working directory information.
          */
@@ -269,12 +269,12 @@ gather_proc_info() {
                 (void) process_finfo(&pd, &p->pst_fid_cdir,
                                      &p->pst_cdir, na);
             else {
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                             "can't read %s pst_filedetails%s%s", CWD,
                             errno ? ": " : "", errno ? strerror(errno) : "");
-                enter_nm(Namech);
+                enter_nm(NameChars);
             }
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -297,13 +297,13 @@ gather_proc_info() {
                     (void) process_finfo(&pd, &p->pst_fid_rdir,
                                          &p->pst_rdir, na);
                 else {
-                    (void) snpf(Namech, Namechl,
+                    (void) snpf(NameChars, NameCharsLength,
                                 "can't read %s pst_filedetails%s%s", RTD,
                                 errno ? ": " : "",
                                 errno ? strerror(errno) : "");
-                    enter_nm(Namech);
+                    enter_nm(NameChars);
                 }
-                if (Lf->sf)
+                if (CurrentLocalFile->sf)
                     link_lfile();
             }
         }
@@ -320,7 +320,7 @@ gather_proc_info() {
             /*
              * Check FD status and allocate local file space, as required.
              */
-            if (Fand && Fdl && fds) {
+            if (OptAndSelection && FdList && fds) {
 
                 /*
                  * Check and update the FD status array.
@@ -331,7 +331,7 @@ gather_proc_info() {
                     if (!(fds = (int *) realloc((MALLOC_P *) fds, nb))) {
                         (void) fprintf(stderr,
                                        "%s: can't reallocate %d FD status entries\n",
-                                       Pn, l);
+                                       ProgramName, l);
                         Exit(1);
                     }
                     while (fdsa < l) {
@@ -348,31 +348,31 @@ gather_proc_info() {
              */
             if ((flag = (long) (f->psf_flag & ~PS_FEXCLOS))
                 == (long) PS_FRDONLY)
-                Lf->access = 'r';
+                CurrentLocalFile->access = 'r';
             else if (flag == (long) PS_FWRONLY)
-                Lf->access = 'w';
+                CurrentLocalFile->access = 'w';
             else
-                Lf->access = 'u';
+                CurrentLocalFile->access = 'u';
 
 #if    defined(HASFSTRUCT)
             /*
              * Save file structure values.
              */
-            if (Fsv & FSV_CT) {
-                Lf->fct = (long)f->psf_count;
-                Lf->fsv |= FSV_CT;
+            if (OptFileStructValues & FSV_FILE_COUNT) {
+                CurrentLocalFile->fct = (long)f->psf_count;
+                CurrentLocalFile->fsv |= FSV_FILE_COUNT;
             }
-            if (Fsv & FSV_FA) {
+            if (OptFileStructValues & FSV_FILE_ADDR) {
                 ka = (((KA_T)(f->psf_hi_fileid & 0xffffffff) << 32)
                    |  (KA_T)(f->psf_lo_fileid & 0xffffffff));
-                if ((Lf->fsa = ka))
-                Lf->fsv |= FSV_FA;
+                if ((CurrentLocalFile->fsa = ka))
+                CurrentLocalFile->fsv |= FSV_FILE_ADDR;
             }
-            if (Fsv & FSV_FG) {
-                Lf->ffg = flag;
-                Lf->fsv |= FSV_FG;
+            if (OptFileStructValues & FSV_FILE_FLAGS) {
+                CurrentLocalFile->ffg = flag;
+                CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
             }
-            Lf->pof = (long)(f->psf_flag & PS_FEXCLOS);
+            CurrentLocalFile->pof = (long)(f->psf_flag & PS_FEXCLOS);
 #endif    /* defined(HASFSTRUCT) */
 
             /*
@@ -381,9 +381,9 @@ gather_proc_info() {
              */
 
 #if    defined(_PSTAT64)
-            Lf->off = (SZOFFTYPE)f->_PSF_OFFSET64;
+            CurrentLocalFile->off = (SZOFFTYPE)f->_PSF_OFFSET64;
 #else	/* !defined(_PSTAT64) */
-            Lf->off = (SZOFFTYPE) f->psf_offset;
+            CurrentLocalFile->off = (SZOFFTYPE) f->psf_offset;
 #endif    /* defined(_PSTAT64) */
 
             /*
@@ -391,18 +391,18 @@ gather_proc_info() {
              */
             switch (f->psf_ftype) {
                 case PS_TYPE_VNODE:
-                    if (ckscko || Selinet)
+                    if (ckscko || SelectInetOnly)
                         break;
                     if ((na = read_det(&f->psf_fid, f->psf_hi_fileid,
                                        f->psf_lo_fileid, f->psf_hi_nodeid,
                                        f->psf_lo_nodeid, &pd)))
                         (void) process_finfo(&pd, &f->psf_fid, &f->psf_id, na);
                     else {
-                        (void) snpf(Namech, Namechl,
+                        (void) snpf(NameChars, NameCharsLength,
                                     "can't read pst_filedetails%s%s",
                                     errno ? ": " : "",
                                     errno ? strerror(errno) : "");
-                        enter_nm(Namech);
+                        enter_nm(NameChars);
                     }
                     break;
                 case PS_TYPE_SOCKET:
@@ -417,28 +417,28 @@ gather_proc_info() {
                                 (void) process_stream(f, (int) ckscko);
                             break;
                         default:
-                            (void) snpf(Namech, Namechl,
+                            (void) snpf(NameChars, NameCharsLength,
                                         "unknown socket sub-type: %d", (int) f->psf_subtype);
-                            enter_nm(Namech);
+                            enter_nm(NameChars);
                     }
                     break;
                 case PS_TYPE_STREAMS:
                     (void) process_stream(f, (int) ckscko);
                     break;
                 case PS_TYPE_UNKNOWN:
-                    (void) snpf(Lf->type, sizeof(Lf->type), "UNKN");
+                    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "UNKN");
                     (void) enter_nm("no more information");
                     break;
                 case PS_TYPE_UNSP:
-                    (void) snpf(Lf->type, sizeof(Lf->type), "UNSP");
+                    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "UNSP");
                     (void) enter_nm("no more information");
                     break;
                 case PS_TYPE_LLA:
-                    (void) snpf(Lf->type, sizeof(Lf->type), "LLA");
+                    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "LLA");
                     (void) enter_nm("no more information");
                     break;
             }
-            if (Lf->sf)
+            if (CurrentLocalFile->sf)
                 link_lfile();
         }
         /*
@@ -474,13 +474,13 @@ get_kernel_access() {
     {
         (void) fprintf(stderr,
                        "%s: FATAL: can't determine PSTAT static size: %s\n",
-                       Pn, strerror(errno));
+                       ProgramName, strerror(errno));
         Exit(1);
     }
     if (pstat_getstatic(&pst, (size_t) pst.pst_static_size, 1, 0) != 1) {
         (void) fprintf(stderr,
                        "%s: FATAL: can't read %ld bytes of pst_static\n",
-                       Pn, (long) pst.pst_static_size);
+                       ProgramName, (long) pst.pst_static_size);
         Exit(1);
     }
 /*
@@ -490,7 +490,7 @@ get_kernel_access() {
         if (pst.pst_static_size < PstatCk[i].msz) {
             (void) fprintf(stderr,
                            "%s: FATAL: pst_static doesn't contain %s_size\n",
-                           Pn, PstatCk[i].sn);
+                           ProgramName, PstatCk[i].sn);
             err = 1;
             continue;
         }
@@ -498,7 +498,7 @@ get_kernel_access() {
         if (*szp < PstatCk[i].ssz) {
             (void) fprintf(stderr,
                            "%s: FATAL: %s_size should be: %llu; is %llu\n",
-                           Pn, PstatCk[i].sn, (unsigned long long) PstatCk[i].ssz,
+                           ProgramName, PstatCk[i].sn, (unsigned long long) PstatCk[i].ssz,
                            (unsigned long long) *szp);
             err = 1;
         }
@@ -554,13 +554,13 @@ process_text(p)
  * Get and remember "mem" and "txt" FD statuses.
  */
     if (mems < 0) {
-        if (Fand && Fdl)
+        if (OptAndSelection && FdList)
             mems = (ck_fd_status("mem", -1) == 2) ? 1 : 0;
         else
             mems = 1;
     }
     if (txts < 0) {
-        if (Fand && Fdl)
+        if (OptAndSelection && FdList)
             txts = (ck_fd_status("txt", -1) == 2) ? 1 : 0;
         else
             txts = 1;
@@ -579,7 +579,7 @@ process_text(p)
 
             (void) fprintf(stderr,
                            "%s: no memory for text and VM info array; PID: %d\n",
-                           Pn, (int) p->pst_pid);
+                           ProgramName, (int) p->pst_pid);
             Exit(1);
         }
     }
@@ -597,11 +597,11 @@ process_text(p)
             ntvu = 1;
         } else {
             alloc_lfile("txt", -1);
-            (void) snpf(Namech, Namechl,
+            (void) snpf(NameChars, NameCharsLength,
                         "can't read txt pst_filedetails%s%s",
                         errno ? ": " : "", errno ? strerror(errno) : "");
-            enter_nm(Namech);
-            if (Lf->sf)
+            enter_nm(NameChars);
+            if (CurrentLocalFile->sf)
                 link_lfile();
             ntvu = 0;
         }
@@ -646,11 +646,11 @@ process_text(p)
                 ntvu++;
             } else if (!meme) {
                 alloc_lfile("mem", -1);
-                (void) snpf(Namech, Namechl,
+                (void) snpf(NameChars, NameCharsLength,
                             "can't read mem pst_filedetails%s%s",
                             errno ? ": " : "", errno ? strerror(errno) : "");
-                enter_nm(Namech);
-                if (Lf->sf)
+                enter_nm(NameChars);
+                if (CurrentLocalFile->sf)
                     link_lfile();
                 meme = 1;
             }
@@ -663,7 +663,7 @@ process_text(p)
         alloc_lfile(tv[i].fd, -1);
         (void) process_finfo(&tv[i].pd, &tv[i].opfid, &tv[i].psfid,
                              tv[i].na);
-        if (Lf->sf)
+        if (CurrentLocalFile->sf)
             link_lfile();
     }
 }
@@ -729,7 +729,7 @@ read_files(p, n)
             if (!fi) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for pst_filinfo\n",
-                               Pn, nb);
+                               ProgramName, nb);
                 Exit(1);
             }
         }
@@ -784,7 +784,7 @@ read_proc(n)
                 ps_alloc_error:
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for pst_status table\n",
-                               Pn, nb);
+                               ProgramName, nb);
                 Exit(1);
             }
         }
@@ -802,7 +802,7 @@ read_proc(n)
 /*
  * Reduce ps[] to a minimum, unless repeat mode is in effect.
  */
-    if (!RptTm && ps && np && (np < npa)) {
+    if (!RepeatTime && ps && np && (np < npa)) {
         nb = (MALLOC_S)(np * sizeof(struct pst_status));
         if (!(ps = (struct pst_status *) realloc((MALLOC_P *) ps, nb)))
             goto ps_alloc_error;
@@ -846,7 +846,7 @@ read_vmreg(p, n)
             if (!reg) {
                 (void) fprintf(stderr,
                                "%s: can't allocate %d bytes for pst_vm_status\n",
-                               Pn, nb);
+                               ProgramName, nb);
                 Exit(1);
             }
         }

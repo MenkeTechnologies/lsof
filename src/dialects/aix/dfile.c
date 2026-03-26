@@ -44,7 +44,7 @@ static char *rcsid = "$Id: dfile.c,v 1.13 2005/08/08 19:46:38 abe Exp $";
  */
 
 struct hsfile {
-    struct sfile *s;        /* the Sfile table address */
+    struct sfile *s;        /* the SearchFileChain table address */
     struct hsfile *next;        /* the next hash bucket entry */
 };
 
@@ -74,28 +74,28 @@ static int HbyNmCt = 0;            /* HbyNm entry count */
  * Local definitions
  */
 
-#define    SFDIHASH    4094        /* Sfile hash by (device,inode) number
+#define    SFDIHASH    4094        /* SearchFileChain hash by (device,inode) number
 					 * pair bucket count (power of 2!) */
-#define    SFFSHASH    128        /* Sfile hash by file system device
+#define    SFFSHASH    128        /* SearchFileChain hash by file system device
 					 * number bucket count (power of 2!) */
 #define SFHASHDEVINO(maj, min, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
-/* hash for Sfile by major device,
+/* hash for SearchFileChain by major device,
  * minor device, and inode, modulo m
  * (m must be a power of 2) */
-#define    SFMPCHASH    1024        /* Sfile hash by MPC device number */
-#define    SFNMHASH    4096        /* Sfile hash by name bucket count
+#define    SFMPCHASH    1024        /* SearchFileChain hash by MPC device number */
+#define    SFNMHASH    4096        /* SearchFileChain hash by name bucket count
 					   (power of 2!) */
-#define    SFRDHASH    1024        /* Sfile hash by raw device number
+#define    SFRDHASH    1024        /* SearchFileChain hash by raw device number
 					 * bucket count (power of 2!) */
 #define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+((int)(rmaj+1)*(int)(rmin+1))+ino)*31415)&(mod-1)))
-/* hash for Sfile by major device,
+/* hash for SearchFileChain by major device,
  * minor device, major raw device,
  * minor raw device, and inode, modulo
  * mod (mod must be a power of 2) */
 
 
 /*
- * hashSfile() - hash Sfile entries for use in is_file_named() searches
+ * hashSfile() - hash SearchFileChain entries for use in is_file_named() searches
  */
 
 void
@@ -108,7 +108,7 @@ hashSfile() {
  * Do nothing if there are no file search arguments cached or if the
  * hashes have already been constructed.
  */
-    if (!Sfile || hs)
+    if (!SearchFileChain || hs)
         return;
 /*
  * Allocate hash buckets by (device,inode), file system device, MPC device,
@@ -118,43 +118,43 @@ hashSfile() {
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d (dev,ino) hash buckets\n",
-                       Pn, SFDIHASH);
+                       ProgramName, SFDIHASH);
         Exit(1);
     }
     if (!(HbyFrd = (struct hsfile *) calloc((MALLOC_S) SFRDHASH,
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d rdev hash buckets\n",
-                       Pn, SFRDHASH);
+                       ProgramName, SFRDHASH);
         Exit(1);
     }
     if (!(HbyFsd = (struct hsfile *) calloc((MALLOC_S) SFFSHASH,
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d file sys hash buckets\n",
-                       Pn, SFFSHASH);
+                       ProgramName, SFFSHASH);
         Exit(1);
     }
     if (!(HbyMPC = (struct hsfile *) calloc((MALLOC_S) SFMPCHASH,
                                             sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d MPC file hash buckets\n",
-                       Pn, SFMPCHASH);
+                       ProgramName, SFMPCHASH);
         Exit(1);
     }
     if (!(HbyNm = (struct hsfile *) calloc((MALLOC_S) SFNMHASH,
                                            sizeof(struct hsfile)))) {
         (void) fprintf(stderr,
                        "%s: can't allocate space for %d name hash buckets\n",
-                       Pn, SFNMHASH);
+                       ProgramName, SFNMHASH);
         Exit(1);
     }
     hs++;
 /*
- * Scan the Sfile chain, building file, file system, MPC file, and file
+ * Scan the SearchFileChain chain, building file, file system, MPC file, and file
  * name hash bucket chains.
  */
-    for (s = Sfile; s; s = s->next) {
+    for (s = SearchFileChain; s; s = s->next) {
         for (i = 0; i < 4; i++) {
             if (i == 0) {
                 if (!s->aname)
@@ -209,7 +209,7 @@ hashSfile() {
                 {
                     (void) fprintf(stderr,
                                    "%s: can't allocate hsfile bucket for: %s\n",
-                                   Pn, s->aname);
+                                   ProgramName, s->aname);
                     Exit(1);
                 }
                 sn->s = s;
@@ -228,7 +228,7 @@ hashSfile() {
 int
 is_file_named(p, ty, ch, ic)
         char *p;            /* path name; NULL = search by device
-					 * and inode (from *Lf) */
+					 * and inode (from *CurrentLocalFile) */
         enum vtype ty;            /* vnode type */
         chan_t ch;            /* gnode channel */
         int ic;                /* is clone file (4.1.4 and above) */
@@ -250,17 +250,17 @@ is_file_named(p, ty, ch, ic)
  */
     readdev(0);
     if (!dsplit) {
-        dmaj = GET_MAJ_DEV(DevDev);
-        dmin = GET_MIN_DEV(DevDev);
+        dmaj = GET_MAJ_DEV(DeviceOfDev);
+        dmin = GET_MIN_DEV(DeviceOfDev);
         dsplit = 1;
     }
-    if (Lf->dev_def) {
-        maj = GET_MAJ_DEV(Lf->dev);
-        min = GET_MIN_DEV(Lf->dev);
+    if (CurrentLocalFile->dev_def) {
+        maj = GET_MAJ_DEV(CurrentLocalFile->dev);
+        min = GET_MIN_DEV(CurrentLocalFile->dev);
     }
-    if (Lf->rdev_def) {
-        rmaj = GET_MAJ_DEV(Lf->rdev);
-        rmin = GET_MIN_DEV(Lf->rdev);
+    if (CurrentLocalFile->rdev_def) {
+        rmaj = GET_MAJ_DEV(CurrentLocalFile->rdev);
+        rmin = GET_MIN_DEV(CurrentLocalFile->rdev);
     }
 
 #if    AIXV >= 4140
@@ -270,18 +270,18 @@ is_file_named(p, ty, ch, ic)
         if (ic
         &&  HbyFdiCt
         &&  CloneMaj >= 0
-        &&  (Lf->dev_def && (maj = dmaj) && (min == dmin))
-        &&  Lf->rdev_def
-        &&  (Lf->inp_ty == 1 || Lf->inp_ty == 3))
+        &&  (CurrentLocalFile->dev_def && (maj = dmaj) && (min == dmin))
+        &&  CurrentLocalFile->rdev_def
+        &&  (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
         {
-            for (sh=&HbyFdi[SFHASHDEVINO(CloneMaj, rmaj, Lf->inode, SFDIHASH)];
+            for (sh=&HbyFdi[SFHASHDEVINO(CloneMaj, rmaj, CurrentLocalFile->inode, SFDIHASH)];
              sh;
              sh = sh->next)
             {
             if ((s = sh->s)
             &&  (GET_MAJ_DEV(s->rdev) == CloneMaj)
             &&  (GET_MIN_DEV(s->rdev) == rmaj)
-            &&  (s->i == Lf->inode))
+            &&  (s->i == CurrentLocalFile->inode))
             {
                 f = 3;
                 break;
@@ -306,8 +306,8 @@ is_file_named(p, ty, ch, ic)
  * it was supplied by the caller.
  */
     if (!f && HbyMPCCt && ty == VMPC
-        && (Lf->dev_def && (maj == dmaj) && (min == dmin))
-        && Lf->rdev_def) {
+        && (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin))
+        && CurrentLocalFile->rdev_def) {
         for (sh = &HbyMPC[SFHASHDEVINO(rmaj, rmin, 0, SFMPCHASH)];
              sh;
              sh = sh->next) {
@@ -323,15 +323,15 @@ is_file_named(p, ty, ch, ic)
 /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && Lf->dev_def
-        && (Lf->inp_ty == 1 || Lf->inp_ty == 3)) {
-        for (sh = &HbyFdi[SFHASHDEVINO(maj, min, Lf->inode, SFDIHASH)];
+    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
+        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFdi[SFHASHDEVINO(maj, min, CurrentLocalFile->inode, SFDIHASH)];
              sh;
              sh = sh->next) {
             if ((s = sh->s)
                 && (maj == GET_MAJ_DEV(s->dev))
                 && (min == GET_MIN_DEV(s->dev))
-                && (Lf->inode == s->i)) {
+                && (CurrentLocalFile->inode == s->i)) {
                 f = 1;
                 break;
             }
@@ -340,7 +340,7 @@ is_file_named(p, ty, ch, ic)
 /*
  * Check for a file system.
  */
-    if (!f && HbyFsdCt && Lf->dev_def) {
+    if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
         for (sh = &HbyFsd[SFHASHDEVINO(maj, min, 0, SFFSHASH)];
              sh;
              sh = sh->next) {
@@ -358,11 +358,11 @@ is_file_named(p, ty, ch, ic)
  */
     if (!f && HbyFrdCt
         && ((ty == VCHR) || (ty == VBLK))
-        && (Lf->dev_def && (maj == dmaj) && (min == dmin))
-        && Lf->rdev_def
-        && (Lf->inp_ty == 1 || Lf->inp_ty == 3)) {
+        && (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin))
+        && CurrentLocalFile->rdev_def
+        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
         for (sh = &HbyFrd[SFHASHRDEVI(maj, min, rmaj, rmin,
-                                      Lf->inode, SFRDHASH)];
+                                      CurrentLocalFile->inode, SFRDHASH)];
              sh;
              sh = sh->next) {
             if ((s = sh->s)
@@ -380,11 +380,11 @@ is_file_named(p, ty, ch, ic)
  */
     if (f) {
         if (f == 2) {
-            (void) snpf(Namech, Namechl, "%s", p);
+            (void) snpf(NameChars, NameCharsLength, "%s", p);
 
 #if    AIXV >= 4140
             } else if (f == 3 && ClonePtc >= 0 && (maj == ClonePtc)) {
-            (void) snpf(Namech, Namechl, "%s/%d", s->name, min);
+            (void) snpf(NameChars, NameCharsLength, "%s/%d", s->name, min);
 
 #endif    /* AIXV>=4140 */
 
@@ -392,9 +392,9 @@ is_file_named(p, ty, ch, ic)
 
             /*
              * If the search argument isn't a file system, propagate it
-             * to Namech[]; otherwise, let printname() compose the name.
+             * to NameChars[]; otherwise, let printname() compose the name.
              */
-            (void) snpf(Namech, Namechl, "%s", s->name);
+            (void) snpf(NameChars, NameCharsLength, "%s", s->name);
             if (ty == VMPC && s->ch < 0) {
                 ep = endnm(&sz);
                 (void) snpf(ep, sz, "/%d", ch);
@@ -462,7 +462,7 @@ readvfs(vn)
     }
     if (!(vp = (struct l_vfs *) malloc((MALLOC_S)sizeof(struct l_vfs)))) {
         (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       Pn, Lp->pid);
+                       ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
     vp->dir = (char *) NULL;
@@ -489,7 +489,7 @@ readvfs(vn)
     goto vfs_exit;
     if (!(mp = (void *) malloc((MALLOC_S) ul))) {
         (void) fprintf(stderr, "%s: PID %d, no space for mount data\n",
-                       Pn, Lp->pid);
+                       ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
     if (kread((KA_T) v.vfs_mdata, (char *) mp, (int) ul)) {
@@ -548,7 +548,7 @@ readvfs(vn)
 
             readvfs_aix1:
             (void) fprintf(stderr, "%s: PID %d, readvfs, no space\n",
-                           Pn, Lp->pid);
+                           ProgramName, CurrentLocalProc->pid);
             Exit(1);
         }
     } else

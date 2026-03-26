@@ -74,7 +74,7 @@ process_socket(i)
     struct un_dev ud;
 #endif    /* OSRV<500 */
 
-    (void) snpf(Lf->type, sizeof(Lf->type), "sock");
+    (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "sock");
 /*
  * Read socket.
  */
@@ -84,14 +84,14 @@ process_socket(i)
     }
     spa = Socktab + (GET_MIN_DEV(i->i_rdev) * sizeof(struct socket *));
     if (kread(spa, (char *) &sa, sizeof(sa))) {
-        (void) snpf(Namech, Namechl, "can't read socket pointer at %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read socket pointer at %s",
                     print_kptr(spa, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
     }
     if (kread(sa, (char *) &s, sizeof(s))) {
-        (void) snpf(Namech, Namechl, "can't read socket structure at %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read socket structure at %s",
                     print_kptr(sa, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 /*
@@ -99,9 +99,9 @@ process_socket(i)
  */
     if (!s.so_proto.pr_domain
         || kread((KA_T) s.so_proto.pr_domain, (char *) &d, sizeof(d))) {
-        (void) snpf(Namech, Namechl, "can't read protocol domain from %s",
+        (void) snpf(NameChars, NameCharsLength, "can't read protocol domain from %s",
                     print_kptr((KA_T) s.so_proto.pr_domain, (char *) NULL, 0));
-        enter_nm(Namech);
+        enter_nm(NameChars);
         return;
     }
 /*
@@ -109,11 +109,11 @@ process_socket(i)
  */
     switch ((fam = d.dom_family)) {
         case AF_INET:
-            if (Fnet)
-                Lf->sf |= SELNET;
-            (void) snpf(Lf->type, sizeof(Lf->type), "inet");
+            if (OptNetwork)
+                CurrentLocalFile->sf |= SELNET;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
             printiproto((int) s.so_proto.pr_protocol);
-            Lf->inp_ty = 2;
+            CurrentLocalFile->inp_ty = 2;
             /*
              * Get protocol control block address from stream head queue structure.
              */
@@ -130,7 +130,7 @@ process_socket(i)
              * Print local and remote addresses.
              */
             if (pcbs) {
-                if (pcb.inp_ppcb && strcasecmp(Lf->iproto, "udp") == 0) {
+                if (pcb.inp_ppcb && strcasecmp(CurrentLocalFile->iproto, "udp") == 0) {
 
                     /*
                      * If this is a UDP socket file, get the udpdev structure
@@ -187,17 +187,17 @@ process_socket(i)
                 }
                 if (la || fa) {
                     (void) ent_inaddr(la, lp, fa, fp, AF_INET);
-                    if (udptm && !Lf->nma)
+                    if (udptm && !CurrentLocalFile->nma)
                         (void) udp_tm(udp.ud_ftime);
                 }
-                if (pcb.inp_ppcb && strcasecmp(Lf->iproto, "tcp") == 0
+                if (pcb.inp_ppcb && strcasecmp(CurrentLocalFile->iproto, "tcp") == 0
                     && kread((KA_T) pcb.inp_ppcb, (char *) &t, sizeof(t)) == 0) {
                     ts = 1;
                     /*
                      * Save the TCP state from its control block.
                      */
-                    Lf->lts.type = 0;
-                    Lf->lts.state.i = (int) t.t_state;
+                    CurrentLocalFile->lts.type = 0;
+                    CurrentLocalFile->lts.state.i = (int) t.t_state;
                 }
             } else {
 
@@ -235,108 +235,108 @@ process_socket(i)
              */
 
 #if    defined(HASSOOPT)
-        Lf->lts.ltm = (unsigned int)s.so_linger;
-        Lf->lts.opt = (unsigned int)s.so_options;
-        Lf->lts.qlen = (unsigned int)s.so_qlen;
-        Lf->lts.qlim = (unsigned int)s.so_qlimit;
-        Lf->lts.qlens = Lf->lts.qlims = (unsigned char)1;
+        CurrentLocalFile->lts.ltm = (unsigned int)s.so_linger;
+        CurrentLocalFile->lts.opt = (unsigned int)s.so_options;
+        CurrentLocalFile->lts.qlen = (unsigned int)s.so_qlen;
+        CurrentLocalFile->lts.qlim = (unsigned int)s.so_qlimit;
+        CurrentLocalFile->lts.qlens = CurrentLocalFile->lts.qlims = (unsigned char)1;
         if (ts && t.t_timer[TCPT_KEEP]) {
-        Lf->lts.opt |= SO_KEEPALIVE;
-        Lf->lts.kai = (unsigned long)t.t_timer[TCPT_KEEP];
+        CurrentLocalFile->lts.opt |= SO_KEEPALIVE;
+        CurrentLocalFile->lts.kai = (unsigned long)t.t_timer[TCPT_KEEP];
         }
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-            Lf->lts.ss = s.so_state;
+            CurrentLocalFile->lts.ss = s.so_state;
 #endif    /* defined(HASSOSTATE) */
 
 
             if (ts) {
 
 #if    defined(HASTCPOPT)
-                Lf->lts.topt = (unsigned int)t.t_flags;
-                Lf->lts.mss = (unsigned long)t.t_maxseg;
-                Lf->lts.msss = (unsigned char)1;
+                CurrentLocalFile->lts.topt = (unsigned int)t.t_flags;
+                CurrentLocalFile->lts.mss = (unsigned long)t.t_maxseg;
+                CurrentLocalFile->lts.msss = (unsigned char)1;
 #endif    /* defined(HASTCPOPT) */
 
 #if    defined(HASTCPTPIQ)
-                Lf->lts.rq = (unsigned long)t.t_iqsize;
-                Lf->lts.sq = (unsigned long)t.t_qsize;
-                Lf->lts.rqs = Lf->lts.sqs = 1;
+                CurrentLocalFile->lts.rq = (unsigned long)t.t_iqsize;
+                CurrentLocalFile->lts.sq = (unsigned long)t.t_qsize;
+                CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
-                if (Fsize) {
-                    if (Lf->access == 'r')
-                        Lf->sz = (SZOFFTYPE) t.t_iqsize;
-                    else if (Lf->access == 'w')
-                        Lf->sz = (SZOFFTYPE) t.t_qsize;
+                if (OptSize) {
+                    if (CurrentLocalFile->access == 'r')
+                        CurrentLocalFile->sz = (SZOFFTYPE) t.t_iqsize;
+                    else if (CurrentLocalFile->access == 'w')
+                        CurrentLocalFile->sz = (SZOFFTYPE) t.t_qsize;
                     else
-                        Lf->sz = (SZOFFTYPE) (t.t_iqsize + t.t_qsize);
-                    Lf->sz_def = 1;
+                        CurrentLocalFile->sz = (SZOFFTYPE) (t.t_iqsize + t.t_qsize);
+                    CurrentLocalFile->sz_def = 1;
                 } else
-                    Lf->off_def = 1;
+                    CurrentLocalFile->off_def = 1;
             } else if (shs) {
-                if (Fsize) {
-                    Lf->sz = (SZOFFTYPE) sh.q_count;
-                    Lf->sz_def = 1;
+                if (OptSize) {
+                    CurrentLocalFile->sz = (SZOFFTYPE) sh.q_count;
+                    CurrentLocalFile->sz_def = 1;
                 } else
-                    Lf->off_def = 1;
+                    CurrentLocalFile->off_def = 1;
             } else
-                Lf->off_def = 1;
+                CurrentLocalFile->off_def = 1;
             break;
 
 #if    OSRV >= 500
         case AF_UNIX:
-            if (Funix)
-            Lf->sf |= SELUNX;
-            (void) snpf(Lf->type, sizeof(Lf->type), "unix");
+            if (OptUnixSocket)
+            CurrentLocalFile->sf |= SELUNX;
+            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
         /*
          * Read Unix protocol control block and the Unix address structure.
          */
             enter_dev_ch(print_kptr(sa, (char *)NULL, 0));
-            Lf->off_def = 1;
+            CurrentLocalFile->off_def = 1;
             if (s.so_stp
             &&  !readstdata((KA_T)s.so_stp, &sd)
             &&  !readsthead((KA_T)sd.sd_wrq, &sh)) {
             if (!sh.q_ptr
             ||  kread((KA_T)sh.q_ptr, (char *)&ud, sizeof(ud)))
             {
-                (void) snpf(Namech, Namechl, "can't read un_dev from %s",
+                (void) snpf(NameChars, NameCharsLength, "can't read un_dev from %s",
                 print_kptr((KA_T)sh.q_ptr, (char *)NULL, 0));
                 break;
             }
             if (ud.so_rq)
                 enter_dev_ch(print_kptr((KA_T)ud.so_rq, (char *)NULL, 0));
             if (ud.local_addr.sun_family == AF_UNIX) {
-                Lf->inode = (unsigned long)ud.bnd_param.user_addr.inode_no;
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inode = (unsigned long)ud.bnd_param.user_addr.inode_no;
+                CurrentLocalFile->inp_ty = 1;
                 ud.local_addr.sun_path[sizeof(ud.local_addr.sun_path) - 1]
                 = '\0';
-                if (Sfile && is_file_named(ud.local_addr.sun_path, 0))
-                Lf->sf |= SELNM;
-                if (!Namech[0])
-                (void) snpf(Namech,Namechl,"%s",ud.local_addr.sun_path);
+                if (SearchFileChain && is_file_named(ud.local_addr.sun_path, 0))
+                CurrentLocalFile->sf |= SELNM;
+                if (!NameChars[0])
+                (void) snpf(NameChars,NameCharsLength,"%s",ud.local_addr.sun_path);
             } else if (ud.for_addr.sun_family == AF_UNIX) {
-                Lf->inode = (unsigned long)ud.bnd_param.user_addr.inode_no;
-                Lf->inp_ty = 1;
+                CurrentLocalFile->inode = (unsigned long)ud.bnd_param.user_addr.inode_no;
+                CurrentLocalFile->inp_ty = 1;
                 ud.for_addr.sun_path[sizeof(ud.for_addr.sun_path) - 1]
                 = '\0';
-                if (Sfile && is_file_named(ud.for_addr.sun_path, 0))
-                Lf->sf |= SELNM;
+                if (SearchFileChain && is_file_named(ud.for_addr.sun_path, 0))
+                CurrentLocalFile->sf |= SELNM;
                 else
-                (void) snpf(Namech,Namechl,"%s",ud.for_addr.sun_path);
+                (void) snpf(NameChars,NameCharsLength,"%s",ud.for_addr.sun_path);
             } else if (ud.other_q)
-                (void) snpf(Namech, Namechl, "->%s",
+                (void) snpf(NameChars, NameCharsLength, "->%s",
                 print_kptr((KA_T)ud.other_q, (char *)NULL, 0));
             } else
-            (void) snpf(Namech, Namechl, "can't get un_dev");
+            (void) snpf(NameChars, NameCharsLength, "can't get un_dev");
             break;
 #endif    /* OSRV>=500 */
 
         default:
             printunkaf(fam, 1);
     }
-    enter_nm(Namech);
+    enter_nm(NameChars);
 }
 
 
@@ -413,9 +413,9 @@ udp_tm(tm)
         return;
     if (!(cp = (char *) malloc(len))) {
         (void) fprintf(stderr, "%s: no space for %d character UDP time\n",
-                       Pn, len);
+                       ProgramName, len);
         Exit(1);
     }
     (void) snpf(cp, len, "%s", buf);
-    Lf->nma = cp;
+    CurrentLocalFile->nma = cp;
 }
