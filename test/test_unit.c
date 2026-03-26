@@ -1558,6 +1558,493 @@ TEST(safepup_del_char) {
     ASSERT_FALSE(isprint(0x7f));
 }
 
+/* ===== hashbyname() reimplementation test ===== */
+static int
+test_hashbyname(char *nm, int mod)
+{
+    int i, j;
+    for (i = j = 0; *nm; nm++) {
+        i ^= (int) *nm << j;
+        if (++j > 7)
+            j = 0;
+    }
+    return (((int) (i * 31415)) & (mod - 1));
+}
+
+TEST(hashbyname_range) {
+    /* All results must be in [0, mod) */
+    const char *names[] = {"tcp", "udp", "icmp", "http", "ssh", "/dev/null",
+                           "/var/log/syslog", "a", "", "Z"};
+    int mod = 128;
+    for (int i = 0; i < 10; i++) {
+        int h = test_hashbyname((char *)names[i], mod);
+        ASSERT_GE(h, 0);
+        ASSERT_LT(h, mod);
+    }
+}
+
+TEST(hashbyname_deterministic) {
+    ASSERT_EQ(test_hashbyname("tcp", 128), test_hashbyname("tcp", 128));
+    ASSERT_EQ(test_hashbyname("udp", 256), test_hashbyname("udp", 256));
+}
+
+TEST(hashbyname_different_strings_differ) {
+    /* "tcp" and "udp" should hash differently (not guaranteed, but very likely) */
+    int h1 = test_hashbyname("tcp", 128);
+    int h2 = test_hashbyname("udp", 128);
+    ASSERT_NE(h1, h2);
+}
+
+TEST(hashbyname_empty_string) {
+    int h = test_hashbyname("", 128);
+    ASSERT_EQ(h, 0);
+}
+
+TEST(hashbyname_case_sensitive) {
+    int h1 = test_hashbyname("TCP", 128);
+    int h2 = test_hashbyname("tcp", 128);
+    ASSERT_NE(h1, h2);
+}
+
+TEST(hashbyname_power_of_two_mod) {
+    /* Various modulus values (must be power of 2) */
+    int mods[] = {16, 32, 64, 128, 256, 512, 1024};
+    for (int m = 0; m < 7; m++) {
+        int h = test_hashbyname("/dev/sda1", mods[m]);
+        ASSERT_GE(h, 0);
+        ASSERT_LT(h, mods[m]);
+    }
+}
+
+TEST(hashbyname_distribution) {
+    /* Hash 100 path-like strings into 64 buckets; expect at least half used */
+    int buckets[64];
+    memset(buckets, 0, sizeof(buckets));
+    for (int i = 0; i < 100; i++) {
+        char name[32];
+        snprintf(name, sizeof(name), "/proc/%d/fd/%d", i * 7, i * 3);
+        buckets[test_hashbyname(name, 64)]++;
+    }
+    int used = 0;
+    for (int i = 0; i < 64; i++)
+        if (buckets[i] > 0) used++;
+    ASSERT_GT(used, 20);
+}
+
+
+/* ===== mkstrcpy() reimplementation test ===== */
+static char *
+test_mkstrcpy(char *src, size_t *rlp)
+{
+    size_t len = (size_t)(src ? strlen(src) : 0);
+    char *ns = (char *)malloc(len + 1);
+    if (ns) {
+        if (src)
+            memcpy(ns, src, len + 1);
+        else
+            *ns = '\0';
+    }
+    if (rlp)
+        *rlp = len;
+    return ns;
+}
+
+TEST(mkstrcpy_basic) {
+    size_t len = 0;
+    char *s = test_mkstrcpy("hello", &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "hello");
+    ASSERT_EQ(len, 5);
+    free(s);
+}
+
+TEST(mkstrcpy_empty) {
+    size_t len = 99;
+    char *s = test_mkstrcpy("", &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "");
+    ASSERT_EQ(len, 0);
+    free(s);
+}
+
+TEST(mkstrcpy_null_source) {
+    size_t len = 99;
+    char *s = test_mkstrcpy(NULL, &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(s[0], '\0');
+    ASSERT_EQ(len, 0);
+    free(s);
+}
+
+TEST(mkstrcpy_null_lenptr) {
+    char *s = test_mkstrcpy("test", NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "test");
+    free(s);
+}
+
+TEST(mkstrcpy_long_string) {
+    char buf[256];
+    memset(buf, 'A', 255);
+    buf[255] = '\0';
+    size_t len = 0;
+    char *s = test_mkstrcpy(buf, &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(len, 255);
+    ASSERT_EQ(strlen(s), 255);
+    free(s);
+}
+
+TEST(mkstrcpy_is_independent_copy) {
+    char src[] = "original";
+    char *s = test_mkstrcpy(src, NULL);
+    ASSERT_NOT_NULL(s);
+    src[0] = 'X';  /* mutate source */
+    ASSERT_STR_EQ(s, "original");  /* copy unchanged */
+    free(s);
+}
+
+
+/* ===== mkstrcat() reimplementation test ===== */
+static char *
+test_mkstrcat(char *s1, int l1, char *s2, int l2, char *s3, int l3, size_t *clp)
+{
+    size_t len1 = s1 ? (size_t)((l1 >= 0) ? l1 : (int)strlen(s1)) : 0;
+    size_t len2 = s2 ? (size_t)((l2 >= 0) ? l2 : (int)strlen(s2)) : 0;
+    size_t len3 = s3 ? (size_t)((l3 >= 0) ? l3 : (int)strlen(s3)) : 0;
+    size_t cl = len1 + len2 + len3;
+    char *cp = (char *)malloc(cl + 1);
+    if (cp) {
+        char *tp = cp;
+        if (s1 && len1) { memcpy(tp, s1, len1); tp += len1; }
+        if (s2 && len2) { memcpy(tp, s2, len2); tp += len2; }
+        if (s3 && len3) { memcpy(tp, s3, len3); tp += len3; }
+        *tp = '\0';
+    }
+    if (clp) *clp = cl;
+    return cp;
+}
+
+TEST(mkstrcat_two_strings) {
+    size_t len = 0;
+    char *s = test_mkstrcat("hello", -1, " world", -1, NULL, -1, &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "hello world");
+    ASSERT_EQ(len, 11);
+    free(s);
+}
+
+TEST(mkstrcat_three_strings) {
+    size_t len = 0;
+    char *s = test_mkstrcat("a", -1, "b", -1, "c", -1, &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "abc");
+    ASSERT_EQ(len, 3);
+    free(s);
+}
+
+TEST(mkstrcat_with_length_limits) {
+    size_t len = 0;
+    char *s = test_mkstrcat("hello", 3, "world", 2, NULL, -1, &len);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "helwo");
+    ASSERT_EQ(len, 5);
+    free(s);
+}
+
+TEST(mkstrcat_empty_strings) {
+    char *s = test_mkstrcat("", -1, "", -1, "", -1, NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "");
+    free(s);
+}
+
+TEST(mkstrcat_null_strings) {
+    char *s = test_mkstrcat(NULL, -1, NULL, -1, NULL, -1, NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "");
+    free(s);
+}
+
+TEST(mkstrcat_mixed_null) {
+    char *s = test_mkstrcat("hello", -1, NULL, -1, " world", -1, NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "hello world");
+    free(s);
+}
+
+TEST(mkstrcat_zero_length) {
+    /* l1=0 means take 0 chars from s1 even though it exists */
+    char *s = test_mkstrcat("skip", 0, "keep", -1, NULL, -1, NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "keep");
+    free(s);
+}
+
+TEST(mkstrcat_path_building) {
+    char *s = test_mkstrcat("/proc/", -1, "1234", -1, "/fd", -1, NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "/proc/1234/fd");
+    free(s);
+}
+
+
+/* ===== isIPv4addr() reimplementation test ===== */
+#define TEST_MIN_AF_ADDR 4
+
+static char *
+test_isIPv4addr(char *hn, unsigned char *a, int al)
+{
+    int dc = 0;
+    int i;
+    int ov[TEST_MIN_AF_ADDR];
+    int ovx = 0;
+
+    if ((*hn < '0') || (*hn > '9'))
+        return NULL;
+    if (!a || (al < TEST_MIN_AF_ADDR))
+        return NULL;
+
+    ov[0] = (int)(*hn++ - '0');
+    while (*hn && (*hn != ':')) {
+        if (*hn == '.') {
+            dc++;
+            if ((ov[ovx] < 0) || (ov[ovx] > 255))
+                return NULL;
+            if (++ovx > (TEST_MIN_AF_ADDR - 1))
+                return NULL;
+            ov[ovx] = -1;
+        } else if ((*hn >= '0') && (*hn <= '9')) {
+            if (ov[ovx] < 0)
+                ov[ovx] = (int)(*hn - '0');
+            else
+                ov[ovx] = (ov[ovx] * 10) + (int)(*hn - '0');
+        } else {
+            return NULL;
+        }
+        hn++;
+    }
+    if ((dc != 3) || (ovx != (TEST_MIN_AF_ADDR - 1))
+        || (ov[ovx] < 0) || (ov[ovx] > 255))
+        return NULL;
+
+    for (i = 0; i < TEST_MIN_AF_ADDR; i++)
+        a[i] = (unsigned char)ov[i];
+    return hn;
+}
+
+TEST(ipv4_basic) {
+    unsigned char a[4] = {0};
+    char *r = test_isIPv4addr("192.168.1.1", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(a[0], 192);
+    ASSERT_EQ(a[1], 168);
+    ASSERT_EQ(a[2], 1);
+    ASSERT_EQ(a[3], 1);
+}
+
+TEST(ipv4_loopback) {
+    unsigned char a[4] = {0};
+    char *r = test_isIPv4addr("127.0.0.1", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(a[0], 127);
+    ASSERT_EQ(a[1], 0);
+    ASSERT_EQ(a[2], 0);
+    ASSERT_EQ(a[3], 1);
+}
+
+TEST(ipv4_all_zeros) {
+    unsigned char a[4] = {0xff, 0xff, 0xff, 0xff};
+    char *r = test_isIPv4addr("0.0.0.0", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(a[0], 0);
+    ASSERT_EQ(a[1], 0);
+    ASSERT_EQ(a[2], 0);
+    ASSERT_EQ(a[3], 0);
+}
+
+TEST(ipv4_broadcast) {
+    unsigned char a[4] = {0};
+    char *r = test_isIPv4addr("255.255.255.255", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(a[0], 255);
+    ASSERT_EQ(a[1], 255);
+    ASSERT_EQ(a[2], 255);
+    ASSERT_EQ(a[3], 255);
+}
+
+TEST(ipv4_with_port) {
+    unsigned char a[4] = {0};
+    char *r = test_isIPv4addr("10.0.0.1:8080", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(*r, ':');
+    ASSERT_EQ(a[0], 10);
+    ASSERT_EQ(a[3], 1);
+}
+
+TEST(ipv4_stops_at_colon) {
+    unsigned char a[4] = {0};
+    char *r = test_isIPv4addr("1.2.3.4:http", a, 4);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(*r, ':');
+}
+
+TEST(ipv4_too_few_octets) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("192.168.1", a, 4));
+}
+
+TEST(ipv4_too_many_octets) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("1.2.3.4.5", a, 4));
+}
+
+TEST(ipv4_octet_too_large) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("256.0.0.1", a, 4));
+}
+
+TEST(ipv4_empty) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("", a, 4));
+}
+
+TEST(ipv4_alpha) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("abc.def.ghi.jkl", a, 4));
+}
+
+TEST(ipv4_leading_alpha) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("x1.2.3.4", a, 4));
+}
+
+TEST(ipv4_null_addr) {
+    ASSERT_NULL(test_isIPv4addr("1.2.3.4", NULL, 4));
+}
+
+TEST(ipv4_short_buffer) {
+    unsigned char a[2] = {0};
+    ASSERT_NULL(test_isIPv4addr("1.2.3.4", a, 2));
+}
+
+TEST(ipv4_trailing_dot) {
+    unsigned char a[4] = {0};
+    ASSERT_NULL(test_isIPv4addr("1.2.3.", a, 4));
+}
+
+
+/* ===== ckfd_range() reimplementation test ===== */
+static int
+test_ckfd_range(char *first, char *dash, char *last, int *lo, int *hi)
+{
+    char *cp;
+    if (first >= dash || dash >= last)
+        return 1;
+    for (cp = first, *lo = 0; *cp && cp < dash; cp++) {
+        if (!isdigit((unsigned char)*cp))
+            return 1;
+        *lo = (*lo * 10) + (int)(*cp - '0');
+    }
+    for (cp = dash + 1, *hi = 0; *cp && cp < last; cp++) {
+        if (!isdigit((unsigned char)*cp))
+            return 1;
+        *hi = (*hi * 10) + (int)(*cp - '0');
+    }
+    if (*lo >= *hi)
+        return 1;
+    return 0;
+}
+
+TEST(ckfd_range_basic) {
+    char s[] = "3-10";
+    int lo = -1, hi = -1;
+    ASSERT_EQ(test_ckfd_range(s, s + 1, s + 4, &lo, &hi), 0);
+    ASSERT_EQ(lo, 3);
+    ASSERT_EQ(hi, 10);
+}
+
+TEST(ckfd_range_single_digits) {
+    char s[] = "0-9";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 1, s + 3, &lo, &hi), 0);
+    ASSERT_EQ(lo, 0);
+    ASSERT_EQ(hi, 9);
+}
+
+TEST(ckfd_range_large) {
+    char s[] = "100-999";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 3, s + 7, &lo, &hi), 0);
+    ASSERT_EQ(lo, 100);
+    ASSERT_EQ(hi, 999);
+}
+
+TEST(ckfd_range_equal_rejected) {
+    char s[] = "5-5";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 1, s + 3, &lo, &hi), 1);
+}
+
+TEST(ckfd_range_reversed_rejected) {
+    char s[] = "10-3";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 2, s + 4, &lo, &hi), 1);
+}
+
+TEST(ckfd_range_non_digit_rejected) {
+    char s[] = "3a-10";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 2, s + 5, &lo, &hi), 1);
+}
+
+TEST(ckfd_range_non_digit_hi_rejected) {
+    char s[] = "3-1x";
+    int lo, hi;
+    ASSERT_EQ(test_ckfd_range(s, s + 1, s + 4, &lo, &hi), 1);
+}
+
+TEST(ckfd_range_bad_pointers) {
+    char s[] = "3-10";
+    int lo, hi;
+    /* dash at or before first */
+    ASSERT_EQ(test_ckfd_range(s, s, s + 4, &lo, &hi), 1);
+}
+
+
+/* ===== safestrprt() output test ===== */
+TEST(safestrprt_printable_to_buffer) {
+    /* Write to a FILE* via tmpfile and verify output */
+    FILE *f = tmpfile();
+    ASSERT_NOT_NULL(f);
+    /* Write printable string */
+    fprintf(f, "%s", "hello");
+    rewind(f);
+    char buf[64] = {0};
+    ASSERT_NOT_NULL(fgets(buf, sizeof(buf), f));
+    ASSERT_STR_EQ(buf, "hello");
+    fclose(f);
+}
+
+TEST(safestrprt_control_char_format) {
+    /* Control chars are escaped as ^X where X = '@' + char */
+    char c = '\x01';
+    char expected[3];
+    expected[0] = '^';
+    expected[1] = '@' + 1;  /* 'A' */
+    expected[2] = '\0';
+
+    FILE *f = tmpfile();
+    ASSERT_NOT_NULL(f);
+    fprintf(f, "^%c", (char)('@' + c));
+    rewind(f);
+    char buf[64] = {0};
+    ASSERT_NOT_NULL(fgets(buf, sizeof(buf), f));
+    ASSERT_STR_EQ(buf, expected);
+    fclose(f);
+}
+
+
 /* ===== Test Registry ===== */
 static tf_test_entry all_tests[] = {
     REGISTER_TEST(field_ids_are_unique),
@@ -1662,6 +2149,52 @@ static tf_test_entry all_tests[] = {
     REGISTER_TEST(safepup_printable_range),
     REGISTER_TEST(safepup_all_control_chars_escaped),
     REGISTER_TEST(safepup_del_char),
+    REGISTER_TEST(hashbyname_range),
+    REGISTER_TEST(hashbyname_deterministic),
+    REGISTER_TEST(hashbyname_different_strings_differ),
+    REGISTER_TEST(hashbyname_empty_string),
+    REGISTER_TEST(hashbyname_case_sensitive),
+    REGISTER_TEST(hashbyname_power_of_two_mod),
+    REGISTER_TEST(hashbyname_distribution),
+    REGISTER_TEST(mkstrcpy_basic),
+    REGISTER_TEST(mkstrcpy_empty),
+    REGISTER_TEST(mkstrcpy_null_source),
+    REGISTER_TEST(mkstrcpy_null_lenptr),
+    REGISTER_TEST(mkstrcpy_long_string),
+    REGISTER_TEST(mkstrcpy_is_independent_copy),
+    REGISTER_TEST(mkstrcat_two_strings),
+    REGISTER_TEST(mkstrcat_three_strings),
+    REGISTER_TEST(mkstrcat_with_length_limits),
+    REGISTER_TEST(mkstrcat_empty_strings),
+    REGISTER_TEST(mkstrcat_null_strings),
+    REGISTER_TEST(mkstrcat_mixed_null),
+    REGISTER_TEST(mkstrcat_zero_length),
+    REGISTER_TEST(mkstrcat_path_building),
+    REGISTER_TEST(ipv4_basic),
+    REGISTER_TEST(ipv4_loopback),
+    REGISTER_TEST(ipv4_all_zeros),
+    REGISTER_TEST(ipv4_broadcast),
+    REGISTER_TEST(ipv4_with_port),
+    REGISTER_TEST(ipv4_stops_at_colon),
+    REGISTER_TEST(ipv4_too_few_octets),
+    REGISTER_TEST(ipv4_too_many_octets),
+    REGISTER_TEST(ipv4_octet_too_large),
+    REGISTER_TEST(ipv4_empty),
+    REGISTER_TEST(ipv4_alpha),
+    REGISTER_TEST(ipv4_leading_alpha),
+    REGISTER_TEST(ipv4_null_addr),
+    REGISTER_TEST(ipv4_short_buffer),
+    REGISTER_TEST(ipv4_trailing_dot),
+    REGISTER_TEST(ckfd_range_basic),
+    REGISTER_TEST(ckfd_range_single_digits),
+    REGISTER_TEST(ckfd_range_large),
+    REGISTER_TEST(ckfd_range_equal_rejected),
+    REGISTER_TEST(ckfd_range_reversed_rejected),
+    REGISTER_TEST(ckfd_range_non_digit_rejected),
+    REGISTER_TEST(ckfd_range_non_digit_hi_rejected),
+    REGISTER_TEST(ckfd_range_bad_pointers),
+    REGISTER_TEST(safestrprt_printable_to_buffer),
+    REGISTER_TEST(safestrprt_control_char_format),
 };
 
 RUN_TESTS_FROM(all_tests)

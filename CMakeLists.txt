@@ -111,6 +111,13 @@ target_compile_definitions(check_integration PRIVATE
 )
 add_test(NAME check_integration COMMAND check_integration)
 
+# 'make leakcheck' runs unit tests under macOS leaks tool
+add_custom_target(leakcheck
+    COMMAND ${PROJECT_SOURCE_DIR}/test/run_leakcheck.sh ${CMAKE_BINARY_DIR}
+    DEPENDS check_unit check_integration
+    COMMENT "Running leak analysis on test binaries"
+)
+
 # ===== Benchmark Suite =====
 add_executable(benchmark_core bench/bench_core.c)
 target_include_directories(benchmark_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)

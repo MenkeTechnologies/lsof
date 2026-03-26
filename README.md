@@ -174,23 +174,32 @@ This builds and runs `benchmark_core`, writing results to `benchmark_core.log` i
 
 ### Benchmarks (`bench/bench_core.c`)
 
-65 benchmarks covering core operations, optimization comparisons, and system call overhead.
+101 benchmarks covering core operations, optimization comparisons, and system call overhead.
 
 | Category | What it measures |
 |---|---|
 | **x2dev** | Hex parsing — short, prefixed, and long strings |
 | **HASHPORT** | Port hashing — full range and common ports |
+| **hashbyname** | Name hashing — short names, paths, long paths |
 | **safestrlen** | Safe string length — short, escaped, long paths, binary data |
 | **compdev sort** | Device table sorting via qsort — 100 and 1000 elements |
 | **safepup** | Unprintable char formatting — control chars and high bytes |
-| **I/O** | open/close, stat, lstat, getpid, pipe, readdir |
-| **String ops** | strlen, strcmp, strncmp, strcasecmp, snprintf, isprint scanning |
-| **Socket** | TCP socket create/close cycle |
-| **Memory** | malloc/free (small/medium), realloc growth, safe realloc pattern |
+| **safestrprt** | Safe string printing — clean strings and strings with escapes |
+| **mkstrcat** | String concatenation — 2-part, 3-part, with pre-computed lengths |
+| **I/O** | open/close, stat, lstat, getpid, pipe, readdir, readlink, access, dup, write, fcntl |
+| **File streams** | fopen/fclose vs raw open/close overhead |
+| **String ops** | strlen, strcmp, strncmp, strcasecmp, strncpy, snprintf, isprint, strtol |
+| **Socket** | TCP socket create/close, UNIX socketpair create/close |
+| **Memory** | malloc/free (small/medium), realloc growth, safe realloc pattern, memset/memcpy (64B/4KB) |
 | **String copy** | mkstrcpy — short, path-length, and NULL source |
-| **Data structures** | Linked list traversal (100/1000), hash lookup hit/miss |
+| **Data structures** | Linked list traversal (100/1000), hash lookup hit/miss/deep chain |
 | **Search** | PID sort (qsort), PID binary search, field ID lookup |
 | **Matching** | Regex match, strncmp prefix, FD status check (numeric/named) |
+| **Path building** | snprintf vs manual `/proc/<pid>/fd/<fd>` construction |
+| **Field output** | snprintf vs manual lsof `-F` field formatting |
+| **Command names** | strncpy truncation — short and long command names |
+| **Time formatting** | strftime — date/time and epoch formats |
+| **Environment** | getenv hit/miss, gethostname |
 | **UID** | getpwuid cached lookup |
 
 ### Optimization comparisons
@@ -208,6 +217,11 @@ The benchmark suite includes head-to-head comparisons that measure the impact of
 | Command matching: `regexec` vs `strncmp` | 30.8 ns/op | 1.7 ns/op | **18x** |
 | Protocol compare: `strncasecmp` vs manual lowercase | 2.9 ns/op | 0.4 ns/op | **7x** |
 | Iteration (1000): contiguous array vs pointer chasing | 24.7 ns/op | 723.1 ns/op | **29x** (array) |
+| Field output: `snprintf` vs manual formatting | 74.7 ns/op | 4.9 ns/op | **15x** |
+| Path building: `snprintf` vs manual concat | 45.9 ns/op | 4.9 ns/op | **9x** |
+| String concat: `mkstrcat` auto-length vs pre-computed | 16.1 ns/op | 7.3 ns/op | **2.2x** |
+| File open: `fopen`/`fclose` vs `open`/`close` | 4.8 us/op | 4.5 us/op | **1.1x** |
+| Environment lookup: `getenv` hit vs miss | 62.6 ns/op | 213.1 ns/op | **3.4x** (hit) |
 
 ---
 

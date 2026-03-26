@@ -1054,4 +1054,466 @@ BENCH(manual_lowercase_cmp, 10000000) {
 }
 
 
+/* ===== hashbyname benchmark (name-based hashing used in lsof) ===== */
+static int
+bench_hashbyname(char *nm, int mod)
+{
+    int i, j;
+    for (i = j = 0; *nm; nm++) {
+        i ^= (int)*nm << j;
+        if (++j > 7)
+            j = 0;
+    }
+    return (((int)(i * 31415)) & (mod - 1));
+}
+
+BENCH(hashbyname_short, 10000000) {
+    char *names[] = {"tcp", "udp", "pipe", "unix", "fifo"};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(bench_hashbyname(names[i % 5], 128));
+    }
+}
+
+BENCH(hashbyname_path, 5000000) {
+    char *paths[] = {
+        "/usr/local/bin/node", "/var/log/syslog", "/dev/null",
+        "/proc/self/fd/3", "/tmp/socket.sock"
+    };
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(bench_hashbyname(paths[i % 5], 256));
+    }
+}
+
+BENCH(hashbyname_long, 2000000) {
+    char *names[] = {
+        "/usr/local/share/applications/very/deep/nested/path/to/resource.dat",
+        "/home/user/.config/some-application/settings/profile/default.json",
+        "/var/lib/docker/overlay2/abc123def456/merged/usr/bin/entrypoint.sh",
+    };
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(bench_hashbyname(names[i % 3], 512));
+    }
+}
+
+
+/* ===== mkstrcat benchmark (string concatenation used in path building) ===== */
+static char *
+bench_mkstrcat(char *s1, int l1, char *s2, int l2, char *s3, int l3)
+{
+    size_t len1 = s1 ? ((l1 >= 0) ? (size_t)l1 : strlen(s1)) : 0;
+    size_t len2 = s2 ? ((l2 >= 0) ? (size_t)l2 : strlen(s2)) : 0;
+    size_t len3 = s3 ? ((l3 >= 0) ? (size_t)l3 : strlen(s3)) : 0;
+    char *cp = (char *)malloc(len1 + len2 + len3 + 1);
+    if (cp) {
+        char *tp = cp;
+        if (s1 && len1) { memcpy(tp, s1, len1); tp += len1; }
+        if (s2 && len2) { memcpy(tp, s2, len2); tp += len2; }
+        if (s3 && len3) { memcpy(tp, s3, len3); tp += len3; }
+        *tp = '\0';
+    }
+    return cp;
+}
+
+BENCH(mkstrcat_two, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcat("/usr/local", -1, "/bin/lsof", -1, NULL, 0);
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+BENCH(mkstrcat_three, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcat("/proc/", -1, "1234", -1, "/fd/0", -1);
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+BENCH(mkstrcat_with_lengths, 5000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcat("/proc/", 6, "1234", 4, "/fd/0", 5);
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+
+/* ===== safestrprt benchmark (safe printing to stream) ===== */
+BENCH(safestrprt_clean, 500000) {
+    FILE *f = fopen("/dev/null", "w");
+    if (!f) return;
+    for (int i = 0; i < bf_iters; i++) {
+        char *sp = "/usr/local/bin/lsof";
+        for (; *sp; sp++)
+            putc((int)(*sp & 0xff), f);
+    }
+    fclose(f);
+}
+
+BENCH(safestrprt_dirty, 500000) {
+    FILE *f = fopen("/dev/null", "w");
+    if (!f) return;
+    char *test = "/usr/bin/test\twith\ttabs\nand\x80\xfe";
+    for (int i = 0; i < bf_iters; i++) {
+        for (char *sp = test; *sp; sp++) {
+            unsigned char c = (unsigned char)*sp;
+            if (c >= 0x20 && c <= 0x7e)
+                putc((int)c, f);
+            else {
+                int cl;
+                char *r = bench_safepup((unsigned int)c, &cl);
+                fputs(r, f);
+            }
+        }
+    }
+    fclose(f);
+}
+
+
+/* ===== strftime benchmark (time formatting for lsof -T output) ===== */
+#include <time.h>
+
+BENCH(strftime_default, 500000) {
+    char buf[128];
+    time_t tm = time(NULL);
+    struct tm *lt = localtime(&tm);
+    for (int i = 0; i < bf_iters; i++) {
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", lt);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(strftime_epoch, 500000) {
+    char buf[128];
+    time_t tm = time(NULL);
+    struct tm *lt = localtime(&tm);
+    for (int i = 0; i < bf_iters; i++) {
+        strftime(buf, sizeof(buf), "%s", lt);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+
+/* ===== readlink benchmark (symlink resolution used in Readlink) ===== */
+BENCH(readlink_dev_fd, 100000) {
+    char buf[1024];
+    char path[64];
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+    snprintf(path, sizeof(path), "/dev/fd/%d", fd);
+    for (int i = 0; i < bf_iters; i++) {
+        ssize_t r = readlink(path, buf, sizeof(buf) - 1);
+        BENCH_SINK_INT((int)r);
+    }
+    close(fd);
+}
+
+
+/* ===== access / is_readable benchmark ===== */
+BENCH(access_readable, 500000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(access("/dev/null", R_OK));
+    }
+}
+
+BENCH(access_nonexistent, 500000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(access("/nonexistent/path/file", R_OK));
+    }
+}
+
+
+/* ===== dup/dup2 benchmark (file descriptor operations) ===== */
+BENCH(dup_close, 100000) {
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+    for (int i = 0; i < bf_iters; i++) {
+        int fd2 = dup(fd);
+        if (fd2 >= 0) close(fd2);
+        BENCH_SINK_INT(fd2);
+    }
+    close(fd);
+}
+
+
+/* ===== fopen/fclose vs open/close overhead ===== */
+BENCH(fopen_fclose, 100000) {
+    for (int i = 0; i < bf_iters; i++) {
+        FILE *f = fopen("/dev/null", "r");
+        if (f) fclose(f);
+        BENCH_SINK_PTR(f);
+    }
+}
+
+
+/* ===== write syscall overhead ===== */
+BENCH(write_devnull, 500000) {
+    int fd = open("/dev/null", O_WRONLY);
+    if (fd < 0) return;
+    char buf[] = "p1234\nc/usr/bin/lsof\n";
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT((int)write(fd, buf, sizeof(buf) - 1));
+    }
+    close(fd);
+}
+
+
+/* ===== strtol benchmark (numeric string parsing in lsof) ===== */
+BENCH(strtol_pid, 10000000) {
+    char *pids[] = {"1", "42", "1337", "65535", "100000"};
+    for (int i = 0; i < bf_iters; i++) {
+        long v = strtol(pids[i % 5], NULL, 10);
+        BENCH_SINK_INT((int)v);
+    }
+}
+
+BENCH(strtol_hex, 10000000) {
+    char *hexs[] = {"ff", "1a2b", "deadbeef", "cafe", "0"};
+    for (int i = 0; i < bf_iters; i++) {
+        long v = strtol(hexs[i % 5], NULL, 16);
+        BENCH_SINK_INT((int)v);
+    }
+}
+
+
+/* ===== memset/memcpy at different sizes ===== */
+BENCH(memset_64, 10000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        memset(buf, 0, 64);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(memset_4096, 5000000) {
+    char buf[4096];
+    for (int i = 0; i < bf_iters; i++) {
+        memset(buf, 0, 4096);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(memcpy_64, 10000000) {
+    char src[64], dst[64];
+    memset(src, 'A', 64);
+    for (int i = 0; i < bf_iters; i++) {
+        memcpy(dst, src, 64);
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+BENCH(memcpy_4096, 5000000) {
+    char src[4096], dst[4096];
+    memset(src, 'A', 4096);
+    for (int i = 0; i < bf_iters; i++) {
+        memcpy(dst, src, 4096);
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+
+/* ===== getenv benchmark (environment variable lookup) ===== */
+BENCH(getenv_hit, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *v = getenv("PATH");
+        BENCH_SINK_PTR(v);
+    }
+}
+
+BENCH(getenv_miss, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *v = getenv("LSOF_NONEXISTENT_VAR_12345");
+        BENCH_SINK_PTR(v);
+    }
+}
+
+
+/* ===== gethostname benchmark ===== */
+BENCH(gethostname_call, 1000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        gethostname(buf, sizeof(buf));
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+
+/* ===== sprintf PID/FD formatting (common lsof output pattern) ===== */
+BENCH(sprintf_pid_field, 5000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "p%d\n", i % 100000);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(sprintf_field_output, 2000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "p%d\nc%s\nf%d\nn%s\n",
+                 i % 65536, "bash", i % 256,
+                 "/usr/local/bin/lsof");
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(manual_field_output, 2000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        char *p = buf;
+        /* p<pid>\n */
+        *p++ = 'p';
+        int v = i % 65536;
+        char tmp[16]; int tl = 0;
+        if (v == 0) tmp[tl++] = '0';
+        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
+        while (tl > 0) *p++ = tmp[--tl];
+        *p++ = '\n';
+        /* c<cmd>\n */
+        *p++ = 'c';
+        memcpy(p, "bash", 4); p += 4;
+        *p++ = '\n';
+        /* f<fd>\n */
+        *p++ = 'f';
+        v = i % 256; tl = 0;
+        if (v == 0) tmp[tl++] = '0';
+        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
+        while (tl > 0) *p++ = tmp[--tl];
+        *p++ = '\n';
+        /* n<name>\n */
+        *p++ = 'n';
+        memcpy(p, "/usr/local/bin/lsof", 19); p += 19;
+        *p++ = '\n';
+        *p = '\0';
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+
+/* ===== command name truncation (strncpy pattern used in lsof) ===== */
+BENCH(strncpy_cmd_short, 10000000) {
+    char dst[16];
+    char *cmds[] = {"bash", "sh", "sshd", "node", "python3"};
+    for (int i = 0; i < bf_iters; i++) {
+        strncpy(dst, cmds[i % 5], 15);
+        dst[15] = '\0';
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+BENCH(strncpy_cmd_long, 5000000) {
+    char dst[16];
+    char *cmds[] = {
+        "chromium-browser-stable",
+        "gnome-terminal-server",
+        "firefox-developer-edition",
+        "docker-containerd-shim",
+        "systemd-resolved.service"
+    };
+    for (int i = 0; i < bf_iters; i++) {
+        strncpy(dst, cmds[i % 5], 15);
+        dst[15] = '\0';
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+
+/* ===== path building: snprintf vs manual concat ===== */
+BENCH(path_snprintf, 5000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "/proc/%d/fd/%d", i % 65536, i % 256);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(path_manual, 5000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        char *p = buf;
+        memcpy(p, "/proc/", 6); p += 6;
+        /* pid */
+        int v = i % 65536;
+        char tmp[16]; int tl = 0;
+        if (v == 0) tmp[tl++] = '0';
+        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
+        while (tl > 0) *p++ = tmp[--tl];
+        memcpy(p, "/fd/", 4); p += 4;
+        /* fd */
+        v = i % 256; tl = 0;
+        if (v == 0) tmp[tl++] = '0';
+        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
+        while (tl > 0) *p++ = tmp[--tl];
+        *p = '\0';
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+
+/* ===== hash table with deeper collision chains ===== */
+BENCH(hash_lookup_deep_chain, 2000000) {
+    /* Simulate a bucket with 50 entries chained (worst case) */
+    static struct bench_porttab entries[50];
+    static struct bench_porttab *head = NULL;
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 50; i++) {
+            entries[i].port = i * 100;
+            entries[i].name = "service";
+            entries[i].next = head;
+            head = &entries[i];
+        }
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        /* Search for entry near the end of the chain */
+        int target = (i % 50) * 100;
+        struct bench_porttab *pt;
+        for (pt = head; pt; pt = pt->next) {
+            if (pt->port == target) break;
+        }
+        BENCH_SINK_PTR(pt);
+    }
+}
+
+
+/* ===== fcntl getfl benchmark (file descriptor flag inspection) ===== */
+BENCH(fcntl_getfl, 500000) {
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(fcntl(fd, F_GETFL));
+    }
+    close(fd);
+}
+
+
+/* ===== socketpair benchmark (UNIX domain socket creation) ===== */
+BENCH(socketpair_create_close, 50000) {
+    for (int i = 0; i < bf_iters; i++) {
+        int fds[2];
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0) {
+            close(fds[0]);
+            close(fds[1]);
+        }
+        BENCH_SINK_INT(fds[0]);
+    }
+}
+
+
+/* ===== process self inspection (/proc or equivalent) ===== */
+BENCH(read_proc_self, 50000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char buf[4096];
+        int fd = open("/dev/null", O_RDONLY);
+        if (fd >= 0) {
+            ssize_t n = read(fd, buf, sizeof(buf));
+            close(fd);
+            BENCH_SINK_INT((int)n);
+        }
+    }
+}
+
+
 RUN_BENCHMARKS()
