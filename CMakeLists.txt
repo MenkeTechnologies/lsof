@@ -94,6 +94,32 @@ add_custom_target(cyberpunk-clean
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh clean-end
 )
 
+add_custom_target(distclean
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh distclean-start
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean
+    COMMAND ${CMAKE_COMMAND} -E rm -rf
+        ${CMAKE_BINARY_DIR}/build
+        ${CMAKE_BINARY_DIR}/CMakeCache.txt
+        ${CMAKE_BINARY_DIR}/CPackConfig.cmake
+        ${CMAKE_BINARY_DIR}/CPackSourceConfig.cmake
+        ${CMAKE_BINARY_DIR}/CMakeFiles
+        ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        ${CMAKE_BINARY_DIR}/install_manifest.txt
+        ${CMAKE_BINARY_DIR}/Makefile
+        ${CMAKE_BINARY_DIR}/compile_commands.json
+        ${CMAKE_BINARY_DIR}/CTestTestfile.cmake
+        ${CMAKE_BINARY_DIR}/Testing
+        ${CMAKE_BINARY_DIR}/bench/CMakeFiles
+        ${CMAKE_BINARY_DIR}/tags
+        ${CMAKE_BINARY_DIR}/GPATH
+        ${CMAKE_BINARY_DIR}/GRTAGS
+        ${CMAKE_BINARY_DIR}/GTAGS
+        ${CMAKE_BINARY_DIR}/check_unit.log
+        ${CMAKE_BINARY_DIR}/check_integration.log
+        ${CMAKE_BINARY_DIR}/benchmark_core.log
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh distclean-end
+)
+
 # ===== Test Suite =====
 enable_testing()
 
