@@ -67,6 +67,23 @@ BENCH(uid_cache_hash_lookup, 5000000) {
 }
 
 
+/* ===== getlogin benchmark ===== */
+BENCH(getlogin_call, 1000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_PTR(getlogin());
+    }
+}
+
+/* ===== getpwnam benchmark (name-based lookup) ===== */
+BENCH(getpwnam_cached, 100000) {
+    char *name = getlogin();
+    if (!name) name = "root";
+    for (int i = 0; i < bf_iters; i++) {
+        struct passwd *pw = getpwnam(name);
+        BENCH_SINK_PTR(pw);
+    }
+}
+
 BF_SECTIONS("ENVIRONMENT & IDENTITY")
 
 RUN_BENCHMARKS()

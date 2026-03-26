@@ -261,6 +261,93 @@ BENCH(path_manual, 5000000) {
 }
 
 
+/* ===== ncache: linear scan vs hash lookup ===== */
+struct bench_ncache_entry {
+    unsigned long inode;
+    unsigned long addr;
+    const char *name;
+};
+
+BENCH(ncache_linear_scan, 2000000) {
+    static struct bench_ncache_entry cache[200];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 200; i++) {
+            cache[i].inode = (unsigned long)(i * 7);
+            cache[i].addr = (unsigned long)(0x1000 + i * 64);
+            cache[i].name = "cached_name";
+        }
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        unsigned long target_ino = (unsigned long)((i % 200) * 7);
+        unsigned long target_addr = (unsigned long)(0x1000 + (i % 200) * 64);
+        const char *found = NULL;
+        for (int j = 0; j < 200; j++) {
+            if (cache[j].inode == target_ino && cache[j].addr == target_addr) {
+                found = cache[j].name; break;
+            }
+        }
+        BENCH_SINK_PTR((void *)found);
+    }
+}
+
+BENCH(ncache_hash_scan, 2000000) {
+    static struct bench_ncache_entry cache[200];
+    static struct bench_ncache_entry *buckets[256];
+    static int initialized = 0;
+    struct bench_ncache_entry_chain {
+        struct bench_ncache_entry *entry;
+        struct bench_ncache_entry_chain *next;
+    };
+    static struct bench_ncache_entry_chain chains[200];
+    static struct bench_ncache_entry_chain *hash_buckets[256];
+    if (!initialized) {
+        memset(hash_buckets, 0, sizeof(hash_buckets));
+        for (int i = 0; i < 200; i++) {
+            cache[i].inode = (unsigned long)(i * 7);
+            cache[i].addr = (unsigned long)(0x1000 + i * 64);
+            cache[i].name = "cached_name";
+            int h = ((((int)(cache[i].addr >> 2) + (int)(cache[i].inode)) * 31415) & 255);
+            chains[i].entry = &cache[i];
+            chains[i].next = hash_buckets[h];
+            hash_buckets[h] = &chains[i];
+        }
+        (void)buckets;
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        unsigned long target_ino = (unsigned long)((i % 200) * 7);
+        unsigned long target_addr = (unsigned long)(0x1000 + (i % 200) * 64);
+        int h = ((((int)(target_addr >> 2) + (int)(target_ino)) * 31415) & 255);
+        const char *found = NULL;
+        for (struct bench_ncache_entry_chain *c = hash_buckets[h]; c; c = c->next) {
+            if (c->entry->inode == target_ino && c->entry->addr == target_addr) {
+                found = c->entry->name; break;
+            }
+        }
+        BENCH_SINK_PTR((void *)found);
+    }
+}
+
+/* ===== calloc vs malloc+memset ===== */
+BENCH(calloc_vs_malloc_small, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = calloc(1, 64);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+BENCH(malloc_memset_vs_calloc_small, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(64);
+        memset(p, 0, 64);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
 BF_SECTIONS("OPTIMIZATION DUELS")
 
 RUN_BENCHMARKS()

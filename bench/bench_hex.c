@@ -88,6 +88,41 @@ BENCH(makedev_roundtrip, 10000000) {
 }
 
 
+/* ===== Hex string generation (device number to hex) ===== */
+BENCH(dev_to_hex_snprintf, 5000000) {
+    char buf[32];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "%x,%x", (i >> 8) & 0xff, i & 0xff);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(dev_to_hex_manual, 5000000) {
+    static const char hex[] = "0123456789abcdef";
+    char buf[32];
+    for (int i = 0; i < bf_iters; i++) {
+        int maj = (i >> 8) & 0xff;
+        int min = i & 0xff;
+        char *p = buf;
+        if (maj >= 16) *p++ = hex[maj >> 4];
+        *p++ = hex[maj & 0xf];
+        *p++ = ',';
+        if (min >= 16) *p++ = hex[min >> 4];
+        *p++ = hex[min & 0xf];
+        *p = '\0';
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+/* ===== x2dev with max-length input ===== */
+BENCH(x2dev_max_length, 1000000) {
+    dev_t device;
+    for (int i = 0; i < bf_iters; i++) {
+        bench_hex_to_device("ffffffffffffffff", &device);
+        BENCH_SINK_INT(device);
+    }
+}
+
 BF_SECTIONS("HEX & DEVICE PARSING")
 
 RUN_BENCHMARKS()

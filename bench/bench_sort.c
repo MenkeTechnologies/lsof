@@ -166,6 +166,98 @@ BENCH(bsearch_pid_scan_1000, 5000000) {
 }
 
 
+/* ===== Device binary search (find_ch_ino pattern from fino.c) ===== */
+BENCH(device_bsearch_100, 5000000) {
+    static dev_t devices[100];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 100; i++) devices[i] = (dev_t)(i * 10);
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        dev_t target = (dev_t)((i % 200) * 5);
+        int lo = 0, hi = 99;
+        int found = 0;
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+            if (devices[mid] < target) lo = mid + 1;
+            else if (devices[mid] > target) hi = mid - 1;
+            else { found = 1; break; }
+        }
+        BENCH_SINK_INT(found);
+    }
+}
+
+BENCH(device_bsearch_1000, 5000000) {
+    static dev_t devices[1000];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 1000; i++) devices[i] = (dev_t)(i * 10);
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        dev_t target = (dev_t)((i % 2000) * 5);
+        int lo = 0, hi = 999;
+        int found = 0;
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+            if (devices[mid] < target) lo = mid + 1;
+            else if (devices[mid] > target) hi = mid - 1;
+            else { found = 1; break; }
+        }
+        BENCH_SINK_INT(found);
+    }
+}
+
+/* ===== Dedup with varying duplicate density ===== */
+BENCH(rmdupdev_30pct_dups, 100000) {
+    static struct { unsigned long rdev; unsigned long inode; } devs[100];
+    for (int i = 0; i < bf_iters; i++) {
+        for (int j = 0; j < 100; j++) {
+            devs[j].rdev = (unsigned long)(j * 7 / 10);
+            devs[j].inode = (unsigned long)(j * 7 / 10);
+        }
+        int out = 1;
+        for (int j = 1; j < 100; j++) {
+            if (devs[j].rdev != devs[j-1].rdev || devs[j].inode != devs[j-1].inode)
+                devs[out++] = devs[j];
+        }
+        BENCH_SINK_INT(out);
+    }
+}
+
+BENCH(rmdupdev_50pct_dups, 100000) {
+    static struct { unsigned long rdev; unsigned long inode; } devs[100];
+    for (int i = 0; i < bf_iters; i++) {
+        for (int j = 0; j < 100; j++) {
+            devs[j].rdev = (unsigned long)(j / 2);
+            devs[j].inode = (unsigned long)(j / 2);
+        }
+        int out = 1;
+        for (int j = 1; j < 100; j++) {
+            if (devs[j].rdev != devs[j-1].rdev || devs[j].inode != devs[j-1].inode)
+                devs[out++] = devs[j];
+        }
+        BENCH_SINK_INT(out);
+    }
+}
+
+BENCH(rmdupdev_90pct_dups, 100000) {
+    static struct { unsigned long rdev; unsigned long inode; } devs[100];
+    for (int i = 0; i < bf_iters; i++) {
+        for (int j = 0; j < 100; j++) {
+            devs[j].rdev = (unsigned long)(j / 10);
+            devs[j].inode = (unsigned long)(j / 10);
+        }
+        int out = 1;
+        for (int j = 1; j < 100; j++) {
+            if (devs[j].rdev != devs[j-1].rdev || devs[j].inode != devs[j-1].inode)
+                devs[out++] = devs[j];
+        }
+        BENCH_SINK_INT(out);
+    }
+}
+
 BF_SECTIONS("SORTING & SEARCH")
 
 RUN_BENCHMARKS()

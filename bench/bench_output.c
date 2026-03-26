@@ -184,6 +184,71 @@ BENCH(manual_field_output, 2000000) {
 }
 
 
+/* ===== Command name truncation at different widths ===== */
+BENCH(cmd_truncate_16, 10000000) {
+    char dst[17];
+    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server",
+                    "bash", "sshd", "python3.11-multiprocessing"};
+    for (int i = 0; i < bf_iters; i++) {
+        int len = (int)strlen(cmds[i % 5]);
+        int w = len < 16 ? len : 16;
+        memcpy(dst, cmds[i % 5], (size_t)w);
+        dst[w] = '\0';
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+BENCH(cmd_truncate_32, 10000000) {
+    char dst[33];
+    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server",
+                    "bash", "sshd", "python3.11-multiprocessing"};
+    for (int i = 0; i < bf_iters; i++) {
+        int len = (int)strlen(cmds[i % 5]);
+        int w = len < 32 ? len : 32;
+        memcpy(dst, cmds[i % 5], (size_t)w);
+        dst[w] = '\0';
+        BENCH_SINK_PTR(dst);
+    }
+}
+
+/* ===== IPv4 address formatting ===== */
+BENCH(ipv4_format_snprintf, 5000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
+                 192, 168, (i >> 8) & 0xff, i & 0xff);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+BENCH(ipv4_format_manual, 5000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        char *p = buf;
+        int octets[4] = {192, 168, (i >> 8) & 0xff, i & 0xff};
+        for (int j = 0; j < 4; j++) {
+            int v = octets[j];
+            if (v >= 100) *p++ = '0' + v / 100;
+            if (v >= 10) *p++ = '0' + (v / 10) % 10;
+            *p++ = '0' + v % 10;
+            if (j < 3) *p++ = '.';
+        }
+        *p = '\0';
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+/* ===== Multi-field lsof output line formatting ===== */
+BENCH(full_line_snprintf, 2000000) {
+    char buf[512];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "%-9s %5d %8s %4s %4s %7s %18s %s",
+                 "bash", 1234 + (i % 1000), "root", "3u", "REG",
+                 "8,1", "192.168.1.1:8080", "/usr/local/bin/lsof");
+        BENCH_SINK_PTR(buf);
+    }
+}
+
 BF_SECTIONS("OUTPUT & FORMATTING")
 
 RUN_BENCHMARKS()

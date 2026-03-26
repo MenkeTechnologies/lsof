@@ -193,6 +193,45 @@ BENCH(cmd_prefix_match, 10000000) {
 }
 
 
+/* ===== memmove vs memcpy (overlapping vs non-overlapping) ===== */
+BENCH(memmove_64, 10000000) {
+    char buf[128];
+    memset(buf, 'A', 128);
+    for (int i = 0; i < bf_iters; i++) {
+        memmove(buf + 32, buf, 64);
+        BENCH_SINK_PTR(buf);
+    }
+}
+
+/* ===== strchr vs manual scan ===== */
+BENCH(strchr_colon, 10000000) {
+    const char *addrs[] = {"192.168.1.1:8080", "10.0.0.1:443", "0.0.0.0:22", "127.0.0.1:3306"};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_PTR((void *)strchr(addrs[i % 4], ':'));
+    }
+}
+
+BENCH(manual_colon_scan, 10000000) {
+    const char *addrs[] = {"192.168.1.1:8080", "10.0.0.1:443", "0.0.0.0:22", "127.0.0.1:3306"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *p = addrs[i % 4];
+        while (*p && *p != ':') p++;
+        BENCH_SINK_PTR((void *)p);
+    }
+}
+
+/* ===== tolower loop vs bitwise OR ===== */
+BENCH(tolower_loop, 10000000) {
+    char buf[8];
+    const char *protos[] = {"TCP", "UDP", "Tcp", "Udp", "tcp"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *s = protos[i % 5];
+        for (int j = 0; j < 3; j++) buf[j] = (char)tolower((unsigned char)s[j]);
+        buf[3] = '\0';
+        BENCH_SINK_INT(buf[0]);
+    }
+}
+
 BF_SECTIONS("STRING OPERATIONS")
 
 RUN_BENCHMARKS()

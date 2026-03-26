@@ -1,5 +1,8 @@
 #include "bench.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "../src/lsof_fields.h"
 
 #undef BF_SECTION
@@ -273,6 +276,129 @@ BENCH(rmdupdev_100, 100000) {
     }
 }
 
+
+/* ===== Linked list insertion benchmark (link_lfile pattern from proc.c) ===== */
+struct bench_lfile {
+    int fd;
+    struct bench_lfile *next;
+};
+
+BENCH(linked_list_insert_100, 500000) {
+    static struct bench_lfile nodes[100];
+    for (int j = 0; j < bf_iters; j++) {
+        struct bench_lfile *head = NULL;
+        struct bench_lfile *prev = NULL;
+        for (int i = 0; i < 100; i++) {
+            nodes[i].fd = i;
+            nodes[i].next = NULL;
+            if (prev)
+                prev->next = &nodes[i];
+            else
+                head = &nodes[i];
+            prev = &nodes[i];
+        }
+        BENCH_SINK_PTR(head);
+    }
+}
+
+BENCH(linked_list_insert_1000, 50000) {
+    static struct bench_lfile nodes[1000];
+    for (int j = 0; j < bf_iters; j++) {
+        struct bench_lfile *head = NULL;
+        struct bench_lfile *prev = NULL;
+        for (int i = 0; i < 1000; i++) {
+            nodes[i].fd = i;
+            nodes[i].next = NULL;
+            if (prev)
+                prev->next = &nodes[i];
+            else
+                head = &nodes[i];
+            prev = &nodes[i];
+        }
+        BENCH_SINK_PTR(head);
+    }
+}
+
+/* ===== Hash table build benchmark (hashSfile pattern from isfn.c) ===== */
+struct bench_sfile {
+    dev_t dev;
+    unsigned long inode;
+    char *name;
+    struct bench_sfile *next;
+};
+
+#ifndef SFHASHDEVINO
+#define SFHASHDEVINO(maj, min, ino, mod) \
+    ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+#endif
+
+BENCH(hash_table_build_100, 100000) {
+    static struct bench_sfile entries[100];
+    static char names[100][16];
+    struct bench_sfile *buckets[256];
+    for (int j = 0; j < bf_iters; j++) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 100; i++) {
+            entries[i].dev = (dev_t)(i * 3);
+            entries[i].inode = (unsigned long)(1000 + i);
+            snprintf(names[i], 16, "/dev/fd/%d", i);
+            entries[i].name = names[i];
+            int h = SFHASHDEVINO(major(entries[i].dev), minor(entries[i].dev),
+                                 entries[i].inode, 256);
+            entries[i].next = buckets[h];
+            buckets[h] = &entries[i];
+        }
+        BENCH_SINK_PTR(buckets[0]);
+    }
+}
+
+BENCH(hash_table_build_1000, 10000) {
+    static struct bench_sfile entries[1000];
+    static char names[1000][16];
+    struct bench_sfile *buckets[4096];
+    for (int j = 0; j < bf_iters; j++) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 1000; i++) {
+            entries[i].dev = (dev_t)(i * 3);
+            entries[i].inode = (unsigned long)(1000 + i);
+            snprintf(names[i], 16, "/dev/fd/%d", i);
+            entries[i].name = names[i];
+            int h = SFHASHDEVINO(major(entries[i].dev), minor(entries[i].dev),
+                                 entries[i].inode, 4096);
+            entries[i].next = buckets[h];
+            buckets[h] = &entries[i];
+        }
+        BENCH_SINK_PTR(buckets[0]);
+    }
+}
+
+/* ===== FD range matching benchmark (ckfd_range pattern) ===== */
+struct bench_fd_range {
+    int lo, hi;
+    struct bench_fd_range *next;
+};
+
+BENCH(fd_range_match, 5000000) {
+    static struct bench_fd_range ranges[10];
+    static int initialized = 0;
+    if (!initialized) {
+        int pairs[][2] = {{0,2},{5,10},{15,20},{25,30},{35,40},{50,60},{70,80},{90,100},{200,255},{500,1023}};
+        for (int i = 0; i < 10; i++) {
+            ranges[i].lo = pairs[i][0];
+            ranges[i].hi = pairs[i][1];
+            ranges[i].next = (i < 9) ? &ranges[i + 1] : NULL;
+        }
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        int fd = i % 1024;
+        int found = 0;
+        for (struct bench_fd_range *r = &ranges[0]; r; r = r->next) {
+            if (fd >= r->lo && fd <= r->hi) { found = 1; break; }
+        }
+        BENCH_SINK_INT(found);
+    }
+}
 
 BF_SECTIONS("DATA STRUCTURES")
 

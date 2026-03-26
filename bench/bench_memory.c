@@ -81,6 +81,64 @@ BENCH(memcpy_4096, 5000000) {
 }
 
 
+/* ===== Chunked growth benchmark (alloc_lproc pattern from proc.c) ===== */
+#define LPROCINCR 32
+
+BENCH(chunked_realloc_grow, 100000) {
+    for (int j = 0; j < bf_iters; j++) {
+        int *table = NULL;
+        int size = 0, count = 0;
+        for (int i = 0; i < 256; i++) {
+            if (count >= size) {
+                size += LPROCINCR;
+                int *tmp = (int *)realloc(table, (size_t)size * sizeof(int));
+                if (tmp) table = tmp;
+            }
+            table[count++] = i;
+        }
+        BENCH_SINK_INT(count);
+        free(table);
+    }
+}
+
+/* ===== Batch allocation vs individual (process table pattern) ===== */
+BENCH(malloc_individual_256, 50000) {
+    for (int j = 0; j < bf_iters; j++) {
+        void *ptrs[256];
+        for (int i = 0; i < 256; i++)
+            ptrs[i] = malloc(sizeof(int) * 4);
+        for (int i = 0; i < 256; i++)
+            free(ptrs[i]);
+        BENCH_SINK_PTR(ptrs[0]);
+    }
+}
+
+BENCH(malloc_batch_256, 50000) {
+    for (int j = 0; j < bf_iters; j++) {
+        void *block = malloc(sizeof(int) * 4 * 256);
+        BENCH_SINK_PTR(block);
+        free(block);
+    }
+}
+
+/* ===== calloc vs malloc+memset ===== */
+BENCH(calloc_4096, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = calloc(1, 4096);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+BENCH(malloc_memset_4096, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(4096);
+        memset(p, 0, 4096);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
 BF_SECTIONS("MEMORY ALLOCATION")
 
 RUN_BENCHMARKS()

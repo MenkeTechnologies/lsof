@@ -179,6 +179,43 @@ BENCH(read_proc_self, 50000) {
 }
 
 
+/* ===== getcwd benchmark (relevant to lsof cwd detection) ===== */
+BENCH(getcwd_call, 500000) {
+    char buf[1024];
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_PTR(getcwd(buf, sizeof(buf)));
+    }
+}
+
+/* ===== getuid/geteuid benchmark ===== */
+BENCH(getuid_call, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT((int)getuid());
+    }
+}
+
+/* ===== read from /dev/null (zero-length read) ===== */
+BENCH(read_zero, 500000) {
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+    char buf[1];
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT((int)read(fd, buf, 1));
+    }
+    close(fd);
+}
+
+/* ===== fstat vs stat ===== */
+BENCH(fstat_call, 500000) {
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+    struct stat st;
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(fstat(fd, &st));
+    }
+    close(fd);
+}
+
 BF_SECTIONS("SYSCALL OVERHEAD")
 
 RUN_BENCHMARKS()

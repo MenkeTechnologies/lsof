@@ -110,6 +110,47 @@ BENCH(safepup_high_bytes, 5000000) {
 }
 
 
+/* ===== safestrlen with varying unprintable density ===== */
+BENCH(safestrlen_mostly_clean, 5000000) {
+    /* 90% printable, 10% control chars */
+    char data[64];
+    for (int i = 0; i < 60; i++) data[i] = 'A' + (char)(i % 26);
+    data[10] = '\t'; data[20] = '\n'; data[30] = '\r';
+    data[40] = '\x01'; data[50] = '\x7f'; data[59] = '\x80';
+    data[60] = '\0';
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(bench_safe_string_length(data, 0));
+    }
+}
+
+BENCH(safestrlen_mostly_dirty, 2000000) {
+    /* 90% unprintable */
+    char data[64];
+    for (int i = 0; i < 63; i++) data[i] = (char)(i % 31 + 1); /* control chars */
+    data[10] = 'A'; data[20] = 'B'; data[30] = 'C';
+    data[63] = '\0';
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(bench_safe_string_length(data, 0));
+    }
+}
+
+/* ===== safepup specific character classes ===== */
+BENCH(safepup_tab_newline, 10000000) {
+    int char_len;
+    char chars[] = {'\t', '\n', '\r', '\b', '\f'};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_PTR(bench_safe_print_unprintable((unsigned int)chars[i % 5], &char_len));
+    }
+}
+
+BENCH(safepup_hex_encode, 5000000) {
+    int char_len;
+    /* Characters that require \xNN encoding (0x80-0xfe range) */
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_PTR(bench_safe_print_unprintable(0x80 + (unsigned int)(i % 0x7e), &char_len));
+    }
+}
+
 BF_SECTIONS("STRING SAFETY")
 
 RUN_BENCHMARKS()

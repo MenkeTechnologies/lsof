@@ -191,22 +191,24 @@ make bench
 
 ### Benchmark suites
 
+163 benchmarks across 12 suites.
+
 ```
  ┌────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
  │ SUITE                      │ MEASURES                                                              │
  ├────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
- │ benchmark_hex              │ x2dev hex parsing, major/minor extract, makedev roundtrip              │
- │ benchmark_hash             │ HASHPORT range/common, hashbyname short/path/long strings              │
- │ benchmark_strsafe          │ safestrlen (short/escaped/long/binary), safepup control/high bytes     │
- │ benchmark_strops           │ strlen, strcmp, strncmp, strcasecmp, strtol, isprint, path classify    │
+ │ benchmark_hex              │ x2dev parsing, major/minor, makedev, hex generation (snprintf/manual) │
+ │ benchmark_hash             │ HASHPORT, hashbyname, SFHASHDEVINO, ncache hash, port service cache   │
+ │ benchmark_strsafe          │ safestrlen (clean/dirty/mixed), safepup (control/tab/hex encoding)    │
+ │ benchmark_strops           │ strlen, strcmp, strncmp, strchr, strtol, tolower, memmove, path ops   │
  │ benchmark_strbuild         │ mkstrcpy (short/path/null), mkstrcat (2/3-part, pre-computed lengths) │
- │ benchmark_sort             │ compdev/PID qsort, bsearch, linear vs binary scan (100/1000)          │
- │ benchmark_datastruct       │ Linked list (100/1000), hash lookup hit/miss/deep, FD status check    │
- │ benchmark_memory           │ malloc/free (64B/4KB), realloc growth, memset/memcpy (64B/4KB)        │
- │ benchmark_syscall          │ open/close, stat, lstat, pipe, socket, readdir, readlink, fcntl, dup  │
- │ benchmark_output           │ safestrprt, strftime, sprintf field output, snpf path/pid/hex format  │
- │ benchmark_optduel          │ Head-to-head: isprint vs table, snprintf vs manual, regex vs strncmp  │
- │ benchmark_environ          │ getenv hit/miss, gethostname, getpwuid, UID cache linear vs hash      │
+ │ benchmark_sort             │ compdev/PID qsort, bsearch, device bsearch, rmdupdev (30/50/90% dup) │
+ │ benchmark_datastruct       │ Linked list traverse/insert, hash build/lookup, FD range matching     │
+ │ benchmark_memory           │ malloc/free, realloc chunked growth, calloc vs memset, batch vs indiv │
+ │ benchmark_syscall          │ open, stat, fstat, getcwd, getuid, pipe, socket, readdir, readlink    │
+ │ benchmark_output           │ safestrprt, strftime, snpf, IPv4 format, cmd truncate, full line fmt  │
+ │ benchmark_optduel          │ isprint vs table, snprintf vs manual, regex vs strncmp, ncache linear  │
+ │ benchmark_environ          │ getenv, gethostname, getpwuid, getpwnam, getlogin, UID cache          │
  └────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -230,6 +232,11 @@ The benchmark suite includes head-to-head comparisons that measure the impact of
 | String concat: `mkstrcat` auto-length vs pre-computed | 16.1 ns/op | 7.3 ns/op | **2.2x** |
 | File open: `fopen`/`fclose` vs `open`/`close` | 4.8 us/op | 4.5 us/op | **1.1x** |
 | Environment lookup: `getenv` hit vs miss | 62.6 ns/op | 213.1 ns/op | **3.4x** (hit) |
+| Name cache: linear scan vs hash lookup (200 entries) | linear | hash | hash wins |
+| IPv4 formatting: `snprintf` vs manual digit extraction | snprintf | manual | manual wins |
+| Device hex: `snprintf("%x,%x")` vs manual hex table | snprintf | manual | manual wins |
+| Allocation: `calloc` vs `malloc`+`memset` | calloc | malloc+memset | ~equal |
+| Allocation: 256 individual `malloc` vs single batch | individual | batch | batch wins |
 
 ---
 

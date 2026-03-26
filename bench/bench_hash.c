@@ -66,6 +66,81 @@ BENCH(hashbyname_long, 2000000) {
 }
 
 
+/* ===== Multi-field device/inode hash (SFHASHDEVINO from isfn.c) ===== */
+#define SFHASHDEVINO(maj, min, ino, mod) \
+    ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+
+BENCH(sfhash_devino, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(SFHASHDEVINO(8, i & 0xff, 1000 + i, 4096));
+    }
+}
+
+BENCH(sfhash_devino_collisions, 5000000) {
+    /* Measure collision rate: how many inputs map to same bucket */
+    int buckets[4096];
+    for (int j = 0; j < bf_iters; j++) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 1000; i++) {
+            buckets[SFHASHDEVINO(8, i % 16, i * 7, 4096)]++;
+        }
+        int max = 0;
+        for (int i = 0; i < 4096; i++)
+            if (buckets[i] > max) max = buckets[i];
+        BENCH_SINK_INT(max);
+    }
+}
+
+/* ===== Name cache hash (ncache pattern from rnmh.c) ===== */
+static int ncache_hash(unsigned long inode, unsigned long node_addr, int mod) {
+    return ((((int)(node_addr >> 2) + (int)(inode)) * 31415) & (mod - 1));
+}
+
+BENCH(ncache_hash_lookup, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(ncache_hash((unsigned long)(i * 7), (unsigned long)(0x1000 + i * 64), 2048));
+    }
+}
+
+/* ===== Port service cache (lkup_svcnam pattern from print.c) ===== */
+struct bench_svc_entry {
+    int port;
+    const char *name;
+    struct bench_svc_entry *next;
+};
+
+BENCH(port_service_cache, 5000000) {
+    static struct bench_svc_entry entries[20];
+    static struct bench_svc_entry *buckets[PORTHASHBUCKETS];
+    static int initialized = 0;
+    static int ports[] = {22, 53, 80, 110, 143, 443, 993, 995, 3306, 5432,
+                          6379, 8080, 8443, 9090, 27017, 11211, 6380, 1433, 3389, 5900};
+    static const char *names[] = {"ssh", "dns", "http", "pop3", "imap", "https", "imaps", "pop3s",
+                                  "mysql", "postgres", "redis", "http-alt", "https-alt", "websm",
+                                  "mongo", "memcache", "redis2", "mssql", "rdp", "vnc"};
+    if (!initialized) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 20; i++) {
+            entries[i].port = ports[i];
+            entries[i].name = names[i];
+            int h = HASHPORT(ports[i]);
+            entries[i].next = buckets[h];
+            buckets[h] = &entries[i];
+        }
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        int port = ports[i % 20];
+        int h = HASHPORT(port);
+        struct bench_svc_entry *e;
+        const char *found = NULL;
+        for (e = buckets[h]; e; e = e->next) {
+            if (e->port == port) { found = e->name; break; }
+        }
+        BENCH_SINK_PTR((void *)found);
+    }
+}
+
 BF_SECTIONS("HASH FUNCTIONS")
 
 RUN_BENCHMARKS()
