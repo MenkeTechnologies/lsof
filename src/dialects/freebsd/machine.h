@@ -2,7 +2,6 @@
  * machine.h - FreeBSD definitions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,22 +25,20 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: machine.h,v 1.38 2010/07/29 16:04:28 abe Exp $
  */
 
-
-#if    !defined(LSOF_MACHINE_H)
-#define    LSOF_MACHINE_H    1
+#if !defined(LSOF_MACHINE_H)
+#define LSOF_MACHINE_H 1
 
 #include <sys/types.h>
 
-# if    defined(HAS_CONF_MINOR)
-#undef	minor
-# endif    /* defined(HAS_CONF_MINOR) */
+#if defined(HAS_CONF_MINOR)
+#undef minor
+#endif /* defined(HAS_CONF_MINOR) */
 
-#if    defined(HASCPUMASK_T)
+#if defined(HASCPUMASK_T)
 /*
  * In FreeBSD >= 5.2 when the cpumask_t typedef is present, it may be defined
  * in <sys/types.h> only if _KERNEL is predefined.  However, predefining
@@ -56,27 +53,24 @@
  * <sys/types.h> is valid only when _KERNEL is defined.
  */
 
-typedef	__cpumask_t	cpumask_t;
-#endif    /* defined(HASCPUMASK_T) */
+typedef __cpumask_t cpumask_t;
+#endif /* defined(HASCPUMASK_T) */
 
 #include <sys/param.h>
-
 
 /*
  * CAN_USE_CLNT_CREATE is defined for those dialects where RPC clnt_create()
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define    CAN_USE_CLNT_CREATE    1
-
+#define CAN_USE_CLNT_CREATE 1
 
 /*
  * DEVDEV_PATH defines the path to the directory that contains device
  * nodes.
  */
 
-#define    DEVDEV_PATH    "/dev"
-
+#define DEVDEV_PATH "/dev"
 
 /*
  * GET_MAX_FD is defined for those dialects that provide a function other than
@@ -84,7 +78,6 @@ typedef	__cpumask_t	cpumask_t;
  */
 
 /* #define	GET_MAX_FD	?	*/
-
 
 /*
  * HASAOPT is defined for those dialects that have AFS support; it specifies
@@ -94,16 +87,14 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASAOPT		1 */
 
-
 /*
  * HASBLKDEV is defined for those dialects that want block device information
  * recorded in BlockDeviceTable[].
  */
 
-# if    FREEBSDV < 4000
-#define    HASBLKDEV    1
-# endif    /* FREEBSDV<4000 */
-
+#if FREEBSDV < 4000
+#define HASBLKDEV 1
+#endif /* FREEBSDV<4000 */
 
 /*
  * HASDCACHE is defined for those dialects that support a device cache
@@ -130,12 +121,11 @@ typedef	__cpumask_t	cpumask_t;
  * information on device cache file path construction.
  */
 
-#define    HASDCACHE    1
-#define    HASENVDC    "LSOFDEVCACHE"
-#define    HASPERSDC    "%h/%p.lsof_%L"
-#define    HASPERSDCPATH    "LSOFPERSDCPATH"
+#define HASDCACHE     1
+#define HASENVDC      "LSOFDEVCACHE"
+#define HASPERSDC     "%h/%p.lsof_%L"
+#define HASPERSDCPATH "LSOFPERSDCPATH"
 /* #define	HASSYSDC	"/your/choice/of/path" */
-
 
 /*
  * HASCDRNODE is defined for those dialects that have CD-ROM nodes.
@@ -143,13 +133,11 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASCDRNODE	1 */
 
-
 /*
  * HASFIFONODE is defined for those dialects that have FIFO nodes.
  */
 
 /* #define	HASFIFONODE	1 */
-
 
 /*
  * HASFSINO is defined for those dialects that have the file system
@@ -157,7 +145,6 @@ typedef	__cpumask_t	cpumask_t;
  */
 
 /* #define	HASFSINO	1 */
-
 
 /*
  * HASFSTRUCT is defined if the dialect has a file structure.
@@ -172,13 +159,12 @@ typedef	__cpumask_t	cpumask_t;
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define    HASFSTRUCT    1
+#define HASFSTRUCT 1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
 /* #define	HASNOFSCOUNT	1	has no file structure count */
 /* #define	HASNOFSNADDR	1	has no file structure node address */
-
 
 /*
  * HASGNODE is defined for those dialects that have gnodes.
@@ -186,21 +172,18 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASGNODE	1 */
 
-
 /*
  * HASHSNODE is defined for those dialects that have High Sierra nodes.
  */
 
 /* #define	HASHSNODE	1 */
 
-
 /*
  * HASINODE is defined for those dialects that have inodes and wish to
  * use readinode() from node.c.
  */
 
-#define    HASINODE    1
-
+#define HASINODE 1
 
 /*
  * HASINTSIGNAL is defined for those dialects whose signal function returns
@@ -209,22 +192,19 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASINTSIGNAL	1 */
 
-
 /*
  * HASKERNIDCK is defined for those dialects that support the comparison of
  * the build to running kernel identity.
  */
 
-#define    HASKERNIDCK    1
-
+#define HASKERNIDCK 1
 
 /*
  * HASKOPT is defined for those dialects that support the -k option of
  * reading the kernel's name list from an optional file.
  */
 
-#define    HASKOPT    1
-
+#define HASKOPT 1
 
 /*
  * HASLFILEADD is defined for those dialects that need additional elements
@@ -248,14 +228,12 @@ typedef	__cpumask_t	cpumask_t;
 /* #define CLRLFILEADD(lf)	(lf)->... = (type)NULL;	*/
 /* #define SETLFILEADD CurrentLocalFile->... */
 
-
 /*
  * HASMNTSTAT indicates the dialect supports the mount stat(2) result option
  * in its l_vfs and mounts structures.
  */
 
 /* #define	HASMNTSTAT	1	*/
-
 
 /*
  * HASMNTSUP is defined for those dialects that support the mount supplement
@@ -264,14 +242,12 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASMNTSUP	1	*/
 
-
 /*
  * HASMOPT is defined for those dialects that support the reading of
  * kernel memory from an alternate file.
  */
 
-#define    HASMOPT    1
-
+#define HASMOPT 1
 
 /*
  * HASNCACHE is defined for those dialects that have a kernel name cache
@@ -283,18 +259,16 @@ typedef	__cpumask_t	cpumask_t;
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-#define    HASNCACHE    1
+#define HASNCACHE 1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
-
 
 /*
  * HASNLIST is defined for those dialects that use nlist() to acccess
  * kernel symbols.
  */
 
-#define    HASNLIST    1
-
+#define HASNLIST 1
 
 /*
  * HASPIPEFN is defined for those dialects that have a special function to
@@ -304,17 +278,15 @@ typedef	__cpumask_t	cpumask_t;
  * NOTE: don't forget to define a prototype for this function in dproto.h.
  */
 
-# if    FREEBSDV >= 2020
-#define	HASPIPEFN	process_pipe
-# endif    /* FREEBSDV>=2020 */
-
+#if FREEBSDV >= 2020
+#define HASPIPEFN process_pipe
+#endif /* FREEBSDV>=2020 */
 
 /*
  * HASPIPENODE is defined for those dialects that have pipe nodes.
  */
 
 /* #define	HASPIPENODE	1 */
-
 
 /*
  * HASPMAPENABLED is defined when the reporting of portmapper registration
@@ -323,16 +295,14 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASPMAPENABLED	1 */
 
-
 /*
  * HASPPID is defined for those dialects that support identification of
  * the parent process IDentifier (PPID) of a process.
  */
 
-# if    FREEBSDV >= 2000
-#define	HASPPID		1
-# endif    /* FREEBSDV>=2000 */
-
+#if FREEBSDV >= 2000
+#define HASPPID 1
+#endif /* FREEBSDV>=2000 */
 
 /*
  * HASPRINTDEV, HASPRINTINO, HASPRINTNM, HASPRINTOFF, and HASPRINTSZ
@@ -347,7 +317,6 @@ typedef	__cpumask_t	cpumask_t;
 /* #define	HASPRINTOFF	print_off?	*/
 /* #define	HASPRINTSZ	print_sz?	*/
 
-
 /*
  * HASPRIVFILETYPE and PRIVFILETYPE are defined for dialects that have a
  * file structure type that isn't defined by a DTYPE_* symbol.  They are
@@ -361,7 +330,6 @@ typedef	__cpumask_t	cpumask_t;
 /* #define	HASPRIVFILETYPE	process_shmf?	*/
 /* #define	PRIVFILETYPE	??	*/
 
-
 /*
  * HASPRIVNMCACHE is defined for dialects that have a private method for
  * printing cached NAME column values for some files.  HASPRIVNAMECACHE
@@ -373,7 +341,6 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASPRIVNMCACHE	<function name>	*/
 
-
 /*
  * HASPRIVPRIPP is defined for dialects that have a private function for
  * printing IP protocol names.  When HASPRIVPRIPP isn't defined, the
@@ -381,7 +348,6 @@ typedef	__cpumask_t	cpumask_t;
  */
 
 /* #define	HASPRIVPRIPP	1	*/
-
 
 /*
  * HASPROCFS is defined for those dialects that have a proc file system --
@@ -410,25 +376,23 @@ typedef	__cpumask_t	cpumask_t;
  * by inode number.
  */
 
-# if    defined(HASPROCFS)
-#undef	HASPROCFS
-#define	HASPROCFS	"proc"
-# endif    /* defined(HASPROCFS) */
+#if defined(HASPROCFS)
+#undef HASPROCFS
+#define HASPROCFS "proc"
+#endif /* defined(HASPROCFS) */
 
 /* #define		HASPROCFS	"proc?" */
 /* #define		HASFSTYPE	1 */
 
-# if    FREEBSDV >= 2000
-#define	HASPINODEN	1
-# endif    /* FREEBSDV>=2000 */
-
+#if FREEBSDV >= 2000
+#define HASPINODEN 1
+#endif /* FREEBSDV>=2000 */
 
 /*
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
 /* #define	HASRNODE	1 */
-
 
 /*
  * Define HASSECURITY to restrict the listing of all open files to the
@@ -439,7 +403,6 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASSECURITY	1 */
 
-
 /*
  * If HASSECURITY is defined, define HASNOSOCKSECURITY to allow users
  * restricted by HASSECURITY to list any open socket files, provide their
@@ -447,7 +410,6 @@ typedef	__cpumask_t	cpumask_t;
  */
 
 /* #define	HASNOSOCKSECURITY	1	*/
-
 
 /*
  * HASSETLOCALE is defined for those dialects that have <locale.h> and
@@ -459,14 +421,13 @@ typedef	__cpumask_t	cpumask_t;
  * mblen() and mbtowc() functions.
  */
 
-#define    HASSETLOCALE    1
+#define HASSETLOCALE 1
 
-# if    FREEBSDV >= 5200
-#define	HASWIDECHAR	1
-# endif    /* FREEBSDV>=5020 */
+#if FREEBSDV >= 5200
+#define HASWIDECHAR 1
+#endif /* FREEBSDV>=5020 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
-
 
 /*
  * HASSNODE is defined for those dialects that have snodes.
@@ -474,13 +435,11 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASSNODE	1 */
 
-
 /*
  * HASTASKS is defined for those dialects that have task reporting support.
  */
 
 /* #define	HASTASKS	1 */
-
 
 /*
  * HASSOOPT, HASSOSTATE and HASTCPOPT define the availability of information
@@ -488,10 +447,9 @@ typedef	__cpumask_t	cpumask_t;
  * options.
  */
 
-#define    HASSOOPT    1    /* has socket option information */
-#define    HASSOSTATE    1    /* has socket state information */
-#define    HASTCPOPT    1    /* has TCP options or flags */
-
+#define HASSOOPT   1 /* has socket option information */
+#define HASSOSTATE 1 /* has socket state information */
+#define HASTCPOPT  1 /* has TCP options or flags */
 
 /*
  * Define HASSPECDEVD to be the name of a function that handles the results
@@ -510,21 +468,18 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASSPECDEVD	process_dev_stat */
 
-
 /*
  * HASSTREAMS is defined for those dialects that support streams.
  */
 
 /* #define	HASSTREAMS	1 */
 
-
 /*
  * HASTCPTPIQ is defined for dialects where it is possible to report the
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define    HASTCPTPIQ    1
-
+#define HASTCPTPIQ 1
 
 /*
  * HASTCPTPIW is defined for dialects where it is possible to report the
@@ -533,22 +488,19 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	HASTCPTPIW	1 */
 
-
 /*
  * HASTCPUDPSTATE is defined for dialects that have TCP and UDP state
  * support -- i.e., for the "-stcp|udp:state" option and its associated
  * speed improvements.
  */
 
-#define    HASTCPUDPSTATE    1
-
+#define HASTCPUDPSTATE 1
 
 /*
  * HASTMPNODE is defined for those dialects that have tmpnodes.
  */
 
 /* #define	HASTMPNODE	1 */
-
 
 /*
  * HASVNODE is defined for those dialects that use the Sun virtual file system
@@ -557,8 +509,7 @@ typedef	__cpumask_t	cpumask_t;
  * doesn't.
  */
 
-#define    HASVNODE    1
-
+#define HASVNODE 1
 
 /*
  * HASXOPT is defined for those dialects that have an X option.  It
@@ -569,7 +520,6 @@ typedef	__cpumask_t	cpumask_t;
 /* #define	HASXOPT		"help text for X option" */
 /* #define	HASXOPT_VALUE	1 */
 
-
 /*
  * INODETYPE and INODEPSPEC define the internal node number type and its
  * printf specification modifier.  These need not be defined and lsof.h
@@ -578,19 +528,18 @@ typedef	__cpumask_t	cpumask_t;
  * These are defined here, because they must be used in dlsof.h.
  */
 
-#define    INODETYPE    unsigned long long
+#define INODETYPE unsigned long long
 /* inode number internal storage type */
-#define    INODEPSPEC    "ll"        /* INODETYPE printf specification
+#define INODEPSPEC \
+    "ll" /* INODETYPE printf specification
 					 * modifier */
-
 
 /*
  * UID_ARG defines the size of a User ID number when it is passed
  * as a function argument.
  */
 
-#define    UID_ARG    int
-
+#define UID_ARG int
 
 /*
  * Each USE_LIB_<function_name> is defined for dialects that use the
@@ -601,28 +550,27 @@ typedef	__cpumask_t	cpumask_t;
  * header files.
  */
 
-#define    USE_LIB_CKKV                1    /* ckkv.c */
+#define USE_LIB_CKKV 1 /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
-#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
-#define    USE_LIB_LKUPDEV                1    /* lkud.c */
-#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
-#define    USE_LIB_PROCESS_FILE            1    /* prfp.c */
-#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
-#define    USE_LIB_READDEV                1    /* rdev.c */
+#define USE_LIB_FIND_CH_INO   1 /* fino.c */
+#define USE_LIB_IS_FILE_NAMED 1 /* isfn.c */
+#define USE_LIB_LKUPDEV       1 /* lkud.c */
+#define USE_LIB_PRINTDEVNAME  1 /* pdvn.c */
+#define USE_LIB_PROCESS_FILE  1 /* prfp.c */
+#define USE_LIB_PRINT_TCPTPI  1 /* ptti.c */
+#define USE_LIB_READDEV       1 /* rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 
-# if    FREEBSDV < 2010
-#define    USE_LIB_RNAM                1    /* rnam.c */
-# else	/* FREEBSDV>=2010 */
-#define	USE_LIB_RNMH				1	/* rnmh.c */
-# endif    /* FREEBSDV<2010 */
+#if FREEBSDV < 2010
+#define USE_LIB_RNAM 1 /* rnam.c */
+#else                  /* FREEBSDV>=2010 */
+#define USE_LIB_RNMH 1 /* rnmh.c */
+#endif                 /* FREEBSDV<2010 */
 
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define    snpf    snprintf       /* use the system's snprintf() */
-
+#define snpf snprintf /* use the system's snprintf() */
 
 /*
  * WARNDEVACCESS is defined for those dialects that should issue a warning
@@ -630,8 +578,7 @@ typedef	__cpumask_t	cpumask_t;
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define    WARNDEVACCESS    1
-
+#define WARNDEVACCESS 1
 
 /*
  * WARNINGSTATE is defined for those dialects that want to suppress all lsof
@@ -640,20 +587,18 @@ typedef	__cpumask_t	cpumask_t;
 
 /* #define	WARNINGSTATE	1	warnings are enabled by default */
 
-
 /*
  * WILLDROPGID is defined for those dialects whose lsof executable runs
  * setgid(not_real_GID) and whose setgid power can be relinquished after
  * the dialect's initialize() function has been executed.
  */
 
-#define    WILLDROPGID    1
-
+#define WILLDROPGID 1
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define    zeromem(a, l)    memset(a, 0, l)
+#define zeromem(a, l) memset(a, 0, l)
 
-#endif    /* !defined(LSOF_MACHINE_H) */
+#endif /* !defined(LSOF_MACHINE_H) */

@@ -10,9 +10,12 @@ static int test_is_absolute_path(const char *p) {
 }
 
 static int test_path_depth(const char *p) {
-    if (!p || !*p) return 0;
+    if (!p || !*p)
+        return 0;
     int depth = 0;
-    for (; *p; p++) if (*p == '/') depth++;
+    for (; *p; p++)
+        if (*p == '/')
+            depth++;
     return depth;
 }
 

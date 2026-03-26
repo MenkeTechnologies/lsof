@@ -31,7 +31,6 @@ BENCH(getenv_miss, 10000000) {
     }
 }
 
-
 /* ===== gethostname benchmark ===== */
 BENCH(gethostname_call, 1000000) {
     char buf[256];
@@ -43,21 +42,37 @@ BENCH(gethostname_call, 1000000) {
 
 /* ===== UID to username cache lookup benchmark ===== */
 BENCH(uid_cache_linear_scan, 5000000) {
-    static struct { int uid; const char *name; } cache[32];
-    for (int j = 0; j < 32; j++) { cache[j].uid = j * 100; cache[j].name = "user"; }
+    static struct {
+        int uid;
+        const char *name;
+    } cache[32];
+    for (int j = 0; j < 32; j++) {
+        cache[j].uid = j * 100;
+        cache[j].name = "user";
+    }
     for (int i = 0; i < bf_iters; i++) {
         int target = (i % 32) * 100;
         const char *found = NULL;
         for (int j = 0; j < 32; j++) {
-            if (cache[j].uid == target) { found = cache[j].name; break; }
+            if (cache[j].uid == target) {
+                found = cache[j].name;
+                break;
+            }
         }
         BENCH_SINK_PTR((void *)found);
     }
 }
 
 BENCH(uid_cache_hash_lookup, 5000000) {
-    static struct { int uid; const char *name; } buckets[64];
-    for (int j = 0; j < 32; j++) { int h = (j * 100 * 31415) & 63; buckets[h].uid = j * 100; buckets[h].name = "user"; }
+    static struct {
+        int uid;
+        const char *name;
+    } buckets[64];
+    for (int j = 0; j < 32; j++) {
+        int h = (j * 100 * 31415) & 63;
+        buckets[h].uid = j * 100;
+        buckets[h].name = "user";
+    }
     for (int i = 0; i < bf_iters; i++) {
         int target = (i % 32) * 100;
         int h = (target * 31415) & 63;
@@ -65,7 +80,6 @@ BENCH(uid_cache_hash_lookup, 5000000) {
         BENCH_SINK_PTR((void *)found);
     }
 }
-
 
 /* ===== getlogin benchmark ===== */
 BENCH(getlogin_call, 1000000) {
@@ -77,7 +91,8 @@ BENCH(getlogin_call, 1000000) {
 /* ===== getpwnam benchmark (name-based lookup) ===== */
 BENCH(getpwnam_cached, 100000) {
     char *name = getlogin();
-    if (!name) name = "root";
+    if (!name)
+        name = "root";
     for (int i = 0; i < bf_iters; i++) {
         struct passwd *pw = getpwnam(name);
         BENCH_SINK_PTR(pw);

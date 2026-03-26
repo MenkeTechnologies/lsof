@@ -5,7 +5,6 @@
  * structure definitions.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -31,50 +30,45 @@
 
 #include "lsof.h"
 
-#if    defined(HAS9660FS)
+#if defined(HAS9660FS)
 /*
  * Undo some conflicting node header file definitions.
  */
 
-#undef	doff_t
-#undef	i_dev
-#undef	i_devvp
-#undef	i_number
-#undef	IN_ACCESS
-#undef	IN_LOCKED
-#undef	i_size
-#undef	IN_WANTED
-
+#undef doff_t
+#undef i_dev
+#undef i_devvp
+#undef i_number
+#undef IN_ACCESS
+#undef IN_LOCKED
+#undef i_size
+#undef IN_WANTED
 
 /*
  * At last, #include the desired header files.
  */
 
-# if	HAS9660FS==1
+#if HAS9660FS == 1
 #include <isofs/cd9660/iso.h>
 #include <isofs/cd9660/cd9660_node.h>
-# else	/* HAS9660FS!=1 */
+#else /* HAS9660FS!=1 */
 #include <fs/cd9660/iso.h>
 #include <fs/cd9660/cd9660_node.h>
-# endif	/* HAS9660FS==1 */
-
+#endif /* HAS9660FS==1 */
 
 /*
  * read_iso_node() -- read CD 9660 iso_node
  */
 
-int
-read_iso_node(struct vnode * v, dev_t * d, INODETYPE * ino, long * nl, SZOFFTYPE * sz)
-{
+int read_iso_node(struct vnode *v, dev_t *d, INODETYPE *ino, long *nl, SZOFFTYPE *sz) {
     struct iso_node i;
 
-    if (!v->v_data
-    ||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-        return(1);
+    if (!v->v_data || kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return (1);
     *d = i.i_dev;
     *ino = (INODETYPE)i.i_number;
     *nl = i.inode.iso_links;
     *sz = (SZOFFTYPE)i.i_size;
-    return(0);
+    return (0);
 }
-#endif    /* defined(HAS9660FS) */
+#endif /* defined(HAS9660FS) */

@@ -39,9 +39,7 @@
  *		      file distractions
  */
 
-int
-util_strftime(char *fmtr, int fmtl, char *fmt)
-{
+int util_strftime(char *fmtr, int fmtl, char *fmt) {
 
 #if defined(HAS_STRFTIME)
     struct tm *lt;
@@ -49,9 +47,8 @@ util_strftime(char *fmtr, int fmtl, char *fmt)
 
     tm = time(NULL);
     lt = localtime(&tm);
-    return(strftime(fmtr, fmtl, fmt, lt));
+    return (strftime(fmtr, fmtl, fmt, lt));
 #else
     return (0);
 #endif
-
 }

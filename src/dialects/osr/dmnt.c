@@ -2,7 +2,6 @@
  * dmnt.c - SCO OpenServer mount support functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,47 +27,44 @@
 
 #include "lsof.h"
 
-
 /*
  * Local static definitions
  */
 
-static struct mounts *Lmi = (struct mounts *) NULL;    /* local mount info */
-static int Lmist = 0;                    /* Lmi status */
-
+static struct mounts *Lmi = (struct mounts *)NULL; /* local mount info */
+static int Lmist = 0;                              /* Lmi status */
 
 /*
  * readmnt() - read mount table
  */
 
-struct mounts *
-readmnt() {
+struct mounts *readmnt() {
     int br, fd;
     int bx = sizeof(struct mnttab);
     char *cp;
     char dvnm[MAXPATHLEN], fsnm[MAXPATHLEN];
     MALLOC_S dvnml, fsnml;
     MALLOC_S len;
-    char *ln = (char *) NULL;
+    char *ln = (char *)NULL;
     struct mnttab m;
     struct mounts *mtp;
     struct stat sb;
 
     if (Lmi || Lmist)
         return (Lmi);
-/*
+    /*
  * Open access to the mount table.
  */
     if ((fd = open(MNTTAB, O_RDONLY, 0)) < 0) {
-        (void) fprintf(stderr, "%s: can't open %s\n", ProgramName, MNTTAB);
+        (void)fprintf(stderr, "%s: can't open %s\n", ProgramName, MNTTAB);
         Exit(1);
     }
-/*
+    /*
  * Read the first mount table entry.
  */
-    br = read(fd, (char *) &m, bx);
+    br = read(fd, (char *)&m, bx);
     dvnml = fsnml = 0;
-/*
+    /*
  * Process the next complete mount table entry.
  */
     while (br == bx) {
@@ -80,17 +76,16 @@ readmnt() {
             dvnml = strlen(m.mt_dev);
             if (dvnml >= MAXPATHLEN)
                 dvnml = MAXPATHLEN - 1;
-            (void) strncpy(dvnm, m.mt_dev, dvnml);
+            (void)strncpy(dvnm, m.mt_dev, dvnml);
             dvnm[dvnml] = '\0';
             fsnml = strlen(m.mt_filsys);
             if (fsnml >= MAXPATHLEN)
                 fsnml = MAXPATHLEN - 1;
-            (void) strncpy(fsnm, m.mt_filsys, fsnml);
+            (void)strncpy(fsnm, m.mt_filsys, fsnml);
             fsnm[fsnml] = '\0';
         }
-        while ((br = read(fd, (char *) &m, bx)) == bx
-               && strcmp(m.mt_filsys, "nothing") == 0
-               && strcmp(m.mt_dev, "nowhere") == 0) {
+        while ((br = read(fd, (char *)&m, bx)) == bx && strcmp(m.mt_filsys, "nothing") == 0 &&
+               strcmp(m.mt_dev, "nowhere") == 0) {
 
             /*
              * Add the "nothing/nowhere" extensions to the assemblies.
@@ -99,7 +94,7 @@ readmnt() {
             if (len >= (MAXPATHLEN - dvnml))
                 len = MAXPATHLEN - dvnml - 1;
             if (len) {
-                (void) strncpy(&dvnm[dvnml], &m.mt_dev[8], len);
+                (void)strncpy(&dvnm[dvnml], &m.mt_dev[8], len);
                 dvnml += len;
                 dvnm[dvnml] = '\0';
             }
@@ -107,7 +102,7 @@ readmnt() {
             if (len >= (MAXPATHLEN - fsnml))
                 len = MAXPATHLEN - fsnml - 1;
             if (len) {
-                (void) strncpy(&fsnm[fsnml], &m.mt_filsys[8], len);
+                (void)strncpy(&fsnm[fsnml], &m.mt_filsys[8], len);
                 fsnml += len;
                 fsnm[fsnml] = '\0';
             }
@@ -123,13 +118,12 @@ readmnt() {
          * Interpolate a possible symbolic directory link.
          */
         if (ln) {
-            (void) free((FREE_P *) ln);
-            ln = (char *) NULL;
+            (void)free((FREE_P *)ln);
+            ln = (char *)NULL;
         }
         if (!(ln = Readlink(fsnm))) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             dvnml = fsnml = 0;
             continue;
@@ -141,15 +135,15 @@ readmnt() {
             /*
              * Allocate space for a copy of the file system name.
              */
-            if (!(ln = mkstrcpy(fsnm, (MALLOC_S *) NULL))) {
+            if (!(ln = mkstrcpy(fsnm, (MALLOC_S *)NULL))) {
 
-                no_space_for_mount:
+            no_space_for_mount:
 
-                (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
+                (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
                 safestrprt(fsnm, stderr, 0);
-                (void) fprintf(stderr, " (");
+                (void)fprintf(stderr, " (");
                 safestrprt(dvnm, stderr, 0);
-                (void) fprintf(stderr, ")\n");
+                (void)fprintf(stderr, ")\n");
                 Exit(1);
             }
         }
@@ -158,11 +152,9 @@ readmnt() {
          */
         if (statsafely(ln, &sb)) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "%s: WARNING: can't stat() file system: ", ProgramName);
+                (void)fprintf(stderr, "%s: WARNING: can't stat() file system: ", ProgramName);
                 safestrprt(fsnm, stderr, 1);
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             dvnml = fsnml = 0;
             continue;
@@ -170,19 +162,19 @@ readmnt() {
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *) malloc(sizeof(struct mounts))))
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
             goto no_space_for_mount;
         mtp->dir = ln;
-        ln = (char *) NULL;
+        ln = (char *)NULL;
         mtp->next = Lmi;
         mtp->dev = sb.st_dev;
         mtp->rdev = sb.st_rdev;
-        mtp->inode = (INODETYPE) sb.st_ino;
+        mtp->inode = (INODETYPE)sb.st_ino;
         mtp->mode = sb.st_mode;
         /*
          * Interpolate a possible file system (mounted-on) device name link
          */
-        if (!(cp = mkstrcpy(dvnm, (MALLOC_S *) NULL)))
+        if (!(cp = mkstrcpy(dvnm, (MALLOC_S *)NULL)))
             goto no_space_for_mount;
         mtp->fsname = cp;
         ln = Readlink(cp);
@@ -193,17 +185,17 @@ readmnt() {
         if (statsafely(ln, &sb))
             sb.st_mode = 0;
         mtp->fsnmres = ln;
-        ln = (char *) NULL;
+        ln = (char *)NULL;
         mtp->fs_mode = sb.st_mode;
         Lmi = mtp;
         dvnml = fsnml = 0;
     }
-    (void) close(fd);
-/*
+    (void)close(fd);
+    /*
  * Clean up and return the local mount information table address.
  */
     if (ln)
-        (void) free((FREE_P *) ln);
+        (void)free((FREE_P *)ln);
     Lmist = 1;
     return (Lmi);
 }

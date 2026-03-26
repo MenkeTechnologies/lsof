@@ -6,7 +6,7 @@
 #define TEST_UNIT_PORTCACHE_H
 
 #define TEST_PORTHASHBUCKETS 128
-#define TEST_HASHPORT(p) (((((int)(p)) * 31415) >> 3) & (TEST_PORTHASHBUCKETS - 1))
+#define TEST_HASHPORT(p)     (((((int)(p)) * 31415) >> 3) & (TEST_PORTHASHBUCKETS - 1))
 
 struct test_porttab {
     int port;
@@ -15,8 +15,8 @@ struct test_porttab {
 };
 
 /* Build a port hash table, return number of non-empty buckets */
-static int build_port_table(struct test_porttab *entries, int count,
-                            struct test_porttab **buckets, int *ports) {
+static int build_port_table(struct test_porttab *entries, int count, struct test_porttab **buckets,
+                            int *ports) {
     memset(buckets, 0, TEST_PORTHASHBUCKETS * sizeof(struct test_porttab *));
     for (int i = 0; i < count; i++) {
         entries[i].port = ports[i];
@@ -27,14 +27,16 @@ static int build_port_table(struct test_porttab *entries, int count,
     }
     int used = 0;
     for (int i = 0; i < TEST_PORTHASHBUCKETS; i++)
-        if (buckets[i]) used++;
+        if (buckets[i])
+            used++;
     return used;
 }
 
 static const char *lookup_port(struct test_porttab **buckets, int port) {
     int h = TEST_HASHPORT(port);
     for (struct test_porttab *e = buckets[h]; e; e = e->next)
-        if (e->port == port) return e->name;
+        if (e->port == port)
+            return e->name;
     return NULL;
 }
 
@@ -72,7 +74,8 @@ TEST(port_table_collision_chain) {
     struct test_porttab entries[20];
     struct test_porttab *buckets[TEST_PORTHASHBUCKETS];
     int ports[20];
-    for (int i = 0; i < 20; i++) ports[i] = i * 100 + 1;
+    for (int i = 0; i < 20; i++)
+        ports[i] = i * 100 + 1;
     build_port_table(entries, 20, buckets, ports);
     for (int i = 0; i < 20; i++) {
         ASSERT_NOT_NULL(lookup_port(buckets, ports[i]));

@@ -2,7 +2,6 @@
  * dstore.c - Linux global storage for /proc-based lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,7 +27,7 @@
 
 #include "lsof.h"
 
-int HasNFS = 0;                /* NFS mount point status:
+int HasNFS = 0;  /* NFS mount point status:
 					 *     1 == there is an NFS mount point,
 					 *          but its device number is
 					 *          unknown
@@ -36,7 +35,7 @@ int HasNFS = 0;                /* NFS mount point status:
 					 *          and its device number is
 					 *          known
 					 */
-int OffType = 0;            /* offset type:
+int OffType = 0; /* offset type:
 					 *     0 == unknown
 					 *     1 == lstat's st_size
 					 *     2 == from /proc/<PID>/fdinfo */
@@ -45,60 +44,55 @@ int OffType = 0;            /* offset type:
  * Pff_tab[] - table for printing file flags
  */
 
-struct pff_tab Pff_tab[] = {
-        {(long) O_WRONLY, FF_WRITE},
-        {(long) O_RDWR, FF_RDWR},
-        {(long) O_CREAT, FF_CREAT},
-        {(long) O_EXCL, FF_EXCL},
-        {(long) O_NOCTTY, FF_NOCTTY},
-        {(long) O_TRUNC, FF_TRUNC},
-        {(long) O_APPEND, FF_APPEND},
-        {(long) O_NDELAY, FF_NDELAY},
-        {(long) O_SYNC, FF_SYNC},
-        {(long) O_ASYNC, FF_ASYNC},
+struct pff_tab Pff_tab[] = {{(long)O_WRONLY, FF_WRITE},
+                            {(long)O_RDWR, FF_RDWR},
+                            {(long)O_CREAT, FF_CREAT},
+                            {(long)O_EXCL, FF_EXCL},
+                            {(long)O_NOCTTY, FF_NOCTTY},
+                            {(long)O_TRUNC, FF_TRUNC},
+                            {(long)O_APPEND, FF_APPEND},
+                            {(long)O_NDELAY, FF_NDELAY},
+                            {(long)O_SYNC, FF_SYNC},
+                            {(long)O_ASYNC, FF_ASYNC},
 
-#if    defined(O_DIRECT)
-        { (long)O_DIRECT,	FF_DIRECT	},
-#endif    /* defined(O_DIRECT) */
+#if defined(O_DIRECT)
+                            {(long)O_DIRECT, FF_DIRECT},
+#endif /* defined(O_DIRECT) */
 
-#if    defined(O_DIRECTORY)
-        { (long)O_DIRECTORY,	FF_DIRECTORY	},
-#endif    /* defined(O_DIRECTORY) */
+#if defined(O_DIRECTORY)
+                            {(long)O_DIRECTORY, FF_DIRECTORY},
+#endif /* defined(O_DIRECTORY) */
 
-#if    defined(O_NOFOLLOW)
-        { (long)O_NOFOLLOW,	FF_NOFOLNK	},
-#endif    /* defined(O_NOFOLLOW) */
+#if defined(O_NOFOLLOW)
+                            {(long)O_NOFOLLOW, FF_NOFOLNK},
+#endif /* defined(O_NOFOLLOW) */
 
-#if    defined(O_NOATIME)
-        { (long)O_NOATIME,	FF_NOATM	},
-#endif    /* defined(O_NOATIME) */
+#if defined(O_NOATIME)
+                            {(long)O_NOATIME, FF_NOATM},
+#endif /* defined(O_NOATIME) */
 
-#if    defined(O_DSYNC)
-        { (long)O_DSYNC,	FF_DSYNC	},
-#endif    /* defined(O_DSYNC) */
+#if defined(O_DSYNC)
+                            {(long)O_DSYNC, FF_DSYNC},
+#endif /* defined(O_DSYNC) */
 
-#if    defined(O_RSYNC)
-        { (long)O_RSYNC,	FF_RSYNC	},
-#endif    /* defined(O_RSYNC) */
+#if defined(O_RSYNC)
+                            {(long)O_RSYNC, FF_RSYNC},
+#endif /* defined(O_RSYNC) */
 
-#if    defined(O_LARGEFILE)
-# if	O_LARGEFILE==0
-{ (long)0100000,	FF_LARGEFILE	},
-# else	/* O_LARGEFILE!=0 */
-{ (long)O_LARGEFILE,	FF_LARGEFILE	},
-# endif	/* O_LARGEFILE==0 */
-#else	/* !defined(O_LARGEFILE) */
-        {(long) 0100000, FF_LARGEFILE},
-#endif    /* defined(O_LARGEFILE) */
+#if defined(O_LARGEFILE)
+#if O_LARGEFILE == 0
+                            {(long)0100000, FF_LARGEFILE},
+#else  /* O_LARGEFILE!=0 */
+                            {(long)O_LARGEFILE, FF_LARGEFILE},
+#endif /* O_LARGEFILE==0 */
+#else  /* !defined(O_LARGEFILE) */
+                            {(long)0100000, FF_LARGEFILE},
+#endif /* defined(O_LARGEFILE) */
 
-        {(long) 0, NULL}
-};
-
+                            {(long)0, NULL}};
 
 /*
  * Pof_tab[] - table for print process open file flags
  */
 
-struct pff_tab Pof_tab[] = {
-        {(long) 0, NULL}
-};
+struct pff_tab Pof_tab[] = {{(long)0, NULL}};

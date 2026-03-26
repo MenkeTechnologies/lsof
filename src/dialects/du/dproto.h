@@ -4,7 +4,6 @@
  * The _PROTOTYPE macro is defined in the common proto.h.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,42 +27,40 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dproto.h,v 1.8 99/06/22 08:15:18 abe Exp $
  */
 
-
-_PROTOTYPE(extern void clr_flinfo,(void)
-
-);
-
-_PROTOTYPE(extern char *get_nlist_path,(int ap)
+_PROTOTYPE(extern void clr_flinfo, (void)
 
 );
 
-_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+_PROTOTYPE(extern char *get_nlist_path, (int ap)
 
 );
 
-_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm)
+_PROTOTYPE(extern int is_file_named, (char *p, int cd)
 
 );
 
-#if     defined(HASDCACHE)
-_PROTOTYPE(extern void clr_sect,(void));
-#endif  /* defined(HASDCACHE) */
+_PROTOTYPE(extern struct l_vfs *readvfs, (KA_T vm)
 
-#if    defined(HASIPv6)
-_PROTOTYPE(extern struct hostent *gethostbyname2,(char *nm, int prot));
-#endif    /* defined(HASIPv6) */
+);
 
-#if    defined(HASPRIVNMCACHE)
-_PROTOTYPE(extern int tag_to_path,(char *fs, mlBfTagT t2pb, int nl, char *nlb));
-#endif    /* defined(HASPRIVNMCACHE) */
+#if defined(HASDCACHE)
+_PROTOTYPE(extern void clr_sect, (void));
+#endif /* defined(HASDCACHE) */
 
-#if    defined(USELOCALREADDIR)
-_PROTOTYPE(extern int CloseDir,(DIR *dirp));
-_PROTOTYPE(extern DIR *OpenDir,(char *dir));
-_PROTOTYPE(extern struct DIRTYPE *ReadDir,(DIR *dirp));
-#endif    /* defined(USELOCALREADDIR) */
+#if defined(HASIPv6)
+_PROTOTYPE(extern struct hostent *gethostbyname2, (char *nm, int prot));
+#endif /* defined(HASIPv6) */
+
+#if defined(HASPRIVNMCACHE)
+_PROTOTYPE(extern int tag_to_path, (char *fs, mlBfTagT t2pb, int nl, char *nlb));
+#endif /* defined(HASPRIVNMCACHE) */
+
+#if defined(USELOCALREADDIR)
+_PROTOTYPE(extern int CloseDir, (DIR * dirp));
+_PROTOTYPE(extern DIR *OpenDir, (char *dir));
+_PROTOTYPE(extern struct DIRTYPE *ReadDir, (DIR * dirp));
+#endif /* defined(USELOCALREADDIR) */

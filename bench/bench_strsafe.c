@@ -6,9 +6,7 @@
 #define BF_SECTION "STRING SAFETY"
 
 /* ===== safe_string_length benchmark ===== */
-static int
-bench_safe_string_length(char *string_ptr, int flags)
-{
+static int bench_safe_string_length(char *string_ptr, int flags) {
     char non_print_marker;
     int safe_len = 0;
     non_print_marker = (flags & 2) ? ' ' : '\0';
@@ -47,7 +45,8 @@ BENCH(safestrlen_long_path, 5000000) {
 
 BENCH(safestrlen_binary_data, 2000000) {
     char data[64];
-    for (int i = 0; i < 63; i++) data[i] = (char)(i + 1);
+    for (int i = 0; i < 63; i++)
+        data[i] = (char)(i + 1);
     data[63] = '\0';
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(bench_safe_string_length(data, 0));
@@ -56,18 +55,26 @@ BENCH(safestrlen_binary_data, 2000000) {
 
 /* ===== safe_print_unprintable benchmark ===== */
 static char unprintable_buf[8];
-static char *
-bench_safe_print_unprintable(unsigned int char_code, int *output_length)
-{
+static char *bench_safe_print_unprintable(unsigned int char_code, int *output_length) {
     int encoded_len;
     char *result_str;
     if (char_code < 0x20) {
         switch (char_code) {
-        case '\b': result_str = "\\b"; break;
-        case '\f': result_str = "\\f"; break;
-        case '\n': result_str = "\\n"; break;
-        case '\r': result_str = "\\r"; break;
-        case '\t': result_str = "\\t"; break;
+        case '\b':
+            result_str = "\\b";
+            break;
+        case '\f':
+            result_str = "\\f";
+            break;
+        case '\n':
+            result_str = "\\n";
+            break;
+        case '\r':
+            result_str = "\\r";
+            break;
+        case '\t':
+            result_str = "\\t";
+            break;
         default:
             unprintable_buf[0] = '^';
             unprintable_buf[1] = (char)(char_code + 0x40);
@@ -91,7 +98,8 @@ bench_safe_print_unprintable(unsigned int char_code, int *output_length)
         result_str = unprintable_buf;
         encoded_len = 4;
     }
-    if (output_length) *output_length = encoded_len;
+    if (output_length)
+        *output_length = encoded_len;
     return result_str;
 }
 
@@ -109,14 +117,18 @@ BENCH(safepup_high_bytes, 5000000) {
     }
 }
 
-
 /* ===== safestrlen with varying unprintable density ===== */
 BENCH(safestrlen_mostly_clean, 5000000) {
     /* 90% printable, 10% control chars */
     char data[64];
-    for (int i = 0; i < 60; i++) data[i] = 'A' + (char)(i % 26);
-    data[10] = '\t'; data[20] = '\n'; data[30] = '\r';
-    data[40] = '\x01'; data[50] = '\x7f'; data[59] = '\x80';
+    for (int i = 0; i < 60; i++)
+        data[i] = 'A' + (char)(i % 26);
+    data[10] = '\t';
+    data[20] = '\n';
+    data[30] = '\r';
+    data[40] = '\x01';
+    data[50] = '\x7f';
+    data[59] = '\x80';
     data[60] = '\0';
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(bench_safe_string_length(data, 0));
@@ -126,8 +138,11 @@ BENCH(safestrlen_mostly_clean, 5000000) {
 BENCH(safestrlen_mostly_dirty, 2000000) {
     /* 90% unprintable */
     char data[64];
-    for (int i = 0; i < 63; i++) data[i] = (char)(i % 31 + 1); /* control chars */
-    data[10] = 'A'; data[20] = 'B'; data[30] = 'C';
+    for (int i = 0; i < 63; i++)
+        data[i] = (char)(i % 31 + 1); /* control chars */
+    data[10] = 'A';
+    data[20] = 'B';
+    data[30] = 'C';
     data[63] = '\0';
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(bench_safe_string_length(data, 0));

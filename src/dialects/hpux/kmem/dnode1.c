@@ -5,7 +5,6 @@
  * structure definitions.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -29,17 +28,16 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HASVXFS)
+#if defined(HASVXFS)
 
-# if	defined(HPUXKERNBITS) && HPUXKERNBITS>=64
+#if defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _INO_T
 typedef int ino_t;
 #define _TIME_T
 typedef int time_t;
-# endif	/* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
+#endif /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
 
 #include "lsof.h"
-
 
 /*
  * HP-UX versions below 10.20:
@@ -60,48 +58,45 @@ typedef int time_t;
  *    Don't #define _KERNEL.  Include a different set of VXFS header files.
  */
 
+#if HPUXV >= 1020
+#undef te_offset
+#undef i_size
+#undef di_size
+#define pool_id_t vx_pool_id_t
 
-# if	HPUXV>=1020
-#undef	te_offset
-#undef	i_size
-#undef	di_size
-#define	pool_id_t	vx_pool_id_t
-
-#  if	HPUXV>=1030
-#define	ulong	vx_ulong		/* avoid <sys/stream.h> conflict */
-#  endif	/* HPUXV>=1030 */
+#if HPUXV >= 1030
+#define ulong vx_ulong /* avoid <sys/stream.h> conflict */
+#endif                 /* HPUXV>=1030 */
 
 #include <sys/fs/vx_hpux.h>
 #include <sys/fs/vx_port.h>
 #include <sys/fs/vx_inode.h>
 
-#  if	HPUXV>=1030
-#undef	ulong
-#  endif	/* HPUXV>=1030 */
+#if HPUXV >= 1030
+#undef ulong
+#endif /* HPUXV>=1030 */
 
-# else	/* HPUXV<1020 */
+#else /* HPUXV<1020 */
 
-#define	pool_id_t	caddr_t
-#define	sv_sema_t	caddr_t
-#define	_KERNEL
+#define pool_id_t caddr_t
+#define sv_sema_t caddr_t
+#define _KERNEL
 #include <sys/fs/vx_hpux.h>
 #include <sys/fs/vx_inode.h>
-#undef	_KERNEL
-# endif	/* HPUXV>=1020 */
-
+#undef _KERNEL
+#endif /* HPUXV>=1020 */
 
 /*
  * read_vxnode() - read Veritas file system inode information
  */
 
-int
-read_vxnode(struct vnode * v, struct l_vfs * vfs, dev_t * dev, int * devs, dev_t * rdev, int * rdevs)
-{
+int read_vxnode(struct vnode *v, struct l_vfs *vfs, dev_t *dev, int *devs, dev_t *rdev,
+                int *rdevs) {
     struct vx_inode i;
 
     if (!v->v_data || kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-        return(1);
-/*
+        return (1);
+    /*
  * Return device numbers.
  */
     if (vfs && vfs->fsname)
@@ -113,12 +108,12 @@ read_vxnode(struct vnode * v, struct l_vfs * vfs, dev_t * dev, int * devs, dev_t
         *rdev = v->v_rdev;
         *rdevs = 1;
     }
-/*
+    /*
  * Record inode number.
  */
     CurrentLocalFile->inode = (INODETYPE)i.i_number;
     CurrentLocalFile->inp_ty = 1;
-/*
+    /*
  * Record size.
  */
     if (OptOffset || ((v->v_type == VCHR || v->v_type == VBLK) && !OptSize))
@@ -127,15 +122,15 @@ read_vxnode(struct vnode * v, struct l_vfs * vfs, dev_t * dev, int * devs, dev_t
         CurrentLocalFile->sz = (SZOFFTYPE)i.i_size;
         CurrentLocalFile->sz_def = 1;
     }
-/*
+    /*
  * Record link count.
  */
     if (OptLinkCount) {
         CurrentLocalFile->nlink = (long)i.i_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-        CurrentLocalFile->sel_flags |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
-    return(0);
+    return (0);
 }
-#endif    /* defined(HASVXFS) */
+#endif /* defined(HASVXFS) */

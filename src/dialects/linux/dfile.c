@@ -2,7 +2,6 @@
  * dfile.c - Linux file processing functions for /proc-based lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,7 +27,6 @@
 
 #include "lsof.h"
 
-
 /*
  * printdevname() - print character device name
  *
@@ -37,14 +35,11 @@
  *	 is provided here.
  */
 
-int
-printdevname(dev_t * dev, dev_t * rdev, int f, int nty)
-{
+int printdevname(dev_t *dev, dev_t *rdev, int f, int nty) {
     char buf[128];
 
-    (void) snpf(buf, sizeof(buf), "%s device: %d,%d",
-                (nty == N_BLK) ? "BLK" : "CHR",
-                (int) GET_MAJ_DEV(*rdev), (int) GET_MIN_DEV(*rdev));
+    (void)snpf(buf, sizeof(buf), "%s device: %d,%d", (nty == N_BLK) ? "BLK" : "CHR",
+               (int)GET_MAJ_DEV(*rdev), (int)GET_MIN_DEV(*rdev));
     safestrprt(buf, stdout, f);
     return (1);
 }

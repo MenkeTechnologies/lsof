@@ -13,9 +13,7 @@
 /* ===== isIPv4addr() reimplementation ===== */
 #define TEST_MIN_AF_ADDR 4
 
-static char *
-test_is_ipv4_address(char *hostname, unsigned char *addr_out, int addr_len)
-{
+static char *test_is_ipv4_address(char *hostname, unsigned char *addr_out, int addr_len) {
     int dot_count = 0;
     int octet_idx;
     int octet_values[TEST_MIN_AF_ADDR];
@@ -39,14 +37,15 @@ test_is_ipv4_address(char *hostname, unsigned char *addr_out, int addr_len)
             if (octet_values[current_octet] < 0)
                 octet_values[current_octet] = (int)(*hostname - '0');
             else
-                octet_values[current_octet] = (octet_values[current_octet] * 10) + (int)(*hostname - '0');
+                octet_values[current_octet] =
+                    (octet_values[current_octet] * 10) + (int)(*hostname - '0');
         } else {
             return NULL;
         }
         hostname++;
     }
-    if ((dot_count != 3) || (current_octet != (TEST_MIN_AF_ADDR - 1))
-        || (octet_values[current_octet] < 0) || (octet_values[current_octet] > 255))
+    if ((dot_count != 3) || (current_octet != (TEST_MIN_AF_ADDR - 1)) ||
+        (octet_values[current_octet] < 0) || (octet_values[current_octet] > 255))
         return NULL;
 
     for (octet_idx = 0; octet_idx < TEST_MIN_AF_ADDR; octet_idx++)
@@ -215,11 +214,12 @@ TEST(ipv4_port_extraction) {
     ASSERT_STR_EQ(result + 1, "443");
 }
 
-
 /* ===== IPv6 address detection ===== */
 static int test_has_ipv6_colons(const char *s) {
     int colons = 0;
-    for (; *s; s++) if (*s == ':') colons++;
+    for (; *s; s++)
+        if (*s == ':')
+            colons++;
     return colons >= 2;
 }
 
@@ -259,19 +259,21 @@ TEST(ipv6_detect_no_colon) {
     ASSERT_FALSE(test_has_ipv6_colons("hostname"));
 }
 
-
 /* ===== Address family names ===== */
-static const char *
-test_af_name(int fam)
-{
+static const char *test_af_name(int fam) {
     switch (fam) {
-    case AF_UNSPEC: return "UNSPEC";
-    case AF_UNIX:   return "unix";
-    case AF_INET:   return "INET";
+    case AF_UNSPEC:
+        return "UNSPEC";
+    case AF_UNIX:
+        return "unix";
+    case AF_INET:
+        return "INET";
 #ifdef AF_INET6
-    case AF_INET6:  return "INET6";
+    case AF_INET6:
+        return "INET6";
 #endif
-    default:        return NULL;
+    default:
+        return NULL;
     }
 }
 
@@ -297,14 +299,17 @@ TEST(af_name_unknown) {
     ASSERT_NULL(test_af_name(9999));
 }
 
-
 /* ===== Socket type names ===== */
 static const char *test_socktype_name(int type) {
     switch (type) {
-        case SOCK_STREAM: return "SOCK_STREAM";
-        case SOCK_DGRAM: return "SOCK_DGRAM";
-        case SOCK_RAW: return "SOCK_RAW";
-        default: return NULL;
+    case SOCK_STREAM:
+        return "SOCK_STREAM";
+    case SOCK_DGRAM:
+        return "SOCK_DGRAM";
+    case SOCK_RAW:
+        return "SOCK_RAW";
+    default:
+        return NULL;
     }
 }
 

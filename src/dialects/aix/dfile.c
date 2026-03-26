@@ -2,7 +2,6 @@
  * dfile.c - AIX file processing functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,119 +27,113 @@
 
 #include "lsof.h"
 
-
 /*
  * Local structures
  */
 
 struct hsfile {
-    struct sfile *s;        /* the SearchFileChain table address */
-    struct hsfile *next;        /* the next hash bucket entry */
+    struct sfile *s;     /* the SearchFileChain table address */
+    struct hsfile *next; /* the next hash bucket entry */
 };
-
 
 /*
  * Local static variables
  */
 
-static struct hsfile *HbyFdi =        /* hash by file buckets */
-        (struct hsfile *) NULL;
-static int HbyFdiCt = 0;        /* HbyFdi entry count */
-static struct hsfile *HbyFrd =        /* hash by file raw device buckets */
-        (struct hsfile *) NULL;
-static int HbyFrdCt = 0;        /* HbyFrd entry count */
-static struct hsfile *HbyFsd =        /* hash by file system buckets */
-        (struct hsfile *) NULL;
-static int HbyFsdCt = 0;        /* HbyFsd entry count */
-static struct hsfile *HbyMPC =        /* hash by MPC file buckets */
-        (struct hsfile *) NULL;
-static int HbyMPCCt = 0;        /* HbyMPC entry count */
-static struct hsfile *HbyNm =        /* hash by name buckets */
-        (struct hsfile *) NULL;
-static int HbyNmCt = 0;            /* HbyNm entry count */
-
+static struct hsfile *HbyFdi = /* hash by file buckets */
+    (struct hsfile *)NULL;
+static int HbyFdiCt = 0;       /* HbyFdi entry count */
+static struct hsfile *HbyFrd = /* hash by file raw device buckets */
+    (struct hsfile *)NULL;
+static int HbyFrdCt = 0;       /* HbyFrd entry count */
+static struct hsfile *HbyFsd = /* hash by file system buckets */
+    (struct hsfile *)NULL;
+static int HbyFsdCt = 0;       /* HbyFsd entry count */
+static struct hsfile *HbyMPC = /* hash by MPC file buckets */
+    (struct hsfile *)NULL;
+static int HbyMPCCt = 0;      /* HbyMPC entry count */
+static struct hsfile *HbyNm = /* hash by name buckets */
+    (struct hsfile *)NULL;
+static int HbyNmCt = 0; /* HbyNm entry count */
 
 /*
  * Local definitions
  */
 
-#define    SFDIHASH    4094        /* SearchFileChain hash by (device,inode) number
+#define SFDIHASH \
+    4094 /* SearchFileChain hash by (device,inode) number
 					 * pair bucket count (power of 2!) */
-#define    SFFSHASH    128        /* SearchFileChain hash by file system device
+#define SFFSHASH \
+    128 /* SearchFileChain hash by file system device
 					 * number bucket count (power of 2!) */
-#define SFHASHDEVINO(maj, min, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+#define SFHASHDEVINO(maj, min, ino, mod) \
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ino) * 31415) & (mod - 1)))
 /* hash for SearchFileChain by major device,
  * minor device, and inode, modulo m
  * (m must be a power of 2) */
-#define    SFMPCHASH    1024        /* SearchFileChain hash by MPC device number */
-#define    SFNMHASH    4096        /* SearchFileChain hash by name bucket count
+#define SFMPCHASH 1024 /* SearchFileChain hash by MPC device number */
+#define SFNMHASH \
+    4096 /* SearchFileChain hash by name bucket count
 					   (power of 2!) */
-#define    SFRDHASH    1024        /* SearchFileChain hash by raw device number
+#define SFRDHASH \
+    1024 /* SearchFileChain hash by raw device number
 					 * bucket count (power of 2!) */
-#define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+((int)(rmaj+1)*(int)(rmin+1))+ino)*31415)&(mod-1)))
+#define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod)                                               \
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ((int)(rmaj + 1) * (int)(rmin + 1)) + \
+                  ino) *                                                                          \
+            31415) &                                                                              \
+           (mod - 1)))
 /* hash for SearchFileChain by major device,
  * minor device, major raw device,
  * minor raw device, and inode, modulo
  * mod (mod must be a power of 2) */
 
-
 /*
  * hashSfile() - hash SearchFileChain entries for use in is_file_named() searches
  */
 
-void
-hashSfile() {
+void hashSfile() {
     static int hs = 0;
     int i;
     struct sfile *s;
     struct hsfile *sh, *sn;
-/*
+    /*
  * Do nothing if there are no file search arguments cached or if the
  * hashes have already been constructed.
  */
     if (!SearchFileChain || hs)
         return;
-/*
+    /*
  * Allocate hash buckets by (device,inode), file system device, MPC device,
  * and file name.
  */
-    if (!(HbyFdi = (struct hsfile *) calloc((MALLOC_S) SFDIHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d (dev,ino) hash buckets\n",
-                       ProgramName, SFDIHASH);
+    if (!(HbyFdi = (struct hsfile *)calloc((MALLOC_S)SFDIHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d (dev,ino) hash buckets\n",
+                      ProgramName, SFDIHASH);
         Exit(1);
     }
-    if (!(HbyFrd = (struct hsfile *) calloc((MALLOC_S) SFRDHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d rdev hash buckets\n",
-                       ProgramName, SFRDHASH);
+    if (!(HbyFrd = (struct hsfile *)calloc((MALLOC_S)SFRDHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d rdev hash buckets\n", ProgramName,
+                      SFRDHASH);
         Exit(1);
     }
-    if (!(HbyFsd = (struct hsfile *) calloc((MALLOC_S) SFFSHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d file sys hash buckets\n",
-                       ProgramName, SFFSHASH);
+    if (!(HbyFsd = (struct hsfile *)calloc((MALLOC_S)SFFSHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d file sys hash buckets\n",
+                      ProgramName, SFFSHASH);
         Exit(1);
     }
-    if (!(HbyMPC = (struct hsfile *) calloc((MALLOC_S) SFMPCHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d MPC file hash buckets\n",
-                       ProgramName, SFMPCHASH);
+    if (!(HbyMPC = (struct hsfile *)calloc((MALLOC_S)SFMPCHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d MPC file hash buckets\n",
+                      ProgramName, SFMPCHASH);
         Exit(1);
     }
-    if (!(HbyNm = (struct hsfile *) calloc((MALLOC_S) SFNMHASH,
-                                           sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d name hash buckets\n",
-                       ProgramName, SFNMHASH);
+    if (!(HbyNm = (struct hsfile *)calloc((MALLOC_S)SFNMHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d name hash buckets\n", ProgramName,
+                      SFNMHASH);
         Exit(1);
     }
     hs++;
-/*
+    /*
  * Scan the SearchFileChain chain, building file, file system, MPC file, and file
  * name hash bucket chains.
  */
@@ -153,36 +146,25 @@ hashSfile() {
                 HbyNmCt++;
             } else if (i == 1) {
                 if (s->type) {
-                    sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(s->dev),
-                                              GET_MIN_DEV(s->dev),
-                                              s->i,
+                    sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev), s->i,
                                               SFDIHASH)];
                     HbyFdiCt++;
                 } else {
-                    sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(s->dev),
-                                              GET_MIN_DEV(s->dev),
-                                              0,
+                    sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev), 0,
                                               SFFSHASH)];
                     HbyFsdCt++;
                 }
             } else if (i == 2) {
                 if (s->type && (s->ch < 0) && (s->mode == S_IFCHR)) {
-                    sh = &HbyMPC[SFHASHDEVINO(GET_MAJ_DEV(s->dev),
-                                              GET_MIN_DEV(s->dev),
-                                              0,
+                    sh = &HbyMPC[SFHASHDEVINO(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev), 0,
                                               SFMPCHASH)];
                     HbyMPCCt++;
                 } else
                     continue;
             } else if (i == 3) {
-                if (s->type
-                    && (((s->mode == S_IFCHR) && (s->ch < 0))
-                        || ((s->mode == S_IFBLK)))) {
-                    sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(s->dev),
-                                             GET_MIN_DEV(s->dev),
-                                             GET_MAJ_DEV(s->rdev),
-                                             GET_MIN_DEV(s->rdev),
-                                             s->i,
+                if (s->type && (((s->mode == S_IFCHR) && (s->ch < 0)) || ((s->mode == S_IFBLK)))) {
+                    sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev),
+                                             GET_MAJ_DEV(s->rdev), GET_MIN_DEV(s->rdev), s->i,
                                              SFRDHASH)];
                     HbyFrdCt++;
                 } else
@@ -190,16 +172,12 @@ hashSfile() {
             }
             if (!sh->s) {
                 sh->s = s;
-                sh->next = (struct hsfile *) NULL;
+                sh->next = (struct hsfile *)NULL;
                 continue;
             } else {
-                if (!(sn = (struct hsfile *) malloc(
-                        (MALLOC_S)
-                    sizeof(struct hsfile))))
-                {
-                    (void) fprintf(stderr,
-                                   "%s: can't allocate hsfile bucket for: %s\n",
-                                   ProgramName, s->aname);
+                if (!(sn = (struct hsfile *)malloc((MALLOC_S)sizeof(struct hsfile)))) {
+                    (void)fprintf(stderr, "%s: can't allocate hsfile bucket for: %s\n", ProgramName,
+                                  s->aname);
                     Exit(1);
                 }
                 sn->s = s;
@@ -210,18 +188,16 @@ hashSfile() {
     }
 }
 
-
 /*
  * is_file_named() - is file named?
  */
 
-int
-is_file_named(p, ty, ch, ic)
-        char *p;            /* path name; NULL = search by device
+int is_file_named(p, ty, ch, ic)
+char *p;       /* path name; NULL = search by device
 					 * and inode (from *CurrentLocalFile) */
-        enum vtype ty;            /* vnode type */
-        chan_t ch;            /* gnode channel */
-        int ic;                /* is clone file (4.1.4 and above) */
+enum vtype ty; /* vnode type */
+chan_t ch;     /* gnode channel */
+int ic;        /* is clone file (4.1.4 and above) */
 {
     int dmaj, dmin, maj, min, rmaj, rmin;
     static int dsplit = 0;
@@ -230,7 +206,7 @@ is_file_named(p, ty, ch, ic)
     struct sfile *s;
     struct hsfile *sh;
     size_t sz;
-/*
+    /*
  * Split the device numbers into their major and minor numbers.
  *
  * THis is necessitated by 64 bit AIX architectures, which store two different
@@ -253,34 +229,26 @@ is_file_named(p, ty, ch, ic)
         rmin = GET_MIN_DEV(CurrentLocalFile->rdev);
     }
 
-#if    AIXV >= 4140
+#if AIXV >= 4140
     /*
      * Check for a clone match.
      */
-        if (ic
-        &&  HbyFdiCt
-        &&  CloneMaj >= 0
-        &&  (CurrentLocalFile->dev_def && (maj = dmaj) && (min == dmin))
-        &&  CurrentLocalFile->rdev_def
-        &&  (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3))
-        {
-            for (sh=&HbyFdi[SFHASHDEVINO(CloneMaj, rmaj, CurrentLocalFile->inode, SFDIHASH)];
-             sh;
-             sh = sh->next)
-            {
-            if ((s = sh->s)
-            &&  (GET_MAJ_DEV(s->rdev) == CloneMaj)
-            &&  (GET_MIN_DEV(s->rdev) == rmaj)
-            &&  (s->i == CurrentLocalFile->inode))
-            {
+    if (ic && HbyFdiCt && CloneMaj >= 0 &&
+        (CurrentLocalFile->dev_def && (maj = dmaj) && (min == dmin)) &&
+        CurrentLocalFile->rdev_def &&
+        (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFdi[SFHASHDEVINO(CloneMaj, rmaj, CurrentLocalFile->inode, SFDIHASH)]; sh;
+             sh = sh->next) {
+            if ((s = sh->s) && (GET_MAJ_DEV(s->rdev) == CloneMaj) &&
+                (GET_MIN_DEV(s->rdev) == rmaj) && (s->i == CurrentLocalFile->inode)) {
                 f = 3;
                 break;
             }
-            }
         }
-#endif    /* AIXV>=4140 */
+    }
+#endif /* AIXV>=4140 */
 
-/*
+    /*
  * Check for a path name match, as requested.
  */
     if (!f && p && HbyNmCt) {
@@ -291,92 +259,75 @@ is_file_named(p, ty, ch, ic)
             }
         }
     }
-/*
+    /*
  * Check for a regular AIX multiplexed file, matching the channel if
  * it was supplied by the caller.
  */
-    if (!f && HbyMPCCt && ty == VMPC
-        && (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin))
-        && CurrentLocalFile->rdev_def) {
-        for (sh = &HbyMPC[SFHASHDEVINO(rmaj, rmin, 0, SFMPCHASH)];
-             sh;
-             sh = sh->next) {
-            if ((s = sh->s)
-                && (GET_MAJ_DEV(s->dev) == rmaj)
-                && (GET_MIN_DEV(s->dev) == rmin)
-                && (s->ch < 0 || ch == s->ch)) {
+    if (!f && HbyMPCCt && ty == VMPC &&
+        (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin)) &&
+        CurrentLocalFile->rdev_def) {
+        for (sh = &HbyMPC[SFHASHDEVINO(rmaj, rmin, 0, SFMPCHASH)]; sh; sh = sh->next) {
+            if ((s = sh->s) && (GET_MAJ_DEV(s->dev) == rmaj) && (GET_MIN_DEV(s->dev) == rmin) &&
+                (s->ch < 0 || ch == s->ch)) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
-        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
-        for (sh = &HbyFdi[SFHASHDEVINO(maj, min, CurrentLocalFile->inode, SFDIHASH)];
-             sh;
+    if (!f && HbyFdiCt && CurrentLocalFile->dev_def &&
+        (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFdi[SFHASHDEVINO(maj, min, CurrentLocalFile->inode, SFDIHASH)]; sh;
              sh = sh->next) {
-            if ((s = sh->s)
-                && (maj == GET_MAJ_DEV(s->dev))
-                && (min == GET_MIN_DEV(s->dev))
-                && (CurrentLocalFile->inode == s->i)) {
+            if ((s = sh->s) && (maj == GET_MAJ_DEV(s->dev)) && (min == GET_MIN_DEV(s->dev)) &&
+                (CurrentLocalFile->inode == s->i)) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a file system.
  */
     if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
-        for (sh = &HbyFsd[SFHASHDEVINO(maj, min, 0, SFFSHASH)];
-             sh;
-             sh = sh->next) {
-            if ((s = sh->s)
-                && (maj == GET_MAJ_DEV(s->dev))
-                && (min == GET_MIN_DEV(s->dev))
-                    ) {
+        for (sh = &HbyFsd[SFHASHDEVINO(maj, min, 0, SFFSHASH)]; sh; sh = sh->next) {
+            if ((s = sh->s) && (maj == GET_MAJ_DEV(s->dev)) && (min == GET_MIN_DEV(s->dev))) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a character or block device file.
  */
-    if (!f && HbyFrdCt
-        && ((ty == VCHR) || (ty == VBLK))
-        && (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin))
-        && CurrentLocalFile->rdev_def
-        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
-        for (sh = &HbyFrd[SFHASHRDEVI(maj, min, rmaj, rmin,
-                                      CurrentLocalFile->inode, SFRDHASH)];
-             sh;
+    if (!f && HbyFrdCt && ((ty == VCHR) || (ty == VBLK)) &&
+        (CurrentLocalFile->dev_def && (maj == dmaj) && (min == dmin)) &&
+        CurrentLocalFile->rdev_def &&
+        (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFrd[SFHASHRDEVI(maj, min, rmaj, rmin, CurrentLocalFile->inode, SFRDHASH)]; sh;
              sh = sh->next) {
-            if ((s = sh->s)
-                && (GET_MAJ_DEV(s->rdev) == rmaj)
-                && (GET_MIN_DEV(s->rdev) == rmin)
-                && (((ty == VCHR) && (s->mode == S_IFCHR) && (s->ch < 0))
-                    || ((ty == VBLK) && (s->mode == S_IFBLK)))) {
+            if ((s = sh->s) && (GET_MAJ_DEV(s->rdev) == rmaj) && (GET_MIN_DEV(s->rdev) == rmin) &&
+                (((ty == VCHR) && (s->mode == S_IFCHR) && (s->ch < 0)) ||
+                 ((ty == VBLK) && (s->mode == S_IFBLK)))) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Convert the name if a match occurred.
  */
     if (f) {
         if (f == 2) {
-            (void) snpf(NameChars, NameCharsLength, "%s", p);
+            (void)snpf(NameChars, NameCharsLength, "%s", p);
 
-#if    AIXV >= 4140
-            } else if (f == 3 && ClonePtc >= 0 && (maj == ClonePtc)) {
-            (void) snpf(NameChars, NameCharsLength, "%s/%d", s->name, min);
+#if AIXV >= 4140
+        } else if (f == 3 && ClonePtc >= 0 && (maj == ClonePtc)) {
+            (void)snpf(NameChars, NameCharsLength, "%s/%d", s->name, min);
 
-#endif    /* AIXV>=4140 */
+#endif /* AIXV>=4140 */
 
         } else if (s->type) {
 
@@ -384,14 +335,14 @@ is_file_named(p, ty, ch, ic)
              * If the search argument isn't a file system, propagate it
              * to NameChars[]; otherwise, let printname() compose the name.
              */
-            (void) snpf(NameChars, NameCharsLength, "%s", s->name);
+            (void)snpf(NameChars, NameCharsLength, "%s", s->name);
             if (ty == VMPC && s->ch < 0) {
                 ep = endnm(&sz);
-                (void) snpf(ep, sz, "/%d", ch);
+                (void)snpf(ep, sz, "/%d", ch);
             }
             if (s->devnm) {
                 ep = endnm(&sz);
-                (void) snpf(ep, sz, " (%s)", s->devnm);
+                (void)snpf(ep, sz, " (%s)", s->devnm);
             }
         }
         s->f = 1;
@@ -400,37 +351,31 @@ is_file_named(p, ty, ch, ic)
     return (0);
 }
 
-
 /*
  * print_dev() - print device
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
     int maj = GET_MAJ_DEV(*dev);
     int min = GET_MIN_DEV(*dev);
 
-#if    AIXV >= 3200
+#if AIXV >= 3200
     if (*dev & SDEV_REMOTE) {
-        (void) snpf(buf, sizeof(buf), "NFS,%d", (min & ~SDEV_REMOTE));
-        return(buf);
+        (void)snpf(buf, sizeof(buf), "NFS,%d", (min & ~SDEV_REMOTE));
+        return (buf);
     }
-#endif    /* AIXV>=3200 */
+#endif /* AIXV>=3200 */
 
-    (void) snpf(buf, sizeof(buf), "%d,%d", maj, min);
+    (void)snpf(buf, sizeof(buf), "%d,%d", maj, min);
     return (buf);
 }
-
 
 /*
  * readvfs() - read vfs structure
  */
 
-struct l_vfs *
-readvfs(struct vnode * vn)
-{
+struct l_vfs *readvfs(struct vnode *vn) {
     struct gfs g;
     void *mp;
     char *s1, *s2;
@@ -439,78 +384,73 @@ readvfs(struct vnode * vn)
     struct vmount *vm;
     struct l_vfs *vp;
 
-
     if (!vn->v_vfsp)
-        return ((struct l_vfs *) NULL);
+        return ((struct l_vfs *)NULL);
     for (vp = Lvfs; vp; vp = vp->next) {
-        if ((KA_T) vn->v_vfsp == vp->addr)
+        if ((KA_T)vn->v_vfsp == vp->addr)
             return (vp);
     }
-    if (!(vp = (struct l_vfs *) malloc((MALLOC_S)sizeof(struct l_vfs)))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if (!(vp = (struct l_vfs *)malloc((MALLOC_S)sizeof(struct l_vfs)))) {
+        (void)fprintf(stderr, "%s: PID %d, no space for vfs\n", ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
-    vp->dir = (char *) NULL;
-    vp->fsname = (char *) NULL;
-/*
+    vp->dir = (char *)NULL;
+    vp->fsname = (char *)NULL;
+    /*
  * Read the vfs structure.
  */
-    if (kread((KA_T) vn->v_vfsp, (char *) &v, sizeof(v))) {
+    if (kread((KA_T)vn->v_vfsp, (char *)&v, sizeof(v))) {
 
-        vfs_exit:
-        (void) free((FREE_P *) vp);
-        return ((struct l_vfs *) NULL);
+    vfs_exit:
+        (void)free((FREE_P *)vp);
+        return ((struct l_vfs *)NULL);
     }
-/*
+    /*
  * Locate AIX mount information.
  */
-    if (!v.vfs_gfs || kread((KA_T) v.vfs_gfs, (char *) &g, sizeof(g)))
+    if (!v.vfs_gfs || kread((KA_T)v.vfs_gfs, (char *)&g, sizeof(g)))
         goto vfs_exit;
-    if (!v.vfs_mdata
-        || kread((KA_T)((char *) v.vfs_mdata
-                        + offsetof(
-        struct vmount, vmt_length)),
-    (char *) &ul, sizeof(ul)))
-    goto vfs_exit;
-    if (!(mp = (void *) malloc((MALLOC_S) ul))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for mount data\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if (!v.vfs_mdata || kread((KA_T)((char *)v.vfs_mdata + offsetof(struct vmount, vmt_length)),
+                              (char *)&ul, sizeof(ul)))
+        goto vfs_exit;
+    if (!(mp = (void *)malloc((MALLOC_S)ul))) {
+        (void)fprintf(stderr, "%s: PID %d, no space for mount data\n", ProgramName,
+                      CurrentLocalProc->pid);
         Exit(1);
     }
-    if (kread((KA_T) v.vfs_mdata, (char *) mp, (int) ul)) {
-        (void) free((FREE_P *) mp);
+    if (kread((KA_T)v.vfs_mdata, (char *)mp, (int)ul)) {
+        (void)free((FREE_P *)mp);
         goto vfs_exit;
     }
-    vm = (struct vmount *) mp;
+    vm = (struct vmount *)mp;
     vp->vmt_flags = vm->vmt_flags;
     vp->vmt_gfstype = vm->vmt_gfstype;
 
-#if    AIXV >= 3200
+#if AIXV >= 3200
     if ((vp->vmt_flags & MNT_REMOTE)
 
-# if	defined(HAS_SANFS) && defined(MNT_SANFS)
-    && (vp->vmt_gfstype != MNT_SANFS)
-# endif	/* defined(HAS_SANFS) && defined(MNT_SANFS) */
+#if defined(HAS_SANFS) && defined(MNT_SANFS)
+        && (vp->vmt_gfstype != MNT_SANFS)
+#endif /* defined(HAS_SANFS) && defined(MNT_SANFS) */
 
     ) {
         vp->dev = 0x80000000 | vm->vmt_vfsnumber;
-# if	AIXA>=1
+#if AIXA >= 1
         vp->dev |= 0x8000000000000000;
-# endif	/* AIXA>=1 */
+#endif /* AIXA>=1 */
     } else
-#endif    /* AIXV>=3200 */
+#endif /* AIXV>=3200 */
 
-#if    defined(HAS_AFS)
-    if (vm->vmt_gfstype == MNT_AFS)
-    vp->dev = AFSDEV;
+#if defined(HAS_AFS)
+        if (vm->vmt_gfstype == MNT_AFS)
+        vp->dev = AFSDEV;
     else
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
-#if    AIXA > 1
-    if (vm->vmt_gfstype == MNT_PROCFS) {
+#if AIXA > 1
+        if (vm->vmt_gfstype == MNT_PROCFS) {
 
-    /*
+        /*
      * !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!
      *
      * The following *hack* is required to make the vmount structure's
@@ -520,51 +460,47 @@ readvfs(struct vnode * vn)
      * REMOVE THIS CODE WHEN STAT(2) IS FIXED!!!
      */
         vp->dev = (dev_t)(vm->vmt_fsid.fsid_dev & 0x7fffffffffffffff);
-    /*
+        /*
      * !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!   !!!DEBUG!!!
      */
 
-    }
-    else
-#endif    /* AIXA>1 */
+    } else
+#endif /* AIXA>1 */
 
-    vp->dev = (dev_t) vm->vmt_fsid.fsid_dev;
+        vp->dev = (dev_t)vm->vmt_fsid.fsid_dev;
     if ((s1 = vmt2dataptr(vm, VMT_STUB))) {
-        if (!(vp->dir = mkstrcpy(s1, (MALLOC_S *) NULL))) {
+        if (!(vp->dir = mkstrcpy(s1, (MALLOC_S *)NULL))) {
 
-            readvfs_aix1:
-            (void) fprintf(stderr, "%s: PID %d, readvfs, no space\n",
-                           ProgramName, CurrentLocalProc->pid);
+        readvfs_aix1:
+            (void)fprintf(stderr, "%s: PID %d, readvfs, no space\n", ProgramName,
+                          CurrentLocalProc->pid);
             Exit(1);
         }
     } else
-        vp->dir = (char *) NULL;
+        vp->dir = (char *)NULL;
     s1 = vmt2dataptr(vm, VMT_HOST);
     if (!(s2 = vmt2dataptr(vm, VMT_OBJECT)) || *s1 == '\0')
         s2 = g.gfs_name;
     if (!s1 && !s2)
-        vp->fsname = (char *) NULL;
+        vp->fsname = (char *)NULL;
     else {
         if (vm->vmt_flags & MNT_REMOTE) {
-            if (!(vp->fsname = mkstrcat(s1 ? s1 : "",
-                                        -1,
-                                        (s1 && *s1) ? ":" : "",
-                                        -1, s2, -1,
-                                        (MALLOC_S *) NULL)))
+            if (!(vp->fsname = mkstrcat(s1 ? s1 : "", -1, (s1 && *s1) ? ":" : "", -1, s2, -1,
+                                        (MALLOC_S *)NULL)))
                 goto readvfs_aix1;
         } else {
-            if (!(vp->fsname = mkstrcpy(s2, (MALLOC_S *) NULL)))
+            if (!(vp->fsname = mkstrcpy(s2, (MALLOC_S *)NULL)))
                 goto readvfs_aix1;
         }
     }
-    (void) free((FREE_P *) mp);
+    (void)free((FREE_P *)mp);
     vp->next = Lvfs;
-    vp->addr = (KA_T) vn->v_vfsp;
+    vp->addr = (KA_T)vn->v_vfsp;
 
-#if    defined(HAS_AFS)
+#if defined(HAS_AFS)
     if (!AFSVfsp && vm->vmt_gfstype == MNT_AFS)
         AFSVfsp = (KA_T)vn->v_vfsp;
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
     Lvfs = vp;
     return (vp);

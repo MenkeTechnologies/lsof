@@ -2,7 +2,6 @@
  * machine.h - Darwin definitions for /dev/kmem-based lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,39 +25,33 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: machine.h,v 1.16 2010/07/29 16:03:04 abe Exp $
  */
 
-
-#if    !defined(LSOF_MACHINE_H)
-#define    LSOF_MACHINE_H    1
-
+#if !defined(LSOF_MACHINE_H)
+#define LSOF_MACHINE_H 1
 
 #include <sys/types.h>
 #include <sys/param.h>
 
-# if    DARWINV >= 800
+#if DARWINV >= 800
 #include "/usr/include/string.h"
-# endif    /* DARWINV>=800 */
-
+#endif /* DARWINV>=800 */
 
 /*
  * CAN_USE_CLNT_CREATE is defined for those dialects where RPC clnt_create()
  * can be used to obtain a CLIENT handle in lieu of clnttcp_create().
  */
 
-#define    CAN_USE_CLNT_CREATE    1
-
+#define CAN_USE_CLNT_CREATE 1
 
 /*
  * DEVDEV_PATH defines the path to the directory that contains device
  * nodes.
  */
 
-#define    DEVDEV_PATH    "/dev"
-
+#define DEVDEV_PATH "/dev"
 
 /*
  * GET_MAX_FD is defined for those dialects that provide a function other than
@@ -66,7 +59,6 @@
  */
 
 /* #define	GET_MAX_FD	?	*/
-
 
 /*
  * HASAOPT is defined for those dialects that have AFS support; it specifies
@@ -76,14 +68,12 @@
 
 /* #define	HASAOPT		1 */
 
-
 /*
  * HASBLKDEV is defined for those dialects that want block device information
  * recorded in BlockDeviceTable[].
  */
 
-#define    HASBLKDEV    1
-
+#define HASBLKDEV 1
 
 /*
  * HASDCACHE is defined for those dialects that support a device cache
@@ -116,13 +106,11 @@
 /* #define	HASPERSDCPATH	"LSOFPERSDCPATH"	*/
 /* #define	HASSYSDC	"/your/choice/of/path" */
 
-
 /*
  * HASCDRNODE is defined for those dialects that have CD-ROM nodes.
  */
 
 /* #define	HASCDRNODE	1 */
-
 
 /*
  * HASFIFONODE is defined for those dialects that have FIFO nodes.
@@ -130,14 +118,12 @@
 
 /* #define	HASFIFONODE	1 */
 
-
 /*
  * HASFSINO is defined for those dialects that have the file system
  * inode element, fs_ino, in the lfile structure definition in lsof.h.
  */
 
 /* #define	HASFSINO	1 */
-
 
 /*
  * HASFSTRUCT is defined if the dialect has a file structure.
@@ -152,13 +138,12 @@
  *   HASNOFSNADDR -- has no file structure node address
  */
 
-#define    HASFSTRUCT    1
+#define HASFSTRUCT 1
 /* #define	FSV_DEFAULT	FSV_? | FSV_? | FSV_? */
 /* #define	HASNOFSADDR	1	has no file structure address */
 /* #define	HASNOFSFLAGS	1	has no file structure flags */
 /* #define	HASNOFSCOUNT	1	has no file structure count */
 /* #define	HASNOFSNADDR	1	has no file structure node address */
-
 
 /*
  * HASGNODE is defined for those dialects that have gnodes.
@@ -166,23 +151,20 @@
 
 /* #define	HASGNODE	1 */
 
-
 /*
  * HASHSNODE is defined for those dialects that have High Sierra nodes.
  */
 
 /* #define	HASHSNODE	1 */
 
-
 /*
  * HASINODE is defined for those dialects that have inodes and wish to
  * use readinode() from node.c.
  */
 
-# if    DARWINV < 800
-#define    HASINODE    1
-# endif    /* DARWINV<800 */
-
+#if DARWINV < 800
+#define HASINODE 1
+#endif /* DARWINV<800 */
 
 /*
  * HASINTSIGNAL is defined for those dialects whose signal function returns
@@ -191,22 +173,19 @@
 
 /* #define	HASINTSIGNAL	1 */
 
-
 /*
  * HASKERNIDCK is defined for those dialects that support the comparison of
  * the build to running kernel identity.
  */
 
-#define    HASKERNIDCK    1
-
+#define HASKERNIDCK 1
 
 /*
  * HASKOPT is defined for those dialects that support the -k option of
  * reading the kernel's name list from an optional file.
  */
 
-#define    HASKOPT    1
-
+#define HASKOPT 1
 
 /*
  * HASLFILEADD is defined for those dialects that need additional elements
@@ -226,15 +205,15 @@
  * private lfile elements are used.
  */
 
-# if    DARWINV >= 800
-#define	HASLFILEADD char *V_path;
-#define CLRLFILEADD(lf)	if (lf->V_path) { \
-                (void) free((FREE_P *)lf->V_path); \
-                lf->V_path = (char *)NULL; \
-            }
+#if DARWINV >= 800
+#define HASLFILEADD char *V_path;
+#define CLRLFILEADD(lf)                   \
+    if (lf->V_path) {                     \
+        (void)free((FREE_P *)lf->V_path); \
+        lf->V_path = (char *)NULL;        \
+    }
 #define SETLFILEADD CurrentLocalFile->V_path = (char *)NULL;
-# endif    /* DARWINV>=800 */
-
+#endif /* DARWINV>=800 */
 
 /*
  * HASMNTSTAT indicates the dialect supports the mount stat(2) result option
@@ -243,7 +222,6 @@
 
 /* #define	HASMNTSTAT	1	*/
 
-
 /*
  * HASMNTSUP is defined for those dialects that support the mount supplement
  * option.
@@ -251,14 +229,12 @@
 
 /* #define	HASMNTSUP	1	*/
 
-
 /*
  * HASMOPT is defined for those dialects that support the reading of
  * kernel memory from an alternate file.
  */
 
-#define    HASMOPT    1
-
+#define HASMOPT 1
 
 /*
  * HASNCACHE is defined for those dialects that have a kernel name cache
@@ -270,24 +246,22 @@
  * NCACHELDSFX is a set of C commands to execute after calling ncache_load().
  */
 
-# if    DARWINV < 800
-#define    HASNCACHE    1
+#if DARWINV < 800
+#define HASNCACHE 1
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
-# else	/* DARWINV>=800 */
+#else  /* DARWINV>=800 */
 /* #define	HASNCACHE	1   */
 /* #define	NCACHELDPFX	??? */
 /* #define	NCACHELDSFX	??? */
-# endif    /* DARWINV<800 */
-
+#endif /* DARWINV<800 */
 
 /*
  * HASNLIST is defined for those dialects that use nlist() to acccess
  * kernel symbols.
  */
 
-#define    HASNLIST    1
-
+#define HASNLIST 1
 
 /*
  * HASPIPEFN is defined for those dialects that have a special function to
@@ -297,19 +271,17 @@
  * NOTE: don't forget to define a prototype for this function in dproto.h.
  */
 
-# if    DARWINV < 800
+#if DARWINV < 800
 /* #define	HASPIPEFN	process_pipe? */
-# else	/* DARWINV>=800 */
-#define	HASPIPEFN	process_pipe
-# endif    /* DARWINV<800 */
-
+#else /* DARWINV>=800 */
+#define HASPIPEFN process_pipe
+#endif /* DARWINV<800 */
 
 /*
  * HASPIPENODE is defined for those dialects that have pipe nodes.
  */
 
 /* #define	HASPIPENODE	1 */
-
 
 /*
  * HASPMAPENABLED is defined when the reporting of portmapper registration
@@ -318,13 +290,11 @@
 
 /* #define	HASPMAPENABLED	1 */
 
-
 /*
  * HASPPID is defined for those dialects that support identification of
  * the parent process IDentifier (PPID) of a process.
  */
-#define    HASPPID        1
-
+#define HASPPID 1
 
 /*
  * HASPRINTDEV, HASPRINTINO, HASPRINTNM, HASPRINTOFF, and HASPRINTSZ
@@ -339,7 +309,6 @@
 /* #define	HASPRINTOFF	print_off?	*/
 /* #define	HASPRINTSZ	print_sz?	*/
 
-
 /*
  * HASPRIVFILETYPE and PRIVFILETYPE are defined for dialects that have a
  * file structure type that isn't defined by a DTYPE_* symbol.  They are
@@ -353,7 +322,6 @@
 /* #define	HASPRIVFILETYPE	process_shmf?	*/
 /* #define	PRIVFILETYPE	??	*/
 
-
 /*
  * HASPRIVNMCACHE is defined for dialects that have a private method for
  * printing cached NAME column values for some files.  HASPRIVNAMECACHE
@@ -363,12 +331,11 @@
  * returns non-zero if it prints a name to stdout.
  */
 
-# if    DARWINV < 800
+#if DARWINV < 800
 /* #define	HASPRIVNMCACHE	<function name>	*/
-# else	/* DARWINV>=800 */
-#define	HASPRIVNMCACHE	print_v_path
-# endif    /* DARWINV<800 */
-
+#else /* DARWINV>=800 */
+#define HASPRIVNMCACHE print_v_path
+#endif /* DARWINV<800 */
 
 /*
  * HASPRIVPRIPP is defined for dialects that have a private function for
@@ -377,7 +344,6 @@
  */
 
 /* #define	HASPRIVPRIPP	1	*/
-
 
 /*
  * HASPROCFS is defined for those dialects that have a proc file system --
@@ -403,23 +369,21 @@
  * by inode number.
  */
 
-# if    defined(HASPROCFS)
-#undef	HASPROCFS
-#define	HASPROCFS	"proc"
-# endif    /* defined(HASPROCFS) */
+#if defined(HASPROCFS)
+#undef HASPROCFS
+#define HASPROCFS "proc"
+#endif /* defined(HASPROCFS) */
 
 /* #define		HASPROCFS	"proc?" */
 /* #define		HASFSTYPE	1 */
 
-#define    HASPINODEN    1
-
+#define HASPINODEN 1
 
 /*
  * HASRNODE is defined for those dialects that have rnodes.
  */
 
 /* #define	HASRNODE	1 */
-
 
 /*
  * Define HASSECURITY to restrict the listing of all open files to the
@@ -430,7 +394,6 @@
 
 /* #define	HASSECURITY	1 */
 
-
 /*
  * If HASSECURITY is defined, define HASNOSOCKSECURITY to allow users
  * restricted by HASSECURITY to list any open socket files, provide their
@@ -438,7 +401,6 @@
  */
 
 /* #define	HASNOSOCKSECURITY	1	*/
-
 
 /*
  * HASSETLOCALE is defined for those dialects that have <locale.h> and
@@ -450,14 +412,13 @@
  * mblen() and mbtowc() functions.
  */
 
-#define    HASSETLOCALE    1
+#define HASSETLOCALE 1
 
-# if    DARWINV >= 700
-#define	HASWIDECHAR	1
-# endif    /* DARWINV>=700 */
+#if DARWINV >= 700
+#define HASWIDECHAR 1
+#endif /* DARWINV>=700 */
 
 /* #define	WIDECHARINCL	<wchar.h>	*/
-
 
 /*
  * HASSNODE is defined for those dialects that have snodes.
@@ -465,13 +426,11 @@
 
 /* #define	HASSNODE	1 */
 
-
 /*
  * HASTASKS is defined for those dialects that have task reporting support.
  */
 
 /* #define	HASTASKS	1 */
-
 
 /*
  * HASSOOPT, HASSOSTATE and HASTCPOPT define the availability of information
@@ -479,10 +438,9 @@
  * options.
  */
 
-#define    HASSOOPT    1    /* has socket option information */
-#define    HASSOSTATE    1    /* has socket state information */
-#define    HASTCPOPT    1    /* has TCP options or flags */
-
+#define HASSOOPT   1 /* has socket option information */
+#define HASSOSTATE 1 /* has socket state information */
+#define HASTCPOPT  1 /* has TCP options or flags */
 
 /*
  * Define HASSPECDEVD to be the name of a function that handles the results
@@ -499,8 +457,7 @@
  * The function returns void.
  */
 
-#define    HASSPECDEVD    process_dev_stat
-
+#define HASSPECDEVD process_dev_stat
 
 /*
  * HASSTREAMS is defined for those dialects that support streams.
@@ -508,14 +465,12 @@
 
 /* #define	HASSTREAMS	1 */
 
-
 /*
  * HASTCPTPIQ is defined for dialects where it is possible to report the
  * TCP/TPI Recv-Q and Send-Q values produced by netstat.
  */
 
-#define    HASTCPTPIQ    1
-
+#define HASTCPTPIQ 1
 
 /*
  * HASTCPTPIW is defined for dialects where it is possible to report the
@@ -524,13 +479,11 @@
 
 /* #define	HASTCPTPIW	1 */
 
-
 /*
  * HASTMPNODE is defined for those dialects that have tmpnodes.
  */
 
 /* #define	HASTMPNODE	1 */
-
 
 /*
  * HASVNODE is defined for those dialects that use the Sun virtual file system
@@ -539,8 +492,7 @@
  * doesn't.
  */
 
-#define    HASVNODE    1
-
+#define HASVNODE 1
 
 /*
  * HASXOPT is defined for those dialects that have an X option.  It
@@ -551,7 +503,6 @@
 /* #define	HASXOPT		"help text for X option" */
 /* #define	HASXOPT_VALUE	1 */
 
-
 /*
  * INODETYPE and INODEPSPEC define the internal node number type and its
  * printf specification modifier.  These need not be defined and lsof.h
@@ -560,21 +511,20 @@
  * These are defined here, because they must be used in dlsof.h.
  */
 
-# if    DARWINV >= 800
-#define	INODETYPE	unsigned long long
+#if DARWINV >= 800
+#define INODETYPE unsigned long long
 /* inode number internal storage type */
-#define	INODEPSPEC	"ll"		 /* INODETYPE printf specification
+#define INODEPSPEC \
+    "ll" /* INODETYPE printf specification
  * modifier */
-# endif    /* DARWINV>=800 */
-
+#endif   /* DARWINV>=800 */
 
 /*
  * UID_ARG defines the size of a User ID number when it is passed
  * as a function argument.
  */
 
-#define    UID_ARG    int
-
+#define UID_ARG int
 
 /*
  * Each USE_LIB_<function_name> is defined for dialects that use the
@@ -585,29 +535,28 @@
  * header files.
  */
 
-#define    USE_LIB_CKKV                1    /* ckkv.c */
+#define USE_LIB_CKKV 1 /* ckkv.c */
 /* #define	USE_LIB_COMPLETEVFS		1	   cvfs.c */
-#define    USE_LIB_FIND_CH_INO            1    /* fino.c */
-#define    USE_LIB_IS_FILE_NAMED            1    /* isfn.c */
-#define    USE_LIB_LKUPDEV                1    /* lkud.c */
-#define    USE_LIB_PRINTDEVNAME            1    /* pdvn.c */
+#define USE_LIB_FIND_CH_INO   1 /* fino.c */
+#define USE_LIB_IS_FILE_NAMED 1 /* isfn.c */
+#define USE_LIB_LKUPDEV       1 /* lkud.c */
+#define USE_LIB_PRINTDEVNAME  1 /* pdvn.c */
 /* #define	USE_LIB_PROCESS_FILE		1	   prfp.c */
-#define    USE_LIB_PRINT_TCPTPI            1    /* ptti.c */
+#define USE_LIB_PRINT_TCPTPI 1 /* ptti.c */
 /* #define	USE_LIB_READDEV			1	   rdev.c */
 /* #define	USE_LIB_READMNT			1	   rmnt.c */
 /* #define	USE_LIB_REGEX			1	   regex.c */
 /* #define	USE_LIB_RNAM			1	   rnam.c */
 
-#if    DARWINV < 800
-#define    USE_LIB_RNMH                1    /* rnmh.c */
-#else	/* DARWINV>800 */
+#if DARWINV < 800
+#define USE_LIB_RNMH 1 /* rnmh.c */
+#else                  /* DARWINV>800 */
 /* #define	USE_LIB_RNMH			1	   rnmh.c */
-#endif    /* DARWINV<800 */
+#endif                 /* DARWINV<800 */
 
 /* #define	USE_LIB_RNCH			1	   rnch.c */
 /* #define	USE_LIB_SNPF			1	   snpf.c */
-#define    snpf    snprintf    /* use the system's snprintf() */
-
+#define snpf snprintf /* use the system's snprintf() */
 
 /*
  * WARNDEVACCESS is defined for those dialects that should issue a warning
@@ -615,8 +564,7 @@
  * The warning can be inhibited by the lsof caller with the -w option.
  */
 
-#define    WARNDEVACCESS    1
-
+#define WARNDEVACCESS 1
 
 /*
  * WARNINGSTATE is defined for those dialects that want to suppress all lsof
@@ -625,20 +573,18 @@
 
 /* #define	WARNINGSTATE	1	warnings are enabled by default */
 
-
 /*
  * WILLDROPGID is defined for those dialects whose lsof executable runs
  * setgid(not_real_GID) and whose setgid power can be relinquished after
  * the dialect's initialize() function has been executed.
  */
 
-#define    WILLDROPGID    1
-
+#define WILLDROPGID 1
 
 /*
  * zeromem is a macro that uses bzero or memset.
  */
 
-#define    zeromem(a, l)    memset(a, 0, l)
+#define zeromem(a, l) memset(a, 0, l)
 
-#endif    /* !defined(LSOF_MACHINE_H) */
+#endif /* !defined(LSOF_MACHINE_H) */

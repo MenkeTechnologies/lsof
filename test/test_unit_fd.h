@@ -8,9 +8,7 @@
 #define TEST_UNIT_FD_H
 
 /* ===== ckfd_range() reimplementation ===== */
-static int
-test_ckfd_range(char *first, char *dash, char *last, int *lo, int *hi)
-{
+static int test_ckfd_range(char *first, char *dash, char *last, int *lo, int *hi) {
     char *cursor;
     if (first >= dash || dash >= last)
         return 1;
@@ -83,14 +81,16 @@ TEST(ckfd_range_bad_pointers) {
     ASSERT_EQ(test_ckfd_range(s, s, s + 4, &lo, &hi), 1);
 }
 
-
 /* ===== FD number parsing ===== */
 static int test_parse_fd_num(const char *s, int *fd_out) {
-    if (!s || !*s) return -1;
+    if (!s || !*s)
+        return -1;
     char *end;
     long val = strtol(s, &end, 10);
-    if (*end != '\0') return -1;
-    if (val < 0 || val > 65535) return -1;
+    if (*end != '\0')
+        return -1;
+    if (val < 0 || val > 65535)
+        return -1;
     *fd_out = (int)val;
     return 0;
 }
@@ -138,7 +138,6 @@ TEST(parse_fd_empty) {
     ASSERT_EQ(test_parse_fd_num("", &fd), -1);
 }
 
-
 /* ===== ck_fd_status() reimplementation ===== */
 struct test_fd_entry {
     char *name;
@@ -147,9 +146,7 @@ struct test_fd_entry {
     struct test_fd_entry *next;
 };
 
-static int
-test_ck_fd_status(struct test_fd_entry *fdlist, const char *name, int num)
-{
+static int test_ck_fd_status(struct test_fd_entry *fdlist, const char *name, int num) {
     if (!fdlist)
         return 0;
 
@@ -209,7 +206,6 @@ TEST(ck_fd_status_chain) {
     ASSERT_EQ(test_ck_fd_status(&e1, "txt", 0), 2);
 }
 
-
 /* ===== enter_str_lst() reimplementation ===== */
 struct test_str_lst {
     char *str;
@@ -217,10 +213,8 @@ struct test_str_lst {
     struct test_str_lst *next;
 };
 
-static int
-test_enter_str_lst(const char *str_val, struct test_str_lst **list_ptr,
-                   int *incl, int *excl)
-{
+static int test_enter_str_lst(const char *str_val, struct test_str_lst **list_ptr, int *incl,
+                              int *excl) {
     if (!str_val || !*str_val)
         return 1;
 
@@ -231,10 +225,12 @@ test_enter_str_lst(const char *str_val, struct test_str_lst **list_ptr,
     if (*str_val == '^') {
         entry->exclude = 1;
         str_val++;
-        if (excl) (*excl)++;
+        if (excl)
+            (*excl)++;
     } else {
         entry->exclude = 0;
-        if (incl) (*incl)++;
+        if (incl)
+            (*incl)++;
     }
 
     entry->str = (char *)malloc(strlen(str_val) + 1);

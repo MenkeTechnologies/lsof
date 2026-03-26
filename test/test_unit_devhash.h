@@ -7,7 +7,7 @@
 
 /* SFHASHDEVINO from isfn.c */
 #define TEST_SFHASHDEVINO(maj, min, ino, mod) \
-    ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ino) * 31415) & (mod - 1)))
 
 /* ncache hash from rnmh.c */
 static int test_ncache_hash(unsigned long inode, unsigned long addr, int mod) {
@@ -70,7 +70,8 @@ TEST(sfhash_distribution) {
     }
     int used = 0;
     for (int i = 0; i < 4096; i++)
-        if (buckets[i] > 0) used++;
+        if (buckets[i] > 0)
+            used++;
     ASSERT_GT(used, 250);
 }
 
@@ -115,7 +116,8 @@ TEST(ncache_hash_distribution) {
     }
     int used = 0;
     for (int i = 0; i < 2048; i++)
-        if (buckets[i] > 0) used++;
+        if (buckets[i] > 0)
+            used++;
     ASSERT_GT(used, 100);
 }
 

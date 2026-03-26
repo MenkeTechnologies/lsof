@@ -2,7 +2,6 @@
  * fino.c -- find inode functions for lsof library
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,7 +25,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * fino.c -- find block (optional) and character device file inode numbers
  *
@@ -35,106 +33,101 @@
  *	HASBLKDEV	to activate the block device inode lookup
  */
 
-
 #include "../machine.h"
 
-#if    defined(HASBLKDEV) || defined(USE_LIB_FIND_CH_INO)
+#if defined(HASBLKDEV) || defined(USE_LIB_FIND_CH_INO)
 
 #include "../lsof.h"
 
-#else	/* !defined(HASBLKDEV) && !defined(USE_LIB_FIND_CH_INO) */
+#else  /* !defined(HASBLKDEV) && !defined(USE_LIB_FIND_CH_INO) */
 char fino_d1[] = "d";
 char *fino_d2 = fino_d1;
-#endif    /* defined(HASBLKDEV) || defined(USE_LIB_FIND_CH_INO) */
+#endif /* defined(HASBLKDEV) || defined(USE_LIB_FIND_CH_INO) */
 
-
-#if    defined(HASBLKDEV)
+#if defined(HASBLKDEV)
 /*
  * find_bl_ino() - find the inode number for a block device file
  */
 
-void
-find_bl_ino()
-{
+void find_bl_ino() {
     dev_t ldev, tdev;
     int low, hi, mid;
 
     readdev(0);
 
-# if	defined(HASDCACHE)
+#if defined(HASDCACHE)
 find_bl_ino_again:
-# endif	/* defined(HASDCACHE) */
+#endif /* defined(HASDCACHE) */
 
     low = mid = 0;
     hi = BlockNumDevices - 1;
-    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) || !CurrentLocalFile->rdev_def)
+    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) ||
+        !CurrentLocalFile->rdev_def)
         return;
     ldev = CurrentLocalFile->rdev;
     while (low <= hi) {
         mid = (low + hi) / 2;
         tdev = BlockSortedDevices[mid]->rdev;
         if (ldev < tdev)
-        hi = mid - 1;
+            hi = mid - 1;
         else if (ldev > tdev)
-        low = mid + 1;
+            low = mid + 1;
         else {
 
-# if	defined(HASDCACHE)
-        if (DevCacheUnsafe && !BlockSortedDevices[mid]->v && !vfy_dev(BlockSortedDevices[mid]))
-            goto find_bl_ino_again;
-# endif	/* defined(HASDCACHE) */
+#if defined(HASDCACHE)
+            if (DevCacheUnsafe && !BlockSortedDevices[mid]->v && !vfy_dev(BlockSortedDevices[mid]))
+                goto find_bl_ino_again;
+#endif /* defined(HASDCACHE) */
 
-        CurrentLocalFile->inode = BlockSortedDevices[mid]->inode;
-        if (CurrentLocalFile->inp_ty == 0)
-            CurrentLocalFile->inp_ty = 1;
-        return;
+            CurrentLocalFile->inode = BlockSortedDevices[mid]->inode;
+            if (CurrentLocalFile->inp_ty == 0)
+                CurrentLocalFile->inp_ty = 1;
+            return;
         }
     }
 }
-#endif    /* defined(HASBLKDEV) */
+#endif /* defined(HASBLKDEV) */
 
-
-#if    defined(USE_LIB_FIND_CH_INO)
+#if defined(USE_LIB_FIND_CH_INO)
 /*
  * find_ch_ino() - find the inode number for a character device file
  */
 
-void
-find_ch_ino()
-{
+void find_ch_ino() {
     dev_t ldev, tdev;
     int low, hi, mid;
 
     readdev(0);
 
-# if	defined(HASDCACHE)
+#if defined(HASDCACHE)
 find_ch_ino_again:
-# endif	/* defined(HASDCACHE) */
+#endif /* defined(HASDCACHE) */
 
     low = mid = 0;
     hi = NumDevices - 1;
-    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) || !CurrentLocalFile->rdev_def)
+    if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) ||
+        !CurrentLocalFile->rdev_def)
         return;
     ldev = CurrentLocalFile->rdev;
     while (low <= hi) {
         mid = (low + hi) / 2;
         tdev = SortedDevices[mid]->rdev;
         if (ldev < tdev)
-        hi = mid - 1;
+            hi = mid - 1;
         else if (ldev > tdev)
-        low = mid + 1;
+            low = mid + 1;
         else {
 
-# if	defined(HASDCACHE)
-        if (DevCacheUnsafe && !SortedDevices[mid]->v && !vfy_dev(SortedDevices[mid]))
-            goto find_ch_ino_again;
-# endif	/* defined(HASDCACHE) */
+#if defined(HASDCACHE)
+            if (DevCacheUnsafe && !SortedDevices[mid]->v && !vfy_dev(SortedDevices[mid]))
+                goto find_ch_ino_again;
+#endif /* defined(HASDCACHE) */
 
-        CurrentLocalFile->inode = SortedDevices[mid]->inode;
-        if (CurrentLocalFile->inp_ty == 0)
-            CurrentLocalFile->inp_ty = 1;
-        return;
+            CurrentLocalFile->inode = SortedDevices[mid]->inode;
+            if (CurrentLocalFile->inp_ty == 0)
+                CurrentLocalFile->inp_ty = 1;
+            return;
         }
     }
 }
-#endif    /* defined(USE_LIB_FIND_CH_INO) */
+#endif /* defined(USE_LIB_FIND_CH_INO) */

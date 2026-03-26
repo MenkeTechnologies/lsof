@@ -2,7 +2,6 @@
  * dmnt.c - /dev/kmem-based HP-UX mount support functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,69 +25,65 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
-#define	_TIME_T
-typedef	int	time_t;
-#endif    /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
+#if defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
+#define _TIME_T
+typedef int time_t;
+#endif /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
 
 #include "lsof.h"
-
 
 /*
  * Local static definitions
  */
 
-static struct mounts *Lmi = (struct mounts *) NULL;    /* local mount info */
-
+static struct mounts *Lmi = (struct mounts *)NULL; /* local mount info */
 
 /*
  * completevfs() - complete local vfs structure
  */
 void
 
-#if    HPUXV >= 800
-completevfs(vfs, dev, v)
-    struct l_vfs *vfs;		/* local vfs structure pointer */
-    dev_t *dev;			/* device */
-    struct vfs *v;			/* kernel vfs structure */
-#else	/* HPUXV<800 */
-completevfs(vfs, dev)
-        struct l_vfs *vfs;        /* local vfs structure pointer */
-        dev_t *dev;            /* device */
-#endif    /* HPUXV>=800 */
+#if HPUXV >= 800
+    completevfs(vfs, dev, v) struct l_vfs *vfs; /* local vfs structure pointer */
+dev_t *dev;                                     /* device */
+struct vfs *v;                                  /* kernel vfs structure */
+#else                                           /* HPUXV<800 */
+    completevfs(vfs, dev) struct l_vfs *vfs; /* local vfs structure pointer */
+dev_t *dev;                                  /* device */
+#endif                                          /* HPUXV>=800 */
 
 {
     struct mounts *mp;
-/*
+    /*
  * If only Internet socket files are selected, don't bother completing the
  * local vfs structure.
  */
     if (SelectInetOnly)
         return;
 
-#if    HPUXV >= 800
+#if HPUXV >= 800
     /*
      * On HP-UX 8 and above, first search the local mount table for a match on
      * the file system name from the vfs structure.
      */
-        if (v) {
-            for (mp = readmnt(); mp; mp = mp->next) {
+    if (v) {
+        for (mp = readmnt(); mp; mp = mp->next) {
             if (strcmp(mp->fsname, v->vfs_name) == 0) {
                 vfs->dev = mp->dev;
                 vfs->dir = mp->dir;
                 vfs->fsname = mp->fsname;
 
-# if	defined(HASFSINO)
+#if defined(HASFSINO)
                 vfs->fs_ino = mp->inode;
-# endif	/* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
                 return;
             }
-            }
         }
-#endif    /* HPUXV>=800 */
+    }
+#endif /* HPUXV>=800 */
 
-/*
+    /*
  * Search for a match on device number.
  */
     for (mp = readmnt(); mp; mp = mp->next) {
@@ -97,51 +92,46 @@ completevfs(vfs, dev)
             vfs->dir = mp->dir;
             vfs->fsname = mp->fsname;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
             vfs->fs_ino = mp->inode;
-#endif    /* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
             return;
         }
     }
 
-#if    HPUXV >= 800
+#if HPUXV >= 800
     /*
      * If the file system name and device number searches fail, use the
      * vfs structure name, if there is one.  Determine the device number
      * with statsafely().
      */
-        if (v && v->vfs_name[0]) {
+    if (v && v->vfs_name[0]) {
 
-            struct stat sb;
+        struct stat sb;
 
-            if (!(vfs->dir = mkstrcpy(v->vfs_name, (MALLOC_S *)NULL))) {
-            (void) fprintf(stderr, "%s: no space for vfs name: ", ProgramName);
+        if (!(vfs->dir = mkstrcpy(v->vfs_name, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for vfs name: ", ProgramName);
             safestrprt(v->vfs_name, stderr, 1);
             Exit(1);
-            }
-            if (statsafely(v->vfs_name, &sb) == 0)
+        }
+        if (statsafely(v->vfs_name, &sb) == 0)
             vfs->dev = sb.st_dev;
-            else
+        else
             vfs->dev = (dev_t)0;
 
-# if	defined(HASFSINO)
-            vfs->fs_ino = (INODETYPE)0;
-# endif	/* defined(HASFSINO) */
-
-        }
-#endif    /* HPUXV>=800 */
-
+#if defined(HASFSINO)
+        vfs->fs_ino = (INODETYPE)0;
+#endif /* defined(HASFSINO) */
+    }
+#endif /* HPUXV>=800 */
 }
-
 
 /*
  * readvfs() - read vfs structure
  */
 
-struct l_vfs *
-readvfs(struct vnode * lv)
-{
+struct l_vfs *readvfs(struct vnode *lv) {
     struct mount m;
     struct mntinfo mi;
     int ms;
@@ -150,29 +140,28 @@ readvfs(struct vnode * lv)
     struct l_vfs *vp;
 
     if (!lv->v_vfsp)
-        return ((struct l_vfs *) NULL);
+        return ((struct l_vfs *)NULL);
     for (vp = Lvfs; vp; vp = vp->next) {
-        if ((KA_T) lv->v_vfsp == vp->addr)
+        if ((KA_T)lv->v_vfsp == vp->addr)
             return (vp);
     }
-    if ((vp = (struct l_vfs *) malloc(sizeof(struct l_vfs))) == NULL) {
-        (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if ((vp = (struct l_vfs *)malloc(sizeof(struct l_vfs))) == NULL) {
+        (void)fprintf(stderr, "%s: PID %d, no space for vfs\n", ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
     vp->dev = 0;
-    vp->dir = (char *) NULL;
-    vp->fsname = (char *) NULL;
+    vp->dir = (char *)NULL;
+    vp->fsname = (char *)NULL;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
     vp->fs_ino = 0;
-#endif    /* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
-    if (lv->v_vfsp && kread((KA_T) lv->v_vfsp, (char *) &v, sizeof(v))) {
-        (void) free((FREE_P *) vp);
-        return ((struct l_vfs *) NULL);
+    if (lv->v_vfsp && kread((KA_T)lv->v_vfsp, (char *)&v, sizeof(v))) {
+        (void)free((FREE_P *)vp);
+        return ((struct l_vfs *)NULL);
     }
-/*
+    /*
  * Complete the mount information.
  */
     if (NodeType == N_NFS) {
@@ -181,62 +170,57 @@ readvfs(struct vnode * lv)
          * The device number for an NFS file is found by following the vfs
          * private data pointer to an mntinfo structure.
          */
-        if (v.vfs_data
-            && kread((KA_T) v.vfs_data, (char *) &mi, sizeof(mi)) == 0) {
+        if (v.vfs_data && kread((KA_T)v.vfs_data, (char *)&mi, sizeof(mi)) == 0) {
 
-#if    HPUXV < 1020
-            td = (dev_t) makedev(255, (int) mi.mi_mntno);
-#else	/* HPUXV>=1020 */
+#if HPUXV < 1020
+            td = (dev_t)makedev(255, (int)mi.mi_mntno);
+#else  /* HPUXV>=1020 */
             td = mi.mi_mntno;
-#endif    /* HPUXV<1020 */
+#endif /* HPUXV<1020 */
 
-#if    HPUXV >= 800
-            (void) completevfs(vp, &td, (struct vfs *)NULL);
-#else	/* HPUXV<800 */
-            (void) completevfs(vp, &td);
-#endif    /* HPUXV>=800 */
-
+#if HPUXV >= 800
+            (void)completevfs(vp, &td, (struct vfs *)NULL);
+#else  /* HPUXV<800 */
+            (void)completevfs(vp, &td);
+#endif /* HPUXV>=800 */
         }
     } else {
         if (v.vfs_data) {
-            if (kread((KA_T) v.vfs_data, (char *) &m, sizeof(m)) == 0)
+            if (kread((KA_T)v.vfs_data, (char *)&m, sizeof(m)) == 0)
                 ms = 1;
             else
                 ms = 0;
         }
 
-#if    defined(HAS_AFS)
-            /*
+#if defined(HAS_AFS)
+        /*
              * Fake the device number for an AFS device.
              */
-                else if (NodeType == N_AFS) {
-                m.m_dev = AFSDEV;
-                ms = 1;
-                }
-#endif    /* defined(HAS_AFS) */
+        else if (NodeType == N_AFS) {
+            m.m_dev = AFSDEV;
+            ms = 1;
+        }
+#endif /* defined(HAS_AFS) */
 
         else
             ms = 0;
         if (ms)
 
-#if    HPUXV >= 800
-# if	HPUXV<1000
-            (void) completevfs(vp, (dev_t *)&m.m_dev, &v);
-# else	/* HPUXV>=1000 */
-            (void) completevfs(vp, v.vfs_dev ? (dev_t *)&v.vfs_dev
-                             : (dev_t *)&m.m_dev,
-                       &v);
-# endif	/* HPUXV<1000 */
-#else	/* HPUXV<800 */
-            (void) completevfs(vp, (dev_t * ) & m.m_dev);
-#endif    /* HPUXV>=800 */
-
+#if HPUXV >= 800
+#if HPUXV < 1000
+            (void)completevfs(vp, (dev_t *)&m.m_dev, &v);
+#else  /* HPUXV>=1000 */
+            (void)completevfs(vp, v.vfs_dev ? (dev_t *)&v.vfs_dev : (dev_t *)&m.m_dev, &v);
+#endif /* HPUXV<1000 */
+#else  /* HPUXV<800 */
+            (void)completevfs(vp, (dev_t *)&m.m_dev);
+#endif /* HPUXV>=800 */
     }
-/*
+    /*
  * Complete local vfs structure and link to the others.
  */
     vp->next = Lvfs;
-    vp->addr = (KA_T) lv->v_vfsp;
+    vp->addr = (KA_T)lv->v_vfsp;
     Lvfs = vp;
     return (vp);
 }

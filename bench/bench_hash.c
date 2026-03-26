@@ -5,7 +5,7 @@
 
 /* ===== HASHPORT benchmark ===== */
 #define PORTHASHBUCKETS 128
-#define HASHPORT(p) (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
+#define HASHPORT(p)     (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
 
 BENCH(hashport_all_ports, 100) {
     for (int j = 0; j < bf_iters; j++) {
@@ -25,9 +25,7 @@ BENCH(hashport_common_ports, 10000000) {
 }
 
 /* ===== hashbyname benchmark (name-based hashing used in lsof) ===== */
-static int
-bench_hashbyname(char *nm, int mod)
-{
+static int bench_hashbyname(char *nm, int mod) {
     int i, j;
     for (i = j = 0; *nm; nm++) {
         i ^= (int)*nm << j;
@@ -45,10 +43,8 @@ BENCH(hashbyname_short, 10000000) {
 }
 
 BENCH(hashbyname_path, 5000000) {
-    char *paths[] = {
-        "/usr/local/bin/node", "/var/log/syslog", "/dev/null",
-        "/proc/self/fd/3", "/tmp/socket.sock"
-    };
+    char *paths[] = {"/usr/local/bin/node", "/var/log/syslog", "/dev/null", "/proc/self/fd/3",
+                     "/tmp/socket.sock"};
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(bench_hashbyname(paths[i % 5], 256));
     }
@@ -65,10 +61,9 @@ BENCH(hashbyname_long, 2000000) {
     }
 }
 
-
 /* ===== Multi-field device/inode hash (SFHASHDEVINO from isfn.c) ===== */
 #define SFHASHDEVINO(maj, min, ino, mod) \
-    ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ino) * 31415) & (mod - 1)))
 
 BENCH(sfhash_devino, 10000000) {
     for (int i = 0; i < bf_iters; i++) {
@@ -86,7 +81,8 @@ BENCH(sfhash_devino_collisions, 5000000) {
         }
         int max = 0;
         for (int i = 0; i < 4096; i++)
-            if (buckets[i] > max) max = buckets[i];
+            if (buckets[i] > max)
+                max = buckets[i];
         BENCH_SINK_INT(max);
     }
 }
@@ -113,11 +109,12 @@ BENCH(port_service_cache, 5000000) {
     static struct bench_svc_entry entries[20];
     static struct bench_svc_entry *buckets[PORTHASHBUCKETS];
     static int initialized = 0;
-    static int ports[] = {22, 53, 80, 110, 143, 443, 993, 995, 3306, 5432,
+    static int ports[] = {22,   53,   80,   110,  143,   443,   993,  995,  3306, 5432,
                           6379, 8080, 8443, 9090, 27017, 11211, 6380, 1433, 3389, 5900};
-    static const char *names[] = {"ssh", "dns", "http", "pop3", "imap", "https", "imaps", "pop3s",
-                                  "mysql", "postgres", "redis", "http-alt", "https-alt", "websm",
-                                  "mongo", "memcache", "redis2", "mssql", "rdp", "vnc"};
+    static const char *names[] = {"ssh",      "dns",      "http",      "pop3",  "imap",
+                                  "https",    "imaps",    "pop3s",     "mysql", "postgres",
+                                  "redis",    "http-alt", "https-alt", "websm", "mongo",
+                                  "memcache", "redis2",   "mssql",     "rdp",   "vnc"};
     if (!initialized) {
         memset(buckets, 0, sizeof(buckets));
         for (int i = 0; i < 20; i++) {
@@ -135,7 +132,10 @@ BENCH(port_service_cache, 5000000) {
         struct bench_svc_entry *e;
         const char *found = NULL;
         for (e = buckets[h]; e; e = e->next) {
-            if (e->port == port) { found = e->name; break; }
+            if (e->port == port) {
+                found = e->name;
+                break;
+            }
         }
         BENCH_SINK_PTR((void *)found);
     }

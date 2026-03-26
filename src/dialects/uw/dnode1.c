@@ -5,7 +5,6 @@
  * structure definitions.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -31,51 +30,48 @@
 
 #include "lsof.h"
 
-#if    !defined(DYNAMIC_STACK_TRACE)
-#define    DYNAMIC_STACK_TRACE        /* suppress C's objection to a zero
+#if !defined(DYNAMIC_STACK_TRACE)
+#define DYNAMIC_STACK_TRACE /* suppress C's objection to a zero
 					 * length st_buffer[] element in the
 					 * stack_trace struct, defined in
 					 * <sys/percpu.h> */
 
-#endif    /* !defined(DYNAMIC_STACK_TRACE) */
+#endif /* !defined(DYNAMIC_STACK_TRACE) */
 
-#undef    IFMT
-#undef    IFIFO
-#undef    IFCHR
-#undef    IFDIR
-#undef    IFNAM
-#undef    IFBLK
-#undef    IFREG
-#undef    IFLNK
-#undef    ISUID
-#undef    ISGID
-#undef    ISVTX
-#undef    IREAD
-#undef    IWRITE
-#undef    IEXEC
+#undef IFMT
+#undef IFIFO
+#undef IFCHR
+#undef IFDIR
+#undef IFNAM
+#undef IFBLK
+#undef IFREG
+#undef IFLNK
+#undef ISUID
+#undef ISGID
+#undef ISVTX
+#undef IREAD
+#undef IWRITE
+#undef IEXEC
 
 #include <sys/fs/s5inode.h>
-
 
 /*
  * reads5lino() - read s5 inode's local inode information
  */
 
-int
-reads5lino(struct vnode * v, struct l_ino * i)
-{
+int reads5lino(struct vnode *v, struct l_ino *i) {
     struct inode s5i;
 
-    if (kread((KA_T) v->v_data, (char *) &s5i, sizeof(s5i)))
+    if (kread((KA_T)v->v_data, (char *)&s5i, sizeof(s5i)))
         return (1);
     i->dev = s5i.i_dev;
     i->dev_def = 1;
     i->rdev = s5i.i_rdev;
     i->rdev_def = 1;
-    i->nlink = (long) s5i.i_nlink;
+    i->nlink = (long)s5i.i_nlink;
     i->nlink_def = 1;
-    i->nm = (char *) NULL;
-    i->number = (INODETYPE) s5i.i_number;
+    i->nm = (char *)NULL;
+    i->number = (INODETYPE)s5i.i_number;
     i->number_def = 1;
     i->size = s5i.i_size;
     i->size_def = 1;

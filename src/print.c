@@ -31,33 +31,35 @@
  * Local definitions, structures and function prototypes
  */
 
-#define HCINC        64        /* host cache size increase chunk */
-#define PORTHASHBUCKETS    128        /* port hash bucket count
+#define HCINC 64 /* host cache size increase chunk */
+#define PORTHASHBUCKETS \
+    128 /* port hash bucket count
 					 * !!MUST BE A POWER OF 2!! */
-#define    PORTTABTHRESH    10        /* threshold at which we will switch
+#define PORTTABTHRESH \
+    10 /* threshold at which we will switch
 					 * from using getservbyport() to
 					 * getservent() -- see lkup_port()
 					 * and fill_porttab() */
 
 struct hostcache {
-    unsigned char addr[MAX_AF_ADDR];    /* numeric address */
-    int addr_family;            /* address family -- e.g., AF_INET
+    unsigned char addr[MAX_AF_ADDR]; /* numeric address */
+    int addr_family;                 /* address family -- e.g., AF_INET
 					 * or AF_INET6 */
-    char *name;            /* name */
+    char *name;                      /* name */
 };
 
 struct porttab {
     int port;
-    MALLOC_S nl;            /* name length (excluding '\0') */
-    int ss;                /* service name status, 0 = lookup not
+    MALLOC_S nl; /* name length (excluding '\0') */
+    int ss;      /* service name status, 0 = lookup not
 					 * yet performed */
     char *name;
     struct porttab *next;
 };
 
 #if defined(HASNORPC_H)
-static struct porttab **Pth[2] = { NULL, NULL };
-                        /* port hash buckets:
+static struct porttab **Pth[2] = {NULL, NULL};
+/* port hash buckets:
                          * Pth[0] for TCP service names
                          * Pth[1] for UDP service names
                          */
@@ -71,7 +73,7 @@ static struct porttab **Pth[4] = {NULL, NULL, NULL, NULL};
  */
 #endif
 
-#define HASHPORT(p)    (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
+#define HASHPORT(p) (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
 
 #ifndef HASNORPC_H
 static void fill_portmap(void);
@@ -92,15 +94,13 @@ static int printinaddr(void);
  * endnm() - locate end of NameChars
  */
 
-char *
-endnm(size_t *remaining_size)
-{
+char *endnm(size_t *remaining_size) {
     size_t len = strlen(NameChars);
     *remaining_size = NameCharsLength - len;
     return (NameChars + len);
 }
 
-#ifndef HASNORPC_H/*
+#ifndef HASNORPC_H /*
  * fill_portmap() -- fill the RPC portmap program name table via a conversation
  *		     with the portmapper
  *
@@ -141,8 +141,7 @@ endnm(size_t *remaining_size)
 * SUCH DAMAGE.
 */
 
-static void
-fill_portmap() {
+static void fill_portmap() {
     char buf[128], *char_ptr, *name;
     CLIENT *client;
     int hash_idx, port, protocol;
@@ -158,7 +157,7 @@ fill_portmap() {
     int sock = RPC_ANYSOCK;
 #endif
 
-/*
+    /*
  * Construct structures for communicating with the portmapper.
  */
 
@@ -166,13 +165,13 @@ fill_portmap() {
     zeromem(&sock_addr, sizeof(sock_addr));
     sock_addr.sin_family = AF_INET;
     if ((host_entry = gethostbyname("localhost")))
-        MEMMOVE((caddr_t) & sock_addr.sin_addr, host_entry->h_addr, host_entry->h_length);
+        MEMMOVE((caddr_t)&sock_addr.sin_addr, host_entry->h_addr, host_entry->h_length);
     sock_addr.sin_port = htons(PMAPPORT);
 #endif
 
     timeout.tv_sec = 60;
     timeout.tv_usec = 0;
-/*
+    /*
  * Get an RPC client handle.  Then ask for a dump of the port map.
  */
 
@@ -183,13 +182,12 @@ fill_portmap() {
 #endif
 
         return;
-    if (clnt_call(client, PMAPPROC_DUMP, XDR_VOID, NULL, XDR_PMAPLIST,
-                  (caddr_t) & p, timeout)
-        != RPC_SUCCESS) {
+    if (clnt_call(client, PMAPPROC_DUMP, XDR_VOID, NULL, XDR_PMAPLIST, (caddr_t)&p, timeout) !=
+        RPC_SUCCESS) {
         clnt_destroy(client);
         return;
     }
-/*
+    /*
  * Loop through the port map dump, creating portmap table entries from TCP
  * and UDP members.
  */
@@ -208,7 +206,7 @@ fill_portmap() {
          * See if there's already a portmap entry for this port.  If there is,
          * ignore this entry.
          */
-        hash_idx = HASHPORT((port = (int) p->pml_map.pm_port));
+        hash_idx = HASHPORT((port = (int)p->pml_map.pm_port));
         for (port_entry = Pth[protocol][hash_idx]; port_entry; port_entry = port_entry->next) {
             if (port_entry->port == port)
                 break;
@@ -219,13 +217,12 @@ fill_portmap() {
          * Save the registration name or number.
          */
         char_ptr = NULL;
-        if ((rpc_entry = (struct rpcent *) getrpcbynumber(p->pml_map.pm_prog))) {
+        if ((rpc_entry = (struct rpcent *)getrpcbynumber(p->pml_map.pm_prog))) {
             if (rpc_entry->r_name && strlen(rpc_entry->r_name))
                 char_ptr = rpc_entry->r_name;
         }
         if (!char_ptr) {
-            snpf(buf, sizeof(buf), "%lu",
-                        (unsigned long) p->pml_map.pm_prog);
+            snpf(buf, sizeof(buf), "%lu", (unsigned long)p->pml_map.pm_prog);
             char_ptr = buf;
         }
         if (!strlen(char_ptr))
@@ -234,24 +231,22 @@ fill_portmap() {
          * Allocate space for the portmap name entry and copy it there.
          */
         if (!(name = mkstrcpy(char_ptr, &name_len))) {
-            fprintf(stderr,
-                           "%s: can't allocate space for portmap entry: ", ProgramName);
+            fprintf(stderr, "%s: can't allocate space for portmap entry: ", ProgramName);
             safestrprt(char_ptr, stderr, 1);
             Exit(1);
         }
         if (!name_len) {
-            free((FREE_P *) name);
+            free((FREE_P *)name);
             continue;
         }
         /*
          * Allocate and fill a porttab struct entry for the portmap table.
          * Link it to the head of its hash bucket, and make it the new head.
          */
-        if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
-            fprintf(stderr,
-                           "%s: can't allocate porttab entry for portmap: ", ProgramName);
+        if (!(port_entry = (struct porttab *)malloc(sizeof(struct porttab)))) {
+            fprintf(stderr, "%s: can't allocate porttab entry for portmap: ", ProgramName);
             safestrprt(name, stderr, 1);
-            free((FREE_P *) name);
+            free((FREE_P *)name);
             Exit(1);
         }
         port_entry->name = name;
@@ -271,8 +266,7 @@ fill_portmap() {
  *		     getservent() scan
  */
 
-static void
-fill_porttab() {
+static void fill_porttab() {
     int hash_idx, port, protocol;
     MALLOC_S name_len;
     char *name;
@@ -280,7 +274,7 @@ fill_porttab() {
     struct servent *serv_entry;
 
     endservent();
-/*
+    /*
  * Scan the services data base for TCP and UDP entries that have a non-null
  * name associated with them.
  */
@@ -312,20 +306,18 @@ fill_porttab() {
          * Add a new entry to the cache for this port and protocol.
          */
         if (!(name = mkstrcpy(serv_entry->s_name, &name_len))) {
-            fprintf(stderr,
-                           "%s: can't allocate %d bytes for port %d name: %s\n",
-                           ProgramName, (int) (name_len + 1), port, serv_entry->s_name);
+            fprintf(stderr, "%s: can't allocate %d bytes for port %d name: %s\n", ProgramName,
+                    (int)(name_len + 1), port, serv_entry->s_name);
             Exit(1);
         }
         if (!name_len) {
-            free((FREE_P *) name);
+            free((FREE_P *)name);
             continue;
         }
-        if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
-            fprintf(stderr,
-                           "%s: can't allocate porttab entry for port %d: %s\n",
-                           ProgramName, port, serv_entry->s_name);
-            free((FREE_P *) name);
+        if (!(port_entry = (struct porttab *)malloc(sizeof(struct porttab)))) {
+            fprintf(stderr, "%s: can't allocate porttab entry for port %d: %s\n", ProgramName, port,
+                    serv_entry->s_name);
+            free((FREE_P *)name);
             Exit(1);
         }
         port_entry->name = name;
@@ -342,9 +334,7 @@ fill_porttab() {
  * gethostnm() - get host name
  */
 
-char *
-gethostnm(unsigned char *inet_addr, int addr_family)
-{
+char *gethostnm(unsigned char *inet_addr, int addr_family) {
     int addr_len = MIN_AF_ADDR;
     char hbuf[256];
     static struct hostcache *hc = NULL;
@@ -354,7 +344,7 @@ gethostnm(unsigned char *inet_addr, int addr_family)
     int i;
     MALLOC_S len;
     static int nhc = 0;
-/*
+    /*
  * Search cache.
  */
 
@@ -369,42 +359,41 @@ gethostnm(unsigned char *inet_addr, int addr_family)
         if (memcmp(inet_addr, hc[i].addr, addr_len) == 0)
             return (hc[i].name);
     }
-/*
+    /*
  * If -n has been specified, construct a numeric address.  Otherwise, look up
  * host name by address.  If that fails, or if there is no name in the returned
  * hostent structure, construct a numeric version of the address.
  */
     if (OptHostLookup)
-        host_entry = gethostbyaddr((char *) inet_addr, addr_len, addr_family);
+        host_entry = gethostbyaddr((char *)inet_addr, addr_len, addr_family);
     if (!host_entry || !host_entry->h_name) {
 
 #if defined(HASIPv6)
         if (addr_family == AF_INET6) {
 
-        /*
+            /*
          * Since IPv6 numeric addresses use `:' as a separator, enclose
          * them in brackets.
          */
-        hbuf[0] = '[';
-        if (!inet_ntop(addr_family, inet_addr, hbuf + 1, sizeof(hbuf) - 3)) {
-            snpf(&hbuf[1], (sizeof(hbuf) - 1),
-            "can't format IPv6 address]");
-        } else {
-            len = strlen(hbuf);
-            snpf(&hbuf[len], sizeof(hbuf) - len, "]");
-        }
+            hbuf[0] = '[';
+            if (!inet_ntop(addr_family, inet_addr, hbuf + 1, sizeof(hbuf) - 3)) {
+                snpf(&hbuf[1], (sizeof(hbuf) - 1), "can't format IPv6 address]");
+            } else {
+                len = strlen(hbuf);
+                snpf(&hbuf[len], sizeof(hbuf) - len, "]");
+            }
         } else
 #endif
 
-        if (addr_family == AF_INET)
-            snpf(hbuf, sizeof(hbuf), "%u.%u.%u.%u", inet_addr[0], inet_addr[1],
-                        inet_addr[2], inet_addr[3]);
+            if (addr_family == AF_INET)
+            snpf(hbuf, sizeof(hbuf), "%u.%u.%u.%u", inet_addr[0], inet_addr[1], inet_addr[2],
+                 inet_addr[3]);
         else
             snpf(hbuf, sizeof(hbuf), "(unknown AF value: %d)", addr_family);
         hn = hbuf;
     } else
-        hn = (char *) host_entry->h_name;
-/*
+        hn = (char *)host_entry->h_name;
+    /*
  * Allocate space for name and copy name to it.
  */
     if (!(np = mkstrcpy(hn, NULL))) {
@@ -412,19 +401,19 @@ gethostnm(unsigned char *inet_addr, int addr_family)
         safestrprt(hn, stderr, 1);
         Exit(1);
     }
-/*
+    /*
  * Add address/name entry to cache.  Allocate cache space in HCINC chunks.
  */
     if (hcx >= nhc) {
         nhc += HCINC;
         len = (MALLOC_S)(nhc * sizeof(struct hostcache));
         if (!hc)
-            hc = (struct hostcache *) malloc(len);
+            hc = (struct hostcache *)malloc(len);
         else {
             struct hostcache *tmp;
-            tmp = (struct hostcache *) realloc((MALLOC_P *) hc, len);
+            tmp = (struct hostcache *)realloc((MALLOC_P *)hc, len);
             if (!tmp) {
-                free((FREE_P *) hc);
+                free((FREE_P *)hc);
                 hc = NULL;
             } else
                 hc = tmp;
@@ -444,16 +433,14 @@ gethostnm(unsigned char *inet_addr, int addr_family)
  * lkup_port() - look up port for protocol
  */
 
-static char *
-lkup_port(int port, int protocol, int src)
-{
+static char *lkup_port(int port, int protocol, int src) {
     int hash_idx, i, nh;
     MALLOC_S name_len;
     char *name, *pn;
     static char pb[128];
     static int pm = 0;
     struct porttab *port_entry;
-/*
+    /*
  * If the hash buckets haven't been allocated, do so.
  */
     if (!Pth[0]) {
@@ -465,16 +452,13 @@ lkup_port(int port, int protocol, int src)
 #endif
 
         for (hash_idx = 0; hash_idx < nh; hash_idx++) {
-            if (!(Pth[hash_idx] = (struct porttab **) calloc(PORTHASHBUCKETS,
-                                                      sizeof(struct porttab *)))) {
-                fprintf(stderr,
-                               "%s: can't allocate %d bytes for %s %s hash buckets\n",
-                               ProgramName,
-                               (int) (2 * (PORTHASHBUCKETS * sizeof(struct porttab *))),
-                               (hash_idx & 1) ? "UDP" : "TCP",
-                               (hash_idx > 1) ? "portmap" : "port");
+            if (!(Pth[hash_idx] =
+                      (struct porttab **)calloc(PORTHASHBUCKETS, sizeof(struct porttab *)))) {
+                fprintf(stderr, "%s: can't allocate %d bytes for %s %s hash buckets\n", ProgramName,
+                        (int)(2 * (PORTHASHBUCKETS * sizeof(struct porttab *))),
+                        (hash_idx & 1) ? "UDP" : "TCP", (hash_idx > 1) ? "portmap" : "port");
                 for (i = 0; i < hash_idx; i++) {
-                    free((FREE_P *) Pth[i]);
+                    free((FREE_P *)Pth[i]);
                     Pth[i] = NULL;
                 }
                 Exit(1);
@@ -482,7 +466,7 @@ lkup_port(int port, int protocol, int src)
         }
     }
 
-#ifndef HASNORPC_H/*
+#ifndef HASNORPC_H /*
  * If we're looking up program names for portmapped ports, make sure the
  * portmap table has been loaded.
  */
@@ -492,7 +476,7 @@ lkup_port(int port, int protocol, int src)
     }
 #endif
 
-/*
+    /*
  * Hash the port and see if its name has been cached.  Look for a local
  * port first in the portmap, if portmap searching is enabled.
  */
@@ -520,7 +504,7 @@ lkup_port(int port, int protocol, int src)
         if (port_entry->port == port)
             return (port_entry->name);
     }
-/*
+    /*
  * Search for a possible service name, unless the -P option has been specified.
  *
  * If there is no service name, return a %d conversion.
@@ -531,19 +515,23 @@ lkup_port(int port, int protocol, int src)
     pn = OptPortLookup ? lkup_svcnam(hash_idx, port, protocol, 1) : NULL;
     if (!pn || !strlen(pn)) {
         if (port) {
-        /*
+            /*
          * Fast integer-to-string for port numbers (avoids snpf overhead).
          */
             char *ep = &pb[sizeof(pb) - 1];
             int value = port;
             *ep = '\0';
-            do { *--ep = '0' + (value % 10); value /= 10; } while (value);
+            do {
+                *--ep = '0' + (value % 10);
+                value /= 10;
+            } while (value);
             /* shift to start of pb for stable return pointer */
             {
                 int dlen = (int)(&pb[sizeof(pb) - 1] - ep);
                 if (ep != pb) {
                     int k;
-                    for (k = 0; k < dlen; k++) pb[k] = ep[k];
+                    for (k = 0; k < dlen; k++)
+                        pb[k] = ep[k];
                     pb[dlen] = '\0';
                 }
             }
@@ -551,23 +539,21 @@ lkup_port(int port, int protocol, int src)
         } else
             return ("*");
     }
-/*
+    /*
  * Allocate a new porttab entry for the TCP or UDP service name.
  */
-    if (!(port_entry = (struct porttab *) malloc(sizeof(struct porttab)))) {
-        fprintf(stderr,
-                       "%s: can't allocate porttab entry for port %d\n", ProgramName, port);
+    if (!(port_entry = (struct porttab *)malloc(sizeof(struct porttab)))) {
+        fprintf(stderr, "%s: can't allocate porttab entry for port %d\n", ProgramName, port);
         Exit(1);
     }
-/*
+    /*
  * Allocate space for the name; copy it to the porttab entry; and link the
  * porttab entry to its hash bucket.
  *
  * Return a pointer to the name.
  */
     if (!(name = mkstrcpy(pn, &name_len))) {
-        fprintf(stderr,
-                       "%s: can't allocate space for port name: ", ProgramName);
+        fprintf(stderr, "%s: can't allocate space for port name: ", ProgramName);
         safestrprt(pn, stderr, 1);
         Exit(1);
     }
@@ -584,9 +570,7 @@ lkup_port(int port, int protocol, int src)
  * lkup_svcnam() - look up service name for port
  */
 
-static char *
-lkup_svcnam(int hash_idx, int port, int protocol, int svc_status)
-{
+static char *lkup_svcnam(int hash_idx, int port, int protocol, int svc_status) {
     static int fl[PORTTABTHRESH];
     static int fln = 0;
     static int gsbp = 0;
@@ -594,7 +578,7 @@ lkup_svcnam(int hash_idx, int port, int protocol, int svc_status)
     struct porttab *port_entry;
     static int ptf = 0;
     struct servent *serv_entry;
-/*
+    /*
  * Do nothing if -P has been specified.
  */
     if (!OptPortLookup)
@@ -612,7 +596,7 @@ lkup_svcnam(int hash_idx, int port, int protocol, int svc_status)
                     return (port_entry->name);
             }
         }
-/*
+        /*
  * If fill_porttab() has been called, there is no service name.
  *
  * Do PORTTABTHRES getservbport() calls, remembering the failures, so they
@@ -645,8 +629,7 @@ lkup_svcnam(int hash_idx, int port, int protocol, int svc_status)
  * print_file() - print file
  */
 
-void
-print_file() {
+void print_file() {
     char buf[128];
     char *char_ptr = NULL;
     dev_t dev;
@@ -658,59 +641,55 @@ print_file() {
          * Print the header line if this is the second pass and the
          * header hasn't already been printed.
          */
-        printf("%-*.*s %*s", CommandColWidth, CommandColWidth, CMDTTL, PidColWidth,
-                      PIDTTL);
+        printf("%-*.*s %*s", CommandColWidth, CommandColWidth, CMDTTL, PidColWidth, PIDTTL);
 
 #if defined(HASTASKS)
         if (TaskPrintFlag)
-        printf(" %*s", TidColWidth, TIDTTL);
+            printf(" %*s", TidColWidth, TIDTTL);
 #endif
 
-#if	defined(HASZONES)
-	    if (OptZone)
-		printf(" %-*s", ZoneColWidth, ZONETTL);
+#if defined(HASZONES)
+        if (OptZone)
+            printf(" %-*s", ZoneColWidth, ZONETTL);
 #endif
 
 #if defined(HASSELINUX)
         if (OptSecContext)
-        printf(" %-*s", ContextColWidth, CNTXTTL);
+            printf(" %-*s", ContextColWidth, CNTXTTL);
 #endif
 
 #if defined(HASPPID)
         if (OptParentPid)
-         printf(" %*s", PpidColWidth, PPIDTTL);
+            printf(" %*s", PpidColWidth, PPIDTTL);
 #endif
 
         if (OptProcessGroup)
             printf(" %*s", PgidColWidth, PGIDTTL);
-        printf(" %*s %*s   %*s",
-                      UserColWidth, USERTTL,
-                      FileDescColWidth - 2, FDTTL,
-                      TypeColWidth, TYPETTL);
+        printf(" %*s %*s   %*s", UserColWidth, USERTTL, FileDescColWidth - 2, FDTTL, TypeColWidth,
+               TYPETTL);
 
 #if defined(HASFSTRUCT)
         if (OptFileStructValues) {
 
 #ifndef HASNOFSADDR
-        if (OptFileStructValues & FSV_FILE_ADDR)
-            printf(" %*s", FileStructAddrColWidth, FSTTL);
+            if (OptFileStructValues & FSV_FILE_ADDR)
+                printf(" %*s", FileStructAddrColWidth, FSTTL);
 #endif
 
 #ifndef HASNOFSCOUNT
-        if (OptFileStructValues & FSV_FILE_COUNT)
-            printf(" %*s", FileCountColWidth, FCTTL);
+            if (OptFileStructValues & FSV_FILE_COUNT)
+                printf(" %*s", FileCountColWidth, FCTTL);
 #endif
 
 #ifndef HASNOFSFLAGS
-        if (OptFileStructValues & FSV_FILE_FLAGS)
-            printf(" %*s", FileFlagColWidth, FGTTL);
+            if (OptFileStructValues & FSV_FILE_FLAGS)
+                printf(" %*s", FileFlagColWidth, FGTTL);
 #endif
 
 #ifndef HASNOFSNADDR
-        if (OptFileStructValues & FSV_NODE_ID)
-            printf(" %*s", NodeIdColWidth, NodeIdTitle);
+            if (OptFileStructValues & FSV_NODE_ID)
+                printf(" %*s", NodeIdColWidth, NodeIdTitle);
 #endif
-
         }
 #endif
 
@@ -726,10 +705,11 @@ print_file() {
         printf(" %*s %s\n", NodeColWidth, NODETTL, NMTTL);
         HeaderPrinted++;
     }
-/*
+    /*
  * Size or print the command.
  */
-    char_ptr = (CurrentLocalProc->cmd && *CurrentLocalProc->cmd != '\0') ? CurrentLocalProc->cmd : "(unknown)";
+    char_ptr = (CurrentLocalProc->cmd && *CurrentLocalProc->cmd != '\0') ? CurrentLocalProc->cmd
+                                                                         : "(unknown)";
     if (!PrintPass) {
         len = safestrlen(char_ptr, 2);
         if (CommandColLimit && (len > CommandColLimit))
@@ -738,7 +718,7 @@ print_file() {
             CommandColWidth = len;
     } else
         safestrprtn(char_ptr, CommandColWidth, stdout, 2);
-/*
+    /*
  * Size or print the process ID.
  */
     if (!PrintPass) {
@@ -752,63 +732,63 @@ print_file() {
     /*
      * Size or print task ID.
      */
-        if (!PrintPass) {
-            if (CurrentLocalProc->tid) {
+    if (!PrintPass) {
+        if (CurrentLocalProc->tid) {
             snpf(buf, sizeof(buf), "%d", CurrentLocalProc->tid);
             if ((len = strlen(buf)) > TidColWidth)
                 TidColWidth = len;
             TaskPrintFlag = 1;
-            }
-        } else if (TaskPrintFlag) {
-            if (CurrentLocalProc->tid)
-            printf(" %*d", TidColWidth, CurrentLocalProc->tid);
-            else
-            printf(" %*s", TidColWidth, "");
         }
+    } else if (TaskPrintFlag) {
+        if (CurrentLocalProc->tid)
+            printf(" %*d", TidColWidth, CurrentLocalProc->tid);
+        else
+            printf(" %*s", TidColWidth, "");
+    }
 #endif
 
 #if defined(HASZONES)
     /*
      * Size or print the zone.
      */
-        if (OptZone) {
-            if (!PrintPass) {
+    if (OptZone) {
+        if (!PrintPass) {
             if (CurrentLocalProc->zn) {
                 if ((len = strlen(CurrentLocalProc->zn)) > ZoneColWidth)
-                ZoneColWidth = len;
+                    ZoneColWidth = len;
             }
-            } else
+        } else
             printf(" %-*s", ZoneColWidth, CurrentLocalProc->zn ? CurrentLocalProc->zn : "");
-        }
+    }
 #endif
 
 #if defined(HASSELINUX)
     /*
      * Size or print the context.
      */
-        if (OptSecContext) {
-            if (!PrintPass) {
+    if (OptSecContext) {
+        if (!PrintPass) {
             if (CurrentLocalProc->cntx) {
                 if ((len = strlen(CurrentLocalProc->cntx)) > ContextColWidth)
-                ContextColWidth = len;
+                    ContextColWidth = len;
             }
-            } else
+        } else
             printf(" %-*s", ContextColWidth, CurrentLocalProc->cntx ? CurrentLocalProc->cntx : "");
-        }
+    }
 #endif
 
 #if defined(HASPPID)
     if (OptParentPid) {
 
-    /*
+        /*
      * Size or print the parent process ID.
      */
         if (!PrintPass) {
-        snpf(buf, sizeof(buf), "%d", CurrentLocalProc->ppid);
-        if ((len = strlen(buf)) > PpidColWidth)
-            PpidColWidth = len;
+            snpf(buf, sizeof(buf), "%d", CurrentLocalProc->ppid);
+            if ((len = strlen(buf)) > PpidColWidth)
+                PpidColWidth = len;
         } else
-        printf(" %*d", PpidColWidth, CurrentLocalProc->ppid);
+            printf(" %*d", PpidColWidth, CurrentLocalProc->ppid);
     }
 #endif
 
@@ -824,34 +804,33 @@ print_file() {
         } else
             printf(" %*d", PgidColWidth, CurrentLocalProc->pgid);
     }
-/*
+    /*
  * Size or print the user ID or login name.
  */
     if (!PrintPass) {
-        if ((len = strlen(printuid((UID_ARG) CurrentLocalProc->uid, NULL))) > UserColWidth)
+        if ((len = strlen(printuid((UID_ARG)CurrentLocalProc->uid, NULL))) > UserColWidth)
             UserColWidth = len;
     } else
         printf(" %*.*s", UserColWidth, UserColWidth,
-                      printuid((UID_ARG) CurrentLocalProc->uid, NULL));
-/*
+               printuid((UID_ARG)CurrentLocalProc->uid, NULL));
+    /*
  * Size or print the file descriptor, access mode and lock status.
  */
     if (!PrintPass) {
-        snpf(buf, sizeof(buf), "%s%c%c",
-                    CurrentLocalFile->fd,
-                    (CurrentLocalFile->lock == ' ') ? CurrentLocalFile->access
-                                      : (CurrentLocalFile->access == ' ') ? '-'
-                                                            : CurrentLocalFile->access,
-                    CurrentLocalFile->lock);
+        snpf(buf, sizeof(buf), "%s%c%c", CurrentLocalFile->fd,
+             (CurrentLocalFile->lock == ' ')     ? CurrentLocalFile->access
+             : (CurrentLocalFile->access == ' ') ? '-'
+                                                 : CurrentLocalFile->access,
+             CurrentLocalFile->lock);
         if ((len = strlen(buf)) > FileDescColWidth)
             FileDescColWidth = len;
     } else
         printf(" %*.*s%c%c", FileDescColWidth - 2, FileDescColWidth - 2, CurrentLocalFile->fd,
-                      (CurrentLocalFile->lock == ' ') ? CurrentLocalFile->access
-                                        : (CurrentLocalFile->access == ' ') ? '-'
-                                                              : CurrentLocalFile->access,
-                      CurrentLocalFile->lock);
-/*
+               (CurrentLocalFile->lock == ' ')     ? CurrentLocalFile->access
+               : (CurrentLocalFile->access == ' ') ? '-'
+                                                   : CurrentLocalFile->access,
+               CurrentLocalFile->lock);
+    /*
  * Size or print the type.
  */
     if (!PrintPass) {
@@ -866,23 +845,23 @@ print_file() {
      * ID (address).
      */
 
-        if (OptFileStructValues) {
+    if (OptFileStructValues) {
 
 #ifndef HASNOFSADDR
-            if (OptFileStructValues & FSV_FILE_ADDR) {
-            char_ptr =  (CurrentLocalFile->fsv & FSV_FILE_ADDR) ? print_kptr(CurrentLocalFile->fsa, buf, sizeof(buf))
-                         : "";
+        if (OptFileStructValues & FSV_FILE_ADDR) {
+            char_ptr = (CurrentLocalFile->fsv & FSV_FILE_ADDR)
+                           ? print_kptr(CurrentLocalFile->fsa, buf, sizeof(buf))
+                           : "";
             if (!PrintPass) {
                 if ((len = strlen(char_ptr)) > FileStructAddrColWidth)
-                FileStructAddrColWidth = len;
+                    FileStructAddrColWidth = len;
             } else
                 printf(" %*.*s", FileStructAddrColWidth, FileStructAddrColWidth, char_ptr);
-
-            }
+        }
 #endif
 
 #ifndef HASNOFSCOUNT
-            if (OptFileStructValues & FSV_FILE_COUNT) {
+        if (OptFileStructValues & FSV_FILE_COUNT) {
             if (CurrentLocalFile->fsv & FSV_FILE_COUNT) {
                 snpf(buf, sizeof(buf), "%ld", CurrentLocalFile->fct);
                 char_ptr = buf;
@@ -890,42 +869,43 @@ print_file() {
                 char_ptr = "";
             if (!PrintPass) {
                 if ((len = strlen(char_ptr)) > FileCountColWidth)
-                FileCountColWidth = len;
+                    FileCountColWidth = len;
             } else
                 printf(" %*.*s", FileCountColWidth, FileCountColWidth, char_ptr);
-            }
+        }
 #endif
 
 #ifndef HASNOFSFLAGS
-            if (OptFileStructValues & FSV_FILE_FLAGS) {
-            if ((CurrentLocalFile->fsv & FSV_FILE_FLAGS) && (OptFileStructFlagHex || CurrentLocalFile->ffg || CurrentLocalFile->pof))
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
+            if ((CurrentLocalFile->fsv & FSV_FILE_FLAGS) &&
+                (OptFileStructFlagHex || CurrentLocalFile->ffg || CurrentLocalFile->pof))
                 char_ptr = print_fflags(CurrentLocalFile->ffg, CurrentLocalFile->pof);
             else
                 char_ptr = "";
             if (!PrintPass) {
                 if ((len = strlen(char_ptr)) > FileFlagColWidth)
-                FileFlagColWidth = len;
+                    FileFlagColWidth = len;
             } else
                 printf(" %*.*s", FileFlagColWidth, FileFlagColWidth, char_ptr);
-            }
-#endif
-
-#ifndef HASNOFSNADDR
-            if (OptFileStructValues & FSV_NODE_ID) {
-            char_ptr = (CurrentLocalFile->fsv & FSV_NODE_ID) ? print_kptr(CurrentLocalFile->fna, buf, sizeof(buf))
-                        : "";
-            if (!PrintPass) {
-                if ((len = strlen(char_ptr)) > NodeIdColWidth)
-                NodeIdColWidth = len;
-            } else
-                printf(" %*.*s", NodeIdColWidth, NodeIdColWidth, char_ptr);
-            }
-#endif
-
         }
 #endif
 
-/*
+#ifndef HASNOFSNADDR
+        if (OptFileStructValues & FSV_NODE_ID) {
+            char_ptr = (CurrentLocalFile->fsv & FSV_NODE_ID)
+                           ? print_kptr(CurrentLocalFile->fna, buf, sizeof(buf))
+                           : "";
+            if (!PrintPass) {
+                if ((len = strlen(char_ptr)) > NodeIdColWidth)
+                    NodeIdColWidth = len;
+            } else
+                printf(" %*.*s", NodeIdColWidth, NodeIdColWidth, char_ptr);
+        }
+#endif
+    }
+#endif
+
+    /*
  * Size or print the device information.
  */
 
@@ -942,11 +922,9 @@ print_file() {
 #if defined(HASPRINTDEV)
         char_ptr = HASPRINTDEV(CurrentLocalFile, &dev);
 #else
-        snpf(buf, sizeof(buf), "%u,%u", GET_MAJ_DEV(dev),
-                    GET_MIN_DEV(dev));
+        snpf(buf, sizeof(buf), "%u,%u", GET_MAJ_DEV(dev), GET_MIN_DEV(dev));
         char_ptr = buf;
 #endif
-
     }
 
     if (!PrintPass) {
@@ -968,7 +946,7 @@ print_file() {
                 printf(" %*.*s", DeviceColWidth, DeviceColWidth, "");
         }
     }
-/*
+    /*
  * Size or print the size or offset.
  */
     if (!PrintPass) {
@@ -1026,7 +1004,7 @@ print_file() {
             char_ptr = buf;
 #endif
 
-            if (OffsetDecDigitLimit && (int) strlen(char_ptr) > (OffsetDecDigitLimit + 2)) {
+            if (OffsetDecDigitLimit && (int)strlen(char_ptr) > (OffsetDecDigitLimit + 2)) {
 
 #if defined(HASPRINTOFF)
                 char_ptr = HASPRINTOFF(CurrentLocalFile, 1);
@@ -1034,13 +1012,12 @@ print_file() {
                 snpf(buf, sizeof(buf), SizeOffFormatX, CurrentLocalFile->off);
                 char_ptr = buf;
 #endif
-
             }
             printf("%*.*s", SizeOffColWidth, SizeOffColWidth, char_ptr);
         } else
             printf("%*.*s", SizeOffColWidth, SizeOffColWidth, "");
     }
-/*
+    /*
  * Size or print the link count.
  */
     if (OptLinkCount) {
@@ -1055,32 +1032,32 @@ print_file() {
         } else
             printf(" %*s", LinkCountColWidth, char_ptr);
     }
-/*
+    /*
  * Size or print the inode information.
  */
     switch (CurrentLocalFile->inp_ty) {
-        case 1:
+    case 1:
 
 #if defined(HASPRINTINO)
-            char_ptr = HASPRINTINO(CurrentLocalFile);
+        char_ptr = HASPRINTINO(CurrentLocalFile);
 #else
-            snpf(buf, sizeof(buf), InodeFormatDecimal, CurrentLocalFile->inode);
-            char_ptr = buf;
+        snpf(buf, sizeof(buf), InodeFormatDecimal, CurrentLocalFile->inode);
+        char_ptr = buf;
 #endif
 
-            break;
-        case 2:
-            if (CurrentLocalFile->iproto[0])
-                char_ptr = CurrentLocalFile->iproto;
-            else
-                char_ptr = "";
-            break;
-        case 3:
-            snpf(buf, sizeof(buf), InodeFormatHex, CurrentLocalFile->inode);
-            char_ptr = buf;
-            break;
-        default:
+        break;
+    case 2:
+        if (CurrentLocalFile->iproto[0])
+            char_ptr = CurrentLocalFile->iproto;
+        else
             char_ptr = "";
+        break;
+    case 3:
+        snpf(buf, sizeof(buf), InodeFormatHex, CurrentLocalFile->inode);
+        char_ptr = buf;
+        break;
+    default:
+        char_ptr = "";
     }
     if (!PrintPass) {
         if ((len = strlen(char_ptr)) > NodeColWidth)
@@ -1088,7 +1065,7 @@ print_file() {
     } else {
         printf(" %*.*s", NodeColWidth, NodeColWidth, char_ptr);
     }
-/*
+    /*
  * If this is the second pass, print the name column.  (It doesn't need
  * to be sized.)
  */
@@ -1100,7 +1077,6 @@ print_file() {
 #else
         printname(1);
 #endif
-
     }
 }
 
@@ -1108,14 +1084,13 @@ print_file() {
  * printinaddr() - print Internet addresses
  */
 
-static int
-printinaddr() {
+static int printinaddr() {
     int i, len, src;
     char *host, *port;
     int name_len = NameCharsLength - 1;
     char *np = NameChars;
     char pbuf[32];
-/*
+    /*
  * Process local network address first.  If there's a foreign address,
  * separate it from the local address with "->".
  */
@@ -1130,14 +1105,13 @@ printinaddr() {
              */
             if (name_len < 2)
 
-                addr_too_long:
+            addr_too_long:
 
-                {
-                    snpf(NameChars, NameCharsLength,
-                                "network addresses too long");
-                    return (1);
-                }
-            *np++ = '-';
+            {
+                snpf(NameChars, NameCharsLength, "network addresses too long");
+                return (1);
+            }
+                *np++ = '-';
             *np++ = '>';
             name_len -= 2;
         }
@@ -1146,18 +1120,20 @@ printinaddr() {
          */
 
 #if defined(HASIPv6)
-        if ((CurrentLocalFile->li[i].addr_family == AF_INET6
-        &&   IN6_IS_ADDR_UNSPECIFIED(&CurrentLocalFile->li[i].ia.a6))
-        ||  (CurrentLocalFile->li[i].addr_family == AF_INET
-        &&    CurrentLocalFile->li[i].ia.a4.s_addr == INADDR_ANY))
-        host ="*";
+        if ((CurrentLocalFile->li[i].addr_family == AF_INET6 &&
+             IN6_IS_ADDR_UNSPECIFIED(&CurrentLocalFile->li[i].ia.a6)) ||
+            (CurrentLocalFile->li[i].addr_family == AF_INET &&
+             CurrentLocalFile->li[i].ia.a4.s_addr == INADDR_ANY))
+            host = "*";
         else
-        host = gethostnm((unsigned char *)&CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].addr_family);
+            host = gethostnm((unsigned char *)&CurrentLocalFile->li[i].ia,
+                             CurrentLocalFile->li[i].addr_family);
 #else
         if (CurrentLocalFile->li[i].ia.a4.s_addr == INADDR_ANY)
             host = "*";
         else
-            host = gethostnm((unsigned char *) &CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].addr_family);
+            host = gethostnm((unsigned char *)&CurrentLocalFile->li[i].ia,
+                             CurrentLocalFile->li[i].addr_family);
 #endif
 
         /*
@@ -1167,11 +1143,11 @@ printinaddr() {
 
             if (OptPortLookup
 
-                #if    !defined(HASNORPC_H)
+#if !defined(HASNORPC_H)
                 || OptPortMap
 #endif
 
-                    ) {
+            ) {
 
                 /*
                  * If converting port numbers to service names, or looking
@@ -1189,18 +1165,17 @@ printinaddr() {
 
 #if defined(HASIPv6)
                     if (CurrentLocalFile->li[0].addr_family == AF_INET6) {
-                        if (IN6_IS_ADDR_LOOPBACK(&CurrentLocalFile->li[i].ia.a6)
-                        ||  IN6_ARE_ADDR_EQUAL(&CurrentLocalFile->li[0].ia.a6,
-                                   &CurrentLocalFile->li[1].ia.a6)
-                        )
-                        src = 0;
+                        if (IN6_IS_ADDR_LOOPBACK(&CurrentLocalFile->li[i].ia.a6) ||
+                            IN6_ARE_ADDR_EQUAL(&CurrentLocalFile->li[0].ia.a6,
+                                               &CurrentLocalFile->li[1].ia.a6))
+                            src = 0;
                     } else
 #endif
 
-                    if (CurrentLocalFile->li[0].addr_family == AF_INET) {
-                        if (CurrentLocalFile->li[i].ia.a4.s_addr == htonl(INADDR_LOOPBACK)
-                            || CurrentLocalFile->li[0].ia.a4.s_addr == CurrentLocalFile->li[1].ia.a4.s_addr
-                                )
+                        if (CurrentLocalFile->li[0].addr_family == AF_INET) {
+                        if (CurrentLocalFile->li[i].ia.a4.s_addr == htonl(INADDR_LOOPBACK) ||
+                            CurrentLocalFile->li[0].ia.a4.s_addr ==
+                                CurrentLocalFile->li[1].ia.a4.s_addr)
                             src = 0;
                     }
                 }
@@ -1254,8 +1229,7 @@ printinaddr() {
  * print_init() - initialize for printing
  */
 
-void
-print_init() {
+void print_init() {
     PrintPass = (OptFieldOutput || OptTerse) ? 1 : 0;
     CommandColWidth = strlen(CMDTTL);
     DeviceColWidth = strlen(DEVTTL);
@@ -1310,16 +1284,13 @@ print_init() {
     if (OptZone)
         ZoneColWidth = strlen(ZONETTL);
 #endif
-
 }
 
-#ifndef HASPRIVPRIPP/*
+#ifndef HASPRIVPRIPP /*
  * printiproto() - print Internet protocol name
  */
 
-void
-printiproto(int proto)
-{
+void printiproto(int proto) {
     int i;
     static int m = -1;
     char *s;
@@ -1327,629 +1298,629 @@ printiproto(int proto)
     switch (proto) {
 
 #if defined(IPPROTO_TCP)
-        case IPPROTO_TCP:
-            s = "TCP";
-            break;
+    case IPPROTO_TCP:
+        s = "TCP";
+        break;
 #endif
 
 #if defined(IPPROTO_UDP)
-        case IPPROTO_UDP:
-            s = "UDP";
-            break;
+    case IPPROTO_UDP:
+        s = "UDP";
+        break;
 #endif
 
 #if defined(IPPROTO_IP)
-#if	!defined(IPPROTO_HOPOPTS) || IPPROTO_IP!=IPPROTO_HOPOPTS
-        case IPPROTO_IP:
-            s = "IP";
-            break;
+#if !defined(IPPROTO_HOPOPTS) || IPPROTO_IP != IPPROTO_HOPOPTS
+    case IPPROTO_IP:
+        s = "IP";
+        break;
 #endif
 #endif
 
 #if defined(IPPROTO_ICMP)
-        case IPPROTO_ICMP:
-            s = "ICMP";
-            break;
+    case IPPROTO_ICMP:
+        s = "ICMP";
+        break;
 #endif
 
 #if defined(IPPROTO_ICMPV6)
-        case IPPROTO_ICMPV6:
-            s = "ICMPV6";
-            break;
+    case IPPROTO_ICMPV6:
+        s = "ICMPV6";
+        break;
 #endif
 
 #if defined(IPPROTO_IGMP)
-        case IPPROTO_IGMP:
-            s = "IGMP";
-            break;
+    case IPPROTO_IGMP:
+        s = "IGMP";
+        break;
 #endif
 
 #if defined(IPPROTO_GGP)
-        case IPPROTO_GGP:
-            s = "GGP";
-            break;
+    case IPPROTO_GGP:
+        s = "GGP";
+        break;
 #endif
 
 #if defined(IPPROTO_EGP)
-        case IPPROTO_EGP:
-            s = "EGP";
-            break;
+    case IPPROTO_EGP:
+        s = "EGP";
+        break;
 #endif
 
 #if defined(IPPROTO_PUP)
-        case IPPROTO_PUP:
-            s = "PUP";
-            break;
+    case IPPROTO_PUP:
+        s = "PUP";
+        break;
 #endif
 
 #if defined(IPPROTO_IDP)
-        case IPPROTO_IDP:
-            s = "IDP";
-            break;
+    case IPPROTO_IDP:
+        s = "IDP";
+        break;
 #endif
 
 #if defined(IPPROTO_ND)
-        case IPPROTO_ND:
-            s = "ND";
-            break;
+    case IPPROTO_ND:
+        s = "ND";
+        break;
 #endif
 
 #if defined(IPPROTO_RAW)
-        case IPPROTO_RAW:
-            s = "RAW";
-            break;
+    case IPPROTO_RAW:
+        s = "RAW";
+        break;
 #endif
 
 #if defined(IPPROTO_HELLO)
-        case IPPROTO_HELLO:
-            s = "HELLO";
-            break;
+    case IPPROTO_HELLO:
+        s = "HELLO";
+        break;
 #endif
 
 #if defined(IPPROTO_PXP)
-        case IPPROTO_PXP:
-            s = "PXP";
-            break;
+    case IPPROTO_PXP:
+        s = "PXP";
+        break;
 #endif
 
 #if defined(IPPROTO_RAWIP)
-        case IPPROTO_RAWIP:
-            s = "RAWIP";
-            break;
+    case IPPROTO_RAWIP:
+        s = "RAWIP";
+        break;
 #endif
 
 #if defined(IPPROTO_RAWIF)
-        case IPPROTO_RAWIF:
-            s = "RAWIF";
-            break;
+    case IPPROTO_RAWIF:
+        s = "RAWIF";
+        break;
 #endif
 
 #if defined(IPPROTO_HOPOPTS)
-        case IPPROTO_HOPOPTS:
-            s = "HOPOPTS";
-            break;
+    case IPPROTO_HOPOPTS:
+        s = "HOPOPTS";
+        break;
 #endif
 
 #if defined(IPPROTO_IPIP)
-        case IPPROTO_IPIP:
-            s = "IPIP";
-            break;
+    case IPPROTO_IPIP:
+        s = "IPIP";
+        break;
 #endif
 
 #if defined(IPPROTO_ST)
-        case IPPROTO_ST:
-            s = "ST";
-            break;
+    case IPPROTO_ST:
+        s = "ST";
+        break;
 #endif
 
 #if defined(IPPROTO_PIGP)
-        case IPPROTO_PIGP:
-            s = "PIGP";
-            break;
+    case IPPROTO_PIGP:
+        s = "PIGP";
+        break;
 #endif
 
 #if defined(IPPROTO_RCCMON)
-        case IPPROTO_RCCMON:
-            s = "RCCMON";
-            break;
+    case IPPROTO_RCCMON:
+        s = "RCCMON";
+        break;
 #endif
 
 #if defined(IPPROTO_NVPII)
-        case IPPROTO_NVPII:
-            s = "NVPII";
-            break;
+    case IPPROTO_NVPII:
+        s = "NVPII";
+        break;
 #endif
 
 #if defined(IPPROTO_ARGUS)
-        case IPPROTO_ARGUS:
-            s = "ARGUS";
-            break;
+    case IPPROTO_ARGUS:
+        s = "ARGUS";
+        break;
 #endif
 
 #if defined(IPPROTO_EMCON)
-        case IPPROTO_EMCON:
-            s = "EMCON";
-            break;
+    case IPPROTO_EMCON:
+        s = "EMCON";
+        break;
 #endif
 
 #if defined(IPPROTO_XNET)
-        case IPPROTO_XNET:
-            s = "XNET";
-            break;
+    case IPPROTO_XNET:
+        s = "XNET";
+        break;
 #endif
 
 #if defined(IPPROTO_CHAOS)
-        case IPPROTO_CHAOS:
-            s = "CHAOS";
-            break;
+    case IPPROTO_CHAOS:
+        s = "CHAOS";
+        break;
 #endif
 
 #if defined(IPPROTO_MUX)
-        case IPPROTO_MUX:
-            s = "MUX";
-            break;
+    case IPPROTO_MUX:
+        s = "MUX";
+        break;
 #endif
 
 #if defined(IPPROTO_MEAS)
-        case IPPROTO_MEAS:
-            s = "MEAS";
-            break;
+    case IPPROTO_MEAS:
+        s = "MEAS";
+        break;
 #endif
 
 #if defined(IPPROTO_HMP)
-        case IPPROTO_HMP:
-            s = "HMP";
-            break;
+    case IPPROTO_HMP:
+        s = "HMP";
+        break;
 #endif
 
 #if defined(IPPROTO_PRM)
-        case IPPROTO_PRM:
-            s = "PRM";
-            break;
+    case IPPROTO_PRM:
+        s = "PRM";
+        break;
 #endif
 
 #if defined(IPPROTO_TRUNK1)
-        case IPPROTO_TRUNK1:
-            s = "TRUNK1";
-            break;
+    case IPPROTO_TRUNK1:
+        s = "TRUNK1";
+        break;
 #endif
 
 #if defined(IPPROTO_TRUNK2)
-        case IPPROTO_TRUNK2:
-            s = "TRUNK2";
-            break;
+    case IPPROTO_TRUNK2:
+        s = "TRUNK2";
+        break;
 #endif
 
 #if defined(IPPROTO_LEAF1)
-        case IPPROTO_LEAF1:
-            s = "LEAF1";
-            break;
+    case IPPROTO_LEAF1:
+        s = "LEAF1";
+        break;
 #endif
 
 #if defined(IPPROTO_LEAF2)
-        case IPPROTO_LEAF2:
-            s = "LEAF2";
-            break;
+    case IPPROTO_LEAF2:
+        s = "LEAF2";
+        break;
 #endif
 
 #if defined(IPPROTO_RDP)
-        case IPPROTO_RDP:
-            s = "RDP";
-            break;
+    case IPPROTO_RDP:
+        s = "RDP";
+        break;
 #endif
 
 #if defined(IPPROTO_IRTP)
-        case IPPROTO_IRTP:
-            s = "IRTP";
-            break;
+    case IPPROTO_IRTP:
+        s = "IRTP";
+        break;
 #endif
 
 #if defined(IPPROTO_TP)
-        case IPPROTO_TP:
-            s = "TP";
-            break;
+    case IPPROTO_TP:
+        s = "TP";
+        break;
 #endif
 
 #if defined(IPPROTO_BLT)
-        case IPPROTO_BLT:
-            s = "BLT";
-            break;
+    case IPPROTO_BLT:
+        s = "BLT";
+        break;
 #endif
 
 #if defined(IPPROTO_NSP)
-        case IPPROTO_NSP:
-            s = "NSP";
-            break;
+    case IPPROTO_NSP:
+        s = "NSP";
+        break;
 #endif
 
 #if defined(IPPROTO_INP)
-        case IPPROTO_INP:
-            s = "INP";
-            break;
+    case IPPROTO_INP:
+        s = "INP";
+        break;
 #endif
 
 #if defined(IPPROTO_SEP)
-        case IPPROTO_SEP:
-            s = "SEP";
-            break;
+    case IPPROTO_SEP:
+        s = "SEP";
+        break;
 #endif
 
 #if defined(IPPROTO_3PC)
-        case IPPROTO_3PC:
-            s = "3PC";
-            break;
+    case IPPROTO_3PC:
+        s = "3PC";
+        break;
 #endif
 
 #if defined(IPPROTO_IDPR)
-        case IPPROTO_IDPR:
-            s = "IDPR";
-            break;
+    case IPPROTO_IDPR:
+        s = "IDPR";
+        break;
 #endif
 
 #if defined(IPPROTO_XTP)
-        case IPPROTO_XTP:
-            s = "XTP";
-            break;
+    case IPPROTO_XTP:
+        s = "XTP";
+        break;
 #endif
 
 #if defined(IPPROTO_DDP)
-        case IPPROTO_DDP:
-            s = "DDP";
-            break;
+    case IPPROTO_DDP:
+        s = "DDP";
+        break;
 #endif
 
 #if defined(IPPROTO_CMTP)
-        case IPPROTO_CMTP:
-            s = "CMTP";
-            break;
+    case IPPROTO_CMTP:
+        s = "CMTP";
+        break;
 #endif
 
 #if defined(IPPROTO_TPXX)
-        case IPPROTO_TPXX:
-            s = "TPXX";
-            break;
+    case IPPROTO_TPXX:
+        s = "TPXX";
+        break;
 #endif
 
 #if defined(IPPROTO_IL)
-        case IPPROTO_IL:
-            s = "IL";
-            break;
+    case IPPROTO_IL:
+        s = "IL";
+        break;
 #endif
 
 #if defined(IPPROTO_IPV6)
-        case IPPROTO_IPV6:
-            s = "IPV6";
-            break;
+    case IPPROTO_IPV6:
+        s = "IPV6";
+        break;
 #endif
 
 #if defined(IPPROTO_SDRP)
-        case IPPROTO_SDRP:
-            s = "SDRP";
-            break;
+    case IPPROTO_SDRP:
+        s = "SDRP";
+        break;
 #endif
 
 #if defined(IPPROTO_ROUTING)
-        case IPPROTO_ROUTING:
-            s = "ROUTING";
-            break;
+    case IPPROTO_ROUTING:
+        s = "ROUTING";
+        break;
 #endif
 
 #if defined(IPPROTO_FRAGMENT)
-        case IPPROTO_FRAGMENT:
-            s = "FRAGMNT";
-            break;
+    case IPPROTO_FRAGMENT:
+        s = "FRAGMNT";
+        break;
 #endif
 
 #if defined(IPPROTO_IDRP)
-        case IPPROTO_IDRP:
-            s = "IDRP";
-            break;
+    case IPPROTO_IDRP:
+        s = "IDRP";
+        break;
 #endif
 
 #if defined(IPPROTO_RSVP)
-        case IPPROTO_RSVP:
-            s = "RSVP";
-            break;
+    case IPPROTO_RSVP:
+        s = "RSVP";
+        break;
 #endif
 
 #if defined(IPPROTO_GRE)
-        case IPPROTO_GRE:
-            s = "GRE";
-            break;
+    case IPPROTO_GRE:
+        s = "GRE";
+        break;
 #endif
 
 #if defined(IPPROTO_MHRP)
-        case IPPROTO_MHRP:
-            s = "MHRP";
-            break;
+    case IPPROTO_MHRP:
+        s = "MHRP";
+        break;
 #endif
 
 #if defined(IPPROTO_BHA)
-        case IPPROTO_BHA:
-            s = "BHA";
-            break;
+    case IPPROTO_BHA:
+        s = "BHA";
+        break;
 #endif
 
 #if defined(IPPROTO_ESP)
-        case IPPROTO_ESP:
-            s = "ESP";
-            break;
+    case IPPROTO_ESP:
+        s = "ESP";
+        break;
 #endif
 
 #if defined(IPPROTO_AH)
-        case IPPROTO_AH:
-            s = "AH";
-            break;
+    case IPPROTO_AH:
+        s = "AH";
+        break;
 #endif
 
 #if defined(IPPROTO_INLSP)
-        case IPPROTO_INLSP:
-            s = "INLSP";
-            break;
+    case IPPROTO_INLSP:
+        s = "INLSP";
+        break;
 #endif
 
 #if defined(IPPROTO_SWIPE)
-        case IPPROTO_SWIPE:
-            s = "SWIPE";
-            break;
+    case IPPROTO_SWIPE:
+        s = "SWIPE";
+        break;
 #endif
 
 #if defined(IPPROTO_NHRP)
-        case IPPROTO_NHRP:
-            s = "NHRP";
-            break;
+    case IPPROTO_NHRP:
+        s = "NHRP";
+        break;
 #endif
 
 #if defined(IPPROTO_NONE)
-        case IPPROTO_NONE:
-            s = "NONE";
-            break;
+    case IPPROTO_NONE:
+        s = "NONE";
+        break;
 #endif
 
 #if defined(IPPROTO_DSTOPTS)
-        case IPPROTO_DSTOPTS:
-            s = "DSTOPTS";
-            break;
+    case IPPROTO_DSTOPTS:
+        s = "DSTOPTS";
+        break;
 #endif
 
 #if defined(IPPROTO_AHIP)
-        case IPPROTO_AHIP:
-            s = "AHIP";
-            break;
+    case IPPROTO_AHIP:
+        s = "AHIP";
+        break;
 #endif
 
 #if defined(IPPROTO_CFTP)
-        case IPPROTO_CFTP:
-            s = "CFTP";
-            break;
+    case IPPROTO_CFTP:
+        s = "CFTP";
+        break;
 #endif
 
 #if defined(IPPROTO_SATEXPAK)
-        case IPPROTO_SATEXPAK:
-            s = "SATEXPK";
-            break;
+    case IPPROTO_SATEXPAK:
+        s = "SATEXPK";
+        break;
 #endif
 
 #if defined(IPPROTO_KRYPTOLAN)
-        case IPPROTO_KRYPTOLAN:
-            s = "KRYPTOL";
-            break;
+    case IPPROTO_KRYPTOLAN:
+        s = "KRYPTOL";
+        break;
 #endif
 
 #if defined(IPPROTO_RVD)
-        case IPPROTO_RVD:
-            s = "RVD";
-            break;
+    case IPPROTO_RVD:
+        s = "RVD";
+        break;
 #endif
 
 #if defined(IPPROTO_IPPC)
-        case IPPROTO_IPPC:
-            s = "IPPC";
-            break;
+    case IPPROTO_IPPC:
+        s = "IPPC";
+        break;
 #endif
 
 #if defined(IPPROTO_ADFS)
-        case IPPROTO_ADFS:
-            s = "ADFS";
-            break;
+    case IPPROTO_ADFS:
+        s = "ADFS";
+        break;
 #endif
 
 #if defined(IPPROTO_SATMON)
-        case IPPROTO_SATMON:
-            s = "SATMON";
-            break;
+    case IPPROTO_SATMON:
+        s = "SATMON";
+        break;
 #endif
 
 #if defined(IPPROTO_VISA)
-        case IPPROTO_VISA:
-            s = "VISA";
-            break;
+    case IPPROTO_VISA:
+        s = "VISA";
+        break;
 #endif
 
 #if defined(IPPROTO_IPCV)
-        case IPPROTO_IPCV:
-            s = "IPCV";
-            break;
+    case IPPROTO_IPCV:
+        s = "IPCV";
+        break;
 #endif
 
 #if defined(IPPROTO_CPNX)
-        case IPPROTO_CPNX:
-            s = "CPNX";
-            break;
+    case IPPROTO_CPNX:
+        s = "CPNX";
+        break;
 #endif
 
 #if defined(IPPROTO_CPHB)
-        case IPPROTO_CPHB:
-            s = "CPHB";
-            break;
+    case IPPROTO_CPHB:
+        s = "CPHB";
+        break;
 #endif
 
 #if defined(IPPROTO_WSN)
-        case IPPROTO_WSN:
-            s = "WSN";
-            break;
+    case IPPROTO_WSN:
+        s = "WSN";
+        break;
 #endif
 
 #if defined(IPPROTO_PVP)
-        case IPPROTO_PVP:
-            s = "PVP";
-            break;
+    case IPPROTO_PVP:
+        s = "PVP";
+        break;
 #endif
 
 #if defined(IPPROTO_BRSATMON)
-        case IPPROTO_BRSATMON:
-            s = "BRSATMN";
-            break;
+    case IPPROTO_BRSATMON:
+        s = "BRSATMN";
+        break;
 #endif
 
 #if defined(IPPROTO_WBMON)
-        case IPPROTO_WBMON:
-            s = "WBMON";
-            break;
+    case IPPROTO_WBMON:
+        s = "WBMON";
+        break;
 #endif
 
 #if defined(IPPROTO_WBEXPAK)
-        case IPPROTO_WBEXPAK:
-            s = "WBEXPAK";
-            break;
+    case IPPROTO_WBEXPAK:
+        s = "WBEXPAK";
+        break;
 #endif
 
 #if defined(IPPROTO_EON)
-        case IPPROTO_EON:
-            s = "EON";
-            break;
+    case IPPROTO_EON:
+        s = "EON";
+        break;
 #endif
 
 #if defined(IPPROTO_VMTP)
-        case IPPROTO_VMTP:
-            s = "VMTP";
-            break;
+    case IPPROTO_VMTP:
+        s = "VMTP";
+        break;
 #endif
 
 #if defined(IPPROTO_SVMTP)
-        case IPPROTO_SVMTP:
-            s = "SVMTP";
-            break;
+    case IPPROTO_SVMTP:
+        s = "SVMTP";
+        break;
 #endif
 
 #if defined(IPPROTO_VINES)
-        case IPPROTO_VINES:
-            s = "VINES";
-            break;
+    case IPPROTO_VINES:
+        s = "VINES";
+        break;
 #endif
 
 #if defined(IPPROTO_TTP)
-        case IPPROTO_TTP:
-            s = "TTP";
-            break;
+    case IPPROTO_TTP:
+        s = "TTP";
+        break;
 #endif
 
 #if defined(IPPROTO_IGP)
-        case IPPROTO_IGP:
-            s = "IGP";
-            break;
+    case IPPROTO_IGP:
+        s = "IGP";
+        break;
 #endif
 
 #if defined(IPPROTO_DGP)
-        case IPPROTO_DGP:
-            s = "DGP";
-            break;
+    case IPPROTO_DGP:
+        s = "DGP";
+        break;
 #endif
 
 #if defined(IPPROTO_TCF)
-        case IPPROTO_TCF:
-            s = "TCF";
-            break;
+    case IPPROTO_TCF:
+        s = "TCF";
+        break;
 #endif
 
 #if defined(IPPROTO_IGRP)
-        case IPPROTO_IGRP:
-            s = "IGRP";
-            break;
+    case IPPROTO_IGRP:
+        s = "IGRP";
+        break;
 #endif
 
 #if defined(IPPROTO_OSPFIGP)
-        case IPPROTO_OSPFIGP:
-            s = "OSPFIGP";
-            break;
+    case IPPROTO_OSPFIGP:
+        s = "OSPFIGP";
+        break;
 #endif
 
 #if defined(IPPROTO_SRPC)
-        case IPPROTO_SRPC:
-            s = "SRPC";
-            break;
+    case IPPROTO_SRPC:
+        s = "SRPC";
+        break;
 #endif
 
 #if defined(IPPROTO_LARP)
-        case IPPROTO_LARP:
-            s = "LARP";
-            break;
+    case IPPROTO_LARP:
+        s = "LARP";
+        break;
 #endif
 
 #if defined(IPPROTO_MTP)
-        case IPPROTO_MTP:
-            s = "MTP";
-            break;
+    case IPPROTO_MTP:
+        s = "MTP";
+        break;
 #endif
 
 #if defined(IPPROTO_AX25)
-        case IPPROTO_AX25:
-            s = "AX25";
-            break;
+    case IPPROTO_AX25:
+        s = "AX25";
+        break;
 #endif
 
 #if defined(IPPROTO_IPEIP)
-        case IPPROTO_IPEIP:
-            s = "IPEIP";
-            break;
+    case IPPROTO_IPEIP:
+        s = "IPEIP";
+        break;
 #endif
 
 #if defined(IPPROTO_MICP)
-        case IPPROTO_MICP:
-            s = "MICP";
-            break;
+    case IPPROTO_MICP:
+        s = "MICP";
+        break;
 #endif
 
 #if defined(IPPROTO_SCCSP)
-        case IPPROTO_SCCSP:
-            s = "SCCSP";
-            break;
+    case IPPROTO_SCCSP:
+        s = "SCCSP";
+        break;
 #endif
 
 #if defined(IPPROTO_ETHERIP)
-        case IPPROTO_ETHERIP:
-            s = "ETHERIP";
-            break;
+    case IPPROTO_ETHERIP:
+        s = "ETHERIP";
+        break;
 #endif
 
 #if defined(IPPROTO_ENCAP)
-#if	!defined(IPPROTO_IPIP) || IPPROTO_IPIP!=IPPROTO_ENCAP
-        case IPPROTO_ENCAP:
-            s = "ENCAP";
-            break;
+#if !defined(IPPROTO_IPIP) || IPPROTO_IPIP != IPPROTO_ENCAP
+    case IPPROTO_ENCAP:
+        s = "ENCAP";
+        break;
 #endif
 #endif
 
 #if defined(IPPROTO_APES)
-        case IPPROTO_APES:
-            s = "APES";
-            break;
+    case IPPROTO_APES:
+        s = "APES";
+        break;
 #endif
 
 #if defined(IPPROTO_GMTP)
-        case IPPROTO_GMTP:
-            s = "GMTP";
-            break;
+    case IPPROTO_GMTP:
+        s = "GMTP";
+        break;
 #endif
 
 #if defined(IPPROTO_DIVERT)
-        case IPPROTO_DIVERT:
-            s = "DIVERT";
-            break;
+    case IPPROTO_DIVERT:
+        s = "DIVERT";
+        break;
 #endif
 
-        default:
-            s = NULL;
+    default:
+        s = NULL;
     }
     if (s)
         snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%.*s", IPROTOL - 1, s);
@@ -1961,7 +1932,8 @@ printiproto(int proto)
         if (m > proto)
             snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%d?", proto);
         else
-            snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "*%d?", proto % (m / 10));
+            snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "*%d?",
+                 proto % (m / 10));
     }
 }
 #endif
@@ -1970,9 +1942,7 @@ printiproto(int proto)
  * printname() - print output name field
  */
 
-void
-printname(int newline)
-{
+void printname(int newline) {
 
 #if defined(HASNCACHE)
     char buf[MAXPATHLEN];
@@ -2002,9 +1972,9 @@ printname(int newline)
             print_status++;
         goto print_nma;
     }
-    if (((CurrentLocalFile->ntype == N_BLK) || (CurrentLocalFile->ntype == N_CHR))
-        && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
-        && printdevname(&CurrentLocalFile->dev, &CurrentLocalFile->rdev, 0, CurrentLocalFile->ntype)) {
+    if (((CurrentLocalFile->ntype == N_BLK) || (CurrentLocalFile->ntype == N_CHR)) &&
+        CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def &&
+        printdevname(&CurrentLocalFile->dev, &CurrentLocalFile->rdev, 0, CurrentLocalFile->ntype)) {
 
         /*
          * If this is a block or character device and it has a name, print it.
@@ -2065,75 +2035,75 @@ printname(int newline)
 
 #if defined(HASNCACHE)
 
-#if	HASNCACHE<2
+#if HASNCACHE < 2
         if (CurrentLocalFile->node_addr) {
-        if (NameCacheReload) {
+            if (NameCacheReload) {
 
-#  if	defined(NCACHELDPFX)
-            NCACHELDPFX
-#  endif	/* defined(NCACHELDPFX) */
+#if defined(NCACHELDPFX)
+                NCACHELDPFX
+#endif /* defined(NCACHELDPFX) */
 
-            ncache_load();
+                ncache_load();
 
-#  if	defined(NCACHELDSFX)
-            NCACHELDSFX
-#  endif	/* defined(NCACHELDSFX) */
+#if defined(NCACHELDSFX)
+                NCACHELDSFX
+#endif /* defined(NCACHELDSFX) */
 
-            NameCacheReload = 0;
-        }
-        if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
-            char *cp1;
+                NameCacheReload = 0;
+            }
+            if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
+                char *cp1;
 
-            if (*char_ptr == '\0')
-            goto print_nma;
-            if (full_path && CurrentLocalFile->fsdir) {
-            if (*char_ptr != '/') {
-                cp1 = strrchr(CurrentLocalFile->fsdir, '/');
-                if (cp1 == NULL ||  *(cp1 + 1) != '\0')
-                putchar('/');
-                }
-            } else
-            fputs(" -- ", stdout);
-            safestrprt(char_ptr, stdout, 0);
-            print_status++;
-            goto print_nma;
-        }
+                if (*char_ptr == '\0')
+                    goto print_nma;
+                if (full_path && CurrentLocalFile->fsdir) {
+                    if (*char_ptr != '/') {
+                        cp1 = strrchr(CurrentLocalFile->fsdir, '/');
+                        if (cp1 == NULL || *(cp1 + 1) != '\0')
+                            putchar('/');
+                    }
+                } else
+                    fputs(" -- ", stdout);
+                safestrprt(char_ptr, stdout, 0);
+                print_status++;
+                goto print_nma;
+            }
         }
 #else
         if (NameCacheReload) {
 
-#  if	defined(NCACHELDPFX)
+#if defined(NCACHELDPFX)
             NCACHELDPFX
-#  endif	/* defined(NCACHELDPFX) */
+#endif /* defined(NCACHELDPFX) */
 
-        ncache_load();
+            ncache_load();
 
-#  if	defined(NCACHELDSFX)
+#if defined(NCACHELDSFX)
             NCACHELDSFX
-#  endif	/* defined(NCACHELDSFX) */
+#endif /* defined(NCACHELDSFX) */
 
-        NameCacheReload = 0;
+            NameCacheReload = 0;
         }
         if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
-        if (full_path) {
-            safestrprt(char_ptr, stdout, 0);
-            print_status++;
-        } else {
-            if (CurrentLocalFile->fsdir) {
-            safestrprt(CurrentLocalFile->fsdir, stdout, 0);
-            print_status++;
+            if (full_path) {
+                safestrprt(char_ptr, stdout, 0);
+                print_status++;
+            } else {
+                if (CurrentLocalFile->fsdir) {
+                    safestrprt(CurrentLocalFile->fsdir, stdout, 0);
+                    print_status++;
+                }
+                if (*char_ptr) {
+                    fputs(" -- ", stdout);
+                    safestrprt(char_ptr, stdout, 0);
+                    print_status++;
+                }
             }
-            if (*char_ptr) {
-            fputs(" -- ", stdout);
-            safestrprt(char_ptr, stdout, 0);
-            print_status++;
-            }
-        }
-        goto print_nma;
+            goto print_nma;
         }
         if (CurrentLocalFile->fsdir) {
-        safestrprt(CurrentLocalFile->fsdir, stdout, 0);
-        print_status++;
+            safestrprt(CurrentLocalFile->fsdir, stdout, 0);
+            print_status++;
         }
 #endif
 #endif
@@ -2148,12 +2118,12 @@ printname(int newline)
             print_status++;
         }
     }
-/*
+    /*
  * Print the NAME column addition, if there is one.  If there isn't
  * make sure a NL is printed, as requested.
  */
 
-    print_nma:
+print_nma:
 
     if (CurrentLocalFile->name_append) {
         if (print_status)
@@ -2161,21 +2131,23 @@ printname(int newline)
         safestrprt(CurrentLocalFile->name_append, stdout, 0);
         print_status++;
     }
-/*
+    /*
  * If this file has TCP/IP state information, print it.
  */
-    if (!OptFieldOutput && OptTcpTpiInfo
-        && (CurrentLocalFile->lts.type >= 0
+    if (!OptFieldOutput && OptTcpTpiInfo &&
+        (CurrentLocalFile->lts.type >= 0
 
 #if defined(HASTCPTPIQ)
-                ||   ((OptTcpTpiInfo & TCPTPI_QUEUES) && (CurrentLocalFile->lts.recv_queue_st || CurrentLocalFile->lts.send_queue_st))
+         || ((OptTcpTpiInfo & TCPTPI_QUEUES) &&
+             (CurrentLocalFile->lts.recv_queue_st || CurrentLocalFile->lts.send_queue_st))
 #endif
 
 #if defined(HASTCPTPIW)
-                ||   ((OptTcpTpiInfo & TCPTPI_WINDOWS) && (CurrentLocalFile->lts.read_win_st || CurrentLocalFile->lts.write_win_st))
+         || ((OptTcpTpiInfo & TCPTPI_WINDOWS) &&
+             (CurrentLocalFile->lts.read_win_st || CurrentLocalFile->lts.write_win_st))
 #endif
 
-        )) {
+             )) {
         if (print_status)
             putchar(' ');
         print_tcptpi(0);
@@ -2188,76 +2160,64 @@ printname(int newline)
  * printrawaddr() - print raw socket address
  */
 
-void
-printrawaddr(struct sockaddr *sock_addr)
-{
+void printrawaddr(struct sockaddr *sock_addr) {
     char *ep;
     size_t sz;
 
     ep = endnm(&sz);
-    snpf(ep, sz, "%u/%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
-                sock_addr->sa_family,
-                (unsigned char) sock_addr->sa_data[0],
-                (unsigned char) sock_addr->sa_data[1],
-                (unsigned char) sock_addr->sa_data[2],
-                (unsigned char) sock_addr->sa_data[3],
-                (unsigned char) sock_addr->sa_data[4],
-                (unsigned char) sock_addr->sa_data[5],
-                (unsigned char) sock_addr->sa_data[6],
-                (unsigned char) sock_addr->sa_data[7],
-                (unsigned char) sock_addr->sa_data[8],
-                (unsigned char) sock_addr->sa_data[9],
-                (unsigned char) sock_addr->sa_data[10],
-                (unsigned char) sock_addr->sa_data[11],
-                (unsigned char) sock_addr->sa_data[12],
-                (unsigned char) sock_addr->sa_data[13]);
+    snpf(ep, sz, "%u/%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u", sock_addr->sa_family,
+         (unsigned char)sock_addr->sa_data[0], (unsigned char)sock_addr->sa_data[1],
+         (unsigned char)sock_addr->sa_data[2], (unsigned char)sock_addr->sa_data[3],
+         (unsigned char)sock_addr->sa_data[4], (unsigned char)sock_addr->sa_data[5],
+         (unsigned char)sock_addr->sa_data[6], (unsigned char)sock_addr->sa_data[7],
+         (unsigned char)sock_addr->sa_data[8], (unsigned char)sock_addr->sa_data[9],
+         (unsigned char)sock_addr->sa_data[10], (unsigned char)sock_addr->sa_data[11],
+         (unsigned char)sock_addr->sa_data[12], (unsigned char)sock_addr->sa_data[13]);
 }
 
 /*
  * printsockty() - print socket type
  */
 
-char *
-printsockty(int type)
-{
+char *printsockty(int type) {
     static char buf[64];
     char *char_ptr;
 
     switch (type) {
 
 #if defined(SOCK_STREAM)
-        case SOCK_STREAM:
-            char_ptr = "STREAM";
-            break;
+    case SOCK_STREAM:
+        char_ptr = "STREAM";
+        break;
 #endif
 
 #if defined(SOCK_STREAM)
-        case SOCK_DGRAM:
-            char_ptr = "DGRAM";
-            break;
+    case SOCK_DGRAM:
+        char_ptr = "DGRAM";
+        break;
 #endif
 
 #if defined(SOCK_RAW)
-        case SOCK_RAW:
-            char_ptr = "RAW";
-            break;
+    case SOCK_RAW:
+        char_ptr = "RAW";
+        break;
 #endif
 
 #if defined(SOCK_RDM)
-        case SOCK_RDM:
-            char_ptr = "RDM";
-            break;
+    case SOCK_RDM:
+        char_ptr = "RDM";
+        break;
 #endif
 
 #if defined(SOCK_SEQPACKET)
-        case SOCK_SEQPACKET:
-            char_ptr = "SEQPACKET";
-            break;
+    case SOCK_SEQPACKET:
+        char_ptr = "SEQPACKET";
+        break;
 #endif
 
-        default:
-            snpf(buf, sizeof(buf), "SOCK_%#x", type);
-            return (buf);
+    default:
+        snpf(buf, sizeof(buf), "SOCK_%#x", type);
+        return (buf);
     }
     snpf(buf, sizeof(buf), "SOCK_%s", char_ptr);
     return (buf);
@@ -2267,9 +2227,7 @@ printsockty(int type)
  * printuid() - print User ID or login name
  */
 
-char *
-printuid(UID_ARG uid, int *type)
-{
+char *printuid(UID_ARG uid, int *type) {
     int i;
     struct passwd *pw;
     struct stat sb;
@@ -2289,8 +2247,7 @@ printuid(UID_ARG uid, int *type)
              * Get the mtime and ctime of /etc/passwd, as required.
              */
             if (stat("/etc/passwd", &sb) != 0) {
-                fprintf(stderr, "%s: can't stat(/etc/passwd): %s\n",
-                               ProgramName, strerror(errno));
+                fprintf(stderr, "%s: can't stat(/etc/passwd): %s\n", ProgramName, strerror(errno));
                 Exit(1);
             }
         }
@@ -2298,11 +2255,9 @@ printuid(UID_ARG uid, int *type)
          * Define the UID cache, if necessary.
          */
         if (!uc) {
-            if (!(uc = (struct uidcache **) calloc(UIDCACHEL,
-                                                   sizeof(struct uidcache *)))) {
-                fprintf(stderr,
-                               "%s: no space for %d byte UID cache hash buckets\n",
-                               ProgramName, (int) (UIDCACHEL * (sizeof(struct uidcache *))));
+            if (!(uc = (struct uidcache **)calloc(UIDCACHEL, sizeof(struct uidcache *)))) {
+                fprintf(stderr, "%s: no space for %d byte UID cache hash buckets\n", ProgramName,
+                        (int)(UIDCACHEL * (sizeof(struct uidcache *))));
                 Exit(1);
             }
             if (CheckPasswdChange) {
@@ -2320,7 +2275,7 @@ printuid(UID_ARG uid, int *type)
                     if ((up = uc[i])) {
                         do {
                             upn = up->next;
-                            free((FREE_P *) up);
+                            free((FREE_P *)up);
                         } while ((up = upn) != NULL);
                         uc[i] = NULL;
                     }
@@ -2332,9 +2287,9 @@ printuid(UID_ARG uid, int *type)
         /*
          * Search the UID cache.
          */
-        i = (int) ((((unsigned long) uid * 31415L) >> 7) & (UIDCACHEL - 1));
+        i = (int)((((unsigned long)uid * 31415L) >> 7) & (UIDCACHEL - 1));
         for (up = uc[i]; up; up = up->next) {
-            if (up->uid == (uid_t) uid) {
+            if (up->uid == (uid_t)uid) {
                 if (type)
                     *type = 0;
                 return (up->nm);
@@ -2345,25 +2300,23 @@ printuid(UID_ARG uid, int *type)
          *
          * Look up the login name from the UID for a new cache entry.
          */
-        if (!(pw = getpwuid((uid_t) uid))) {
+        if (!(pw = getpwuid((uid_t)uid))) {
             if (!OptWarnings) {
-                fprintf(stderr, "%s: no pwd entry for UID %lu\n",
-                               ProgramName, (unsigned long) uid);
+                fprintf(stderr, "%s: no pwd entry for UID %lu\n", ProgramName, (unsigned long)uid);
             }
         } else {
 
             /*
              * Allocate and fill a new cache entry.  Link it to its hash bucket.
              */
-            if (!(upn = (struct uidcache *) malloc(sizeof(struct uidcache)))) {
-                fprintf(stderr,
-                               "%s: no space for UID cache entry for: %lu, %s)\n",
-                               ProgramName, (unsigned long) uid, pw->pw_name);
+            if (!(upn = (struct uidcache *)malloc(sizeof(struct uidcache)))) {
+                fprintf(stderr, "%s: no space for UID cache entry for: %lu, %s)\n", ProgramName,
+                        (unsigned long)uid, pw->pw_name);
                 Exit(1);
             }
             strncpy(upn->nm, pw->pw_name, LOGINML);
             upn->nm[LOGINML] = '\0';
-            upn->uid = (uid_t) uid;
+            upn->uid = (uid_t)uid;
             upn->next = uc[i];
             uc[i] = upn;
             if (type)
@@ -2371,10 +2324,10 @@ printuid(UID_ARG uid, int *type)
             return (upn->nm);
         }
     }
-/*
+    /*
  * Produce a numeric conversion of the UID.
  */
-    snpf(user, sizeof(user), "%*lu", USERPRTL, (unsigned long) uid);
+    snpf(user, sizeof(user), "%*lu", USERPRTL, (unsigned long)uid);
     if (type)
         *type = 1;
     return (user);
@@ -2384,375 +2337,369 @@ printuid(UID_ARG uid, int *type)
  * printunkaf() - print unknown address family
  */
 
-void
-printunkaf(int fam, int type)
-{
+void printunkaf(int fam, int type) {
     char *p, *s;
 
     p = "";
     switch (fam) {
 
 #if defined(AF_UNSPEC)
-        case AF_UNSPEC:
-            s = "UNSPEC";
-            break;
+    case AF_UNSPEC:
+        s = "UNSPEC";
+        break;
 #endif
 
 #if defined(AF_UNIX)
-        case AF_UNIX:
-            s = "UNIX";
-            break;
+    case AF_UNIX:
+        s = "UNIX";
+        break;
 #endif
 
 #if defined(AF_INET)
-        case AF_INET:
-            s = "INET";
-            break;
+    case AF_INET:
+        s = "INET";
+        break;
 #endif
 
 #if defined(AF_INET6)
-        case AF_INET6:
-            s = "INET6";
-            break;
+    case AF_INET6:
+        s = "INET6";
+        break;
 #endif
 
 #if defined(AF_IMPLINK)
-        case AF_IMPLINK:
-            s = "IMPLINK";
-            break;
+    case AF_IMPLINK:
+        s = "IMPLINK";
+        break;
 #endif
 
 #if defined(AF_PUP)
-        case AF_PUP:
-            s = "PUP";
-            break;
+    case AF_PUP:
+        s = "PUP";
+        break;
 #endif
 
 #if defined(AF_CHAOS)
-        case AF_CHAOS:
-            s = "CHAOS";
-            break;
+    case AF_CHAOS:
+        s = "CHAOS";
+        break;
 #endif
 
 #if defined(AF_NS)
-        case AF_NS:
-            s = "NS";
-            break;
+    case AF_NS:
+        s = "NS";
+        break;
 #endif
 
 #if defined(AF_ISO)
-        case AF_ISO:
-            s = "ISO";
-            break;
+    case AF_ISO:
+        s = "ISO";
+        break;
 #endif
 
 #if defined(AF_NBS)
-#if	!defined(AF_ISO) || AF_NBS!=AF_ISO
-        case AF_NBS:
-            s = "NBS";
-            break;
+#if !defined(AF_ISO) || AF_NBS != AF_ISO
+    case AF_NBS:
+        s = "NBS";
+        break;
 #endif
 #endif
 
 #if defined(AF_ECMA)
-        case AF_ECMA:
-            s = "ECMA";
-            break;
+    case AF_ECMA:
+        s = "ECMA";
+        break;
 #endif
 
 #if defined(AF_DATAKIT)
-        case AF_DATAKIT:
-            s = "DATAKIT";
-            break;
+    case AF_DATAKIT:
+        s = "DATAKIT";
+        break;
 #endif
 
 #if defined(AF_CCITT)
-        case AF_CCITT:
-            s = "CCITT";
-            break;
+    case AF_CCITT:
+        s = "CCITT";
+        break;
 #endif
 
 #if defined(AF_SNA)
-        case AF_SNA:
-            s = "SNA";
-            break;
+    case AF_SNA:
+        s = "SNA";
+        break;
 #endif
 
 #if defined(AF_DECnet)
-        case AF_DECnet:
-            s = "DECnet";
-            break;
+    case AF_DECnet:
+        s = "DECnet";
+        break;
 #endif
 
 #if defined(AF_DLI)
-        case AF_DLI:
-            s = "DLI";
-            break;
+    case AF_DLI:
+        s = "DLI";
+        break;
 #endif
 
 #if defined(AF_LAT)
-        case AF_LAT:
-            s = "LAT";
-            break;
+    case AF_LAT:
+        s = "LAT";
+        break;
 #endif
 
 #if defined(AF_HYLINK)
-        case AF_HYLINK:
-            s = "HYLINK";
-            break;
+    case AF_HYLINK:
+        s = "HYLINK";
+        break;
 #endif
 
 #if defined(AF_APPLETALK)
-        case AF_APPLETALK:
-            s = "APPLETALK";
-            break;
+    case AF_APPLETALK:
+        s = "APPLETALK";
+        break;
 #endif
 
 #if defined(AF_BSC)
-        case AF_BSC:
-            s = "BSC";
-            break;
+    case AF_BSC:
+        s = "BSC";
+        break;
 #endif
 
 #if defined(AF_DSS)
-        case AF_DSS:
-            s = "DSS";
-            break;
+    case AF_DSS:
+        s = "DSS";
+        break;
 #endif
 
 #if defined(AF_ROUTE)
-        case AF_ROUTE:
-            s = "ROUTE";
-            break;
+    case AF_ROUTE:
+        s = "ROUTE";
+        break;
 #endif
 
 #if defined(AF_RAW)
-        case AF_RAW:
-            s = "RAW";
-            break;
+    case AF_RAW:
+        s = "RAW";
+        break;
 #endif
 
 #if defined(AF_LINK)
-        case AF_LINK:
-            s = "LINK";
-            break;
+    case AF_LINK:
+        s = "LINK";
+        break;
 #endif
 
 #if defined(pseudo_AF_XTP)
-        case pseudo_AF_XTP:
-            p = "pseudo_";
-            s = "XTP";
-            break;
+    case pseudo_AF_XTP:
+        p = "pseudo_";
+        s = "XTP";
+        break;
 #endif
 
 #if defined(AF_RMP)
-        case AF_RMP:
-            s = "RMP";
-            break;
+    case AF_RMP:
+        s = "RMP";
+        break;
 #endif
 
 #if defined(AF_COIP)
-        case AF_COIP:
-            s = "COIP";
-            break;
+    case AF_COIP:
+        s = "COIP";
+        break;
 #endif
 
 #if defined(AF_CNT)
-        case AF_CNT:
-            s = "CNT";
-            break;
+    case AF_CNT:
+        s = "CNT";
+        break;
 #endif
 
 #if defined(pseudo_AF_RTIP)
-        case pseudo_AF_RTIP:
-            p = "pseudo_";
-            s = "RTIP";
-            break;
+    case pseudo_AF_RTIP:
+        p = "pseudo_";
+        s = "RTIP";
+        break;
 #endif
 
 #if defined(AF_NETMAN)
-        case AF_NETMAN:
-            s = "NETMAN";
-            break;
+    case AF_NETMAN:
+        s = "NETMAN";
+        break;
 #endif
 
 #if defined(AF_INTF)
-        case AF_INTF:
-            s = "INTF";
-            break;
+    case AF_INTF:
+        s = "INTF";
+        break;
 #endif
 
 #if defined(AF_NETWARE)
-        case AF_NETWARE:
-            s = "NETWARE";
-            break;
+    case AF_NETWARE:
+        s = "NETWARE";
+        break;
 #endif
 
 #if defined(AF_NDD)
-        case AF_NDD:
-            s = "NDD";
-            break;
+    case AF_NDD:
+        s = "NDD";
+        break;
 #endif
 
 #if defined(AF_NIT)
-#if	!defined(AF_ROUTE) || AF_ROUTE!=AF_NIT
-        case AF_NIT:
-            s = "NIT";
-            break;
+#if !defined(AF_ROUTE) || AF_ROUTE != AF_NIT
+    case AF_NIT:
+        s = "NIT";
+        break;
 #endif
 #endif
 
 #if defined(AF_802)
-#if	!defined(AF_RAW) || AF_RAW!=AF_802
-        case AF_802:
-            s = "802";
-            break;
+#if !defined(AF_RAW) || AF_RAW != AF_802
+    case AF_802:
+        s = "802";
+        break;
 #endif
 #endif
 
 #if defined(AF_X25)
-        case AF_X25:
-            s = "X25";
-            break;
+    case AF_X25:
+        s = "X25";
+        break;
 #endif
 
 #if defined(AF_CTF)
-        case AF_CTF:
-            s = "CTF";
-            break;
+    case AF_CTF:
+        s = "CTF";
+        break;
 #endif
 
 #if defined(AF_WAN)
-        case AF_WAN:
-            s = "WAN";
-            break;
+    case AF_WAN:
+        s = "WAN";
+        break;
 #endif
 
 #if defined(AF_OSINET)
-#if	defined(AF_INET) && AF_INET!=AF_OSINET
-        case AF_OSINET:
-            s = "OSINET";
-            break;
+#if defined(AF_INET) && AF_INET != AF_OSINET
+    case AF_OSINET:
+        s = "OSINET";
+        break;
 #endif
 #endif
 
 #if defined(AF_GOSIP)
-        case AF_GOSIP:
-            s = "GOSIP";
-            break;
+    case AF_GOSIP:
+        s = "GOSIP";
+        break;
 #endif
 
 #if defined(AF_SDL)
-        case AF_SDL:
-            s = "SDL";
-            break;
+    case AF_SDL:
+        s = "SDL";
+        break;
 #endif
 
 #if defined(AF_IPX)
-        case AF_IPX:
-            s = "IPX";
-            break;
+    case AF_IPX:
+        s = "IPX";
+        break;
 #endif
 
 #if defined(AF_SIP)
-        case AF_SIP:
-            s = "SIP";
-            break;
+    case AF_SIP:
+        s = "SIP";
+        break;
 #endif
 
 #if defined(psuedo_AF_PIP)
-        case psuedo_AF_PIP:
-            p = "pseudo_";
-            s = "PIP";
-            break;
+    case psuedo_AF_PIP:
+        p = "pseudo_";
+        s = "PIP";
+        break;
 #endif
 
 #if defined(AF_OTS)
-        case AF_OTS:
-            s = "OTS";
-            break;
+    case AF_OTS:
+        s = "OTS";
+        break;
 #endif
 
 #if defined(pseudo_AF_BLUE)
-        case pseudo_AF_BLUE:	/* packets for Blue box */
-            p = "pseudo_";
-            s = "BLUE";
-            break;
+    case pseudo_AF_BLUE: /* packets for Blue box */
+        p = "pseudo_";
+        s = "BLUE";
+        break;
 #endif
 
-#if defined(AF_NDRV)    /* network driver raw access */
-        case AF_NDRV:
-            s = "NDRV";
-            break;
+#if defined(AF_NDRV) /* network driver raw access */
+    case AF_NDRV:
+        s = "NDRV";
+        break;
 #endif
 
-#if defined(AF_SYSTEM)    /* kernel event messages */
-        case AF_SYSTEM:
-            s = "SYSTEM";
-            break;
+#if defined(AF_SYSTEM) /* kernel event messages */
+    case AF_SYSTEM:
+        s = "SYSTEM";
+        break;
 #endif
 
 #if defined(AF_USER)
-        case AF_USER:
-            s = "USER";
-            break;
+    case AF_USER:
+        s = "USER";
+        break;
 #endif
 
 #if defined(pseudo_AF_KEY)
-        case pseudo_AF_KEY:
-            p = "pseudo_";
-            s = "KEY";
-            break;
+    case pseudo_AF_KEY:
+        p = "pseudo_";
+        s = "KEY";
+        break;
 #endif
 
-#if defined(AF_KEY)        /* Security Association DB socket */
-        case AF_KEY:
-            s = "KEY";
-            break;
+#if defined(AF_KEY) /* Security Association DB socket */
+    case AF_KEY:
+        s = "KEY";
+        break;
 #endif
 
-#if defined(AF_NCA)        /* NCA socket */
-        case AF_NCA:
-            s = "NCA";
-            break;
+#if defined(AF_NCA) /* NCA socket */
+    case AF_NCA:
+        s = "NCA";
+        break;
 #endif
 
-#if defined(AF_POLICY)        /* Security Policy DB socket */
-        case AF_POLICY:
-            s = "POLICY";
-            break;
+#if defined(AF_POLICY) /* Security Policy DB socket */
+    case AF_POLICY:
+        s = "POLICY";
+        break;
 #endif
 
-#if defined(AF_PPP)        /* PPP socket */
-        case AF_PPP:
-            s = "PPP";
-            break;
+#if defined(AF_PPP) /* PPP socket */
+    case AF_PPP:
+        s = "PPP";
+        break;
 #endif
 
-        default:
-            if (!type)
-                snpf(NameChars, NameCharsLength, "%#x", fam);
-            else
-                snpf(NameChars, NameCharsLength,
-                            "no further information on family %#x", fam);
-            return;
+    default:
+        if (!type)
+            snpf(NameChars, NameCharsLength, "%#x", fam);
+        else
+            snpf(NameChars, NameCharsLength, "no further information on family %#x", fam);
+        return;
     }
     if (!type)
         snpf(NameChars, NameCharsLength, "%sAF_%s", p, s);
     else
-        snpf(NameChars, NameCharsLength, "no further information on %sAF_%s",
-                    p, s);
+        snpf(NameChars, NameCharsLength, "no further information on %sAF_%s", p, s);
     return;
 }
 
-#ifndef HASNORPC_H/*
+#ifndef HASNORPC_H /*
  * update_portmap() - update a portmap entry with its port number or service
  *		      name
  */
 
-static void
-update_portmap(struct porttab *port_entry, char *prog_name)
-{
+static void update_portmap(struct porttab *port_entry, char *prog_name) {
     MALLOC_S pn_len, name_len;
     char *char_ptr;
 
@@ -2763,14 +2710,13 @@ update_portmap(struct porttab *port_entry, char *prog_name)
         return;
     }
     name_len = pn_len + port_entry->nl + 2;
-    if (!(char_ptr = (char *) malloc(name_len + 1))) {
-        fprintf(stderr,
-                       "%s: can't allocate %d bytes for portmap name: %s[%s]\n",
-                       ProgramName, (int) (name_len + 1), prog_name, port_entry->name);
+    if (!(char_ptr = (char *)malloc(name_len + 1))) {
+        fprintf(stderr, "%s: can't allocate %d bytes for portmap name: %s[%s]\n", ProgramName,
+                (int)(name_len + 1), prog_name, port_entry->name);
         Exit(1);
     }
     snpf(char_ptr, name_len + 1, "%s[%s]", prog_name, port_entry->name);
-    free((FREE_P *) port_entry->name);
+    free((FREE_P *)port_entry->name);
     port_entry->name = char_ptr;
     port_entry->nl = name_len;
     port_entry->ss = 1;

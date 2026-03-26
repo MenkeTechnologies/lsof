@@ -4,7 +4,6 @@
  * dproto.h -- Darwin function prototypes for libproc-based lsof
  */
 
-
 /*
  * Portions Copyright 2005 Apple Computer, Inc.  All rights reserved.
  *
@@ -33,7 +32,6 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dproto.h,v 1.5 2006/03/27 23:23:13 abe Exp $
  */
@@ -61,4 +59,3 @@ extern void process_pshm(int pid, int32_t fd);
 extern void process_socket(int pid, int32_t fd);
 
 extern void process_vnode(int pid, int32_t fd);
-

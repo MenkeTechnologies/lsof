@@ -4,7 +4,6 @@
  * The _PROTOTYPE macro is defined in the common proto.h.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,47 +27,46 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dproto.h,v 1.14 2009/03/25 19:23:06 abe Exp $
  */
 
+#if FREEBSDV >= 5000 && defined(HAS_NO_SI_UDEV)
+#if defined(HAS_CONF_MINOR) || defined(HAS_CDEV2PRIV)
+_PROTOTYPE(extern dev_t Dev2Udev, (KA_T c));
+#else  /* !defined(HAS_CONF_MINOR) && !defined(HAS_CDEV2PRIV) */
+_PROTOTYPE(extern dev_t Dev2Udev, (struct cdev * c));
+#endif /* defined(HAS_CONF_MINOR) || defined(HAS_CDEV2PRIV) */
+#endif /* FREEBSDV>=5000 && defined(HAS_NO_SI_UDEV) */
 
-#if    FREEBSDV >= 5000 && defined(HAS_NO_SI_UDEV)
-# if	defined(HAS_CONF_MINOR)|| defined(HAS_CDEV2PRIV)
-_PROTOTYPE(extern dev_t Dev2Udev,(KA_T c));
-# else	/* !defined(HAS_CONF_MINOR) && !defined(HAS_CDEV2PRIV) */
-_PROTOTYPE(extern dev_t Dev2Udev,(struct cdev *c));
-# endif	/* defined(HAS_CONF_MINOR) || defined(HAS_CDEV2PRIV) */
-#endif    /* FREEBSDV>=5000 && defined(HAS_NO_SI_UDEV) */
+#if !defined(N_UNIX)
 
-#if    !defined(N_UNIX)
-
-_PROTOTYPE(extern char *get_nlist_path,(int ap)
-
-);
-#endif    /* !defined(N_UNIX) */
-
-_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+_PROTOTYPE(extern char *get_nlist_path, (int ap)
 
 );
+#endif /* !defined(N_UNIX) */
 
-_PROTOTYPE(extern void process_socket,(KA_T sa)
+_PROTOTYPE(extern int is_file_named, (char *p, int cd)
 
 );
 
-_PROTOTYPE(extern struct l_vfs *readvfs,(KA_T vm)
+_PROTOTYPE(extern void process_socket, (KA_T sa)
 
 );
 
-#if    defined(HASKQUEUE)
-_PROTOTYPE(extern void process_kqueue,(KA_T ka));
-#endif    /* defined(HASKQUEUE) */
+_PROTOTYPE(extern struct l_vfs *readvfs, (KA_T vm)
 
-#if    FREEBSDV >= 2020
-_PROTOTYPE(extern void process_pipe,(KA_T pa));
-#endif    /* FREEBSDV>=2020 */
+);
 
-#if    defined(HAS9660FS)
-_PROTOTYPE(extern int read_iso_node,(struct vnode *v, dev_t *d, int *dd, INODETYPE *ino, long *nl, SZOFFTYPE *sz));
-#endif    /* defined(HAS9660FS) */
+#if defined(HASKQUEUE)
+_PROTOTYPE(extern void process_kqueue, (KA_T ka));
+#endif /* defined(HASKQUEUE) */
+
+#if FREEBSDV >= 2020
+_PROTOTYPE(extern void process_pipe, (KA_T pa));
+#endif /* FREEBSDV>=2020 */
+
+#if defined(HAS9660FS)
+_PROTOTYPE(extern int read_iso_node,
+           (struct vnode * v, dev_t *d, int *dd, INODETYPE *ino, long *nl, SZOFFTYPE *sz));
+#endif /* defined(HAS9660FS) */

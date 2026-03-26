@@ -2,7 +2,6 @@
  * dfile.c - SCO OpenServer file processing functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,80 +27,67 @@
 
 #include "lsof.h"
 
-
 /*
  * get_max_fd() - get maximum file descriptor plus one
  */
 
-int
-get_max_fd() {
+int get_max_fd() {
 
-#if    defined(F_GETHFDO) || defined(_SC_OPEN_MAX)
+#if defined(F_GETHFDO) || defined(_SC_OPEN_MAX)
     int nd;
-#endif    /* defined(F_GETHFDO) || defined(_SC_OPEN_MAX) */
+#endif /* defined(F_GETHFDO) || defined(_SC_OPEN_MAX) */
 
-#if    defined(F_GETHFDO)
+#if defined(F_GETHFDO)
     if ((nd = fcntl(-1, F_GETHFDO, 0)) >= 0)
-        return(nd);
-#endif    /* defined(F_GETHFDO) */
+        return (nd);
+#endif /* defined(F_GETHFDO) */
 
-#if    defined(_SC_OPEN_MAX)
+#if defined(_SC_OPEN_MAX)
     if ((nd = sysconf(_SC_OPEN_MAX)) >= 0)
-        return(nd);
-#endif    /* defined(_SC_OPEN_MAX) */
+        return (nd);
+#endif /* defined(_SC_OPEN_MAX) */
 
     return (getdtablesize());
 }
-
 
 /*
  * print_dev() - print dev
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
 
-    (void) snpf(buf, sizeof(buf), "%d,%d",
-                lf->is_nfs ? ((~(*dev >> 8)) & 0xff) : emajor(*dev),
-                eminor(*dev));
+    (void)snpf(buf, sizeof(buf), "%d,%d", lf->is_nfs ? ((~(*dev >> 8)) & 0xff) : emajor(*dev),
+               eminor(*dev));
     return (buf);
 }
-
 
 /*
  * print_ino() - print inode
  */
 
-char *
-print_ino(struct lfile * lf)
-{
+char *print_ino(struct lfile *lf) {
     static char buf[128];
 
-    (void) snpf(buf, sizeof(buf), (lf->inode & 0x80000000) ? "%#x" : "%lu",
-                lf->inode);
+    (void)snpf(buf, sizeof(buf), (lf->inode & 0x80000000) ? "%#x" : "%lu", lf->inode);
     return (buf);
 }
-
 
 /*
  * process_file() - process file
  */
 
-void
-process_file(KA_T fp)
-{
+void process_file(KA_T fp) {
     struct file f;
     int flag;
 
-    if (kread(fp, (char *) &f, sizeof(f))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
-                    print_kptr(fp, (char *) NULL, 0));
+    if (kread(fp, (char *)&f, sizeof(f))) {
+        (void)snpf(NameChars, NameCharsLength, "can't read file struct from %s",
+                   print_kptr(fp, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
-    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE)f.f_offset;
 
     if (f.f_count) {
 
@@ -118,29 +104,29 @@ process_file(KA_T fp)
          * Process structure.
          */
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (OptFileStructValues & FSV_FILE_COUNT) {
+        if (OptFileStructValues & FSV_FILE_COUNT) {
             CurrentLocalFile->fct = (long)f.f_count;
             CurrentLocalFile->fsv |= FSV_FILE_COUNT;
-            }
-            if (OptFileStructValues & FSV_FILE_ADDR) {
+        }
+        if (OptFileStructValues & FSV_FILE_ADDR) {
             CurrentLocalFile->fsa = fp;
             CurrentLocalFile->fsv |= FSV_FILE_ADDR;
-            }
-            if (OptFileStructValues & FSV_FILE_FLAGS) {
+        }
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
             CurrentLocalFile->ffg = (long)f.f_flag;
             CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
-            }
-            if (OptFileStructValues & FSV_NODE_ID) {
+        }
+        if (OptFileStructValues & FSV_NODE_ID) {
             CurrentLocalFile->fna = (KA_T)f.f_inode;
             CurrentLocalFile->fsv |= FSV_NODE_ID;
-            }
-#endif    /* defined(HASFSTRUCT) */
+        }
+#endif /* defined(HASFSTRUCT) */
 
-        process_node((KA_T) f.f_inode);
+        process_node((KA_T)f.f_inode);
         return;
     }
     enter_nm("no more information");

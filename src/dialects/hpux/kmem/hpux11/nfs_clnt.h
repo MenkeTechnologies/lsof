@@ -8,22 +8,22 @@
  * February, 1998
  */
 
-#if    !defined(LSOF_NFS_CLNT_H)
-#define    LSOF_NFS_CLNT_H
+#if !defined(LSOF_NFS_CLNT_H)
+#define LSOF_NFS_CLNT_H
 
 #include "kernbits.h"
 #include "rnode.h"
 #include <rpc/types.h>
 
-#undef    TCP_NODELAY
-#undef    TCP_MAXSEG
+#undef TCP_NODELAY
+#undef TCP_MAXSEG
 
 #include <rpc/rpc.h>
 #include <rpc/clnt.h>
 #include <sys/xti.h>
 
-#undef    TCP_NODELAY
-#undef    TCP_MAXSEG
+#undef TCP_NODELAY
+#undef TCP_MAXSEG
 
 typedef struct kcondvar {
     uint32_t _dummy1[6];
@@ -73,7 +73,7 @@ typedef struct mntinfo {
     KA_T mi_acl_timer_type;
     char mi_fsmnt[512];
     uint64_t mi_maxfilesize;
-    dev_t mi_mntno;            /* mounted device number */
+    dev_t mi_mntno; /* mounted device number */
 } mntinfo_t;
 
-#endif    /* !defined(LSOF_NFS_CLNT_H) */
+#endif /* !defined(LSOF_NFS_CLNT_H) */

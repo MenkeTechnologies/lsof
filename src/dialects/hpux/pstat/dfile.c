@@ -2,7 +2,6 @@
  * dfile.c -- pstat-based HP-UX file functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,97 +27,90 @@
 
 #include "lsof.h"
 
-
-#if    defined(HASNCACHE)
+#if defined(HASNCACHE)
 /*
  * Local definitions
  */
 
-#define DNLCINCR	2048		/* DNLC read increment */
+#define DNLCINCR 2048 /* DNLC read increment */
 
-#define	NFSIDH		256		/* file system ID hash count
+#define NFSIDH \
+    256 /* file system ID hash count
                      * -- MUST BE A POWER OF TWO!!! */
-#define	NFSID		sizeof(struct psfsid)
-                    /* size of psfsid structure */
-#define	NL_NC		sizeof(struct l_nc)
-                    /* size of l_nc structure */
-#define	NPSTM		sizeof(struct pst_mpathnode)
-                    /* size of pst_mpathnode */
-
+#define NFSID sizeof(struct psfsid)
+/* size of psfsid structure */
+#define NL_NC sizeof(struct l_nc)
+/* size of l_nc structure */
+#define NPSTM sizeof(struct pst_mpathnode)
+/* size of pst_mpathnode */
 
 /*
  * Local structure definitions
  */
 
-struct l_nc {				/* local name cache */
-    struct psfileid id;		/* node's PSTAT ID */
-    struct psfileid par;		/* parent's PSTAT ID */
-    struct l_nc *pl;		/* local parent name cache entry --
+struct l_nc {            /* local name cache */
+    struct psfileid id;  /* node's PSTAT ID */
+    struct psfileid par; /* parent's PSTAT ID */
+    struct l_nc *pl;     /* local parent name cache entry --
 					 * NULL if not found or not yet
 					 * accessed (see pls) */
-    int pls;			/* status of pl: 0 = not accessed
+    int pls;             /* status of pl: 0 = not accessed
 					 *		 1 = accessed */
-    int nl;				/* name length */
-    char *nm;			/* name */
-    struct l_nc *next;		/* next hash bucket link */
+    int nl;              /* name length */
+    char *nm;            /* name */
+    struct l_nc *next;   /* next hash bucket link */
 };
 
-struct l_fic {				/* file system ID cache */
-    struct psfsid fsid;		/* file system ID */
-    int nc;				/* files cached for file system */
-    struct l_fic *next;		/* next hash bucket link */
+struct l_fic {          /* file system ID cache */
+    struct psfsid fsid; /* file system ID */
+    int nc;             /* files cached for file system */
+    struct l_fic *next; /* next hash bucket link */
 };
-
 
 /*
  * Local static variables
  */
 
-static int Nceh;			/* number of Nchash entries allocated */
+static int Nceh; /* number of Nchash entries allocated */
 static struct l_nc **Nchash = (struct l_nc **)NULL;
-                    /* the name cache hash buckets */
-static int Ncmask;			/* power of two mask for the name
+/* the name cache hash buckets */
+static int Ncmask; /* power of two mask for the name
 					 * cache -- sized from Nc */
-static int Ndnlc;			/* number of DNLC entries via
+static int Ndnlc;  /* number of DNLC entries via
 					 * pst_dynamic.psd_dnlc_size */
 static struct l_fic **Ncfsid = (struct l_fic **)NULL;
-                    /* the file system hash buckets */
-static struct pst_fid Nzpf;		/* zeroed pst_fid (for memcmp()) */
-static struct psfileid Nzps;		/* zeroed psfilid (for memcmp()) */
-static int Nzpfs = 0;			/* Nzpf status: 1 = zeroed */
-static int Nzpss = 0;			/* Nzps status: 1 = zeroed */
-
+/* the file system hash buckets */
+static struct pst_fid Nzpf;  /* zeroed pst_fid (for memcmp()) */
+static struct psfileid Nzps; /* zeroed psfilid (for memcmp()) */
+static int Nzpfs = 0;        /* Nzpf status: 1 = zeroed */
+static int Nzpss = 0;        /* Nzps status: 1 = zeroed */
 
 /*
  * Local macros
  */
 
-#define	HASHFSID(i)	(Ncfsid + \
-    (((int)(((((struct psfsid *)i)->psfs_id * 31415) << 3)&0xfffffff) \
-    + (int)((((((struct psfsid *)i)->psfs_type * 31415) << 5)&0xfffffff))) \
-    & (NFSIDH - 1)))
-#define	HASHPSFILEID(p)	(Nchash + \
-    (((int)(((int)((((struct psfileid *)p)->psf_fsid.psfs_id * 31415) << 3)\
-        & 0xfffffff) \
-    + (int)(((((struct psfileid *)p)->psf_fsid.psfs_type * 31415) << 5) \
-        & 0xfffffff) \
-    + (int)(((((struct psfileid *)p)->psf_fileid * 31415) << 7) \
-        & 0xfffffff))) \
-    & Ncmask))
-
+#define HASHFSID(i)                                                                      \
+    (Ncfsid + (((int)(((((struct psfsid *)i)->psfs_id * 31415) << 3) & 0xfffffff) +      \
+                (int)((((((struct psfsid *)i)->psfs_type * 31415) << 5) & 0xfffffff))) & \
+               (NFSIDH - 1)))
+#define HASHPSFILEID(p)                                                                       \
+    (Nchash +                                                                                 \
+     (((int)(((int)((((struct psfileid *)p)->psf_fsid.psfs_id * 31415) << 3) & 0xfffffff) +   \
+             (int)(((((struct psfileid *)p)->psf_fsid.psfs_type * 31415) << 5) & 0xfffffff) + \
+             (int)(((((struct psfileid *)p)->psf_fileid * 31415) << 7) & 0xfffffff))) &       \
+      Ncmask))
 
 /*
  * Local function prototypes
  */
 
-_PROTOTYPE(static struct l_nc *ncache_addr,(struct psfileid *ps));
-_PROTOTYPE(static void ncache_free,(void));
-_PROTOTYPE(static int ncache_isroot,(struct psfileid *ps));
-_PROTOTYPE(static void ncache_size,(void));
-#endif    /* defined(HASNCACHE) */
+_PROTOTYPE(static struct l_nc *ncache_addr, (struct psfileid * ps));
+_PROTOTYPE(static void ncache_free, (void));
+_PROTOTYPE(static int ncache_isroot, (struct psfileid * ps));
+_PROTOTYPE(static void ncache_size, (void));
+#endif /* defined(HASNCACHE) */
 
-
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
 /*
  * gethostbyname2() -- an RFC2133-compatible get-host-by-name-two function
  *                     to get AF_INET and AF_INET6 addresses from host names,
@@ -126,31 +118,27 @@ _PROTOTYPE(static void ncache_size,(void));
  *		       getipnodebyname() functions
  */
 
-extern struct hostent *
-gethostbyname2(char * nm, int prot)
-{
+extern struct hostent *gethostbyname2(char *nm, int prot) {
     int err;
 
     if (prot == AF_INET) {
 
-    /*
+        /*
      * This shouldn't be necessary if /etc/nsswitch.conf is correct, but
      * it's a good fail-safe in case /etc/nsswitch.conf is missing or
      * incorrect.
      */
-        return(gethostbyname(nm));
+        return (gethostbyname(nm));
     }
-    return(getipnodebyname(nm, prot, 0, &err));
+    return (getipnodebyname(nm, prot, 0, &err));
 }
-#endif    /* defined(HASIPv6) */
-
+#endif /* defined(HASIPv6) */
 
 /*
  * get_max_fd() -- get maximum file descriptor plus one
  */
 
-int
-get_max_fd() {
+int get_max_fd() {
     struct rlimit r;
 
     if (getrlimit(RLIMIT_NOFILE, &r))
@@ -158,131 +146,111 @@ get_max_fd() {
     return (r.rlim_cur);
 }
 
-
-#if    defined(HASNCACHE)
-
+#if defined(HASNCACHE)
 
 /*
  * ncache_addr() -- get ncache entry address
  */
 
-static struct l_nc *
-ncache_addr(struct psfileid * ps)
-{
+static struct l_nc *ncache_addr(struct psfileid *ps) {
     struct l_nc **hp, *lc;
 
     for (hp = HASHPSFILEID(ps), lc = *hp; lc; lc = lc->next) {
         if (!memcmp((void *)ps, (void *)&lc->id, sizeof(struct psfileid)))
-        return(lc);
+            return (lc);
     }
-    return((struct l_nc *)NULL);
+    return ((struct l_nc *)NULL);
 }
-
 
 /*
  * ncache_alloc() -- allocate name cache space
  */
 
-static void
-ncache_alloc()
-{
+static void ncache_alloc() {
     if (Nchash || Ncfsid)
         ncache_free();
-    (void) ncache_size();
-    if (!(Nchash = (struct l_nc **)calloc(Nceh, sizeof(struct l_nc *))))
-    {
-        (void) fprintf(stderr,
-        "%s: can't allocate %d local name cache entries\n", ProgramName, Nceh);
+    (void)ncache_size();
+    if (!(Nchash = (struct l_nc **)calloc(Nceh, sizeof(struct l_nc *)))) {
+        (void)fprintf(stderr, "%s: can't allocate %d local name cache entries\n", ProgramName,
+                      Nceh);
         Exit(1);
     }
     if (Ncfsid)
         return;
-    if (!(Ncfsid = (struct l_fic **)calloc(NFSIDH, sizeof(struct l_fic *))))
-    {
-        (void) fprintf(stderr,
-        "%s: can't allocate %d local file system cache entries\n",
-        ProgramName, NFSIDH);
+    if (!(Ncfsid = (struct l_fic **)calloc(NFSIDH, sizeof(struct l_fic *)))) {
+        (void)fprintf(stderr, "%s: can't allocate %d local file system cache entries\n",
+                      ProgramName, NFSIDH);
         Exit(1);
     }
 }
-
 
 /*
  * ncache_free() -- free previous ncache allocations
  */
 
-static void
-ncache_free()
-{
+static void ncache_free() {
     int i;
     struct l_fic **fh, *fp, *fx;
     struct l_nc **nh, *np, *nx;
 
     if (Ncfsid) {
 
-    /*
+        /*
      * Free file system ID hash bucket contents.
      */
         for (fh = Ncfsid, i = 0; i < NFSIDH; fh++, i++) {
-        for (fp = *fh; fp; fp = fx) {
-            fx = fp->next;
-            (void) free((MALLOC_P *)fp);
-        }
-        Ncfsid[i] = (struct l_fic *)NULL;
+            for (fp = *fh; fp; fp = fx) {
+                fx = fp->next;
+                (void)free((MALLOC_P *)fp);
+            }
+            Ncfsid[i] = (struct l_fic *)NULL;
         }
     }
     if (Nchash) {
 
-    /*
+        /*
      * Free name cache.
      */
         for (i = 0, nh = Nchash; i < Nceh; i++, nh++) {
-        for (np = *nh; np; np = nx) {
-            nx = np->next;
-            if (np->nm)
-            (void) free((MALLOC_P *)np->nm);
-            (void) free((MALLOC_P *)np);
+            for (np = *nh; np; np = nx) {
+                nx = np->next;
+                if (np->nm)
+                    (void)free((MALLOC_P *)np->nm);
+                (void)free((MALLOC_P *)np);
+            }
         }
-        }
-        (void) free((MALLOC_P *)Nchash);
+        (void)free((MALLOC_P *)Nchash);
         Nchash = (struct l_nc **)NULL;
     }
 }
-
 
 /*
  * ncache_isroot() -- does psfileid represent the root of a file system?
  */
 
-static int
-ncache_isroot(struct psfileid * ps)
-{
-    if (!ps->psf_fsid.psfs_id && !ps->psf_fsid.psfs_type
-    &&  ps->psf_fileid == -1)
-        return(1);
+static int ncache_isroot(struct psfileid *ps) {
+    if (!ps->psf_fsid.psfs_id && !ps->psf_fsid.psfs_type && ps->psf_fileid == -1)
+        return (1);
 
-# if	defined(HASFSINO)
+#if defined(HASFSINO)
     if (!CurrentLocalFile->fs_ino || (CurrentLocalFile->inp_ty != 1) || !CurrentLocalFile->dev_def)
-        return(0);
-    if ((CurrentLocalFile->dev == (dev_t)ps->psf_fsid.psfs_id)
-    &&  (CurrentLocalFile->fs_ino == (unsigned long)ps->psf_fileid))
-        return(1);
-# endif	/* defined(HASFSINO) */
+        return (0);
+    if ((CurrentLocalFile->dev == (dev_t)ps->psf_fsid.psfs_id) &&
+        (CurrentLocalFile->fs_ino == (unsigned long)ps->psf_fileid))
+        return (1);
+#endif /* defined(HASFSINO) */
 
-    return(0);
+    return (0);
 }
-
 
 /*
  * ncache_load() -- load name cache
  */
 
-void
-ncache_load()
-{
+void ncache_load() {
     if (!OptNameCache)
         return;
-    (void) ncache_alloc();
+    (void)ncache_alloc();
     if (!Nzpfs) {
         (void)memset((void *)&Nzpf, 0, sizeof(Nzpf));
         Nzpfs = 1;
@@ -293,121 +261,109 @@ ncache_load()
     }
 }
 
-
 /*
  * ncache_loadfs() -- load the name cache for a file system
  */
 
-struct l_fic *
-ncache_loadfs(struct psfsid * fsid, struct l_fic ** fh)
-{
+struct l_fic *ncache_loadfs(struct psfsid *fsid, struct l_fic **fh) {
     char *cp;
     struct l_fic *f;
     int i, nl, nr;
     struct pst_mpathnode mp[DNLCINCR];
     struct l_nc **nh, *nn, *nt, *ntp;
     int x = 0;
-/*
+    /*
  * Allocate a new file system pointer structure and link it to its bucket.
  */
     if (!(f = (struct l_fic *)malloc(sizeof(struct l_fic)))) {
-        (void) fprintf(stderr, "%s: no fsid structure space\n", ProgramName);
+        (void)fprintf(stderr, "%s: no fsid structure space\n", ProgramName);
         Exit(1);
     }
     f->fsid = *fsid;
     f->nc = 0;
     f->next = *fh;
     *fh = f;
-    while ((nr = pstat_getmpathname(&mp[0], NPSTM, DNLCINCR, x, fsid)) > 0)
-    {
+    while ((nr = pstat_getmpathname(&mp[0], NPSTM, DNLCINCR, x, fsid)) > 0) {
         x = mp[nr - 1].psr_idx + 1;
         for (i = 0; i < nr; i++) {
 
-        /*
+            /*
          * Ignore NUL names, ".", and "..".
          */
-        if (!(nl = (int)strlen(mp[i].psr_name)))
-            continue;
-        if ((nl < 3) && (mp[i].psr_name[0] == '.')) {
-            if ((nl == 1) || (mp[i].psr_name[1] == '.'))
-            continue;
-        }
-        /*
+            if (!(nl = (int)strlen(mp[i].psr_name)))
+                continue;
+            if ((nl < 3) && (mp[i].psr_name[0] == '.')) {
+                if ((nl == 1) || (mp[i].psr_name[1] == '.'))
+                    continue;
+            }
+            /*
          * Allocate name and name cache structure space.
          */
-        if (!(cp = (char *)malloc((MALLOC_S)(nl + 1)))) {
-            (void) fprintf(stderr,
-            "%s: no name entry space (%d) for:%s\n",
-            ProgramName, nl + 1, mp[i].psr_name);
-            Exit(1);
-        }
-        if (!(nn = (struct l_nc *)malloc(sizeof(struct l_nc)))) {
-            (void) fprintf(stderr,
-            "%s: no name cache entry space (%d) for: %s\n",
-            ProgramName, (int)sizeof(struct l_nc), mp[i].psr_name);
-            Exit(1);
-        }
-        /*
+            if (!(cp = (char *)malloc((MALLOC_S)(nl + 1)))) {
+                (void)fprintf(stderr, "%s: no name entry space (%d) for:%s\n", ProgramName, nl + 1,
+                              mp[i].psr_name);
+                Exit(1);
+            }
+            if (!(nn = (struct l_nc *)malloc(sizeof(struct l_nc)))) {
+                (void)fprintf(stderr, "%s: no name cache entry space (%d) for: %s\n", ProgramName,
+                              (int)sizeof(struct l_nc), mp[i].psr_name);
+                Exit(1);
+            }
+            /*
          * Fill in name cache entry, complete with name and name length.
          */
-        (void) snpf(cp, nl + 1, "%s", mp[i].psr_name);
-        nn->id = mp[i].psr_file;
-        nn->par = mp[i].psr_parent;
-        nn->nm = cp;
-        nn->nl = nl;
-        nn->pl = nn->next = (struct l_nc *)NULL;
-        nn->pls = 0;
-        nh = HASHPSFILEID(&mp[i].psr_file);
-        /*
+            (void)snpf(cp, nl + 1, "%s", mp[i].psr_name);
+            nn->id = mp[i].psr_file;
+            nn->par = mp[i].psr_parent;
+            nn->nm = cp;
+            nn->nl = nl;
+            nn->pl = nn->next = (struct l_nc *)NULL;
+            nn->pls = 0;
+            nh = HASHPSFILEID(&mp[i].psr_file);
+            /*
          * Skip to the end of the hash bucket chain, looking for
          * duplicates along the way.
          */
-        for (nt = *nh, ntp = (struct l_nc *)NULL;
-             nt;
-             ntp = nt, nt = nt->next)
-        {
-            if (memcmp((void *)&nt->id, (void *)&nn->id, NL_NC) == 0)
-            break;
-        }
-        if (nt) {
+            for (nt = *nh, ntp = (struct l_nc *)NULL; nt; ntp = nt, nt = nt->next) {
+                if (memcmp((void *)&nt->id, (void *)&nn->id, NL_NC) == 0)
+                    break;
+            }
+            if (nt) {
 
-        /*
+                /*
          * Remove a duplicate.
          */
-            if (ntp)
-            ntp = nt->next;
-            else
-            *nh = nt->next;
-            (void) free((MALLOC_P *)nt->nm);
-            (void) free((MALLOC_P *)nt);
-            (void) free((MALLOC_P *)nn->nm);
-            (void) free((MALLOC_P *)nn);
-        } else {
+                if (ntp)
+                    ntp = nt->next;
+                else
+                    *nh = nt->next;
+                (void)free((MALLOC_P *)nt->nm);
+                (void)free((MALLOC_P *)nt);
+                (void)free((MALLOC_P *)nn->nm);
+                (void)free((MALLOC_P *)nn);
+            } else {
 
-        /*
+                /*
          * Link a new entry.
          */
-            if (ntp)
-            ntp->next = nn;
-            else
-            *nh = nn;
-            f->nc++;
-        }
+                if (ntp)
+                    ntp->next = nn;
+                else
+                    *nh = nn;
+                f->nc++;
+            }
         }
         if (nr < DNLCINCR)
-        break;
+            break;
     }
-    return(f);
+    return (f);
 }
-
 
 /*
  * ncache_lookup() -- look up a node's name in the kernel's name cache
  */
 
-char *
-ncache_lookup(char * buf, int blen, int * fp)
-{
+char *ncache_lookup(char *buf, int blen, int *fp) {
     char *cp = buf;
     int ef;
     struct l_fic **fh, *fs;
@@ -418,51 +374,48 @@ ncache_lookup(char * buf, int blen, int * fp)
     *cp = '\0';
     *fp = 0;
 
-# if	defined(HASFSINO)
-/*
+#if defined(HASFSINO)
+    /*
  * If the entry has an inode number that matches the inode number of the
  * file system mount point, return an empty path reply.  That tells the
  * caller that the already-printed system mount point name is sufficient.
  */
-    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino && CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
-        return(cp);
-# endif	/* defined(HASFSINO) */
+    if (CurrentLocalFile->inp_ty == 1 && CurrentLocalFile->fs_ino &&
+        CurrentLocalFile->inode == CurrentLocalFile->fs_ino)
+        return (cp);
+#endif /* defined(HASFSINO) */
 
-/*
+    /*
  * See if cache has been loaded for this pfsid.  Don't try to load if cache
  * loading has been inhibited with -C, or unless the real or effective UID of
  * this process is root.
  */
     if ((!MyRealUid || SetuidRootState) && OptNameCache) {
-        for (fh = HASHFSID(&CurrentLocalFile->psfid.psf_fsid), fs = *fh;
-         fs;
-         fs = fs->next)
-        {
-        if (memcmp((void *)&fs->fsid, (void *)&CurrentLocalFile->psfid.psf_fsid,
-                NFSID)
-        == 0)
-            break;
+        for (fh = HASHFSID(&CurrentLocalFile->psfid.psf_fsid), fs = *fh; fs; fs = fs->next) {
+            if (memcmp((void *)&fs->fsid, (void *)&CurrentLocalFile->psfid.psf_fsid, NFSID) == 0)
+                break;
         }
         if (!fs)
-        fs = ncache_loadfs(&CurrentLocalFile->psfid.psf_fsid, fh);
+            fs = ncache_loadfs(&CurrentLocalFile->psfid.psf_fsid, fh);
     } else
         fs = (struct l_fic *)NULL;
-/*
+    /*
  * Search the cache for an entry whose psfileid matches.
  */
     if (!fs || !fs->nc || !(lc = ncache_addr(&CurrentLocalFile->psfid))) {
 
-    /*
+        /*
      * If the node has no cache entry, see if it's the root of the file
      * system.
      */
 
-# if	defined(HASFSINO)
-        if (CurrentLocalFile->fs_ino && (CurrentLocalFile->inp_ty == 1) && (CurrentLocalFile->fs_ino == CurrentLocalFile->inode))
-        return(cp);
-# endif	/* defined(HASFSINO) */
+#if defined(HASFSINO)
+        if (CurrentLocalFile->fs_ino && (CurrentLocalFile->inp_ty == 1) &&
+            (CurrentLocalFile->fs_ino == CurrentLocalFile->inode))
+            return (cp);
+#endif /* defined(HASFSINO) */
 
-    /*
+        /*
      * If the file system's cache couldn't be loaded -- e.g., this lsof
      * process lacks permission to load it or cache lookup is inhibited
      * with -C -- but the UID of the file's process matches the UID of the
@@ -470,36 +423,34 @@ ncache_lookup(char * buf, int blen, int * fp)
      * this particular file.  (The file must have a non-zero opaque ID.)
      */
         if (!fs) {
-        if (OptNameCache
-        &&  (MyRealUid == CurrentLocalProc->uid)
-        &&  memcmp((void *)&CurrentLocalFile->opfid, (void *)&Nzpf, sizeof(Nzpf))
-        &&  (nl = pstat_getpathname(buf, (blen - 1), &CurrentLocalFile->opfid)) > 0)
-        {
-            buf[nl] = '\0';
-            if (*buf == '/')
-            *fp = 1;
-            return(buf);
+            if (OptNameCache && (MyRealUid == CurrentLocalProc->uid) &&
+                memcmp((void *)&CurrentLocalFile->opfid, (void *)&Nzpf, sizeof(Nzpf)) &&
+                (nl = pstat_getpathname(buf, (blen - 1), &CurrentLocalFile->opfid)) > 0) {
+                buf[nl] = '\0';
+                if (*buf == '/')
+                    *fp = 1;
+                return (buf);
+            }
         }
-        }
-        return((char *)NULL);
+        return ((char *)NULL);
     }
     if (ncache_isroot(&lc->id)) {
 
-    /*
+        /*
      * If the node is the root of the file system, return a response
      * that will cause the root directory to be displayed.
      */
-        return(cp);
+        return (cp);
     }
-/*
+    /*
  * Start the path assembly.
  */
     if ((nl = lc->nl) > (blen - 1))
-        return((char *)NULL);
+        return ((char *)NULL);
     cp = buf + blen - nl - 1;
     rlen = blen - nl - 1;
-    (void) snpf(cp, nl + 1, "%s", lc->nm);
-/*
+    (void)snpf(cp, nl + 1, "%s", lc->nm);
+    /*
  * Look up the name cache entries that are parents of the node address.
  * Quit when:
  *
@@ -509,84 +460,81 @@ ncache_lookup(char * buf, int blen, int * fp)
  */
     for (ef = 0; !ef;) {
         if (!lc->pl) {
-        if (!lc->pls) {
+            if (!lc->pls) {
 
-        /*
+                /*
          * If there is a parent, look up its Ncache address;
          * otherwise quit on an incomplete path assembly.
          */
-            if (memcmp((void *)&lc->par, (void *)&Nzps, sizeof(Nzps))) {
-            lc->pl = ncache_addr(&lc->par);
-            lc->pls = 1;
-            } else
-            break;
-        }
+                if (memcmp((void *)&lc->par, (void *)&Nzps, sizeof(Nzps))) {
+                    lc->pl = ncache_addr(&lc->par);
+                    lc->pls = 1;
+                } else
+                    break;
+            }
         }
         if (ncache_isroot(&lc->par)) {
 
-        /*
+            /*
          * If the parent entry is the file system root, enter the file
          * system root directory, and indicate that the assembly should
          * stop after this entry.
          */
-        if (!(pc = CurrentLocalFile->fsdir))
-            break;
-        nl = (int)strlen(pc);
-        ef = 1;
+            if (!(pc = CurrentLocalFile->fsdir))
+                break;
+            nl = (int)strlen(pc);
+            ef = 1;
         } else {
 
-        /*
+            /*
          * Use the parent link if it exists; otherwise exit on an
          * incomplete path assembly.
          */
             if (!(lc = lc->pl))
-            break;
-        pc = lc->nm;
-        nl = lc->nl;
+                break;
+            pc = lc->nm;
+            nl = lc->nl;
         }
-    /*
+        /*
      * Prefix the next path component.  Intersperse a '/' if the
      * component doesn't end in one.
      */
         if (!nl)
-        break;
-        if (pc[nl - 1] != '/') {
-        if (1 > rlen)
             break;
-        *(cp - 1) = '/';
-        cp--;
-        rlen--;
+        if (pc[nl - 1] != '/') {
+            if (1 > rlen)
+                break;
+            *(cp - 1) = '/';
+            cp--;
+            rlen--;
         }
         if (nl > rlen)
-        break;
-        (void) strncpy((cp - nl), pc, nl);
+            break;
+        (void)strncpy((cp - nl), pc, nl);
         cp -= nl;
         rlen -= nl;
         if (ef) {
 
-        /*
+            /*
          * If the file system root directory was just prefixed, return
          * a full-path indication.
          */
-        *fp = 1;
-        break;
+            *fp = 1;
+            break;
         }
     }
-    return(cp);
+    return (cp);
 }
-
 
 /*
  * ncache_size() -- get DNLC size
  */
 
-static void
-ncache_size()
-{
+static void ncache_size() {
     struct pst_dynamic pd;
 
     if (pstat_getdynamic(&pd, sizeof(pd), 1, 0) != 1) {
-        (void) fprintf(stderr, "%s: can't get dynamic status\n", ProgramName);
+        (void)fprintf(stderr, "%s: can't get dynamic status\n", ProgramName);
         Exit(1);
     }
     Ndnlc = (int)pd.psd_dnlc_size;
@@ -594,53 +542,47 @@ ncache_size()
         ;
     Ncmask = Nceh - 1;
 }
-#endif    /* defined(HASNCACHE) */
-
+#endif /* defined(HASNCACHE) */
 
 /*
  * print_dev() -- print device
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
 
-    (void) snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev),
-                GET_MIN_DEV(*dev));
+    (void)snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev), GET_MIN_DEV(*dev));
     return (buf);
 }
-
 
 /*
  * process_finfo() -- process file information
  */
 
-void
-process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfileid * psfid, KA_T na)
-{
+void process_finfo(struct pst_filedetails *pd, struct pst_fid *opfid, struct psfileid *psfid,
+                   KA_T na) {
     char *cp, buf[32];
     dev_t dev;
     int devs = 0;
     int32_t lk;
     struct mounts *mp;
-/*
+    /*
  * Save file IDs for later use in name lookup.
  */
     CurrentLocalFile->opfid = *opfid;
     CurrentLocalFile->psfid = *psfid;
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     /*
      * Save node ID.
      */
-        if (na && (OptFileStructValues & FSV_NODE_ID)) {
-            CurrentLocalFile->fna = na;
-            CurrentLocalFile->fsv |= FSV_NODE_ID;
-        }
-#endif    /* defined(HASFSTRUCT) */
+    if (na && (OptFileStructValues & FSV_NODE_ID)) {
+        CurrentLocalFile->fna = na;
+        CurrentLocalFile->fsv |= FSV_NODE_ID;
+    }
+#endif /* defined(HASFSTRUCT) */
 
-/*
+    /*
  * Construct lock code.
  */
     if ((lk = pd->psfd_lckflag) & PS_FPARTRDLCK)
@@ -653,60 +595,60 @@ process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfile
         CurrentLocalFile->lock = 'W';
     else
         CurrentLocalFile->lock = ' ';
-/*
+    /*
  * Derive type from modes.
  */
-    switch ((int) (pd->psfd_mode & PS_IFMT)) {
-        case PS_IFREG:
-            cp = "REG";
-            NodeType = N_REGLR;
-            break;
-        case PS_IFBLK:
-            cp = "BLK";
-            NodeType = N_BLK;
-            break;
-        case PS_IFDIR:
-            cp = "DIR";
-            NodeType = N_REGLR;
-            break;
-        case PS_IFCHR:
-            cp = "CHR";
-            NodeType = N_CHR;
-            break;
-        case PS_IFIFO:
-            cp = "FIFO";
-            NodeType = N_FIFO;
-            break;
-        default:
-            (void) snpf(buf, sizeof(buf), "%04o",
-                        (unsigned int) (((pd->psfd_mode & PS_IFMT) >> 12) & 0xfff));
-            cp = buf;
-            NodeType = N_REGLR;
+    switch ((int)(pd->psfd_mode & PS_IFMT)) {
+    case PS_IFREG:
+        cp = "REG";
+        NodeType = N_REGLR;
+        break;
+    case PS_IFBLK:
+        cp = "BLK";
+        NodeType = N_BLK;
+        break;
+    case PS_IFDIR:
+        cp = "DIR";
+        NodeType = N_REGLR;
+        break;
+    case PS_IFCHR:
+        cp = "CHR";
+        NodeType = N_CHR;
+        break;
+    case PS_IFIFO:
+        cp = "FIFO";
+        NodeType = N_FIFO;
+        break;
+    default:
+        (void)snpf(buf, sizeof(buf), "%04o",
+                   (unsigned int)(((pd->psfd_mode & PS_IFMT) >> 12) & 0xfff));
+        cp = buf;
+        NodeType = N_REGLR;
     }
     if (!CurrentLocalFile->type[0])
-        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", cp);
+        (void)snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", cp);
     CurrentLocalFile->ntype = NodeType;
-/*
+    /*
  * Save device number.
  */
     switch (NodeType) {
-        case N_FIFO:
-            (void) enter_dev_ch(print_kptr(na, (char *) NULL, 0));
-            break;
-        default:
-            dev = CurrentLocalFile->dev = (dev_t) pd->psfd_dev;
-            devs = CurrentLocalFile->dev_def = 1;
-            if ((NodeType == N_CHR) || (NodeType == N_BLK)) {
-                CurrentLocalFile->rdev = (dev_t) pd->psfd_rdev;
-                CurrentLocalFile->rdev_def = 1;
-            }
+    case N_FIFO:
+        (void)enter_dev_ch(print_kptr(na, (char *)NULL, 0));
+        break;
+    default:
+        dev = CurrentLocalFile->dev = (dev_t)pd->psfd_dev;
+        devs = CurrentLocalFile->dev_def = 1;
+        if ((NodeType == N_CHR) || (NodeType == N_BLK)) {
+            CurrentLocalFile->rdev = (dev_t)pd->psfd_rdev;
+            CurrentLocalFile->rdev_def = 1;
+        }
     }
-/*
+    /*
  * Save node number.
  */
-    CurrentLocalFile->inode = (INODETYPE) pd->psfd_ino;
+    CurrentLocalFile->inode = (INODETYPE)pd->psfd_ino;
     CurrentLocalFile->inp_ty = 1;
-/*
+    /*
  * Save link count.
  */
     if (OptLinkCount) {
@@ -714,12 +656,13 @@ process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfile
         /*
          * Ignore a zero link count only if the file is a FIFO.
          */
-        if ((CurrentLocalFile->nlink = (long) pd->psfd_nlink) || (NodeType != N_FIFO))
+        if ((CurrentLocalFile->nlink = (long)pd->psfd_nlink) || (NodeType != N_FIFO))
             CurrentLocalFile->nlink_def = 1;
-        if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
+        if (CurrentLocalFile->nlink_def && LinkCountThreshold &&
+            (CurrentLocalFile->nlink < LinkCountThreshold))
             CurrentLocalFile->sel_flags |= SELNLINK;
     }
-/*
+    /*
  * Save file system identity.
  */
     if (devs) {
@@ -728,16 +671,16 @@ process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfile
                 CurrentLocalFile->fsdir = mp->dir;
                 CurrentLocalFile->fsdev = mp->fsname;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
                 CurrentLocalFile->fs_ino = (unsigned long)mp->inode;
-#endif    /* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
                 break;
             }
         }
     } else
-        mp = (struct mounts *) NULL;
-/*
+        mp = (struct mounts *)NULL;
+    /*
  * If no offset has been activated and no size saved, activate the offset or
  * save the size.
  */
@@ -746,33 +689,32 @@ process_finfo(struct pst_filedetails * pd, struct pst_fid * opfid, struct psfile
             CurrentLocalFile->off_def = 1;
         else {
             switch (NodeType) {
-                case N_CHR:
-                case N_FIFO:
-                    CurrentLocalFile->off_def = 1;
-                    break;
-                default:
-                    CurrentLocalFile->sz = (SZOFFTYPE) pd->psfd_size;
-                    CurrentLocalFile->sz_def = 1;
+            case N_CHR:
+            case N_FIFO:
+                CurrentLocalFile->off_def = 1;
+                break;
+            default:
+                CurrentLocalFile->sz = (SZOFFTYPE)pd->psfd_size;
+                CurrentLocalFile->sz_def = 1;
             }
         }
     }
-/*
+    /*
  * See if this is an NFS file.
  */
     if (OptNfs) {
         if (HasNFS < 0)
-            (void) scanmnttab();
+            (void)scanmnttab();
         if (HasNFS && mp && mp->is_nfs)
             CurrentLocalFile->sel_flags |= SELNFS;
     }
-/*
+    /*
  * Test for specified file.
  */
-    if (SearchFileChain && is_file_named(NULL,
-                               ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1
-                                                                     : 0)))
+    if (SearchFileChain &&
+        is_file_named(NULL, ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1 : 0)))
         CurrentLocalFile->sel_flags |= SELNM;
-/*
+    /*
  * Enter name characters.
  */
     if (!CurrentLocalFile->name && NameChars[0])

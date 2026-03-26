@@ -2,7 +2,6 @@
  * dnode.c - /dev/kmem-based HP-UX node functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,41 +25,33 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
+#if defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _INO_T
 typedef int ino_t;
 #define _TIME_T
 typedef int time_t;
-#endif    /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
+#endif /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
 
 #include "lsof.h"
 #include <sys/inode.h>
 
-#if    HPUXV >= 900
-_PROTOTYPE(static void enter_nma,(char *b));
-_PROTOTYPE(static int islocked,(KA_T lp));
-#endif    /* HPUXV>=900 */
+#if HPUXV >= 900
+_PROTOTYPE(static void enter_nma, (char *b));
+_PROTOTYPE(static int islocked, (KA_T lp));
+#endif /* HPUXV>=900 */
 
-_PROTOTYPE(static int getnodety, (struct vnode *v));
+_PROTOTYPE(static int getnodety, (struct vnode * v));
 
-_PROTOTYPE(static int readinode, (KA_T
-        ia,
-        struct inode *i));
+_PROTOTYPE(static int readinode, (KA_T ia, struct inode *i));
 
-_PROTOTYPE(static int read_nmn, (KA_T
-        na, KA_T
-        ia,
-        struct mvfsnode *m));
+_PROTOTYPE(static int read_nmn, (KA_T na, KA_T ia, struct mvfsnode *m));
 
-
-#if    HPUXV >= 900
+#if HPUXV >= 900
 /*
  * enter_nma() - enter NAME column addition
  */
 
-static void
-enter_nma(char * b)
-{
+static void enter_nma(char *b) {
     if (CurrentLocalFile->name_append)
         return;
     if (strlen(b) < 1)
@@ -68,14 +59,11 @@ enter_nma(char * b)
     CurrentLocalFile->name_append = mkstrcpy(b, (MALLOC_S *)NULL);
 }
 
-
 /*
  * islocked() - is node locked?
  */
 
-static int
-islocked(KA_T lp)
-{
+static int islocked(KA_T lp) {
     static int ety = -1;
     static unsigned int ei = 0;
     static SZOFFTYPE el = 0;
@@ -84,92 +72,88 @@ islocked(KA_T lp)
     KA_T llf, llp;
 
     if (!(llf = (KA_T)lp))
-        return((int)' ');
+        return ((int)' ');
     llp = llf;
-/*
+    /*
  * Compute the end test value the first time through.
  */
 
     if (ety == -1) {
 
-# if	HPUXV<1020
+#if HPUXV < 1020
         ety = 0;
         ei = 0x7fffffff;
-# else	/* HPUXV>=1020 */
+#else  /* HPUXV>=1020 */
         if (sizeof(ll.ll_end) == 4) {
-        ety = 0;
-        ei = 0x80000000;
+            ety = 0;
+            ei = 0x80000000;
         } else {
-        ety = 1;
-        el = 0x10000000000ll;
+            ety = 1;
+            el = 0x10000000000ll;
         }
-# endif	/* HPUXV<1020 */
-
+#endif /* HPUXV<1020 */
     }
 
-/*
+    /*
  * Search the locklist chain for this process.
  */
     do {
         if (kread(llp, (char *)&ll, sizeof(ll)))
-        return((int)' ');
+            return ((int)' ');
 
-#if	!defined(L_REMOTE)
-#define	L_REMOTE	0x1		/* from HP-UX 9.01 */
-#endif	/* !defined(L_REMOTE) */
+#if !defined(L_REMOTE)
+#define L_REMOTE 0x1 /* from HP-UX 9.01 */
+#endif               /* !defined(L_REMOTE) */
 
-# if	HPUXV<1010
+#if HPUXV < 1010
         if (ll.ll_flags & L_REMOTE || ll.ll_proc != (KA_T)Kpa)
-# else	/* HPUXV>=1010 */
+#else  /* HPUXV>=1010 */
         if (ll.ll_flags & L_REMOTE || (KA_T)ll.ll_kthreadp != Ktp)
-# endif	/* HPUXV<1010 */
+#endif /* HPUXV<1010 */
 
-        continue;
+            continue;
         l = 0;
         if (ll.ll_start == 0) {
-        switch (ety) {
-        case 0:
-            if (ll.ll_end == ei)
-            l = 1;
-        break;
-        case 1:
-            if (ll.ll_end == el)
-            l = 1;
-        break;
-        }
+            switch (ety) {
+            case 0:
+                if (ll.ll_end == ei)
+                    l = 1;
+                break;
+            case 1:
+                if (ll.ll_end == el)
+                    l = 1;
+                break;
+            }
         }
         if (ll.ll_type == F_WRLCK)
-        return((int)(l ? 'W' : 'w'));
+            return ((int)(l ? 'W' : 'w'));
         else if (ll.ll_type == F_RDLCK)
-        return((int)(l ? 'R' : 'r'));
-        return((int)' ');
+            return ((int)(l ? 'R' : 'r'));
+        return ((int)' ');
     }
 
-# if	HPUXV<1010
+#if HPUXV < 1010
     while ((llp = (KA_T)ll.ll_link) && llp != llf);
-# else	/* HPUXV>=1010 */
+#else  /* HPUXV>=1010 */
     while ((llp = (KA_T)ll.ll_fwd) && llp != llf);
-# endif	/* HPUXV<1010 */
+#endif /* HPUXV<1010 */
 
-    return((int)' ');
+    return ((int)' ');
 }
-#endif    /* HPUXV>=900 */
-
+#endif /* HPUXV>=900 */
 
 /*
  * getnodety() - get node type
  */
 
-static int
-getnodety(struct vnode * v)
-{
+static int getnodety(struct vnode *v) {
 
-#if    defined(HAS_AFS)
-    static int afs = 0;		/* AFS test status: -1 = no AFS
+#if defined(HAS_AFS)
+    static int afs = 0; /* AFS test status: -1 = no AFS
 					 *		     0 = not tested
 					 *		     1 = AFS present */
     struct afsnode an;
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
     static int ft = 1;
     static KA_T avops;
@@ -183,129 +167,123 @@ getnodety(struct vnode * v)
     static KA_T svops;
     static KA_T uvops;
     static KA_T vvops;
-/*
+    /*
  * Do first-time only operations.
  */
     if (ft) {
         if (get_Nl_value("avops", Drive_Nl, &avops) < 0)
-            avops = (unsigned long) 0;
+            avops = (unsigned long)0;
         if (get_Nl_value("cvops", Drive_Nl, &cvops) < 0)
-            cvops = (unsigned long) 0;
+            cvops = (unsigned long)0;
         if (get_Nl_value("fvops", Drive_Nl, &fvops) < 0)
-            fvops = (unsigned long) 0;
+            fvops = (unsigned long)0;
         if (get_Nl_value("mvops", Drive_Nl, &mvops) < 0)
-            mvops = (unsigned long) 0;
+            mvops = (unsigned long)0;
         if (get_Nl_value("nvops", Drive_Nl, &nvops) < 0)
-            nvops = (unsigned long) 0;
+            nvops = (unsigned long)0;
         if (get_Nl_value("nvops3", Drive_Nl, &nvops3) < 0)
-            nvops3 = (unsigned long) 0;
+            nvops3 = (unsigned long)0;
         if (get_Nl_value("nv3ops", Drive_Nl, &nv3ops) < 0)
-            nv3ops = (unsigned long) 0;
+            nv3ops = (unsigned long)0;
         if (get_Nl_value("pvops", Drive_Nl, &pvops) < 0)
-            pvops = (unsigned long) 0;
+            pvops = (unsigned long)0;
         if (get_Nl_value("svops", Drive_Nl, &svops) < 0)
-            svops = (unsigned long) 0;
+            svops = (unsigned long)0;
         if (get_Nl_value("uvops", Drive_Nl, &uvops) < 0)
-            uvops = (unsigned long) 0;
+            uvops = (unsigned long)0;
         if (get_Nl_value("vvops", Drive_Nl, &vvops) < 0)
-            vvops = (unsigned long) 0;
+            vvops = (unsigned long)0;
         ft = 0;
     }
-/*
+    /*
  * Determine the vnode type.
  */
-    if (uvops && uvops == (unsigned long) v->v_op)
+    if (uvops && uvops == (unsigned long)v->v_op)
         return (N_REGLR);
-    else if (nvops && nvops == (unsigned long) v->v_op)
+    else if (nvops && nvops == (unsigned long)v->v_op)
         return (N_NFS);
-    else if (nvops3 && nvops3 == (unsigned long) v->v_op)
+    else if (nvops3 && nvops3 == (unsigned long)v->v_op)
         return (N_NFS);
-    else if (nv3ops && nv3ops == (unsigned long) v->v_op)
+    else if (nv3ops && nv3ops == (unsigned long)v->v_op)
         return (N_NFS);
-    else if (mvops && mvops == (unsigned long) v->v_op)
+    else if (mvops && mvops == (unsigned long)v->v_op)
         return (N_MVFS);
 
-#if    defined(HASVXFS)
-        else if (vvops && vvops == (unsigned long)v->v_op)
-            return(N_VXFS);
-#endif    /* defined(HASVXFS) */
+#if defined(HASVXFS)
+    else if (vvops && vvops == (unsigned long)v->v_op)
+        return (N_VXFS);
+#endif /* defined(HASVXFS) */
 
-#if    HPUXV >= 1000
-        else if (cvops && cvops == (unsigned long)v->v_op)
-            return(N_CDFS);
-        else if (fvops && fvops == (unsigned long)v->v_op)
-            return(N_FIFO);
-        else if (pvops && pvops == (unsigned long)v->v_op)
-            return(N_PIPE);
-        else if (svops && svops == (unsigned long)v->v_op)
-            return(N_SPEC);
-#else	/* HPUXV<1000 */
+#if HPUXV >= 1000
+    else if (cvops && cvops == (unsigned long)v->v_op)
+        return (N_CDFS);
+    else if (fvops && fvops == (unsigned long)v->v_op)
+        return (N_FIFO);
+    else if (pvops && pvops == (unsigned long)v->v_op)
+        return (N_PIPE);
+    else if (svops && svops == (unsigned long)v->v_op)
+        return (N_SPEC);
+#else  /* HPUXV<1000 */
     else if (v->v_type == VFIFO)
         return (N_FIFO);
-#endif    /* HPUXV<1000 */
+#endif /* HPUXV<1000 */
 
-#if    defined(HAS_AFS)
-        /*
+#if defined(HAS_AFS)
+    /*
          * Caution: this AFS test should be the last one.
          */
 
-        else if (avops) {
-            if (avops == (unsigned long)v->v_op)
-            return(N_AFS);
-            else {
-
-    unknown_v_op:
-            (void) snpf(NameChars, NameCharsLength,
-                "unknown file system type; v_op: %s",
-                print_kptr((KA_T)v->v_op, (char *)NULL, 0));
-            enter_nm(NameChars);
-            return(-1);
-            }
-        } else if (v->v_data || !v->v_vfsp)
-            goto unknown_v_op;
+    else if (avops) {
+        if (avops == (unsigned long)v->v_op)
+            return (N_AFS);
         else {
-            switch (afs) {
-            case -1:
+
+        unknown_v_op:
+            (void)snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
+                       print_kptr((KA_T)v->v_op, (char *)NULL, 0));
+            enter_nm(NameChars);
+            return (-1);
+        }
+    } else if (v->v_data || !v->v_vfsp)
+        goto unknown_v_op;
+    else {
+        switch (afs) {
+        case -1:
             goto unknown_v_op;
-            case 0:
+        case 0:
             if (!hasAFS(v)) {
                 afs = -1;
                 goto unknown_v_op;
             }
             afs = 1;
-            return(N_AFS);
+            return (N_AFS);
             break;
-            case 1:
+        case 1:
             if (v->v_vfsp == AFSVfsp)
-                return(N_AFS);
+                return (N_AFS);
             else
                 goto unknown_v_op;
-            }
         }
-#else	/* !defined(HAS_AFS) */
+    }
+#else  /* !defined(HAS_AFS) */
     else {
-        (void) snpf(NameChars, NameCharsLength,
-                    "unknown file system type; v_op: %s",
-                    print_kptr((KA_T) v->v_op, (char *) NULL, 0));
+        (void)snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
+                   print_kptr((KA_T)v->v_op, (char *)NULL, 0));
         enter_nm(NameChars);
         return (-1);
     }
-#endif    /* defined(HAS_AFS) */
-
+#endif /* defined(HAS_AFS) */
 }
-
 
 /*
  * process_node() - process vnode
  */
 
-void
-process_node(KA_T va)
-{
+void process_node(KA_T va) {
 
-#if    defined(HAS_AFS)
+#if defined(HAS_AFS)
     struct afsnode an;
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
     dev_t dev, rdev;
     int devs = 0;
@@ -317,26 +295,26 @@ process_node(KA_T va)
     int rns = 0;
     char tbuf[32], *ty;
     enum vtype type;
-    static struct vnode *v = (struct vnode *) NULL;
+    static struct vnode *v = (struct vnode *)NULL;
     struct l_vfs *vfs;
     int vty;
 
-#if    HPUXV >= 900
+#if HPUXV >= 900
     char fb[128];
     int fns = 0;
     int rp, sz, wp;
     struct vnode rv;
     struct snode s;
-#endif    /* HPUXV>=900 */
+#endif /* HPUXV>=900 */
 
-#if    HPUXV >= 1000
+#if HPUXV >= 1000
     struct cdnode c;
     struct fifonode f;
     struct vattr vat;
     int vats = 0;
-#endif    /* HPUXV>=1000 */
+#endif /* HPUXV>=1000 */
 
-/*
+    /*
  * Read the vnode.
  */
     if (!va) {
@@ -349,20 +327,20 @@ process_node(KA_T va)
          * Allocate space for the vnode or AFS vcache structure.
          */
 
-#if    defined(HAS_AFS)
+#if defined(HAS_AFS)
         v = alloc_vcache();
-#else	/* !defined(HAS_AFS) */
-        v = (struct vnode *) malloc(sizeof(struct vnode));
-#endif    /* defined(HAS_AFS) */
+#else  /* !defined(HAS_AFS) */
+        v = (struct vnode *)malloc(sizeof(struct vnode));
+#endif /* defined(HAS_AFS) */
 
         if (!v) {
-            (void) fprintf(stderr, "%s: can't allocate %s space\n", ProgramName,
+            (void)fprintf(stderr, "%s: can't allocate %s space\n", ProgramName,
 
-#if    defined(HAS_AFS)
-                    "vcache"
-#else	/* !defined(HAS_AFS) */
-                           "vnode"
-#endif    /* defined(HAS_AFS) */
+#if defined(HAS_AFS)
+                          "vcache"
+#else  /* !defined(HAS_AFS) */
+                          "vnode"
+#endif /* defined(HAS_AFS) */
 
             );
             Exit(1);
@@ -373,27 +351,27 @@ process_node(KA_T va)
         return;
     }
 
-#if    defined(HASNCACHE)
+#if defined(HASNCACHE)
     CurrentLocalFile->node_addr = va;
-#endif    /* defined(HASNCACHE) */
+#endif /* defined(HASNCACHE) */
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     CurrentLocalFile->fna = va;
     CurrentLocalFile->fsv |= FSV_NODE_ID;
-#endif    /* defined(HASFSTRUCT) */
+#endif /* defined(HASFSTRUCT) */
 
-/*
+    /*
  * Get the primary vnode type.
  */
     vty = getnodety(v);
     if (vty == -1)
         return;
     NodeType = vty;
-/*
+    /*
  * Determine lock type.
  */
 
-#if    HPUXV < 900
+#if HPUXV < 900
     if (v->v_shlockc || v->v_exlockc) {
         if (v->v_shlockc && v->v_exlockc)
             CurrentLocalFile->lock = 'u';
@@ -402,384 +380,364 @@ process_node(KA_T va)
         else
             CurrentLocalFile->lock = 'W';
     }
-#else	/* HPUXV>900 */
-# if	HPUXV>=1000
+#else /* HPUXV>900 */
+#if HPUXV >= 1000
     CurrentLocalFile->lock = (char)islocked((KA_T)v->v_locklist);
-# endif	/* HPUXV>=1000 */
-#endif    /* HPUXV<900 */
+#endif /* HPUXV>=1000 */
+#endif /* HPUXV<900 */
 
-/*
+    /*
  * Establish the local virtual file system structure.
  */
     if (!v->v_vfsp)
-        vfs = (struct l_vfs *) NULL;
+        vfs = (struct l_vfs *)NULL;
     else if (!(vfs = readvfs(v))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read vfs for %s at %s",
-                    print_kptr(va, tbuf, sizeof(tbuf)),
-                    print_kptr((KA_T) v->v_vfsp, (char *) NULL, 0));
+        (void)snpf(NameChars, NameCharsLength, "can't read vfs for %s at %s",
+                   print_kptr(va, tbuf, sizeof(tbuf)),
+                   print_kptr((KA_T)v->v_vfsp, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
-/*
+    /*
  * Read the cdnode, fifonode, inode, rnode, snode, or vache struct.
  */
     switch (NodeType) {
 
-#if    defined(HAS_AFS)
-        case N_AFS:
-            if (readafsnode(va, v, &an))
+#if defined(HAS_AFS)
+    case N_AFS:
+        if (readafsnode(va, v, &an))
             return;
-            break;
-#endif    /* defined(HAS_AFS) */
+        break;
+#endif /* defined(HAS_AFS) */
 
-#if    defined(HASVXFS)
-        case N_VXFS:
-            if (!v->v_data || read_vxnode(v, vfs, &dev, &devs, &rdev, &rdevs)) {
-            (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read vx_inode (%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+#if defined(HASVXFS)
+    case N_VXFS:
+        if (!v->v_data || read_vxnode(v, vfs, &dev, &devs, &rdev, &rdevs)) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read vx_inode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
             enter_nm(NameChars);
             return;
-            }
-            break;
-#endif    /* defined(HASVXFS) */
+        }
+        break;
+#endif /* defined(HASVXFS) */
 
-#if    HPUXV >= 1000
-        case N_CDFS:
-            if (!v->v_data
-            ||  kread((KA_T)v->v_data, (char *)&c, sizeof(c))) {
-            (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read cdnode (%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+#if HPUXV >= 1000
+    case N_CDFS:
+        if (!v->v_data || kread((KA_T)v->v_data, (char *)&c, sizeof(c))) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read cdnode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
             enter_nm(NameChars);
             return;
-            }
-            break;
-        case N_FIFO:
-        case N_PIPE:
-            if (!v->v_data
-            ||  kread((KA_T)v->v_data, (char *)&f, sizeof(f))) {
-            (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read fifonode (%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+        }
+        break;
+    case N_FIFO:
+    case N_PIPE:
+        if (!v->v_data || kread((KA_T)v->v_data, (char *)&f, sizeof(f))) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read fifonode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
             enter_nm(NameChars);
             return;
-            }
-            fns = 1;
-            if (f.fn_vap
-            &&  kread((KA_T)f.fn_vap, (char *)&vat, sizeof(vat)) == 0)
+        }
+        fns = 1;
+        if (f.fn_vap && kread((KA_T)f.fn_vap, (char *)&vat, sizeof(vat)) == 0)
             vats = 1;
-            break;
-#endif    /* HPUXV>=1000 */
+        break;
+#endif /* HPUXV>=1000 */
 
-        case N_MVFS:
-            if (read_nmn(va, (KA_T) v->v_data, &m))
-                return;
-            break;
-        case N_NFS:
-            if (!v->v_data || readrnode((KA_T) v->v_data, &r)) {
-                (void) snpf(NameChars, NameCharsLength,
-                            "vnode at %s: can't read rnode (%s)",
-                            print_kptr(va, tbuf, sizeof(tbuf)),
-                            print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                enter_nm(NameChars);
-                return;
-            }
-            rns = 1;
-            break;
-
-#if    HPUXV >= 1000
-        case N_SPEC:
-            if ((v->v_type == VBLK) || (v->v_type == VCHR)) {
-            if (!v->v_data || readsnode((KA_T)v->v_data, &s)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read snode(%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
-                enter_nm(NameChars);
-                return;
-            }
-            if (!s.s_realvp
-            ||  readvnode((KA_T)s.s_realvp, &rv)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "snode at %s: can't read real vnode (%s)",
-                print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
-                enter_nm(NameChars);
-                return;
-            }
-
-#if	defined(HASVXFS)
-            if (getnodety(&rv) == N_VXFS) {
-                if (!rv.v_data
-                ||  read_vxnode(&rv, vfs, &dev, &devs, &rdev, &rdevs)) {
-                (void) snpf(NameChars, NameCharsLength,
-                    "vnode at %s: can't read vx_inode (%s)",
-                    print_kptr(va, tbuf, sizeof(tbuf)),
-                    print_kptr((KA_T)rv.v_data, (char *)NULL, 0));
-                enter_nm(NameChars);
-                return;
-                }
-                NodeType = N_VXFS;
-                break;
-            }
-#endif	/* defined(HASVXFS) */
-
-            if (!rv.v_data || readinode((KA_T)rv.v_data, &i)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "snode at %s: can't read inode (%s)",
-                print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)rv.v_data, (char *)NULL, 0));
-                enter_nm(NameChars);
-                return;
-            }
-            ins = 1;
-            break;
-            }
-            if (!v->v_data || readinode((KA_T)v->v_data, &i)) {
-            (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read inode (%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+    case N_MVFS:
+        if (read_nmn(va, (KA_T)v->v_data, &m))
+            return;
+        break;
+    case N_NFS:
+        if (!v->v_data || readrnode((KA_T)v->v_data, &r)) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read rnode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
             enter_nm(NameChars);
             return;
-            }
-            ins = 1;
-            break;
-#endif    /* HPUXV>=1000 */
+        }
+        rns = 1;
+        break;
 
-#if    HPUXV >= 900 && HPUXV < 1000
-        case N_FIFO:
-            if (v->v_fstype == VNFS_FIFO) {
+#if HPUXV >= 1000
+    case N_SPEC:
+        if ((v->v_type == VBLK) || (v->v_type == VCHR)) {
             if (!v->v_data || readsnode((KA_T)v->v_data, &s)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "vnode at %s: can't read snode (%s)",
-                print_kptr(va, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+                (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read snode(%s)",
+                           print_kptr(va, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)v->v_data, (char *)NULL, 0));
                 enter_nm(NameChars);
                 return;
             }
             if (!s.s_realvp || readvnode((KA_T)s.s_realvp, &rv)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "snode at %s: can't read real vnode (%s)",
-                print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
+                (void)snpf(NameChars, NameCharsLength, "snode at %s: can't read real vnode (%s)",
+                           print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
+                enter_nm(NameChars);
+                return;
+            }
+
+#if defined(HASVXFS)
+            if (getnodety(&rv) == N_VXFS) {
+                if (!rv.v_data || read_vxnode(&rv, vfs, &dev, &devs, &rdev, &rdevs)) {
+                    (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read vx_inode (%s)",
+                               print_kptr(va, tbuf, sizeof(tbuf)),
+                               print_kptr((KA_T)rv.v_data, (char *)NULL, 0));
+                    enter_nm(NameChars);
+                    return;
+                }
+                NodeType = N_VXFS;
+                break;
+            }
+#endif /* defined(HASVXFS) */
+
+            if (!rv.v_data || readinode((KA_T)rv.v_data, &i)) {
+                (void)snpf(NameChars, NameCharsLength, "snode at %s: can't read inode (%s)",
+                           print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)rv.v_data, (char *)NULL, 0));
+                enter_nm(NameChars);
+                return;
+            }
+            ins = 1;
+            break;
+        }
+        if (!v->v_data || readinode((KA_T)v->v_data, &i)) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read inode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+            enter_nm(NameChars);
+            return;
+        }
+        ins = 1;
+        break;
+#endif /* HPUXV>=1000 */
+
+#if HPUXV >= 900 && HPUXV < 1000
+    case N_FIFO:
+        if (v->v_fstype == VNFS_FIFO) {
+            if (!v->v_data || readsnode((KA_T)v->v_data, &s)) {
+                (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read snode (%s)",
+                           print_kptr(va, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+                enter_nm(NameChars);
+                return;
+            }
+            if (!s.s_realvp || readvnode((KA_T)s.s_realvp, &rv)) {
+                (void)snpf(NameChars, NameCharsLength, "snode at %s: can't read real vnode (%s)",
+                           print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
                 enter_nm(NameChars);
                 return;
             }
             if (!rv.v_data || readrnode((KA_T)rv.v_data, &r)) {
-                (void) snpf(NameChars, NameCharsLength,
-                "snode at %s: can't read real rnode (%s)",
-                print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
-                print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
+                (void)snpf(NameChars, NameCharsLength, "snode at %s: can't read real rnode (%s)",
+                           print_kptr((KA_T)v->v_data, tbuf, sizeof(tbuf)),
+                           print_kptr((KA_T)s.s_realvp, (char *)NULL, 0));
                 enter_nm(NameChars);
                 return;
             }
             rns = 1;
             break;
-            }
-            /* fall through */
-#endif    /* HPUXV>=900 && HPUXV<1000 */
+        }
+        /* fall through */
+#endif /* HPUXV>=900 && HPUXV<1000 */
 
-        case N_REGLR:
-        default:
-            if (!v->v_data || readinode((KA_T) v->v_data, &i)) {
-                (void) snpf(NameChars, NameCharsLength,
-                            "vnode at %s: can't read inode (%s)",
-                            print_kptr(va, tbuf, sizeof(tbuf)),
-                            print_kptr((KA_T) v->v_data, (char *) NULL, 0));
-                enter_nm(NameChars);
-                return;
-            }
-            ins = 1;
+    case N_REGLR:
+    default:
+        if (!v->v_data || readinode((KA_T)v->v_data, &i)) {
+            (void)snpf(NameChars, NameCharsLength, "vnode at %s: can't read inode (%s)",
+                       print_kptr(va, tbuf, sizeof(tbuf)),
+                       print_kptr((KA_T)v->v_data, (char *)NULL, 0));
+            enter_nm(NameChars);
+            return;
+        }
+        ins = 1;
 
-#if    HPUXV >= 900 && HPUXV < 1000
+#if HPUXV >= 900 && HPUXV < 1000
         if (v->v_type == VFIFO)
-        NodeType = N_FIFO;
-#endif    /* HPUXV>=900 && HPUXV<1000 */
-
+            NodeType = N_FIFO;
+#endif /* HPUXV>=900 && HPUXV<1000 */
     }
 
-#if    HPUXV >= 900 && HPUXV < 1000
+#if HPUXV >= 900 && HPUXV < 1000
     CurrentLocalFile->lock = (char)islocked((KA_T)i.i_locklist);
-#endif    /* HPUXV>=900 && HPUXV<1000 */
+#endif /* HPUXV>=900 && HPUXV<1000 */
 
-/*
+    /*
  * Get device and type for printing.
  */
     switch (NodeType) {
 
-#if    defined(HAS_AFS)
-        case N_AFS:
-            dev = an.dev;
-            devs = 1;
-            break;
-#endif    /* defined(HAS_AFS) */
+#if defined(HAS_AFS)
+    case N_AFS:
+        dev = an.dev;
+        devs = 1;
+        break;
+#endif /* defined(HAS_AFS) */
 
-        case N_MVFS:
-            if (vfs) {
-                dev = vfs->dev;
-                devs = 1;
-            }
-            break;
-        case N_NFS:
-            dev = vfs ? vfs->dev : 0;
-            devs = 1;
-            break;
-
-#if    HPUXV >= 1000
-        case N_CDFS:
-            dev = c.cd_dev;
-            devs = 1;
-            break;
-        case N_FIFO:
-        case N_PIPE:
-            if (vfs && vfs->fsname) {
+    case N_MVFS:
+        if (vfs) {
             dev = vfs->dev;
             devs = 1;
-            } else if (vats && (dev_t)vat.va_fsid != NODEV) {
+        }
+        break;
+    case N_NFS:
+        dev = vfs ? vfs->dev : 0;
+        devs = 1;
+        break;
+
+#if HPUXV >= 1000
+    case N_CDFS:
+        dev = c.cd_dev;
+        devs = 1;
+        break;
+    case N_FIFO:
+    case N_PIPE:
+        if (vfs && vfs->fsname) {
+            dev = vfs->dev;
+            devs = 1;
+        } else if (vats && (dev_t)vat.va_fsid != NODEV) {
             dev = (dev_t)vat.va_fsid;
             devs = 1;
-            } else
+        } else
             enter_dev_ch(print_kptr(va, (char *)NULL, 0));
-            break;
-#endif    /* _HPUX>=1000 */
+        break;
+#endif /* _HPUX>=1000 */
 
-#if    defined(HASVXFS)
-        case N_VXFS:
-            /* obtained via read_vxnode */
-            break;
-#endif    /* defined(HASVXFS) */
+#if defined(HASVXFS)
+    case N_VXFS:
+        /* obtained via read_vxnode */
+        break;
+#endif /* defined(HASVXFS) */
 
-        case N_SPEC:
-        default:
+    case N_SPEC:
+    default:
 
-#if    HPUXV >= 800
-            if (vfs && vfs->fsname) {
+#if HPUXV >= 800
+        if (vfs && vfs->fsname) {
             dev = vfs->dev;
             devs = 1;
-            } else if (ins) {
+        } else if (ins) {
             dev = i.i_dev;
             devs = 1;
-            }
-            if ((v->v_type == VBLK) || (v->v_type == VCHR)) {
+        }
+        if ((v->v_type == VBLK) || (v->v_type == VCHR)) {
             rdev = v->v_rdev;
             rdevs = 1;
-            }
-#else	/* HPUXV<800 */
-            if (ins) {
-                dev = i.i_dev;
-                devs = 1;
-            }
-            if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
-                rdev = v->v_rdev;
-                rdevs = 1;
-            }
-#endif    /* HPUXV>=800 */
-
+        }
+#else  /* HPUXV<800 */
+        if (ins) {
+            dev = i.i_dev;
+            devs = 1;
+        }
+        if ((v->v_type == VCHR) || (v->v_type == VBLK)) {
+            rdev = v->v_rdev;
+            rdevs = 1;
+        }
+#endif /* HPUXV>=800 */
     }
     type = v->v_type;
-/*
+    /*
  * Obtain the inode number.
  */
     switch (NodeType) {
 
-#if    defined(HAS_AFS)
-        case N_AFS:
-            if (an.ino_st) {
+#if defined(HAS_AFS)
+    case N_AFS:
+        if (an.ino_st) {
             CurrentLocalFile->inode = (INODETYPE)an.inode;
             CurrentLocalFile->inp_ty = 1;
-            }
-            break;
-#endif    /* defined(HAS_AFS) */
+        }
+        break;
+#endif /* defined(HAS_AFS) */
 
-        case N_MVFS:
-            CurrentLocalFile->inode = (INODETYPE) m.m_ino;
-            CurrentLocalFile->inp_ty = 1;
-            break;
-        case N_NFS:
+    case N_MVFS:
+        CurrentLocalFile->inode = (INODETYPE)m.m_ino;
+        CurrentLocalFile->inp_ty = 1;
+        break;
+    case N_NFS:
 
-#if    HPUXV < 1030
-            CurrentLocalFile->inode = (INODETYPE) r.r_nfsattr.na_nodeid;
-#else	/* HPUXV>=1030 */
-            CurrentLocalFile->inode = (INODETYPE)r.r_attr.va_nodeid;
-#endif    /* HPUXV<1030 */
+#if HPUXV < 1030
+        CurrentLocalFile->inode = (INODETYPE)r.r_nfsattr.na_nodeid;
+#else  /* HPUXV>=1030 */
+        CurrentLocalFile->inode = (INODETYPE)r.r_attr.va_nodeid;
+#endif /* HPUXV<1030 */
 
-            CurrentLocalFile->inp_ty = 1;
-            break;
+        CurrentLocalFile->inp_ty = 1;
+        break;
 
-#if    HPUXV >= 1000
-        case N_CDFS:
-            CurrentLocalFile->inode = (INODETYPE)c.cd_num;
-            CurrentLocalFile->inp_ty = 1;
-            break;
-        case N_FIFO:
-        case N_PIPE:
-            if (vats) {
+#if HPUXV >= 1000
+    case N_CDFS:
+        CurrentLocalFile->inode = (INODETYPE)c.cd_num;
+        CurrentLocalFile->inp_ty = 1;
+        break;
+    case N_FIFO:
+    case N_PIPE:
+        if (vats) {
             CurrentLocalFile->inode = (INODETYPE)vat.va_nodeid;
             CurrentLocalFile->inp_ty = 1;
-            } else {
+        } else {
             CurrentLocalFile->inode = (INODETYPE)v->v_nodeid;
             CurrentLocalFile->inp_ty = 1;
-            }
-            break;
-#endif    /* HPUXV>=1000 */
+        }
+        break;
+#endif /* HPUXV>=1000 */
 
-#if    defined(HASVXFS)
-        case N_VXFS:
-            /* set in read_vxnode() */
-            break;
-#endif    /* defined(HASVXFS) */
+#if defined(HASVXFS)
+    case N_VXFS:
+        /* set in read_vxnode() */
+        break;
+#endif /* defined(HASVXFS) */
 
-#if    HPUXV < 1000
-        case N_FIFO:
+#if HPUXV < 1000
+    case N_FIFO:
 
-# if    HPUXV >= 900
-            if (rns) {
+#if HPUXV >= 900
+        if (rns) {
             CurrentLocalFile->inode = (INODETYPE)r.r_nfsattr.na_nodeid;
             CurrentLocalFile->inp_ty = 1;
             break;
-            }
-# endif    /* HPUXV>=900 */
-            /* fall through */
+        }
+#endif  /* HPUXV>=900 */
+        /* fall through */
 
-#endif    /* HPUXV<1000 */
+#endif /* HPUXV<1000 */
 
-        case N_BLK:
-        case N_REGLR:
-        case N_SPEC:
-            if (ins) {
-                CurrentLocalFile->inode = (INODETYPE) i.i_number;
-                CurrentLocalFile->inp_ty = 1;
-            }
+    case N_BLK:
+    case N_REGLR:
+    case N_SPEC:
+        if (ins) {
+            CurrentLocalFile->inode = (INODETYPE)i.i_number;
+            CurrentLocalFile->inp_ty = 1;
+        }
     }
 
-#if    HPUXV >= 1030
+#if HPUXV >= 1030
     /*
      * Check for an HP-UX 10.30 and above stream.
      */
-        if (v->v_stream) {
-            KA_T ip, pcb;
-            char *pn = (char *)NULL;
+    if (v->v_stream) {
+        KA_T ip, pcb;
+        char *pn = (char *)NULL;
 
-            CurrentLocalFile->dev = dev;
-            CurrentLocalFile->dev_def = devs;
-            CurrentLocalFile->rdev = rdev;
-            CurrentLocalFile->rdev_def = rdevs;
-            if (read_mi((KA_T)v->v_stream, &ip, &pcb, &pn))
+        CurrentLocalFile->dev = dev;
+        CurrentLocalFile->dev_def = devs;
+        CurrentLocalFile->rdev = rdev;
+        CurrentLocalFile->rdev_def = rdevs;
+        if (read_mi((KA_T)v->v_stream, &ip, &pcb, &pn))
             return;
-            if (ip && pcb) {
+        if (ip && pcb) {
             process_stream_sock(ip, pcb, pn, type);
             return;
-            }
-            CurrentLocalFile->is_stream = 1;
         }
-#endif    /* HPUXV>=1030 */
+        CurrentLocalFile->is_stream = 1;
+    }
+#endif /* HPUXV>=1030 */
 
-/*
+    /*
  * Obtain the file size.
  */
     if (OptOffset)
@@ -787,177 +745,177 @@ process_node(KA_T va)
     else {
         switch (NodeType) {
 
-#if    defined(HAS_AFS)
-            case N_AFS:
+#if defined(HAS_AFS)
+        case N_AFS:
             CurrentLocalFile->sz = (SZOFFTYPE)an.size;
             CurrentLocalFile->sz_def = 1;
             break;
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
-#if    HPUXV >= 1000
-            case N_CDFS:
+#if HPUXV >= 1000
+        case N_CDFS:
             CurrentLocalFile->sz = (SZOFFTYPE)c.cd_cdc.cdc_size;
             CurrentLocalFile->sz_def = 1;
             break;
-            case N_PIPE:
+        case N_PIPE:
             if (vats) {
                 CurrentLocalFile->sz = (SZOFFTYPE)vat.va_size;
                 CurrentLocalFile->sz_def = 1;
             }
             break;
-#endif    /* HPUXV>=1000 */
+#endif /* HPUXV>=1000 */
 
-#if    HPUXV >= 900
-            case N_FIFO:
+#if HPUXV >= 900
+        case N_FIFO:
 
-# if	HPUXV<1000
+#if HPUXV < 1000
             if (ins) {
                 rp = i.i_frptr;
                 sz = (int)i.i_fifosize;
                 wp = i.i_fwptr;
             } else if (rns)
                 CurrentLocalFile->sz = (SZOFFTYPE)r.r_nfsattr.na_size;
-# else	/* HPUXV>=1000 */
+#else  /* HPUXV>=1000 */
             if (fns) {
                 rp = f.fn_rptr;
                 sz = f.fn_size;
                 wp = f.fn_wptr;
             }
-# endif	/* HPUXV<1000 */
+#endif /* HPUXV<1000 */
 
             if (OptSize || (CurrentLocalFile->access != 'r' && CurrentLocalFile->access != 'w')) {
                 if (fns || ins) {
-                (void) snpf(fb, sizeof(fb), "rd=%#x; wr=%#x", rp, wp);
-                (void) enter_nma(fb);
+                    (void)snpf(fb, sizeof(fb), "rd=%#x; wr=%#x", rp, wp);
+                    (void)enter_nma(fb);
                 }
                 if (fns || ins || rns) {
-                CurrentLocalFile->sz = (SZOFFTYPE)sz;
-                CurrentLocalFile->sz_def = 1;
+                    CurrentLocalFile->sz = (SZOFFTYPE)sz;
+                    CurrentLocalFile->sz_def = 1;
                 }
                 break;
             }
             if (fns || ins) {
-                CurrentLocalFile->off = (unsigned long)((CurrentLocalFile->access == 'r') ? rp
-                                      : wp);
-                (void) snpf(fb, sizeof(fb), "%s=%#x",
-                (CurrentLocalFile->access == 'r') ? "rd" : "wr",
-                (CurrentLocalFile->access == 'r') ?  rp  :  wp);
-                (void) enter_nma(fb);
+                CurrentLocalFile->off =
+                    (unsigned long)((CurrentLocalFile->access == 'r') ? rp : wp);
+                (void)snpf(fb, sizeof(fb), "%s=%#x",
+                           (CurrentLocalFile->access == 'r') ? "rd" : "wr",
+                           (CurrentLocalFile->access == 'r') ? rp : wp);
+                (void)enter_nma(fb);
             }
             CurrentLocalFile->off_def = 1;
             break;
-#endif    /* HPUXV>=900 */
+#endif /* HPUXV>=900 */
 
-            case N_MVFS:
-                /* The location of the file size isn't known. */
-                break;
-            case N_NFS:
+        case N_MVFS:
+            /* The location of the file size isn't known. */
+            break;
+        case N_NFS:
 
-#if    HPUXV < 1030
-                CurrentLocalFile->sz = (SZOFFTYPE) r.r_nfsattr.na_size;
-#else	/* HPUXV>=1030 */
-                CurrentLocalFile->sz = (SZOFFTYPE)r.r_attr.va_size;
-#endif    /* HPUXV<1030 */
+#if HPUXV < 1030
+            CurrentLocalFile->sz = (SZOFFTYPE)r.r_nfsattr.na_size;
+#else  /* HPUXV>=1030 */
+            CurrentLocalFile->sz = (SZOFFTYPE)r.r_attr.va_size;
+#endif /* HPUXV<1030 */
 
-                CurrentLocalFile->sz_def = 1;
-                break;
+            CurrentLocalFile->sz_def = 1;
+            break;
 
-#if    defined(HASVXFS)
-            case N_VXFS:
+#if defined(HASVXFS)
+        case N_VXFS:
             /* set in read_vxnode() */
             break;
-#endif    /* defined(HASVXFS) */
+#endif /* defined(HASVXFS) */
 
-            case N_SPEC:
-            case N_REGLR:
-                if ((type == VCHR || type == VBLK) && !OptSize)
-                    CurrentLocalFile->off_def = 1;
-                else if (ins) {
-                    CurrentLocalFile->sz = (SZOFFTYPE) i.i_size;
-                    CurrentLocalFile->sz_def = 1;
-                }
-                break;
+        case N_SPEC:
+        case N_REGLR:
+            if ((type == VCHR || type == VBLK) && !OptSize)
+                CurrentLocalFile->off_def = 1;
+            else if (ins) {
+                CurrentLocalFile->sz = (SZOFFTYPE)i.i_size;
+                CurrentLocalFile->sz_def = 1;
+            }
+            break;
         }
     }
-/*
+    /*
  * Record link count.
  */
     if (OptLinkCount) {
         switch (NodeType) {
 
-# if    defined(HAS_AFS)
-            case N_AFS:
+#if defined(HAS_AFS)
+        case N_AFS:
             CurrentLocalFile->nlink = an.nlink;
             CurrentLocalFile->nlink_def = an.nlink_st;
             break;
-# endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */
 
-            case N_MVFS:
-                /* The location of the link count isn't known. */
-                break;
-            case N_NFS:
-
-#if    HPUXV < 1030
-                CurrentLocalFile->nlink = r.r_nfsattr.na_nlink;
-#else	/* HPUXV>=1030 */
-                CurrentLocalFile->nlink = r.r_attr.va_nlink;
-#endif    /* HPUXV<1030 */
-
-                CurrentLocalFile->nlink_def = 1;
-                break;
-
-# if    HPUXV >= 1000
-            case N_CDFS:		/* no link count? */
+        case N_MVFS:
+            /* The location of the link count isn't known. */
             break;
-# endif    /* HPUXV>=1000 */
+        case N_NFS:
 
-            case N_FIFO:
-            case N_PIPE:
+#if HPUXV < 1030
+            CurrentLocalFile->nlink = r.r_nfsattr.na_nlink;
+#else  /* HPUXV>=1030 */
+            CurrentLocalFile->nlink = r.r_attr.va_nlink;
+#endif /* HPUXV<1030 */
 
-# if    HPUXV >= 1000
-                if (vats) {
-                    CurrentLocalFile->nlink = (long)vat.va_nlink;
-                    CurrentLocalFile->nlink_def = 1;
-                }
-# endif    /* HPUXV>=1000 */
+            CurrentLocalFile->nlink_def = 1;
+            break;
 
-                break;
+#if HPUXV >= 1000
+        case N_CDFS: /* no link count? */
+            break;
+#endif /* HPUXV>=1000 */
 
-# if    defined(HASVXFS)
-            case N_VXFS:
+        case N_FIFO:
+        case N_PIPE:
+
+#if HPUXV >= 1000
+            if (vats) {
+                CurrentLocalFile->nlink = (long)vat.va_nlink;
+                CurrentLocalFile->nlink_def = 1;
+            }
+#endif /* HPUXV>=1000 */
+
+            break;
+
+#if defined(HASVXFS)
+        case N_VXFS:
             /* set in read_vxnode() */
             break;
-# endif    /* defined(HASVXFS) */
+#endif /* defined(HASVXFS) */
 
-            case N_SPEC:
-            default:
-                if (ins) {
-                    CurrentLocalFile->nlink = (long) i.i_nlink;
-                    CurrentLocalFile->nlink_def = 1;
-                }
-                break;
+        case N_SPEC:
+        default:
+            if (ins) {
+                CurrentLocalFile->nlink = (long)i.i_nlink;
+                CurrentLocalFile->nlink_def = 1;
+            }
+            break;
         }
-        if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
+        if (LinkCountThreshold && CurrentLocalFile->nlink_def &&
+            (CurrentLocalFile->nlink < LinkCountThreshold))
             CurrentLocalFile->sel_flags |= SELNLINK;
     }
-/*
+    /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
         CurrentLocalFile->sel_flags |= SELNFS;
-/*
+    /*
  * Save the file system names.
  */
     if (vfs) {
         CurrentLocalFile->fsdir = vfs->dir;
         CurrentLocalFile->fsdev = vfs->fsname;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
         CurrentLocalFile->fs_ino = vfs->fs_ino;
-#endif    /* defined(HASFSINO) */
-
+#endif /* defined(HASFSINO) */
     }
-/*
+    /*
  * Save the device numbers and their states.
  *
  * Format the vnode type, and possibly the device name.
@@ -967,117 +925,108 @@ process_node(KA_T va)
     CurrentLocalFile->rdev = rdev;
     CurrentLocalFile->rdev_def = rdevs;
     switch (type) {
-        case VNON:
-            ty = "VNON";
-            break;
-        case VREG:
-        case VDIR:
-            ty = (type == VREG) ? "VREG" : "VDIR";
-            break;
-        case VBLK:
-            ty = "VBLK";
-            NodeType = N_BLK;
-            break;
-        case VCHR:
-            ty = "VCHR";
-            NodeType = N_CHR;
-            break;
-        case VLNK:
-            ty = "VLNK";
-            break;
+    case VNON:
+        ty = "VNON";
+        break;
+    case VREG:
+    case VDIR:
+        ty = (type == VREG) ? "VREG" : "VDIR";
+        break;
+    case VBLK:
+        ty = "VBLK";
+        NodeType = N_BLK;
+        break;
+    case VCHR:
+        ty = "VCHR";
+        NodeType = N_CHR;
+        break;
+    case VLNK:
+        ty = "VLNK";
+        break;
 
-#if    defined(VSOCK)
-        case VSOCK:
-            ty = "SOCK";
-            break;
-#endif    /* defined(VSOCK) */
+#if defined(VSOCK)
+    case VSOCK:
+        ty = "SOCK";
+        break;
+#endif /* defined(VSOCK) */
 
-        case VBAD:
-            ty = "VBAD";
-            break;
-        case VFIFO:
-            switch (NodeType) {
+    case VBAD:
+        ty = "VBAD";
+        break;
+    case VFIFO:
+        switch (NodeType) {
 
-#if    HPUXV >= 1000
-                case N_FIFO:
-                ty = "FIFO";
-                break;
-                case N_PIPE:
-                ty = "PIPE";
-                break;
-#endif    /* HPUXV>=1000 */
-
-                default:
-                    ty = "FIFO";
-            }
+#if HPUXV >= 1000
+        case N_FIFO:
+            ty = "FIFO";
             break;
+        case N_PIPE:
+            ty = "PIPE";
+            break;
+#endif /* HPUXV>=1000 */
+
         default:
-            (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
-            ty = (char *) NULL;
+            ty = "FIFO";
+        }
+        break;
+    default:
+        (void)snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o", (type & 0xfff));
+        ty = (char *)NULL;
     }
     if (ty)
-        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
+        (void)snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", ty);
     CurrentLocalFile->ntype = NodeType;
 
-#if    defined(HASBLKDEV)
+#if defined(HASBLKDEV)
     /*
      * If this is a VBLK file and it's missing an inode number, try to
      * supply one.
      */
-        if ((CurrentLocalFile->inp_ty == 0) && (type == VBLK))
-            find_bl_ino();
-#endif    /* defined(HASBLKDEV) */
+    if ((CurrentLocalFile->inp_ty == 0) && (type == VBLK))
+        find_bl_ino();
+#endif /* defined(HASBLKDEV) */
 
-/*
+    /*
  * If this is a VCHR file and it's missing an inode number, try to
  * supply one.
  */
     if ((CurrentLocalFile->inp_ty == 0) && (type == VCHR))
         find_ch_ino();
-/*
+    /*
  * Test for specified file.
  */
-    if (SearchFileChain && is_file_named((char *) NULL,
-                               ((type == VCHR) || (type == VBLK) ? 1 : 0)))
+    if (SearchFileChain && is_file_named((char *)NULL, ((type == VCHR) || (type == VBLK) ? 1 : 0)))
         CurrentLocalFile->sel_flags |= SELNM;
-/*
+    /*
  * Enter name characters.
  */
     if (NameChars[0])
         enter_nm(NameChars);
 }
 
-
-
 /*
  * readinode() - read inode
  */
 
-static int
-readinode(KA_T ia, struct inode * i)
-{
-    if (kread((KA_T) ia, (char *) i, sizeof(struct inode))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read inode at %s",
-                    print_kptr(ia, (char *) NULL, 0));
+static int readinode(KA_T ia, struct inode *i) {
+    if (kread((KA_T)ia, (char *)i, sizeof(struct inode))) {
+        (void)snpf(NameChars, NameCharsLength, "can't read inode at %s",
+                   print_kptr(ia, (char *)NULL, 0));
         return (1);
     }
     return (0);
 }
 
-
 /*
  * read_nmn() - read node's mvfsnode
  */
 
-static int
-read_nmn(KA_T na, KA_T ma, struct mvfsnode * m)
-{
+static int read_nmn(KA_T na, KA_T ma, struct mvfsnode *m) {
     char tbuf[32];
 
-    if (!ma || kread((KA_T) ma, (char *) m, sizeof(struct mvfsnode))) {
-        (void) snpf(NameChars, NameCharsLength, "node at %s: can't read mvfsnode: %s",
-                    print_kptr(na, tbuf, sizeof(tbuf)),
-                    print_kptr(ma, (char *) NULL, 0));
+    if (!ma || kread((KA_T)ma, (char *)m, sizeof(struct mvfsnode))) {
+        (void)snpf(NameChars, NameCharsLength, "node at %s: can't read mvfsnode: %s",
+                   print_kptr(na, tbuf, sizeof(tbuf)), print_kptr(ma, (char *)NULL, 0));
         enter_nm(NameChars);
         return (1);
     }

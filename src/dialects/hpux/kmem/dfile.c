@@ -2,7 +2,6 @@
  * dfile.c - /dev/kmem-based HP-UX file processing functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,7 +25,7 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
+#if defined(HPUXKERNBITS) && HPUXKERNBITS >= 64
 #define _TIME_T
 typedef int time_t;
 /*
@@ -42,17 +41,15 @@ typedef int time_t;
  *
  * CAUTION!!! CAUTION!!! CAUTION!!! CAUTION!!! CAUTION!!! CAUTION!!!
  */
-#endif    /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
+#endif /* defined(HPUXKERNBITS) && HPUXKERNBITS>=64 */
 
 #include "lsof.h"
-
 
 /*
  * get_max_fd() - get maximum file descriptor plus one
  */
 
-int
-get_max_fd() {
+int get_max_fd() {
     struct rlimit r;
 
     if (getrlimit(RLIMIT_NOFILE, &r))
@@ -60,63 +57,56 @@ get_max_fd() {
     return (r.rlim_cur);
 }
 
-
 /*
  * print_dev() - print device
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
 
-    (void) snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev),
-                GET_MIN_DEV(*dev));
+    (void)snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev), GET_MIN_DEV(*dev));
     return (buf);
 }
-
 
 /*
  * process_file() - process file
  */
 
-void
-process_file(KA_T fp)
-{
+void process_file(KA_T fp) {
     struct file f;
     int flag;
 
-    if (kread((KA_T) fp, (char *) &f, sizeof(f))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
-                    print_kptr(fp, (char *) NULL, 0));
+    if (kread((KA_T)fp, (char *)&f, sizeof(f))) {
+        (void)snpf(NameChars, NameCharsLength, "can't read file struct from %s",
+                   print_kptr(fp, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
-    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE)f.f_offset;
 
     if (f.f_count) {
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (OptFileStructValues & FSV_FILE_COUNT) {
+        if (OptFileStructValues & FSV_FILE_COUNT) {
             CurrentLocalFile->fct = (long)f.f_count;
             CurrentLocalFile->fsv |= FSV_FILE_COUNT;
-            }
-            if (OptFileStructValues & FSV_FILE_ADDR) {
+        }
+        if (OptFileStructValues & FSV_FILE_ADDR) {
             CurrentLocalFile->fsa = fp;
             CurrentLocalFile->fsv |= FSV_FILE_ADDR;
-            }
-            if (OptFileStructValues & FSV_FILE_FLAGS) {
+        }
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
             CurrentLocalFile->ffg = (long)f.f_flag;
             CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
-            }
-            if (OptFileStructValues & FSV_NODE_ID) {
+        }
+        if (OptFileStructValues & FSV_NODE_ID) {
             CurrentLocalFile->fna = (KA_T)f.f_data;
             CurrentLocalFile->fsv |= FSV_NODE_ID;
-            }
-#endif    /* defined(HASFSTRUCT) */
+        }
+#endif /* defined(HASFSTRUCT) */
 
         /*
          * Construct access code.
@@ -132,33 +122,31 @@ process_file(KA_T fp)
          */
         switch (f.f_type) {
 
-#if    defined(DTYPE_LLA)
-            case DTYPE_LLA:
+#if defined(DTYPE_LLA)
+        case DTYPE_LLA:
             process_lla((KA_T)f.f_data);
             return;
-#endif    /* DTYPE_LLA */
+#endif /* DTYPE_LLA */
 
-            case DTYPE_VNODE:
-                process_node((KA_T) f.f_data);
+        case DTYPE_VNODE:
+            process_node((KA_T)f.f_data);
+            return;
+        case DTYPE_SOCKET:
+            process_socket((KA_T)f.f_data);
+            return;
+        default:
+            if (!f.f_type || (f.f_ops && (KA_T)f.f_ops != Vnfops)) {
+                (void)snpf(NameChars, NameCharsLength, "%s file struct, ty=%#x, op=%#x",
+                           print_kptr(fp, (char *)NULL, 0), f.f_type, f.f_ops);
+                enter_nm(NameChars);
                 return;
-            case DTYPE_SOCKET:
-                process_socket((KA_T) f.f_data);
-                return;
-            default:
-                if (!f.f_type || (f.f_ops && (KA_T) f.f_ops != Vnfops)) {
-                    (void) snpf(NameChars, NameCharsLength,
-                                "%s file struct, ty=%#x, op=%#x",
-                                print_kptr(fp, (char *) NULL, 0), f.f_type, f.f_ops);
-                    enter_nm(NameChars);
-                    return;
-                }
+            }
         }
     }
     enter_nm("no more information");
 }
 
-
-#if    HPUXV >= 1030
+#if HPUXV >= 1030
 /*
  * read_mi() - read stream's module information
  *
@@ -168,9 +156,7 @@ process_file(KA_T fp)
  *	 block at the beginning of this file.
  */
 
-int
-read_mi(KA_T sh, KA_T * ip, KA_T * pcb, char ** pn)
-{
+int read_mi(KA_T sh, KA_T *ip, KA_T *pcb, char **pn) {
     struct l_dev *dp;
     char *ep = NameChars;
     struct sth_s hd;
@@ -183,21 +169,20 @@ read_mi(KA_T sh, KA_T * ip, KA_T * pcb, char ** pn)
     struct qinit qi;
     size_t sz = NameCharsLength;
 
-    if (!sh
-    ||  kread(sh, (char *)&hd, sizeof(hd))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read stream head: %s",
-        print_kptr(sh, (char *)NULL, 0));
-        return(1);
+    if (!sh || kread(sh, (char *)&hd, sizeof(hd))) {
+        (void)snpf(NameChars, NameCharsLength, "can't read stream head: %s",
+                   print_kptr(sh, (char *)NULL, 0));
+        return (1);
     }
     if (!CurrentLocalFile->rdev_def)
         dp = (struct l_dev *)NULL;
     else
         dp = lkupdev(&DeviceOfDev, &CurrentLocalFile->rdev, 1, 0);
     if (dp)
-        (void) snpf(ep, sz, "%s", dp->name);
+        (void)snpf(ep, sz, "%s", dp->name);
     else
         *ep = '\0';
-/*
+    /*
  * Follow the stream head to each of its queue structures, retrieving the
  * module names for each queue's q_info->qi_minfo->mi_idname chain of
  * structures.  Separate each additional name from the previous one with
@@ -215,35 +200,35 @@ read_mi(KA_T sh, KA_T * ip, KA_T * pcb, char ** pn)
     qa = (KA_T)hd.sth_wq;
     for (i = 0; i < 20; i++, qa = (KA_T)q.q_next) {
         if (!qa || kread(qa, (char *)&q, sizeof(q)))
-        break;
+            break;
         if (!(ka = (KA_T)q.q_qinfo) || kread(ka, (char *)&qi, sizeof(qi)))
-        continue;
+            continue;
         if (!(ka = (KA_T)qi.qi_minfo) || kread(ka, (char *)&mi, sizeof(mi)))
-        continue;
+            continue;
         if (!(ka = (KA_T)mi.mi_idname) || kread(ka, mn, ml))
-        continue;
+            continue;
         if ((len = strlen(mn)) < 1)
-        continue;
+            continue;
         if (len >= 3 && !strcmp(&mn[len - 3], "sth"))
-        continue;
+            continue;
         ep = endnm(&sz);
-        (void) snpf(ep, sz, "%s%s", (ep == NameChars) ? "" : "->", mn);
+        (void)snpf(ep, sz, "%s%s", (ep == NameChars) ? "" : "->", mn);
         if (!q.q_ptr)
-        continue;
+            continue;
         if (!*ip && !strcmp(mn, "ip")) {
-        *ip = (KA_T)q.q_ptr;
-        continue;
+            *ip = (KA_T)q.q_ptr;
+            continue;
         }
         if (!*pcb && !strcmp(mn, "tcpm")) {
-        *pcb = (KA_T)q.q_ptr;
-        *pn = "TCP";
-        continue;
+            *pcb = (KA_T)q.q_ptr;
+            *pn = "TCP";
+            continue;
         }
         if (!*pcb && !strcmp(mn, "udpm")) {
-        *pcb = (KA_T)q.q_ptr;
-        *pn = "UDP";
+            *pcb = (KA_T)q.q_ptr;
+            *pn = "UDP";
         }
     }
-    return(0);
+    return (0);
 }
-#endif    /* HPUXV>=1030 */
+#endif /* HPUXV>=1030 */

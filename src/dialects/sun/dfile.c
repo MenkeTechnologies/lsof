@@ -2,7 +2,6 @@
  * dfile.c - Solaris file processing functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,70 +27,74 @@
 
 #include "lsof.h"
 
-
 /*
  * Local structures
  */
 
 struct hsfile {
-    struct sfile *s;        /* the SearchFileChain table address */
-    struct hsfile *next;        /* the next hash bucket entry */
+    struct sfile *s;     /* the SearchFileChain table address */
+    struct hsfile *next; /* the next hash bucket entry */
 };
-
 
 /*
  * Local static variables
  */
 
-static struct hsfile *HbyCd =        /* hash by clone buckets */
-        (struct hsfile *) NULL;
-static int HbyCdCt = 0;            /* HbyCd entry count */
-static struct hsfile *HbyFdi =        /* hash by file buckets */
-        (struct hsfile *) NULL;
-static int HbyFdiCt = 0;        /* HbyFdi entry count */
-static struct hsfile *HbyFrd =        /* hash by file raw device buckets */
-        (struct hsfile *) NULL;
-static int HbyFrdCt = 0;        /* HbyFrd entry count */
-static struct hsfile *HbyFsd =        /* hash by file system buckets */
-        (struct hsfile *) NULL;
-static int HbyFsdCt = 0;        /* HbyFsd entry count */
-static struct hsfile *HbyNm =        /* hash by name buckets */
-        (struct hsfile *) NULL;
-static int HbyNmCt = 0;            /* HbyNm entry count */
-
+static struct hsfile *HbyCd = /* hash by clone buckets */
+    (struct hsfile *)NULL;
+static int HbyCdCt = 0;        /* HbyCd entry count */
+static struct hsfile *HbyFdi = /* hash by file buckets */
+    (struct hsfile *)NULL;
+static int HbyFdiCt = 0;       /* HbyFdi entry count */
+static struct hsfile *HbyFrd = /* hash by file raw device buckets */
+    (struct hsfile *)NULL;
+static int HbyFrdCt = 0;       /* HbyFrd entry count */
+static struct hsfile *HbyFsd = /* hash by file system buckets */
+    (struct hsfile *)NULL;
+static int HbyFsdCt = 0;      /* HbyFsd entry count */
+static struct hsfile *HbyNm = /* hash by name buckets */
+    (struct hsfile *)NULL;
+static int HbyNmCt = 0; /* HbyNm entry count */
 
 /*
  * Local definitions
  */
 
-#define    SFCDHASH    1024        /* SearchFileChain hash by clone device */
-#define    SFDIHASH    4094        /* SearchFileChain hash by (device,inode) number
+#define SFCDHASH 1024 /* SearchFileChain hash by clone device */
+#define SFDIHASH \
+    4094 /* SearchFileChain hash by (device,inode) number
 					 * pair bucket count (power of 2!) */
-#define    SFFSHASH    128        /* SearchFileChain hash by file system device
+#define SFFSHASH \
+    128 /* SearchFileChain hash by file system device
 					 * number bucket count (power of 2!) */
-#define SFHASHDEVINO(maj, min, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+ino)*31415)&(mod-1)))
+#define SFHASHDEVINO(maj, min, ino, mod) \
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ino) * 31415) & (mod - 1)))
 /* hash for SearchFileChain by major device,
  * minor device, and inode, modulo m
  * (m must be a power of 2) */
-#define    SFNMHASH    4096        /* SearchFileChain hash by name bucket count
+#define SFNMHASH \
+    4096 /* SearchFileChain hash by name bucket count
 					   (power of 2!) */
-#define    SFRDHASH    1024        /* SearchFileChain hash by raw device number
+#define SFRDHASH \
+    1024 /* SearchFileChain hash by raw device number
 					 * bucket count (power of 2!) */
-#define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod) ((int)(((int)((((int)(maj+1))*((int)((min+1))))+((int)(rmaj+1)*(int)(rmin+1))+ino)*31415)&(mod-1)))
+#define SFHASHRDEVI(maj, min, rmaj, rmin, ino, mod)                                               \
+    ((int)(((int)((((int)(maj + 1)) * ((int)((min + 1)))) + ((int)(rmaj + 1) * (int)(rmin + 1)) + \
+                  ino) *                                                                          \
+            31415) &                                                                              \
+           (mod - 1)))
 /* hash for SearchFileChain by major device,
  * minor device, major raw device,
  * minor raw device, and inode, modulo
  * mod (mod must be a power of 2) */
 
-
-#if    solaris < 20500
+#if solaris < 20500
 
 /*
  * get_max_fd() - get maximum file descriptor plus one
  */
 
-int
-get_max_fd() {
+int get_max_fd() {
     struct rlimit r;
 
     if (getrlimit(RLIMIT_NOFILE, &r))
@@ -99,26 +102,24 @@ get_max_fd() {
     return (r.rlim_cur);
 }
 
-#endif    /* solaris<20500 */
-
+#endif /* solaris<20500 */
 
 /*
  * hashSfile() - hash SearchFileChain entries for use in is_file_named() searches
  */
 
-void
-hashSfile() {
+void hashSfile() {
     int cmaj, hvc, i;
     static int hs = 0;
     struct sfile *s;
     struct hsfile *sh, *sn;
-/*
+    /*
  * Do nothing if there are no file search arguments cached or if the
  * hashes have already been constructed.
  */
     if (!SearchFileChain || hs)
         return;
-/*
+    /*
  * Preset the clone major device for Solaris.
  */
     if (HaveCloneMaj) {
@@ -126,49 +127,39 @@ hashSfile() {
         hvc = 1;
     } else
         hvc = 0;
-/*
+    /*
  * Allocate hash buckets by clone device, (device,inode), file system device,
  * and file name.
  */
     if (hvc) {
-        if (!(HbyCd = (struct hsfile *) calloc((MALLOC_S) SFCDHASH,
-                                               sizeof(struct hsfile)))) {
-            (void) fprintf(stderr,
-                           "%s: can't allocate space for %d clone hash buckets\n",
-                           ProgramName, SFCDHASH);
+        if (!(HbyCd = (struct hsfile *)calloc((MALLOC_S)SFCDHASH, sizeof(struct hsfile)))) {
+            (void)fprintf(stderr, "%s: can't allocate space for %d clone hash buckets\n",
+                          ProgramName, SFCDHASH);
             Exit(1);
         }
     }
-    if (!(HbyFdi = (struct hsfile *) calloc((MALLOC_S) SFDIHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d (dev,ino) hash buckets\n",
-                       ProgramName, SFDIHASH);
+    if (!(HbyFdi = (struct hsfile *)calloc((MALLOC_S)SFDIHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d (dev,ino) hash buckets\n",
+                      ProgramName, SFDIHASH);
         Exit(1);
     }
-    if (!(HbyFrd = (struct hsfile *) calloc((MALLOC_S) SFRDHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d rdev hash buckets\n",
-                       ProgramName, SFRDHASH);
+    if (!(HbyFrd = (struct hsfile *)calloc((MALLOC_S)SFRDHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d rdev hash buckets\n", ProgramName,
+                      SFRDHASH);
         Exit(1);
     }
-    if (!(HbyFsd = (struct hsfile *) calloc((MALLOC_S) SFFSHASH,
-                                            sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d file sys hash buckets\n",
-                       ProgramName, SFFSHASH);
+    if (!(HbyFsd = (struct hsfile *)calloc((MALLOC_S)SFFSHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d file sys hash buckets\n",
+                      ProgramName, SFFSHASH);
         Exit(1);
     }
-    if (!(HbyNm = (struct hsfile *) calloc((MALLOC_S) SFNMHASH,
-                                           sizeof(struct hsfile)))) {
-        (void) fprintf(stderr,
-                       "%s: can't allocate space for %d name hash buckets\n",
-                       ProgramName, SFNMHASH);
+    if (!(HbyNm = (struct hsfile *)calloc((MALLOC_S)SFNMHASH, sizeof(struct hsfile)))) {
+        (void)fprintf(stderr, "%s: can't allocate space for %d name hash buckets\n", ProgramName,
+                      SFNMHASH);
         Exit(1);
     }
     hs++;
-/*
+    /*
  * Scan the SearchFileChain chain, building file, file system, and file name hash
  * bucket chains.
  */
@@ -181,26 +172,18 @@ hashSfile() {
                 HbyNmCt++;
             } else if (i == 1) {
                 if (s->type) {
-                    sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(s->dev),
-                                              GET_MIN_DEV(s->dev),
-                                              s->i,
+                    sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev), s->i,
                                               SFDIHASH)];
                     HbyFdiCt++;
                 } else {
-                    sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(s->dev),
-                                              GET_MIN_DEV(s->dev),
-                                              0,
+                    sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev), 0,
                                               SFFSHASH)];
                     HbyFsdCt++;
                 }
             } else if (i == 2) {
-                if (s->type
-                    && ((s->mode == S_IFCHR) || (s->mode == S_IFBLK))) {
-                    sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(s->dev),
-                                             GET_MIN_DEV(s->dev),
-                                             GET_MAJ_DEV(s->rdev),
-                                             GET_MIN_DEV(s->rdev),
-                                             s->i,
+                if (s->type && ((s->mode == S_IFCHR) || (s->mode == S_IFBLK))) {
+                    sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(s->dev), GET_MIN_DEV(s->dev),
+                                             GET_MAJ_DEV(s->rdev), GET_MIN_DEV(s->rdev), s->i,
                                              SFRDHASH)];
                     HbyFrdCt++;
                 } else
@@ -208,22 +191,17 @@ hashSfile() {
             } else {
                 if (!hvc || (GET_MAJ_DEV(s->rdev) != cmaj))
                     continue;
-                sh = &HbyCd[SFHASHDEVINO(0, GET_MIN_DEV(s->rdev), 0,
-                                         SFCDHASH)];
+                sh = &HbyCd[SFHASHDEVINO(0, GET_MIN_DEV(s->rdev), 0, SFCDHASH)];
                 HbyCdCt++;
             }
             if (!sh->s) {
                 sh->s = s;
-                sh->next = (struct hsfile *) NULL;
+                sh->next = (struct hsfile *)NULL;
                 continue;
             } else {
-                if (!(sn = (struct hsfile *) malloc(
-                        (MALLOC_S)
-                    sizeof(struct hsfile))))
-                {
-                    (void) fprintf(stderr,
-                                   "%s: can't allocate hsfile bucket for: %s\n",
-                                   ProgramName, s->aname);
+                if (!(sn = (struct hsfile *)malloc((MALLOC_S)sizeof(struct hsfile)))) {
+                    (void)fprintf(stderr, "%s: can't allocate hsfile bucket for: %s\n", ProgramName,
+                                  s->aname);
                     Exit(1);
                 }
                 sn->s = s;
@@ -234,18 +212,16 @@ hashSfile() {
     }
 }
 
-
 /*
  * is_file_named() - is this file named?
  */
 
-int
-is_file_named(p, nt, vt, ps)
-        char *p;            /* path name; NULL = search by device
+int is_file_named(p, nt, vt, ps)
+char *p;       /* path name; NULL = search by device
 					 * and inode (from *CurrentLocalFile) */
-        int nt;                /* node type -- e.g., N_* */
-        enum vtype vt;            /* vnode type */
-        int ps;                /* print status: 0 = don't copy name
+int nt;        /* node type -- e.g., N_* */
+enum vtype vt; /* vnode type */
+int ps;        /* print status: 0 = don't copy name
 					 * to NameChars */
 {
     char *ep;
@@ -253,7 +229,7 @@ is_file_named(p, nt, vt, ps)
     struct sfile *s;
     struct hsfile *sh;
     size_t sz;
-/*
+    /*
  * Check for a path name match, as requested.
  */
     if (p && HbyNmCt) {
@@ -264,83 +240,73 @@ is_file_named(p, nt, vt, ps)
             }
         }
     }
-/*
+    /*
  * Check for a Solaris clone file.
  */
-    if (!f && HbyCdCt && nt == N_STREAM && CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def
-        && (CurrentLocalFile->dev == DeviceOfDev)) {
-        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(CurrentLocalFile->rdev), 0,
-                                      SFCDHASH)];
-             sh;
+    if (!f && HbyCdCt && nt == N_STREAM && CurrentLocalFile->dev_def &&
+        CurrentLocalFile->rdev_def && (CurrentLocalFile->dev == DeviceOfDev)) {
+        for (sh = &HbyCd[SFHASHDEVINO(0, GET_MAJ_DEV(CurrentLocalFile->rdev), 0, SFCDHASH)]; sh;
              sh = sh->next) {
-            if ((s = sh->s) && (GET_MAJ_DEV(CurrentLocalFile->rdev)
-                                == GET_MIN_DEV(s->rdev))) {
+            if ((s = sh->s) && (GET_MAJ_DEV(CurrentLocalFile->rdev) == GET_MIN_DEV(s->rdev))) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a regular file.
  */
-    if (!f && HbyFdiCt && CurrentLocalFile->dev_def
-        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+    if (!f && HbyFdiCt && CurrentLocalFile->dev_def &&
+        (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
         for (sh = &HbyFdi[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
-                                       GET_MIN_DEV(CurrentLocalFile->dev),
-                                       CurrentLocalFile->inode,
+                                       GET_MIN_DEV(CurrentLocalFile->dev), CurrentLocalFile->inode,
                                        SFDIHASH)];
-             sh;
-             sh = sh->next) {
-            if ((s = sh->s) && (CurrentLocalFile->dev == s->dev)
-                && (CurrentLocalFile->inode == s->i)) {
+             sh; sh = sh->next) {
+            if ((s = sh->s) && (CurrentLocalFile->dev == s->dev) &&
+                (CurrentLocalFile->inode == s->i)) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a file system match.
  */
     if (!f && HbyFsdCt && CurrentLocalFile->dev_def) {
         for (sh = &HbyFsd[SFHASHDEVINO(GET_MAJ_DEV(CurrentLocalFile->dev),
                                        GET_MIN_DEV(CurrentLocalFile->dev), 0, SFFSHASH)];
-             sh;
-             sh = sh->next) {
+             sh; sh = sh->next) {
             if ((s = sh->s) && CurrentLocalFile->dev == s->dev) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Check for a character or block device match.
  */
-    if (!f && HbyFrdCt
-        && ((vt = VCHR) || (vt = VBLK))
-        && CurrentLocalFile->dev_def && (CurrentLocalFile->dev == DeviceOfDev)
-        && CurrentLocalFile->rdev_def
-        && (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
-        for (sh = &HbyFrd[SFHASHRDEVI(GET_MAJ_DEV(CurrentLocalFile->dev),
-                                      GET_MIN_DEV(CurrentLocalFile->dev),
-                                      GET_MAJ_DEV(CurrentLocalFile->rdev),
-                                      GET_MIN_DEV(CurrentLocalFile->rdev),
-                                      CurrentLocalFile->inode, SFRDHASH)];
-             sh;
-             sh = sh->next) {
-            if ((s = sh->s) && (s->dev == CurrentLocalFile->dev)
-                && (s->rdev == CurrentLocalFile->rdev) && (s->i == CurrentLocalFile->inode)) {
+    if (!f && HbyFrdCt && ((vt = VCHR) || (vt = VBLK)) && CurrentLocalFile->dev_def &&
+        (CurrentLocalFile->dev == DeviceOfDev) && CurrentLocalFile->rdev_def &&
+        (CurrentLocalFile->inp_ty == 1 || CurrentLocalFile->inp_ty == 3)) {
+        for (sh = &HbyFrd[SFHASHRDEVI(
+                 GET_MAJ_DEV(CurrentLocalFile->dev), GET_MIN_DEV(CurrentLocalFile->dev),
+                 GET_MAJ_DEV(CurrentLocalFile->rdev), GET_MIN_DEV(CurrentLocalFile->rdev),
+                 CurrentLocalFile->inode, SFRDHASH)];
+             sh; sh = sh->next) {
+            if ((s = sh->s) && (s->dev == CurrentLocalFile->dev) &&
+                (s->rdev == CurrentLocalFile->rdev) && (s->i == CurrentLocalFile->inode)) {
                 f = 1;
                 break;
             }
         }
     }
-/*
+    /*
  * Convert the name if a match occurred.
  */
     if (f) {
         if (f == 2) {
             if (ps)
-                (void) snpf(NameChars, NameCharsLength, "%s", p);
+                (void)snpf(NameChars, NameCharsLength, "%s", p);
         } else {
             if (ps && s->type) {
 
@@ -348,10 +314,10 @@ is_file_named(p, nt, vt, ps)
                  * If the search argument isn't a file system, propagate it
                  * to NameChars[]; otherwise, let printname() compose the name.
                  */
-                (void) snpf(NameChars, NameCharsLength, "%s", s->name);
+                (void)snpf(NameChars, NameCharsLength, "%s", s->name);
                 if (s->devnm) {
                     ep = endnm(&sz);
-                    (void) snpf(ep, sz, " (%s)", s->devnm);
+                    (void)snpf(ep, sz, " (%s)", s->devnm);
                 }
             }
         }
@@ -361,93 +327,86 @@ is_file_named(p, nt, vt, ps)
     return (0);
 }
 
-
-#if    defined(HASPRINTDEV)
+#if defined(HASPRINTDEV)
 /*
  * print_dev() - print device
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
-/*
+    /*
  * Avoid the Solaris major() and minor() functions from makedev(3C) to get
  * printable major/minor numbers.
  *
  * We would like to use the L_MAXMAJ definition from <sys/sysmacros.h> all
  * the time, but it's not always correct in all versions of Solaris.
  */
-    (void) snpf(buf, sizeof(buf), "%d,%d", (int)((*dev >> L_BITSMINOR) &
+    (void)snpf(buf, sizeof(buf), "%d,%d",
+               (int)((*dev >> L_BITSMINOR) &
 
-#if	solaris>=20501
-        L_MAXMAJ
-#else	/* solaris<20501 */
-        0x3fff
-#endif	/* solaris>=20501 */
+#if solaris >= 20501
+                     L_MAXMAJ
+#else  /* solaris<20501 */
+                     0x3fff
+#endif /* solaris>=20501 */
 
-        ), (int)(*dev & L_MAXMIN));
-    return(buf);
+                     ),
+               (int)(*dev & L_MAXMIN));
+    return (buf);
 }
-#endif    /* defined(HASPRINTDEV) */
+#endif /* defined(HASPRINTDEV) */
 
-
-#if    defined(HAS_V_PATH)
+#if defined(HAS_V_PATH)
 
 /*
  * Local definitions
  */
 
-#define	VPRDLEN	((MAXPATHLEN + 7)/8)	/* v_path read length increment */
-
+#define VPRDLEN ((MAXPATHLEN + 7) / 8) /* v_path read length increment */
 
 /*
  * print_v_path() - print path name from vnode's v_path pointer
  */
 
-extern int
-print_v_path(struct lfile * lf)
-{
-    char buf[MAXPATHLEN+1];
+extern int print_v_path(struct lfile *lf) {
+    char buf[MAXPATHLEN + 1];
     unsigned char del = 0;
     unsigned char aperr = 0;
 
-# if	defined(HASMNTSTAT)
+#if defined(HASMNTSTAT)
     struct stat sb;
-# endif	/* defined(HASMNTSTAT) */
+#endif /* defined(HASMNTSTAT) */
 
-# if	defined(HASVXFS) && defined(HASVXFSRNL)
+#if defined(HASVXFS) && defined(HASVXFSRNL)
     if (lf->is_vxfs && (lf->inp_ty == 1) && lf->fsdir) {
         if (print_vxfs_rnl_path(lf))
-        return(1);
+            return (1);
     }
-# endif	/* defined(HASVXFS) && defined(HASVXFSRNL) */
+#endif /* defined(HASVXFS) && defined(HASVXFSRNL) */
 
-    (void) read_v_path((KA_T)lf->V_path, buf, (size_t)sizeof(buf));
+    (void)read_v_path((KA_T)lf->V_path, buf, (size_t)sizeof(buf));
     if (buf[0]) {
 
-# if	defined(HASMNTSTAT)
+#if defined(HASMNTSTAT)
         if (!lf->mnt_stat && lf->dev_def && (lf->inp_ty == 1)) {
 
-        /*
+            /*
          * No problem was detected in applying stat(2) to this mount point.
          * If the device and inode for the file are known, it is probably
          * safe and worthwhile to apply stat(2) to the v_path.
          */
-        if (!statsafely(buf, &sb)) {
+            if (!statsafely(buf, &sb)) {
 
-        /*
+                /*
          * The stat(2) succeeded.  See if the device and inode match.
          * If they both don't match, ignore the v_path.
          */
-            if ((lf->dev != sb.st_dev)
-            ||  (lf->inode != (INODETYPE)sb.st_ino)
-            ) {
-            return(0);
-            }
-        } else {
+                if ((lf->dev != sb.st_dev) || (lf->inode != (INODETYPE)sb.st_ino)) {
+                    return (0);
+                }
+            } else {
 
-        /*
+                /*
          * The stat(2) failed.
          *
          * If the error reply is ENOENT and the -X option hasn't been
@@ -461,117 +420,108 @@ print_v_path(struct lfile * lf)
          * followed by "(?)", because lsof probably lacks permission
          * to apply stat(2) to v_path.
          */
-            switch (errno) {
-            case EACCES:
-            case EPERM:
-            aperr = 1;
-            break;
-            case ENOENT:
+                switch (errno) {
+                case EACCES:
+                case EPERM:
+                    aperr = 1;
+                    break;
+                case ENOENT:
 
-# if	defined(HASXOPT)
-            if (OptCrossoverExt && lf->nlink_def && !lf->nlink) {
-                del = 1;
-                break;
-            }
-# endif	/* defined(HASXOPT) */
+#if defined(HASXOPT)
+                    if (OptCrossoverExt && lf->nlink_def && !lf->nlink) {
+                        del = 1;
+                        break;
+                    }
+#endif /* defined(HASXOPT) */
 
-            return(0);
-            default:
-            return(0);
+                    return (0);
+                default:
+                    return (0);
+                }
             }
         }
-        }
-# endif	/* defined(HASMNTSTAT) */
+#endif /* defined(HASMNTSTAT) */
 
-    /*
+        /*
      * Print the v_path.
      */
         safestrprt(buf, stdout, 0);
         if (del)
-        safestrprt(" (deleted)", stdout, 0);
+            safestrprt(" (deleted)", stdout, 0);
         else if (aperr)
-        safestrprt(" (?)", stdout, 0);
-        return(1);
+            safestrprt(" (?)", stdout, 0);
+        return (1);
     }
-    return(0);
+    return (0);
 }
-
 
 /*
  * read_v_path() - read path name from vnode's v_path pointer
  */
 
-extern void
-read_v_path(KA_T ka, char * rb, size_t rbl)
-{
+extern void read_v_path(KA_T ka, char *rb, size_t rbl) {
     char *ba;
     size_t rl, tl;
 
     *rb = '\0';
     if (!ka)
         return;
-    for (ba = rb, tl = 0;
-         tl < (rbl - 1);
-         ba += rl, ka += (KA_T)((char *)ka + rl), tl += rl
-    ) {
+    for (ba = rb, tl = 0; tl < (rbl - 1); ba += rl, ka += (KA_T)((char *)ka + rl), tl += rl) {
 
-    /*
+        /*
      * Read v_path VPRDLEN bytes at a time until the local buffer is full
      * or a NUL byte is reached.
      */
         if ((rl = rbl - 1 - tl) > VPRDLEN)
-        rl = VPRDLEN;
+            rl = VPRDLEN;
         else if (rl < 1) {
-        *(rb + rbl - 1) = '\0';
-        break;
+            *(rb + rbl - 1) = '\0';
+            break;
         }
         if (!kread(ka, ba, rl)) {
-        *(ba + rl) = '\0';
-        if (strchr(ba, '\0') < (ba + rl))
-            break;
+            *(ba + rl) = '\0';
+            if (strchr(ba, '\0') < (ba + rl))
+                break;
         } else {
 
-        /*
+            /*
          * Can't read a full buffer load; try reducing the length one
          * byte at a time until it reaches zero.  Stop here, since it
          * has been established that no more bytes can be read.
          */
-        for (rl--; rl > 0; rl--) {
-            if (!kread(ka, ba, rl)) {
-            *(ba + rl) = '\0';
-            break;
+            for (rl--; rl > 0; rl--) {
+                if (!kread(ka, ba, rl)) {
+                    *(ba + rl) = '\0';
+                    break;
+                }
             }
-        }
-        if (rl <= 0)
-            *ba = '\0';
-        break;
+            if (rl <= 0)
+                *ba = '\0';
+            break;
         }
     }
 }
-#endif    /* defined(HAS_V_PATH) */
-
+#endif /* defined(HAS_V_PATH) */
 
 /*
  * process_file() - process file
  */
 
-void
-process_file(KA_T fp)
-{
+void process_file(KA_T fp) {
     struct file f;
     int flag;
 
-#if    defined(FILEPTR)
+#if defined(FILEPTR)
     FILEPTR = &f;
-#endif    /* defined(FILEPTR) */
+#endif /* defined(FILEPTR) */
 
-    if (kread(fp, (char *) &f, sizeof(f))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
-                    print_kptr(fp, (char *) NULL, 0));
+    if (kread(fp, (char *)&f, sizeof(f))) {
+        (void)snpf(NameChars, NameCharsLength, "can't read file struct from %s",
+                   print_kptr(fp, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
-    CurrentLocalFile->off = (SZOFFTYPE) f.f_offset;
+    CurrentLocalFile->off = (SZOFFTYPE)f.f_offset;
 
     if (f.f_count) {
 
@@ -585,53 +535,50 @@ process_file(KA_T fp)
         else if (flag == (FREAD | FWRITE))
             CurrentLocalFile->access = 'u';
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
         /*
          * Save file structure values.
          */
-            if (OptFileStructValues & FSV_FILE_COUNT) {
+        if (OptFileStructValues & FSV_FILE_COUNT) {
             CurrentLocalFile->fct = (long)f.f_count;
             CurrentLocalFile->fsv |= FSV_FILE_COUNT;
-            }
-            if (OptFileStructValues & FSV_FILE_ADDR) {
+        }
+        if (OptFileStructValues & FSV_FILE_ADDR) {
             CurrentLocalFile->fsa = fp;
             CurrentLocalFile->fsv |= FSV_FILE_ADDR;
-            }
-            if (OptFileStructValues & FSV_FILE_FLAGS) {
+        }
+        if (OptFileStructValues & FSV_FILE_FLAGS) {
             CurrentLocalFile->ffg = (long)f.f_flag;
             CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
-            }
-            if (OptFileStructValues & FSV_NODE_ID) {
+        }
+        if (OptFileStructValues & FSV_NODE_ID) {
             CurrentLocalFile->fna = (KA_T)f.f_vnode;
             CurrentLocalFile->fsv |= FSV_NODE_ID;
-            }
-#endif    /* defined(HASFSTRUCT) */
+        }
+#endif /* defined(HASFSTRUCT) */
 
         /*
          * Solaris file structures contain a vnode pointer.  Process it.
          */
-        process_node((KA_T) f.f_vnode);
+        process_node((KA_T)f.f_vnode);
         return;
     }
     enter_nm("no more information");
 }
 
-
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
 /*
  * gethostbyname2() -- an RFC2133-compatible get-host-by-name-two function
  *                     to get AF_INET and AF_INET6 addresses from host names,
  *                     using the RFC2553-compatible getipnodebyname() function
  */
 
-extern struct hostent *
-gethostbyname2(const char * nm, int prot)
-{
+extern struct hostent *gethostbyname2(const char *nm, int prot) {
     int err;
     static struct hostent *hep = (struct hostent *)NULL;
 
     if (hep)
-        (void) freehostent(hep);
-    return((hep = getipnodebyname(nm, prot, 0, &err)));
+        (void)freehostent(hep);
+    return ((hep = getipnodebyname(nm, prot, 0, &err)));
 }
-#endif    /* defined(HASIPv6) */
+#endif /* defined(HASIPv6) */

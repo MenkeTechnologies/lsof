@@ -8,8 +8,8 @@
  * February, 1998
  */
 
-#if    !defined(LSOF_PROC_H)
-#define    LSOF_PROC_H
+#if !defined(LSOF_PROC_H)
+#define LSOF_PROC_H
 
 #include "kernbits.h"
 #include <sys/types.h>
@@ -113,14 +113,14 @@ typedef struct proc {
     short p_fandx;
     short p_pandx;
     int p_created_threads;
-    KA_T p_firstthreadp;        /* thread pointer (for locks) */
+    KA_T p_firstthreadp; /* thread pointer (for locks) */
     KA_T p_lastthreadp;
     proc_flag_t p_flag;
     KA_T thread_lock;
     KA_T p_lock;
     KA_T p_detached_zombie;
     KA_T p_fss;
-    proc_state_t p_stat;        /* process state */
+    proc_state_t p_stat; /* process state */
     char p_nice;
     u_short p_pri;
     int p_livethreads;
@@ -139,12 +139,12 @@ typedef struct proc {
     int p_cursig;
     proc_flag2_t p_flag2;
     int p_coreflags;
-    uid_t p_uid;            /* user ID (UID) of process owner */
+    uid_t p_uid; /* user ID (UID) of process owner */
     uid_t p_suid;
     KA_T p_pgid_p;
     gid_t p_pgid;
-    pid_t p_pid;            /* process ID (PID) */
-    pid_t p_ppid;            /* parent process ID (PPID) */
+    pid_t p_pid;  /* process ID (PID) */
+    pid_t p_ppid; /* parent process ID (PPID) */
     size_t p_maxrss;
     short p_idhash;
     short p_ridhash;
@@ -157,7 +157,7 @@ typedef struct proc {
     KA_T p_osptr;
     KA_T p_ysptr;
     KA_T p_dptr;
-    KA_T p_vas;            /* pointer to VM for process */
+    KA_T p_vas; /* pointer to VM for process */
     short p_memresv;
     short p_swpresv;
     short p_sysmemresv;
@@ -180,10 +180,10 @@ typedef struct proc {
     time_t p_start;
     KA_T p_shadproc;
     KA_T p_bor_lock;
-    int p_maxof;            /* maximum open files */
-    KA_T p_cdir;            /* pointer to CWD vnode */
-    KA_T p_rdir;            /* pointer to root directory vnode */
-    KA_T p_ofilep;            /* pointer to ofile_t chain */
+    int p_maxof;   /* maximum open files */
+    KA_T p_cdir;   /* pointer to CWD vnode */
+    KA_T p_rdir;   /* pointer to root directory vnode */
+    KA_T p_ofilep; /* pointer to ofile_t chain */
     KA_T p_vforkbuf;
     u_int p_schedpolicy;
     u_short p_pindx;
@@ -202,9 +202,7 @@ typedef struct proc {
     int p_captr;
     union {
         struct {
-            u_int zombies_exist:1,
-                    recalc_privgrps:1,
-                    unused:30;
+            u_int zombies_exist : 1, recalc_privgrps : 1, unused : 30;
         } bits;
         u_int all;
     } p_pl_flags;
@@ -243,4 +241,4 @@ typedef struct proc {
     char p_spare[48];
 } proc_t;
 
-#endif    /* !defined(LSOF_PROC_H) */
+#endif /* !defined(LSOF_PROC_H) */

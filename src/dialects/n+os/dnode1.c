@@ -2,7 +2,6 @@
  * dnode1.h - NEXTSTEP and OPENSTEP AFS support
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,7 +25,7 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HAS_AFS)
+#if defined(HAS_AFS)
 #include "lsof.h"
 
 #include <rpc/xdr.h>
@@ -37,7 +36,6 @@
 #include <afs/afsint.h>
 #include <afs/vldbint.h>
 
-
 /*
  * This is an emulation of the afs_rwlock_t definition that appears in
  * the AFS sources in afs/lock.h.
@@ -45,16 +43,14 @@
 
 struct afs_lock {
 
-# if    HAS_AFS<304
+#if HAS_AFS < 304
     unsigned char d1[4];
-# else  /* HAS_AFS>=304 */
+#else  /* HAS_AFS>=304 */
     unsigned char d1[6];
-# endif /* HAS_AFS<304 */
-
+#endif /* HAS_AFS<304 */
 };
 typedef struct afs_lock afs_lock_t;
 typedef struct afs_lock afs_rwlock_t;
-
 
 /*
  * This is an emulation of the afs_bozoLock_t definition that appears in
@@ -68,56 +64,48 @@ struct afs_bozoLock {
 };
 typedef struct afs_bozoLock afs_bozoLock_t;
 
-#define	KERNEL
+#define KERNEL
 #include <afs/afs.h>
-#undef	KERNEL
-
+#undef KERNEL
 
 /*
  * Local function prototypes
  */
 
-_PROTOTYPE(static struct volume *getvolume,(struct VenusFid *f, int *vols));
-_PROTOTYPE(static int is_rootFid,(struct vcache *vc, int *rfid));
-
+_PROTOTYPE(static struct volume *getvolume, (struct VenusFid * f, int *vols));
+_PROTOTYPE(static int is_rootFid, (struct vcache * vc, int *rfid));
 
 /*
  * alloc_vcache() - allocate space for vcache structure
  */
 
-struct vnode *
-alloc_vcache()
-{
-    return((struct vnode *)malloc(sizeof(struct vcache)));
+struct vnode *alloc_vcache() {
+    return ((struct vnode *)malloc(sizeof(struct vcache)));
 }
-
 
 /*
  * ckAFSsym() - check for missing X_AFS_* symbols in AFS name list file
  */
 
-void
-ckAFSsym(struct nlist * nl)
-{
+void ckAFSsym(struct nlist *nl) {
     char *path = AFSAPATHDEF;
     int i;
 
-# if	defined(HASAOPT)
+#if defined(HASAOPT)
     if (AFSApath)
         path = AFSApath;
-# endif	/* defined(HASAOPT) */
+#endif /* defined(HASAOPT) */
 
-/*
+    /*
  * See if the alternate AFS name list file can be read.
  */
     if (!is_readable(path, 0)) {
         if (!OptWarnings)
-        (void) fprintf(stderr,
-            "%s: WARNING: can't access AFS name list file: %s\n",
-            ProgramName, path);
+            (void)fprintf(stderr, "%s: WARNING: can't access AFS name list file: %s\n", ProgramName,
+                          path);
         return;
     }
-/*
+    /*
  * Read the AFS modload symbols and compare its non-zero values with
  * the non-zero values in NlistTable[].  Quit if there is any mis-match.
  */
@@ -125,33 +113,27 @@ ckAFSsym(struct nlist * nl)
         return;
     for (i = 0; NlistTable[i].n_un.n_name && NlistTable[i].n_un.n_name[0]; i++) {
         if (!nl[i].n_value || !NlistTable[i].n_value)
-        continue;
+            continue;
         if (nl[i].n_value != NlistTable[i].n_value)
-        return;
+            return;
     }
-/*
+    /*
  * If any AFS kernel name list symbol that doesn't have a value in NlistTable[] has
  * one from the AFS modload file, copy its modload value to NlistTable[].
  */
-    if ((i = get_Nl_value("arFid", Drive_Nl, NULL)) >= 0
-    &&  !NlistTable[i].n_value && nl[i].n_value)
+    if ((i = get_Nl_value("arFid", Drive_Nl, NULL)) >= 0 && !NlistTable[i].n_value && nl[i].n_value)
         NlistTable[i].n_value = nl[i].n_value;
-    if ((i = get_Nl_value("avops", Drive_Nl, NULL)) >= 0
-    &&  !NlistTable[i].n_value && nl[i].n_value)
+    if ((i = get_Nl_value("avops", Drive_Nl, NULL)) >= 0 && !NlistTable[i].n_value && nl[i].n_value)
         NlistTable[i].n_value = nl[i].n_value;
-    if ((i = get_Nl_value("avol",  Drive_Nl, NULL)) >= 0
-    &&  !NlistTable[i].n_value && nl[i].n_value)
+    if ((i = get_Nl_value("avol", Drive_Nl, NULL)) >= 0 && !NlistTable[i].n_value && nl[i].n_value)
         NlistTable[i].n_value = nl[i].n_value;
 }
-
 
 /*
  * getvolume() - get volume structure
  */
 
-static struct volume *
-getvolume(struct VenusFid * f, int * vols)
-{
+static struct volume *getvolume(struct VenusFid *f, int *vols) {
     int i;
     static KA_T ka = 0;
     KA_T kh;
@@ -160,46 +142,41 @@ getvolume(struct VenusFid * f, int * vols)
     static int w = 0;
 
     if (!ka) {
-        if (get_Nl_value("avol", Drive_Nl, (unsigned long *)&ka) < 0 || !ka)
-        {
-        if (!w && !OptWarnings) {
-            (void) fprintf(stderr,
-            "%s: WARNING: no kernel address for afs_volumes\n", ProgramName);
-            (void) fprintf(stderr,
-            "      This may hamper AFS node number reporting.\n");
-            w = 1;
-        }
-        *vols = 0;
-        return((struct volume *)NULL);
+        if (get_Nl_value("avol", Drive_Nl, (unsigned long *)&ka) < 0 || !ka) {
+            if (!w && !OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: no kernel address for afs_volumes\n",
+                              ProgramName);
+                (void)fprintf(stderr, "      This may hamper AFS node number reporting.\n");
+                w = 1;
+            }
+            *vols = 0;
+            return ((struct volume *)NULL);
         }
     }
     *vols = 1;
     i = (NVOLS - 1) & f->Fid.Volume;
     kh = (KA_T)((char *)ka + (i * sizeof(struct volume *)));
     if (kread(kh, (char *)&vp, sizeof(vp)))
-        return((struct volume *)NULL);
+        return ((struct volume *)NULL);
     while (vp) {
         if (kread((KA_T)vp, (char *)&v, sizeof(v)))
-        return((struct volume *)NULL);
+            return ((struct volume *)NULL);
         if (v.volume == f->Fid.Volume && v.cell == f->Cell)
-        return(&v);
+            return (&v);
         vp = v.next;
     }
-    return((struct volume *)NULL);
+    return ((struct volume *)NULL);
 }
-
 
 /*
  * hasAFS() - test for AFS presence via vfs structure
  */
 
-int
-hasAFS(struct vnode * vp)
-{
+int hasAFS(struct vnode *vp) {
     struct mounts *mp;
     int n;
     struct vfs v;
-/*
+    /*
  * If this vnode has a v_data pointer, then it probably isn't an AFS vnode;
  * return FALSE.
  *
@@ -210,40 +187,35 @@ hasAFS(struct vnode * vp)
  * AFSDEV.  If it is, record the AFS vfs struct address and return TRUE.
  */
     if (AFSVfsp && !vp->v_data && vp->v_vfsp == AFSVfsp)
-        return(1);
-    if (vp->v_data
-    ||  !vp->v_vfsp
-    ||  kread((KA_T)vp->v_vfsp, (char *)&v, sizeof(v))
-    ||  v.vfs_data)
-        return(0);
+        return (1);
+    if (vp->v_data || !vp->v_vfsp || kread((KA_T)vp->v_vfsp, (char *)&v, sizeof(v)) || v.vfs_data)
+        return (0);
     if (v.vfs_fsid.val[0] == AFSDEV) {
         AFSVfsp = vp->v_vfsp;
-        return(1);
+        return (1);
     }
-/*
+    /*
  * Search the local mount table for /afs devices or a match on device number.
  * Count /afs devices and skip a device number test for them.  A match on
  * device number for non-AFS devices produces a FALSE return.
  */
     for (mp = readmnt(), n = 0; mp; mp = mp->next) {
-        if (mp->dev == AFSDEV
-        &&  mp->dir && strcmp(mp->dir, "/afs") == 0
-        &&  mp->fsname && strcmp(mp->fsname, "AFS") == 0)
-        n++;
+        if (mp->dev == AFSDEV && mp->dir && strcmp(mp->dir, "/afs") == 0 && mp->fsname &&
+            strcmp(mp->fsname, "AFS") == 0)
+            n++;
         else if (mp->dev == (dev_t)v.vfs_fsid.val[0])
-        return(0);
+            return (0);
     }
-/*
+    /*
  * If there is exactly one /afs device, assume its vfs struct address is
  * the one for this vnode, record it, and return TRUE.
  */
     if (n == 1) {
         AFSVfsp = vp->v_vfsp;
-        return(1);
+        return (1);
     }
-    return(0);
+    return (0);
 }
-
 
 /*
  * is_rootFid() - is the file ID the root file ID
@@ -254,12 +226,10 @@ hasAFS(struct vnode * vp)
  *		  1 if root file ID structure address available
  */
 
-static int
-is_rootFid(struct vcache * vc, int * rfid)
-{
+static int is_rootFid(struct vcache *vc, int *rfid) {
     unsigned long arFid;
     char *err;
-    static int f = 0;		/* rootFid structure status:
+    static int f = 0; /* rootFid structure status:
 					 *     -1 = unavailable
 					 *	0 = not yet accessed
 					 *	1 = available */
@@ -269,58 +239,51 @@ is_rootFid(struct vcache * vc, int * rfid)
     switch (f) {
     case -1:
         if (vc->v.v_flag & VROOT) {
-        *rfid = 1;
-        return(1);
+            *rfid = 1;
+            return (1);
         }
         *rfid = 0;
-        return(0);
+        return (0);
     case 0:
         if (get_Nl_value("arFid", Drive_Nl, &arFid) < 0 || !arFid) {
-        err = "no _afs_rootFid kernel address";
+            err = "no _afs_rootFid kernel address";
 
-rfid_unavailable:
+        rfid_unavailable:
 
-        if (!w && !OptWarnings) {
-            (void) fprintf(stderr,
-            "%s: WARNING: AFS root Fid error: %s\n", ProgramName, err);
-            (void) fprintf(stderr,
-            "      This may hamper AFS node number reporting.\n");
-            w = 1;
-        }
-        f = -1;
-        if (vc->v.v_flag & VROOT) {
-            *rfid = 1;
-            return(1);
-        }
-        *rfid = 0;
-        return(0);
+            if (!w && !OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: AFS root Fid error: %s\n", ProgramName, err);
+                (void)fprintf(stderr, "      This may hamper AFS node number reporting.\n");
+                w = 1;
+            }
+            f = -1;
+            if (vc->v.v_flag & VROOT) {
+                *rfid = 1;
+                return (1);
+            }
+            *rfid = 0;
+            return (0);
         }
         if (kread((KA_T)arFid, (char *)&r, sizeof(r))) {
-        err = "can't read _afs_rootFid from kernel";
-        goto rfid_unavailable;
+            err = "can't read _afs_rootFid from kernel";
+            goto rfid_unavailable;
         }
         f = 1;
         /* fall through */
     case 1:
         *rfid = 1;
-        if (vc->fid.Fid.Unique == r.Fid.Unique
-        &&  vc->fid.Fid.Vnode == r.Fid.Vnode
-        &&  vc->fid.Fid.Volume == r.Fid.Volume
-        &&  vc->fid.Cell == r.Cell)
-        return(1);
+        if (vc->fid.Fid.Unique == r.Fid.Unique && vc->fid.Fid.Vnode == r.Fid.Vnode &&
+            vc->fid.Fid.Volume == r.Fid.Volume && vc->fid.Cell == r.Cell)
+            return (1);
     }
     *rfid = 0;
-    return(0);
+    return (0);
 }
-
 
 /*
  * readafsnode() - read AFS node
  */
 
-int
-readafsnode(caddr_t va, struct vnode * v, struct afsnode * an)
-{
+int readafsnode(caddr_t va, struct vnode *v, struct afsnode *an) {
     char *cp;
     KA_T ka;
     int len, rfid, vols;
@@ -331,51 +294,48 @@ readafsnode(caddr_t va, struct vnode * v, struct afsnode * an)
     ka = (KA_T)((char *)va + sizeof(struct vnode));
     len = sizeof(struct vcache) - sizeof(struct vnode);
     if (kread(ka, cp, len)) {
-        (void) snpf(NameChars, NameCharsLength,
-        "vnode at %#x: can't read vcache remainder from %#x", va, ka);
+        (void)snpf(NameChars, NameCharsLength, "vnode at %#x: can't read vcache remainder from %#x",
+                   va, ka);
         enter_nm(NameChars);
-        return(1);
+        return (1);
     }
     vc = (struct vcache *)v;
     an->dev = AFSDEV;
     an->size = (unsigned long)vc->m.Length;
     an->nlink = (long)vc->m.LinkCount;
     an->nlink_st = 1;
-/*
+    /*
  * Manufacture the "inode" number.
  */
     if (vc->mvstat == 2) {
         if ((vp = getvolume(&vc->fid, &vols))) {
-        an->inode = (INODETYPE)(vp->mtpoint.Fid.Vnode
-              + (vp->mtpoint.Fid.Volume << 16));
-        if (an->inode == (INODETYPE)0) {
-            if (is_rootFid(vc, &rfid))
-            an->ino_st = 1;
-            else if (rfid) {
-            an->inode = (INODETYPE)2;
-            an->ino_st = 1;
+            an->inode = (INODETYPE)(vp->mtpoint.Fid.Vnode + (vp->mtpoint.Fid.Volume << 16));
+            if (an->inode == (INODETYPE)0) {
+                if (is_rootFid(vc, &rfid))
+                    an->ino_st = 1;
+                else if (rfid) {
+                    an->inode = (INODETYPE)2;
+                    an->ino_st = 1;
+                } else
+                    an->ino_st = 0;
             } else
-            an->ino_st = 0;
-        } else
-            an->ino_st = 1;
+                an->ino_st = 1;
         } else {
-        if (vols) {
-            an->inode = (INODETYPE)2;
-            an->ino_st = 1;
-        } else {
-            if (v->v_flag & VROOT) {
-            an->inode = (INODETYPE)0;
-            an->ino_st = 1;
-            } else
-            an->ino_st = 0;
-        }
+            if (vols) {
+                an->inode = (INODETYPE)2;
+                an->ino_st = 1;
+            } else {
+                if (v->v_flag & VROOT) {
+                    an->inode = (INODETYPE)0;
+                    an->ino_st = 1;
+                } else
+                    an->ino_st = 0;
+            }
         }
     } else {
-        an->inode = (INODETYPE)((vc->fid.Fid.Vnode
-              +			(vc->fid.Fid.Volume << 16))
-              & 0x7fffffff);
+        an->inode = (INODETYPE)((vc->fid.Fid.Vnode + (vc->fid.Fid.Volume << 16)) & 0x7fffffff);
         an->ino_st = 1;
     }
-    return(0);
+    return (0);
 }
-#endif    /* defined(HAS_AFS) */
+#endif /* defined(HAS_AFS) */

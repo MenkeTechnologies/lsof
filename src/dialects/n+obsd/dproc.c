@@ -2,7 +2,6 @@
  * dproc.c - NetBSD and OpenBSD process access functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,84 +27,70 @@
 
 #include "lsof.h"
 
-
-_PROTOTYPE(static void enter_vn_text, (KA_T
-        va,
-        int *n));
+_PROTOTYPE(static void enter_vn_text, (KA_T va, int *n));
 
 _PROTOTYPE(static void get_kernel_access, (void));
 
-_PROTOTYPE(static void process_text, (KA_T
-        vm));
-
+_PROTOTYPE(static void process_text, (KA_T vm));
 
 /*
  * Local static values
  */
 
-static MALLOC_S Nv = 0;            /* allocated Vp[] entries */
-static KA_T *Vp = NULL;            /* vnode address cache */
-
+static MALLOC_S Nv = 0; /* allocated Vp[] entries */
+static KA_T *Vp = NULL; /* vnode address cache */
 
 /*
  * ckkv - check kernel version
  */
 
-void
-ckkv(char * d, char * er, char * ev, char * ea)
-{
+void ckkv(char *d, char *er, char *ev, char *ea) {
 
-#if    defined(HASKERNIDCK)
+#if defined(HASKERNIDCK)
     size_t l;
     int m[2];
     char v[64];
 
     if (OptWarnings)
         return;
-/*
+    /*
  * Read kernel version.
  */
     m[0] = CTL_KERN;
     m[1] = KERN_OSRELEASE;
     l = sizeof(v);
     if (sysctl(m, 2, v, &l, NULL, 0) < 0) {
-        (void) fprintf(stderr, "%s: CTL_KERN, KERN_OSRELEASE: %s\n",
-        ProgramName, strerror(errno));
+        (void)fprintf(stderr, "%s: CTL_KERN, KERN_OSRELEASE: %s\n", ProgramName, strerror(errno));
         Exit(1);
     }
-/*
+    /*
  * Warn if the actual and expected releases don't match.
  */
     if (!er || strcmp(v, er))
-        (void) fprintf(stderr,
-        "%s: WARNING: compiled for %s release %s; this is %s.\n",
-        ProgramName, d, er ? er : "UNKNOWN", v);
-#endif    /* defined(HASKERNIDCK) */
-
+        (void)fprintf(stderr, "%s: WARNING: compiled for %s release %s; this is %s.\n", ProgramName,
+                      d, er ? er : "UNKNOWN", v);
+#endif /* defined(HASKERNIDCK) */
 }
-
 
 /*
  * enter_vn_text() - enter a vnode text reference
  */
 
-static void
-enter_vn_text(KA_T va, int * n)
-{
+static void enter_vn_text(KA_T va, int *n) {
     int i;
-/*
+    /*
  * Ignore the request if the vnode has already been entered.
  */
     for (i = 0; i < *n; i++) {
         if (va == Vp[i])
             return;
     }
-/*
+    /*
  * Save the text file information.
  */
     alloc_lfile(" txt", -1);
-    Cfp = (struct file *) NULL;
-    process_node((KA_T) va);
+    Cfp = (struct file *)NULL;
+    process_node((KA_T)va);
     if (CurrentLocalFile->sel_flags)
         link_lfile();
     if (i >= Nv) {
@@ -115,29 +100,27 @@ enter_vn_text(KA_T va, int * n)
          */
         Nv += 10;
         if (!Vp)
-            Vp = (KA_T *) malloc((MALLOC_S)(sizeof(struct vnode *) * 10));
+            Vp = (KA_T *)malloc((MALLOC_S)(sizeof(struct vnode *) * 10));
         else
-            Vp = (KA_T *) realloc((MALLOC_P *) Vp, (MALLOC_S)(Nv * sizeof(KA_T)));
+            Vp = (KA_T *)realloc((MALLOC_P *)Vp, (MALLOC_S)(Nv * sizeof(KA_T)));
         if (!Vp) {
-            (void) fprintf(stderr, "%s: no txt ptr space, PID %d\n",
-                           ProgramName, CurrentLocalProc->pid);
+            (void)fprintf(stderr, "%s: no txt ptr space, PID %d\n", ProgramName,
+                          CurrentLocalProc->pid);
             Exit(1);
         }
     }
-/*
+    /*
  * Remember the vnode.
  */
     Vp[*n] = va;
     (*n)++;
 }
 
-
 /*
  * gather_proc_info() -- gather process information
  */
 
-void
-gather_proc_info() {
+void gather_proc_info() {
     struct filedesc fd;
     int i, nf;
     MALLOC_S nb;
@@ -147,36 +130,36 @@ gather_proc_info() {
     int px;
     uid_t uid;
 
-#if    defined(HASCWDINFO)
+#if defined(HASCWDINFO)
     struct cwdinfo cw;
-#define	CDIR	cw.cwdi_cdir
-#define	RDIR	cw.cwdi_rdir
-#else	/* !defined(HASCWDINFO) */
-#define    CDIR    fd.fd_cdir
-#define    RDIR    fd.fd_rdir
-#endif    /* defined(HASCWDINFO) */
+#define CDIR cw.cwdi_cdir
+#define RDIR cw.cwdi_rdir
+#else /* !defined(HASCWDINFO) */
+#define CDIR fd.fd_cdir
+#define RDIR fd.fd_rdir
+#endif /* defined(HASCWDINFO) */
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
     static char *pof = (char *)NULL;
     static int pofb = 0;
-#endif    /* defined(HASFSTRUCT) */
+#endif /* defined(HASFSTRUCT) */
 
-#if    defined(HASKVMGETPROC2)
+#if defined(HASKVMGETPROC2)
     struct kinfo_proc2 *p;
-#define	KVMPROCSZ2	sizeof(struct kinfo_proc2)
-#else	/* !defined(HASKVMGETPROC2) */
+#define KVMPROCSZ2 sizeof(struct kinfo_proc2)
+#else  /* !defined(HASKVMGETPROC2) */
     struct kinfo_proc *p;
-#endif    /* defined(HASKVMGETPROC2) */
+#endif /* defined(HASKVMGETPROC2) */
 
-/*
+    /*
  * Read the process table.
  */
 
-#if    defined(HASKVMGETPROC2)
+#if defined(HASKVMGETPROC2)
     P = kvm_getproc2(Kd, KERN_PROC_ALL, 0, KVMPROCSZ2, &Np);
-#else	/* !defined(HASKVMGETPROC2) */
+#else  /* !defined(HASKVMGETPROC2) */
     P = kvm_getprocs(Kd, KERN_PROC_ALL, 0, &Np);
-#endif    /* defined(HASKVMGETPROC2) &/
+#endif /* defined(HASKVMGETPROC2) &/
 
 	if (!P) {
 	    (void) fprintf(stderr, "%s: can't read process table: %s\n",
@@ -199,38 +182,35 @@ gather_proc_info() {
          * Read file structure pointers.
          */
         uid = p->P_UID;
-        if (is_proc_excl((int) p->P_PID, (int) p->P_PGID, (UID_ARG) uid,
-                         &pss, &sf)) {
+        if (is_proc_excl((int)p->P_PID, (int)p->P_PGID, (UID_ARG)uid, &pss, &sf)) {
             continue;
         }
-        if (!p->P_FD
-            || kread((KA_T) p->P_FD, (char *) &fd, sizeof(fd)))
+        if (!p->P_FD || kread((KA_T)p->P_FD, (char *)&fd, sizeof(fd)))
             continue;
         if (!fd.fd_refcnt || fd.fd_lastfile > fd.fd_nfiles)
             continue;
 
-#if    defined(HASCWDINFO)
-        if (!p->P_CWDI
-        ||  kread((KA_T)p->P_CWDI, (char *)&cw, sizeof(cw)))
-        CDIR = RDIR = (struct vnode *)NULL;
-#endif    /* defined(HASCWDINFO) */
+#if defined(HASCWDINFO)
+        if (!p->P_CWDI || kread((KA_T)p->P_CWDI, (char *)&cw, sizeof(cw)))
+            CDIR = RDIR = (struct vnode *)NULL;
+#endif /* defined(HASCWDINFO) */
 
         /*
          * Allocate a local process structure.
          */
         if (is_cmd_excl(p->P_COMM, &pss, &sf))
             continue;
-        alloc_lproc((int) p->P_PID, (int) p->P_PGID, (int) p->P_PPID,
-                    (UID_ARG) uid, p->P_COMM, (int) pss, (int) sf);
-        PrevLocalFile = (struct lfile *) NULL;
-        Kpa = (KA_T) p->P_ADDR;
+        alloc_lproc((int)p->P_PID, (int)p->P_PGID, (int)p->P_PPID, (UID_ARG)uid, p->P_COMM,
+                    (int)pss, (int)sf);
+        PrevLocalFile = (struct lfile *)NULL;
+        Kpa = (KA_T)p->P_ADDR;
         /*
          * Save current working directory information.
          */
         if (CDIR) {
             alloc_lfile(CWD, -1);
-            Cfp = (struct file *) NULL;
-            process_node((KA_T) CDIR);
+            Cfp = (struct file *)NULL;
+            process_node((KA_T)CDIR);
             if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
@@ -239,30 +219,30 @@ gather_proc_info() {
          */
         if (RDIR) {
             alloc_lfile(RTD, -1);
-            Cfp = (struct file *) NULL;
-            process_node((KA_T) RDIR);
+            Cfp = (struct file *)NULL;
+            process_node((KA_T)RDIR);
             if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
 
-#if    defined(OPENBSDV) && OPENBSDV >= 3020
+#if defined(OPENBSDV) && OPENBSDV >= 3020
         /*
          * Save trace node information.
          */
-            if (p->P_TRACEP) {
+        if (p->P_TRACEP) {
             alloc_lfile("tr", -1);
             Cfp = (struct file *)NULL;
             process_node((KA_T)p->P_TRACEP);
             if (CurrentLocalFile->sel_flags)
                 link_lfile();
-            }
-#endif    /* defined(OPENBSDV) && OPENBSDV>=3020 */
+        }
+#endif /* defined(OPENBSDV) && OPENBSDV>=3020 */
 
         /*
          * Save information on the text file.
          */
         if (p->P_VMSPACE)
-            process_text((KA_T) p->P_VMSPACE);
+            process_text((KA_T)p->P_VMSPACE);
         /*
          * Read open file structure pointers.
          */
@@ -271,38 +251,37 @@ gather_proc_info() {
         nb = (MALLOC_S)(sizeof(struct file *) * nf);
         if (nb > ofbb) {
             if (!ofb)
-                ofb = (struct file **) malloc(nb);
+                ofb = (struct file **)malloc(nb);
             else
-                ofb = (struct file **) realloc((MALLOC_P *) ofb, nb);
+                ofb = (struct file **)realloc((MALLOC_P *)ofb, nb);
             if (!ofb) {
-                (void) fprintf(stderr, "%s: PID %d, no file * space\n",
-                               ProgramName, p->P_PID);
+                (void)fprintf(stderr, "%s: PID %d, no file * space\n", ProgramName, p->P_PID);
                 Exit(1);
             }
             ofbb = nb;
         }
-        if (kread((KA_T) fd.fd_ofiles, (char *) ofb, nb))
+        if (kread((KA_T)fd.fd_ofiles, (char *)ofb, nb))
             continue;
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
         if (OptFileStructValues & FSV_FILE_FLAGS) {
-        nb = (MALLOC_S)(sizeof(char) * nf);
-        if (nb > pofb) {
-            if (!pof)
-            pof = (char *)malloc(nb);
-            else
-            pof = (char *)realloc((MALLOC_P *)pof, nb);
-            if (!pof) {
-            (void) fprintf(stderr,
-                "%s: PID %d, no file flag space\n", ProgramName, p->P_PID);
-                Exit(1);
+            nb = (MALLOC_S)(sizeof(char) * nf);
+            if (nb > pofb) {
+                if (!pof)
+                    pof = (char *)malloc(nb);
+                else
+                    pof = (char *)realloc((MALLOC_P *)pof, nb);
+                if (!pof) {
+                    (void)fprintf(stderr, "%s: PID %d, no file flag space\n", ProgramName,
+                                  p->P_PID);
+                    Exit(1);
+                }
+                pofb = nb;
             }
-            pofb = nb;
+            if (!fd.fd_ofileflags || kread((KA_T)fd.fd_ofileflags, pof, nb))
+                zeromem(pof, nb);
         }
-        if (!fd.fd_ofileflags || kread((KA_T)fd.fd_ofileflags, pof, nb))
-            zeromem(pof, nb);
-        }
-#endif    /* defined(HASFSTRUCT) */
+#endif /* defined(HASFSTRUCT) */
 
         /*
          * Save information on file descriptors.
@@ -313,10 +292,10 @@ gather_proc_info() {
                 process_file((KA_T)(Cfp = ofb[i]));
                 if (CurrentLocalFile->sel_flags) {
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS)
                         CurrentLocalFile->pof = (long)pof[i];
-#endif    /* defined(HASFSTRUCT) */
+#endif /* defined(HASFSTRUCT) */
 
                     link_lfile();
                 }
@@ -330,111 +309,104 @@ gather_proc_info() {
     }
 }
 
-
 /*
  * get_kernel_access() - get access to kernel memory
  */
 
-static void
-get_kernel_access() {
+static void get_kernel_access() {
     KA_T v;
-/*
+    /*
  * Check kernel version.
  */
-    (void) ckkv(
+    (void)ckkv(
 
-#if    defined(NETBSDV)
-            "NetBSD",
-#else	/* !defined(NETBSDV) */
-# if    defined(OPENBSDV)
-            "OpenBSD",
-# endif    /* defined(OPENBSDV) */
-#endif    /* defined(NETBSDV) */
+#if defined(NETBSDV)
+        "NetBSD",
+#else /* !defined(NETBSDV) */
+#if defined(OPENBSDV)
+        "OpenBSD",
+#endif /* defined(OPENBSDV) */
+#endif /* defined(NETBSDV) */
 
-            LSOF_VSTR, (char *) NULL, (char *) NULL);
-/*
+        LSOF_VSTR, (char *)NULL, (char *)NULL);
+    /*
  * Set name list file path.
  */
     if (!NamelistFilePath)
 
-#if    defined(N_UNIX)
+#if defined(N_UNIX)
         NamelistFilePath = N_UNIX;
-#else	/* !defined(N_UNIX) */
+#else  /* !defined(N_UNIX) */
     {
         if (!(NamelistFilePath = get_nlist_path(1))) {
-            (void) fprintf(stderr,
-                           "%s: can't get kernel name list path\n", ProgramName);
+            (void)fprintf(stderr, "%s: can't get kernel name list path\n", ProgramName);
             Exit(1);
         }
     }
-#endif    /* defined(N_UNIX) */
+#endif /* defined(N_UNIX) */
 
-#if    defined(WILLDROPGID)
+#if defined(WILLDROPGID)
     /*
      * If kernel memory isn't coming from KMEM, drop setgid permission
      * before attempting to open the (Memory) file.
      */
-        if (Memory)
-            (void) dropgid();
-#else	/* !defined(WILLDROPGID) */
-/*
+    if (Memory)
+        (void)dropgid();
+#else  /* !defined(WILLDROPGID) */
+    /*
  * See if the non-KMEM memory and name list files are readable.
  */
-    if ((Memory && !is_readable(Memory, 1))
-        || (NamelistFilePath && !is_readable(NamelistFilePath, 1)))
+    if ((Memory && !is_readable(Memory, 1)) ||
+        (NamelistFilePath && !is_readable(NamelistFilePath, 1)))
         Exit(1);
-#endif    /* defined(WILLDROPGID) */
+#endif /* defined(WILLDROPGID) */
 
-/*
+    /*
  * Open kernel memory access.
  */
     if ((Kd = kvm_openfiles(NamelistFilePath, Memory, NULL, O_RDONLY, NULL)) == NULL) {
-        (void) fprintf(stderr,
-                       "%s: kvm_openfiles(execfile=%s, corefile=%s): %s\n",
-                       ProgramName, NamelistFilePath,
-                       Memory ? Memory :
+        (void)fprintf(stderr, "%s: kvm_openfiles(execfile=%s, corefile=%s): %s\n", ProgramName,
+                      NamelistFilePath,
+                      Memory ? Memory :
 
-                       #if    defined(_PATH_MEM)
-                       _PATH_MEM,
-                       #else	/* !defined(_PATH_MEM) */
-                       "default",
-#endif    /* defined(_PATH_MEM) */
+#if defined(_PATH_MEM)
+                             _PATH_MEM,
+#else  /* !defined(_PATH_MEM) */
+                             "default",
+#endif /* defined(_PATH_MEM) */
 
-                       strerror(errno));
+                      strerror(errno));
         Exit(1);
     }
-    (void) build_Nl(Drive_Nl);
+    (void)build_Nl(Drive_Nl);
     if (kvm_nlist(Kd, NlistTable) < 0) {
-        (void) fprintf(stderr, "%s: can't read namelist from %s\n",
-                       ProgramName, NamelistFilePath);
+        (void)fprintf(stderr, "%s: can't read namelist from %s\n", ProgramName, NamelistFilePath);
         Exit(1);
     }
 
-#if    defined(WILLDROPGID)
+#if defined(WILLDROPGID)
     /*
      * Drop setgid permission, if necessary.
      */
-        if (!Memory)
-            (void) dropgid();
-#endif    /* defined(WILLDROPGID) */
+    if (!Memory)
+        (void)dropgid();
+#endif /* defined(WILLDROPGID) */
 
-/*
+    /*
  * Read the kernel's page shift amount, if possible.
  */
-    if (get_Nl_value("pgshift", Drive_Nl, &v) < 0 || !v
-        || kread((KA_T) v, (char *) &pgshift, sizeof(pgshift)))
+    if (get_Nl_value("pgshift", Drive_Nl, &v) < 0 || !v ||
+        kread((KA_T)v, (char *)&pgshift, sizeof(pgshift)))
         pgshift = 0;
 }
 
-
-#if    !defined(N_UNIX)
+#if !defined(N_UNIX)
 /*
  * get_nlist_path() - get kernel name list path
  */
 
-char *
-get_nlist_path(ap)
-        int ap;                /* on success, return an allocated path
+char *get_nlist_path(ap)
+int ap; /* on success, return an allocated path
 					 * string pointer if 1; return a
 					 * constant character pointer if 0;
 					 * return NULL if failure */
@@ -442,81 +414,72 @@ get_nlist_path(ap)
     const char *bf;
     static char *bfc;
     MALLOC_S bfl;
-/*
+    /*
  * Get bootfile name.
  */
     if ((bf = getbootfile())) {
         if (!ap)
             return ("");
         bfl = (MALLOC_S)(strlen(bf) + 1);
-        if (!(bfc = (char *) malloc(bfl))) {
-            (void) fprintf(stderr,
-                           "%s: can't allocate %d bytes for boot file path: %s\n",
-                           ProgramName, bfl, bf);
+        if (!(bfc = (char *)malloc(bfl))) {
+            (void)fprintf(stderr, "%s: can't allocate %d bytes for boot file path: %s\n",
+                          ProgramName, bfl, bf);
             Exit(1);
         }
-        (void) snpf(bfc, bfl, "%s", bf);
+        (void)snpf(bfc, bfl, "%s", bf);
         return (bfc);
     }
-    return ((char *) NULL);
+    return ((char *)NULL);
 }
-#endif    /* !defined(N_UNIX) */
-
+#endif /* !defined(N_UNIX) */
 
 /*
  * initialize() - perform all initialization
  */
 
-void
-initialize() {
+void initialize() {
     get_kernel_access();
 }
-
 
 /*
  * kread() - read from kernel memory
  */
 
-int
-kread(KA_T addr, char * buf, READLEN_T len)
-{
+int kread(KA_T addr, char *buf, READLEN_T len) {
     int br;
 
-    br = kvm_read(Kd, (u_long) addr, buf, len);
+    br = kvm_read(Kd, (u_long)addr, buf, len);
     return ((br == len) ? 0 : 1);
 }
-
 
 /*
  * process_text() - process text information
  */
-void
-process_text(KA_T vm)
-{
+void process_text(KA_T vm) {
     int i, j;
     KA_T ka;
     int n = 0;
     struct vm_map_entry vmme, *e;
     struct vmspace vmsp;
 
-#if    !defined(UVM)
+#if !defined(UVM)
     struct pager_struct pg;
     struct vm_object vmo;
-#endif    /* !defined(UVM) */
+#endif /* !defined(UVM) */
 
-/*
+    /*
  * Read the vmspace structure for the process.
  */
-    if (kread(vm, (char *) &vmsp, sizeof(vmsp)))
+    if (kread(vm, (char *)&vmsp, sizeof(vmsp)))
         return;
-/*
+    /*
  * Read the vm_map structure.  Search its vm_map_entry structure list.
  */
 
-#if    !defined(UVM)
+#if !defined(UVM)
     if (!vmsp.vm_map.is_main_map)
         return;
-#endif    /* !defined(UVM) */
+#endif /* !defined(UVM) */
 
     for (i = 0; i < vmsp.vm_map.nentries; i++) {
 
@@ -526,40 +489,36 @@ process_text(KA_T vm)
         if (!i)
             e = &vmsp.vm_map.header;
         else {
-            if (!(ka = (KA_T) e->next))
+            if (!(ka = (KA_T)e->next))
                 return;
             e = &vmme;
-            if (kread(ka, (char *) e, sizeof(vmme)))
+            if (kread(ka, (char *)e, sizeof(vmme)))
                 return;
         }
 
-#if    defined(UVM)
+#if defined(UVM)
         /*
          * Process the uvm_obj pointer of a UVM map entry with a UVM_ET_OBJ
          * type as a vnode pointer.
          */
-            if ((e->etype > UVM_ET_OBJ) && e->object.uvm_obj)
-            (void) enter_vn_text((KA_T)e->object.uvm_obj, &n);
-#else	/* !defined(UVM) */
+        if ((e->etype > UVM_ET_OBJ) && e->object.uvm_obj)
+            (void)enter_vn_text((KA_T)e->object.uvm_obj, &n);
+#else  /* !defined(UVM) */
         /*
          * Read the map entry's object and the object's shadow.
          * Look for a PG_VNODE pager handle.
          */
         if (e->is_a_map || e->is_sub_map)
             continue;
-        for (j = 0, ka = (KA_T) e->object.vm_object;
-             j < 2 && ka;
-             j++, ka = (KA_T) vmo.shadow) {
-            if (kread(ka, (char *) &vmo, sizeof(vmo)))
+        for (j = 0, ka = (KA_T)e->object.vm_object; j < 2 && ka; j++, ka = (KA_T)vmo.shadow) {
+            if (kread(ka, (char *)&vmo, sizeof(vmo)))
                 break;
-            if (!(ka = (KA_T) vmo.pager)
-                || kread(ka, (char *) &pg, sizeof(pg)))
+            if (!(ka = (KA_T)vmo.pager) || kread(ka, (char *)&pg, sizeof(pg)))
                 continue;
             if (!pg.pg_handle || pg.pg_type != PG_VNODE)
                 continue;
-            (void) enter_vn_text((KA_T) pg.pg_handle, &n);
+            (void)enter_vn_text((KA_T)pg.pg_handle, &n);
         }
-#endif    /* defined(UVM) */
-
+#endif /* defined(UVM) */
     }
 }

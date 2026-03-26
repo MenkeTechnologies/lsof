@@ -7,18 +7,26 @@
 
 /* ===== safe_print_unprintable (duplicated, needed for safestrprt_dirty) ===== */
 static char unprintable_buf[8];
-static char *
-bench_safe_print_unprintable(unsigned int char_code, int *output_length)
-{
+static char *bench_safe_print_unprintable(unsigned int char_code, int *output_length) {
     int encoded_len;
     char *result_str;
     if (char_code < 0x20) {
         switch (char_code) {
-        case '\b': result_str = "\\b"; break;
-        case '\f': result_str = "\\f"; break;
-        case '\n': result_str = "\\n"; break;
-        case '\r': result_str = "\\r"; break;
-        case '\t': result_str = "\\t"; break;
+        case '\b':
+            result_str = "\\b";
+            break;
+        case '\f':
+            result_str = "\\f";
+            break;
+        case '\n':
+            result_str = "\\n";
+            break;
+        case '\r':
+            result_str = "\\r";
+            break;
+        case '\t':
+            result_str = "\\t";
+            break;
         default:
             unprintable_buf[0] = '^';
             unprintable_buf[1] = (char)(char_code + 0x40);
@@ -42,14 +50,16 @@ bench_safe_print_unprintable(unsigned int char_code, int *output_length)
         result_str = unprintable_buf;
         encoded_len = 4;
     }
-    if (output_length) *output_length = encoded_len;
+    if (output_length)
+        *output_length = encoded_len;
     return result_str;
 }
 
 /* ===== safestrprt benchmark (safe printing to stream) ===== */
 BENCH(safestrprt_clean, 500000) {
     FILE *f = fopen("/dev/null", "w");
-    if (!f) return;
+    if (!f)
+        return;
     for (int i = 0; i < bf_iters; i++) {
         char *sp = "/usr/local/bin/lsof";
         for (; *sp; sp++)
@@ -60,7 +70,8 @@ BENCH(safestrprt_clean, 500000) {
 
 BENCH(safestrprt_dirty, 500000) {
     FILE *f = fopen("/dev/null", "w");
-    if (!f) return;
+    if (!f)
+        return;
     char *test = "/usr/bin/test\twith\ttabs\nand\x80\xfe";
     for (int i = 0; i < bf_iters; i++) {
         for (char *sp = test; *sp; sp++) {
@@ -76,7 +87,6 @@ BENCH(safestrprt_dirty, 500000) {
     }
     fclose(f);
 }
-
 
 /* ===== strftime benchmark (time formatting for lsof -T output) ===== */
 BENCH(strftime_default, 500000) {
@@ -144,8 +154,7 @@ BENCH(sprintf_pid_field, 5000000) {
 BENCH(sprintf_field_output, 2000000) {
     char buf[256];
     for (int i = 0; i < bf_iters; i++) {
-        snprintf(buf, sizeof(buf), "p%d\nc%s\nf%d\nn%s\n",
-                 i % 65536, "bash", i % 256,
+        snprintf(buf, sizeof(buf), "p%d\nc%s\nf%d\nn%s\n", i % 65536, "bash", i % 256,
                  "/usr/local/bin/lsof");
         BENCH_SINK_PTR(buf);
     }
@@ -158,37 +167,54 @@ BENCH(manual_field_output, 2000000) {
         /* p<pid>\n */
         *p++ = 'p';
         int v = i % 65536;
-        char tmp[16]; int tl = 0;
-        if (v == 0) tmp[tl++] = '0';
-        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
-        while (tl > 0) *p++ = tmp[--tl];
+        char tmp[16];
+        int tl = 0;
+        if (v == 0)
+            tmp[tl++] = '0';
+        else {
+            while (v) {
+                tmp[tl++] = '0' + (v % 10);
+                v /= 10;
+            }
+        }
+        while (tl > 0)
+            *p++ = tmp[--tl];
         *p++ = '\n';
         /* c<cmd>\n */
         *p++ = 'c';
-        memcpy(p, "bash", 4); p += 4;
+        memcpy(p, "bash", 4);
+        p += 4;
         *p++ = '\n';
         /* f<fd>\n */
         *p++ = 'f';
-        v = i % 256; tl = 0;
-        if (v == 0) tmp[tl++] = '0';
-        else { while (v) { tmp[tl++] = '0' + (v % 10); v /= 10; } }
-        while (tl > 0) *p++ = tmp[--tl];
+        v = i % 256;
+        tl = 0;
+        if (v == 0)
+            tmp[tl++] = '0';
+        else {
+            while (v) {
+                tmp[tl++] = '0' + (v % 10);
+                v /= 10;
+            }
+        }
+        while (tl > 0)
+            *p++ = tmp[--tl];
         *p++ = '\n';
         /* n<name>\n */
         *p++ = 'n';
-        memcpy(p, "/usr/local/bin/lsof", 19); p += 19;
+        memcpy(p, "/usr/local/bin/lsof", 19);
+        p += 19;
         *p++ = '\n';
         *p = '\0';
         BENCH_SINK_PTR(buf);
     }
 }
 
-
 /* ===== Command name truncation at different widths ===== */
 BENCH(cmd_truncate_16, 10000000) {
     char dst[17];
-    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server",
-                    "bash", "sshd", "python3.11-multiprocessing"};
+    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server", "bash", "sshd",
+                    "python3.11-multiprocessing"};
     for (int i = 0; i < bf_iters; i++) {
         int len = (int)strlen(cmds[i % 5]);
         int w = len < 16 ? len : 16;
@@ -200,8 +226,8 @@ BENCH(cmd_truncate_16, 10000000) {
 
 BENCH(cmd_truncate_32, 10000000) {
     char dst[33];
-    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server",
-                    "bash", "sshd", "python3.11-multiprocessing"};
+    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server", "bash", "sshd",
+                    "python3.11-multiprocessing"};
     for (int i = 0; i < bf_iters; i++) {
         int len = (int)strlen(cmds[i % 5]);
         int w = len < 32 ? len : 32;
@@ -215,8 +241,7 @@ BENCH(cmd_truncate_32, 10000000) {
 BENCH(ipv4_format_snprintf, 5000000) {
     char buf[64];
     for (int i = 0; i < bf_iters; i++) {
-        snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
-                 192, 168, (i >> 8) & 0xff, i & 0xff);
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d", 192, 168, (i >> 8) & 0xff, i & 0xff);
         BENCH_SINK_PTR(buf);
     }
 }
@@ -228,10 +253,13 @@ BENCH(ipv4_format_manual, 5000000) {
         int octets[4] = {192, 168, (i >> 8) & 0xff, i & 0xff};
         for (int j = 0; j < 4; j++) {
             int v = octets[j];
-            if (v >= 100) *p++ = '0' + v / 100;
-            if (v >= 10) *p++ = '0' + (v / 10) % 10;
+            if (v >= 100)
+                *p++ = '0' + v / 100;
+            if (v >= 10)
+                *p++ = '0' + (v / 10) % 10;
             *p++ = '0' + v % 10;
-            if (j < 3) *p++ = '.';
+            if (j < 3)
+                *p++ = '.';
         }
         *p = '\0';
         BENCH_SINK_PTR(buf);
@@ -242,9 +270,8 @@ BENCH(ipv4_format_manual, 5000000) {
 BENCH(full_line_snprintf, 2000000) {
     char buf[512];
     for (int i = 0; i < bf_iters; i++) {
-        snprintf(buf, sizeof(buf), "%-9s %5d %8s %4s %4s %7s %18s %s",
-                 "bash", 1234 + (i % 1000), "root", "3u", "REG",
-                 "8,1", "192.168.1.1:8080", "/usr/local/bin/lsof");
+        snprintf(buf, sizeof(buf), "%-9s %5d %8s %4s %4s %7s %18s %s", "bash", 1234 + (i % 1000),
+                 "root", "3u", "REG", "8,1", "192.168.1.1:8080", "/usr/local/bin/lsof");
         BENCH_SINK_PTR(buf);
     }
 }

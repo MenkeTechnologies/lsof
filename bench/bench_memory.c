@@ -35,11 +35,14 @@ BENCH(safe_realloc_pattern, 1000000) {
     for (int i = 0; i < bf_iters; i++) {
         void *p = malloc(64);
         void *tmp = realloc(p, 128);
-        if (tmp) p = tmp;
+        if (tmp)
+            p = tmp;
         tmp = realloc(p, 256);
-        if (tmp) p = tmp;
+        if (tmp)
+            p = tmp;
         tmp = realloc(p, 512);
-        if (tmp) p = tmp;
+        if (tmp)
+            p = tmp;
         BENCH_SINK_PTR(p);
         free(p);
     }
@@ -80,7 +83,6 @@ BENCH(memcpy_4096, 5000000) {
     }
 }
 
-
 /* ===== Chunked growth benchmark (alloc_lproc pattern from proc.c) ===== */
 #define LPROCINCR 32
 
@@ -92,7 +94,8 @@ BENCH(chunked_realloc_grow, 100000) {
             if (count >= size) {
                 size += LPROCINCR;
                 int *tmp = (int *)realloc(table, (size_t)size * sizeof(int));
-                if (tmp) table = tmp;
+                if (tmp)
+                    table = tmp;
             }
             table[count++] = i;
         }

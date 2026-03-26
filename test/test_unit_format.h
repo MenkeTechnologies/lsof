@@ -138,12 +138,9 @@ TEST(snpf_one_byte_buffer) {
     ASSERT_STR_EQ(buf, "");
 }
 
-
 /* ===== fmtnum() reimplementation ===== */
-static int
-test_fmtnum(char *buf, int bufsz, long value, int base,
-            int dosign, int ljust, int width, int zpad)
-{
+static int test_fmtnum(char *buf, int bufsz, long value, int base, int dosign, int ljust, int width,
+                       int zpad) {
     char tmp[64];
     int neg = 0;
     int pos = 0;
@@ -173,15 +170,20 @@ test_fmtnum(char *buf, int bufsz, long value, int base,
     char *end = buf + bufsz - 1;
 
     if (!ljust && !zpad) {
-        for (int i = 0; i < padlen && out < end; i++) *out++ = ' ';
+        for (int i = 0; i < padlen && out < end; i++)
+            *out++ = ' ';
     }
-    if (neg && out < end) *out++ = '-';
+    if (neg && out < end)
+        *out++ = '-';
     if (!ljust && zpad) {
-        for (int i = 0; i < padlen && out < end; i++) *out++ = '0';
+        for (int i = 0; i < padlen && out < end; i++)
+            *out++ = '0';
     }
-    for (int i = pos - 1; i >= 0 && out < end; i--) *out++ = tmp[i];
+    for (int i = pos - 1; i >= 0 && out < end; i--)
+        *out++ = tmp[i];
     if (ljust) {
-        for (int i = 0; i < padlen && out < end; i++) *out++ = ' ';
+        for (int i = 0; i < padlen && out < end; i++)
+            *out++ = ' ';
     }
     *out = '\0';
     return (int)(out - buf);
@@ -247,25 +249,28 @@ TEST(fmtnum_hex_large) {
     ASSERT_STR_EQ(buf, "dead");
 }
 
-
 /* ===== fmtstr() reimplementation ===== */
-static int
-test_fmtstr(char *buf, int bufsz, const char *value, int ljust, int width, int maxwidth)
-{
-    if (!value) value = "<NULL>";
+static int test_fmtstr(char *buf, int bufsz, const char *value, int ljust, int width,
+                       int maxwidth) {
+    if (!value)
+        value = "<NULL>";
     int slen = (int)strlen(value);
-    if (maxwidth > 0 && slen > maxwidth) slen = maxwidth;
+    if (maxwidth > 0 && slen > maxwidth)
+        slen = maxwidth;
     int padlen = (width > slen) ? width - slen : 0;
 
     char *out = buf;
     char *end = buf + bufsz - 1;
 
     if (!ljust) {
-        for (int i = 0; i < padlen && out < end; i++) *out++ = ' ';
+        for (int i = 0; i < padlen && out < end; i++)
+            *out++ = ' ';
     }
-    for (int i = 0; i < slen && out < end; i++) *out++ = value[i];
+    for (int i = 0; i < slen && out < end; i++)
+        *out++ = value[i];
     if (ljust) {
-        for (int i = 0; i < padlen && out < end; i++) *out++ = ' ';
+        for (int i = 0; i < padlen && out < end; i++)
+            *out++ = ' ';
     }
     *out = '\0';
     return (int)(out - buf);
@@ -313,13 +318,10 @@ TEST(fmtstr_width_with_truncate) {
     ASSERT_STR_EQ(buf, "           long");
 }
 
-
 /* ===== print_kptr() reimplementation ===== */
 static char kptr_static_buf[32];
 
-static char *
-test_print_kptr(unsigned long kp, char *buf, size_t bufl)
-{
+static char *test_print_kptr(unsigned long kp, char *buf, size_t bufl) {
     if (!buf) {
         buf = kptr_static_buf;
         bufl = sizeof(kptr_static_buf);

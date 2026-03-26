@@ -4,7 +4,6 @@
  * The _PROTOTYPE macro is defined in the common proto.h.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,25 +27,22 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dproto.h,v 1.6 2001/08/09 11:44:07 abe Exp $
  */
 
+#if STEPV >= 31
+_PROTOTYPE(extern void clr_svnc, (void));
+#endif /* STEPV>=31 */
 
-#if    STEPV >= 31
-_PROTOTYPE(extern void clr_svnc,(void));
-#endif    /* STEPV>=31 */
-
-_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+_PROTOTYPE(extern int is_file_named, (char *p, int cd)
 
 );
 
-#if     defined(HAS_AFS)
-_PROTOTYPE(extern struct vnode *alloc_vcache,(void));
-_PROTOTYPE(extern void ckAFSsym,(struct nlist *nl));
-_PROTOTYPE(extern int hasAFS,(struct vnode *vp));
-_PROTOTYPE(extern void process_socket,(KA_T vp));
-_PROTOTYPE(extern int readafsnode,(caddr_t va, struct vnode *v, struct afsnode *
-an));
-#endif  /* defined(HAS_AFS) */
+#if defined(HAS_AFS)
+_PROTOTYPE(extern struct vnode *alloc_vcache, (void));
+_PROTOTYPE(extern void ckAFSsym, (struct nlist * nl));
+_PROTOTYPE(extern int hasAFS, (struct vnode * vp));
+_PROTOTYPE(extern void process_socket, (KA_T vp));
+_PROTOTYPE(extern int readafsnode, (caddr_t va, struct vnode *v, struct afsnode *an));
+#endif /* defined(HAS_AFS) */

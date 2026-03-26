@@ -2,7 +2,6 @@
  * dmnt.c - SCO UnixWare mount support functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,22 +27,19 @@
 
 #include "lsof.h"
 
-
 /*
  * Local static definitions
  */
 
-static struct mounts *Lmi = (struct mounts *) NULL;    /* local mount info */
-static int Lmist = 0;                    /* Lmi status */
-
+static struct mounts *Lmi = (struct mounts *)NULL; /* local mount info */
+static int Lmist = 0;                              /* Lmi status */
 
 /*
  * readmnt() - read mount table
  */
 
-struct mounts *
-readmnt() {
-    char *dn = (char *) NULL;
+struct mounts *readmnt() {
+    char *dn = (char *)NULL;
     char *ln;
     struct mnttab me;
     FILE *mfp;
@@ -51,17 +47,17 @@ readmnt() {
     char *opt, *opte;
     struct stat sb;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
     int procfs = 0;
 #endif
 
     if (Lmi || Lmist)
         return (Lmi);
-/*
+    /*
  * Open access to the mount table and read mount table entries.
  */
     if (!(mfp = fopen(MNTTAB, "r"))) {
-        (void) fprintf(stderr, "%s: can't access %s\n", ProgramName, MNTTAB);
+        (void)fprintf(stderr, "%s: can't access %s\n", ProgramName, MNTTAB);
         return (0);
     }
     while (!getmntent(mfp, &me)) {
@@ -76,34 +72,32 @@ readmnt() {
          * real entries (if they are mounted) will be separately identified
          * by getmntent().
          */
-        if (!strcmp(me.mnt_fstype, MNTTYPE_LO)
-            || !strcmp(me.mnt_fstype, MNTTYPE_IGNORE))
+        if (!strcmp(me.mnt_fstype, MNTTYPE_LO) || !strcmp(me.mnt_fstype, MNTTYPE_IGNORE))
             continue;
         /*
          * Interpolate a possible symbolic directory link.
          */
         if (dn)
-            (void) free((FREE_P *) dn);
-        if (!(dn = mkstrcpy(me.mnt_mountp, (MALLOC_S *) NULL))) {
+            (void)free((FREE_P *)dn);
+        if (!(dn = mkstrcpy(me.mnt_mountp, (MALLOC_S *)NULL))) {
 
-            no_space_for_mount:
+        no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(me.mnt_special, stderr, 0);
-            (void) fprintf(stderr, " (");
+            (void)fprintf(stderr, " (");
             safestrprt(me.mnt_mountp, stderr, 0);
-            (void) fprintf(stderr, ")\n");
+            (void)fprintf(stderr, ")\n");
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             continue;
         }
         if (ln != dn) {
-            (void) free((FREE_P *) dn);
+            (void)free((FREE_P *)dn);
             dn = ln;
         }
         if (*dn != '/')
@@ -113,36 +107,33 @@ readmnt() {
          */
         if (statsafely(dn, &sb)) {
             if (!OptWarnings) {
-                (void) fprintf(stderr, "%s: can't stat()", ProgramName);
+                (void)fprintf(stderr, "%s: can't stat()", ProgramName);
 
-#if    defined(HASFSTYPE)
+#if defined(HASFSTYPE)
                 putc(' ', stderr);
                 safestrprt(me.mnt_fstype, stderr, 0);
-#endif    /* defined(HASFSTYPE) */
+#endif /* defined(HASFSTYPE) */
 
-                (void) fprintf(stderr, " file system ");
+                (void)fprintf(stderr, " file system ");
                 safestrprt(me.mnt_mountp, stderr, 1);
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             if (!(opt = strstr(me.mnt_mntopts, "dev="))) {
-                (void) memset(&sb, 0, sizeof(sb));
+                (void)memset(&sb, 0, sizeof(sb));
                 if (!(opte = x2dev(opt + 4, &sb.st_dev))) {
                     sb.st_mode = S_IFDIR | 0777;
 
-#if    defined(HASFSTYPE)
-                    (void) strncpy(sb.st_fstype, me.mnt_fstype,
-                               sizeof(sb.st_fstype));
-                    sb.st_fstype[sizeof(sb.st_fstype) - 1 ] = '\0';
-#endif    /* HASFSTYPE */
+#if defined(HASFSTYPE)
+                    (void)strncpy(sb.st_fstype, me.mnt_fstype, sizeof(sb.st_fstype));
+                    sb.st_fstype[sizeof(sb.st_fstype) - 1] = '\0';
+#endif /* HASFSTYPE */
 
                     if (!OptWarnings) {
-                        (void) fprintf(stderr,
-                                       "      assuming \"%.*s\" from %s\n",
-                                       (opte - opt), opt, MNTTAB);
+                        (void)fprintf(stderr, "      assuming \"%.*s\" from %s\n", (opte - opt),
+                                      opt, MNTTAB);
                     }
                 } else
-                    opt = (char *) NULL;
+                    opt = (char *)NULL;
             }
             if (!opt)
                 continue;
@@ -150,51 +141,51 @@ readmnt() {
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *) malloc(sizeof(struct mounts))))
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
             goto no_space_for_mount;
 
-#if    defined(HASFSTYPE)
+#if defined(HASFSTYPE)
         if (!(mtp->fstype = mkstrcpy(sb.st_fstype, (MALLOC_S *)NULL)))
-        goto no_space_for_mount;
-#endif    /* HASFSTYPE */
+            goto no_space_for_mount;
+#endif /* HASFSTYPE */
 
         mtp->dir = dn;
-        dn = (char *) NULL;
+        dn = (char *)NULL;
         mtp->next = Lmi;
         mtp->dev = sb.st_dev;
         mtp->rdev = sb.st_rdev;
-        mtp->inode = (INODETYPE) sb.st_ino;
+        mtp->inode = (INODETYPE)sb.st_ino;
         mtp->mode = sb.st_mode;
 
-#if    defined(HASPROCFS)
-# if	defined(HASFSTYPE)
+#if defined(HASPROCFS)
+#if defined(HASFSTYPE)
         if (!strcmp(sb.st_fstype, HASPROCFS))
-# else	/* !defined*HASFSTYPE) */
+#else  /* !defined*HASFSTYPE) */
         if (!strcmp(me.mnt_special, "/proc"))
-# endif	/* defined(HASFSTYPE) */
+#endif /* defined(HASFSTYPE) */
 
         {
 
-        /*
+            /*
          * Save information on exactly one procfs file system.
          */
-        if (procfs)
-            Mtprocfs = (struct mounts *)NULL;
-        else {
-            procfs = 1;
-            Mtprocfs = mtp;
+            if (procfs)
+                Mtprocfs = (struct mounts *)NULL;
+            else {
+                procfs = 1;
+                Mtprocfs = mtp;
+            }
         }
-        }
-#endif    /* defined(HASPROCFS) */
+#endif /* defined(HASPROCFS) */
 
         /*
          * Interpolate a possible file system (mounted-on device) name link.
          */
-        if (!(dn = mkstrcpy(me.mnt_special, (MALLOC_S *) NULL)))
+        if (!(dn = mkstrcpy(me.mnt_special, (MALLOC_S *)NULL)))
             goto no_space_for_mount;
         mtp->fsname = dn;
         ln = Readlink(dn);
-        dn = (char *) NULL;
+        dn = (char *)NULL;
         /*
          * Stat() the file system (mounted-on) name and add file system
          * information to the local mounts structure.
@@ -205,12 +196,12 @@ readmnt() {
         mtp->fs_mode = sb.st_mode;
         Lmi = mtp;
     }
-    (void) fclose(mfp);
-/*
+    (void)fclose(mfp);
+    /*
  * Clean up and return local mount info table address.
  */
     if (dn)
-        (void) free((FREE_P *) dn);
+        (void)free((FREE_P *)dn);
     Lmist = 1;
     return (Lmi);
 }

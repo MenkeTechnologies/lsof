@@ -2,7 +2,6 @@
  * prfp.c -- process_file() function for lsof library
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,13 +25,11 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 #include "../machine.h"
 
-#if    defined(USE_LIB_PROCESS_FILE)
+#if defined(USE_LIB_PROCESS_FILE)
 
 #include "../lsof.h"
-
 
 /*
  * process_file() - process file
@@ -48,156 +45,152 @@
  *			#define FILEPTR	foobar
  */
 
-void
-process_file(KA_T file_addr)
-{
+void process_file(KA_T file_addr) {
     struct file file_str;
     int flag;
     char tbuf[32];
 
-#if	defined(FILEPTR)
-/*
+#if defined(FILEPTR)
+    /*
  * Save file structure address for process_node().
  */
     FILEPTR = &file_str;
-#endif	/* defined(FILEPTR) */
+#endif /* defined(FILEPTR) */
 
-/*
+    /*
  * Read file structure.
  */
     if (kread((KA_T)file_addr, (char *)&file_str, sizeof(file_str))) {
-        (void) snpf(NameChars, NameCharsLength, "can't read file struct from %s",
-        print_kptr(file_addr, (char *)NULL, 0));
+        (void)snpf(NameChars, NameCharsLength, "can't read file struct from %s",
+                   print_kptr(file_addr, (char *)NULL, 0));
         enter_nm(NameChars);
         return;
     }
     CurrentLocalFile->off = (SZOFFTYPE)file_str.f_offset;
     if (file_str.f_count) {
 
-    /*
+        /*
      * Construct access code.
      */
         if ((flag = (file_str.f_flag & (FREAD | FWRITE))) == FREAD)
-        CurrentLocalFile->access = 'r';
+            CurrentLocalFile->access = 'r';
         else if (flag == FWRITE)
-        CurrentLocalFile->access = 'w';
+            CurrentLocalFile->access = 'w';
         else if (flag == (FREAD | FWRITE))
-        CurrentLocalFile->access = 'u';
+            CurrentLocalFile->access = 'u';
 
-#if	defined(HASFSTRUCT)
-    /*
+#if defined(HASFSTRUCT)
+        /*
      * Save file structure values.
      */
 
-# if	!defined(HASNOFSCOUNT)
+#if !defined(HASNOFSCOUNT)
         if (OptFileStructValues & FSV_FILE_COUNT) {
-        CurrentLocalFile->fct = (long)file_str.f_count;
-        CurrentLocalFile->fsv |= FSV_FILE_COUNT;
+            CurrentLocalFile->fct = (long)file_str.f_count;
+            CurrentLocalFile->fsv |= FSV_FILE_COUNT;
         }
-# endif	/* !defined(HASNOFSCOUNT) */
+#endif /* !defined(HASNOFSCOUNT) */
 
-# if	!defined(HASNOFSADDR)
+#if !defined(HASNOFSADDR)
         if (OptFileStructValues & FSV_FILE_ADDR) {
-        CurrentLocalFile->fsa = file_addr;
-        CurrentLocalFile->fsv |= FSV_FILE_ADDR;
+            CurrentLocalFile->fsa = file_addr;
+            CurrentLocalFile->fsv |= FSV_FILE_ADDR;
         }
-# endif	/* !defined(HASNOFSADDR) */
+#endif /* !defined(HASNOFSADDR) */
 
-# if	!defined(HASNOFSFLAGS)
+#if !defined(HASNOFSFLAGS)
         if (OptFileStructValues & FSV_FILE_FLAGS) {
-        CurrentLocalFile->ffg = (long)file_str.f_flag;
-        CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
+            CurrentLocalFile->ffg = (long)file_str.f_flag;
+            CurrentLocalFile->fsv |= FSV_FILE_FLAGS;
         }
-# endif	/* !defined(HASNOFSFLAGS) */
+#endif /* !defined(HASNOFSFLAGS) */
 
-# if	!defined(HASNOFSNADDR)
+#if !defined(HASNOFSNADDR)
         if (OptFileStructValues & FSV_NODE_ID) {
-        CurrentLocalFile->fna = (KA_T)file_str.f_data;
-        CurrentLocalFile->fsv |= FSV_NODE_ID;
+            CurrentLocalFile->fna = (KA_T)file_str.f_data;
+            CurrentLocalFile->fsv |= FSV_NODE_ID;
         }
-# endif	/* !defined(HASNOFSNADDR) */
-#endif	/* defined(HASFSTRUCT) */
+#endif /* !defined(HASNOFSNADDR) */
+#endif /* defined(HASFSTRUCT) */
 
-    /*
+        /*
      * Process structure by its type.
      */
         switch (file_str.f_type) {
 
-
-#if	defined(DTYPE_PIPE)
+#if defined(DTYPE_PIPE)
         case DTYPE_PIPE:
-# if	defined(HASPIPEFN)
-        if (!SelectInetOnly)
-            HASPIPEFN((KA_T)file_str.f_data);
-# endif	/* defined(HASPIPEFN) */
-        return;
-#endif	/* defined(DTYPE_PIPE) */
+#if defined(HASPIPEFN)
+            if (!SelectInetOnly)
+                HASPIPEFN((KA_T)file_str.f_data);
+#endif /* defined(HASPIPEFN) */
+            return;
+#endif /* defined(DTYPE_PIPE) */
 
-#if	defined(DTYPE_GNODE)
+#if defined(DTYPE_GNODE)
         case DTYPE_GNODE:
-#endif	/* defined(DTYPE_GNODE) */
+#endif /* defined(DTYPE_GNODE) */
 
-#if	defined(DTYPE_INODE)
+#if defined(DTYPE_INODE)
         case DTYPE_INODE:
-#endif	/* defined(DTYPE_INODE) */
+#endif /* defined(DTYPE_INODE) */
 
-#if	defined(DTYPE_PORT)
+#if defined(DTYPE_PORT)
         case DTYPE_PORT:
-#endif	/* defined(DTYPE_PORT) */
+#endif /* defined(DTYPE_PORT) */
 
-#if	defined(DTYPE_VNODE)
+#if defined(DTYPE_VNODE)
         case DTYPE_VNODE:
-#endif	/* defined(DTYPE_VNODE) */
+#endif /* defined(DTYPE_VNODE) */
 
-#if	defined(HASF_VNODE)
-        process_node((KA_T)file_str.f_vnode);
-#else	/* !defined(HASF_VNODE) */
-        process_node((KA_T)file_str.f_data);
-#endif	/* defined(HASF_VNODE) */
+#if defined(HASF_VNODE)
+            process_node((KA_T)file_str.f_vnode);
+#else  /* !defined(HASF_VNODE) */
+            process_node((KA_T)file_str.f_data);
+#endif /* defined(HASF_VNODE) */
 
-        return;
+            return;
         case DTYPE_SOCKET:
-        process_socket((KA_T)file_str.f_data);
-        return;
+            process_socket((KA_T)file_str.f_data);
+            return;
 
-#if	defined(HASKQUEUE)
+#if defined(HASKQUEUE)
         case DTYPE_KQUEUE:
-        process_kqueue((KA_T)file_str.f_data);
-        return;
-#endif	/* defined(HASKQUEUE) */
+            process_kqueue((KA_T)file_str.f_data);
+            return;
+#endif /* defined(HASKQUEUE) */
 
-#if	defined(HASPSXSEM)
+#if defined(HASPSXSEM)
         case DTYPE_PSXSEM:
-        process_psxsem((KA_T)file_str.f_data);
-        return;
-#endif	/* defined(HASPSXSEM) */
+            process_psxsem((KA_T)file_str.f_data);
+            return;
+#endif /* defined(HASPSXSEM) */
 
-#if	defined(HASPSXSHM)
+#if defined(HASPSXSHM)
         case DTYPE_PSXSHM:
-        process_psxshm((KA_T)file_str.f_data);
-        return;
-#endif	/* defined(HASPSXSHM) */
+            process_psxshm((KA_T)file_str.f_data);
+            return;
+#endif /* defined(HASPSXSHM) */
 
-#if	defined(HASPRIVFILETYPE)
+#if defined(HASPRIVFILETYPE)
         case PRIVFILETYPE:
-        HASPRIVFILETYPE((KA_T)file_str.f_data);
-        return;
-#endif	/* defined(HASPRIVFILETYPE) */
+            HASPRIVFILETYPE((KA_T)file_str.f_data);
+            return;
+#endif /* defined(HASPRIVFILETYPE) */
 
         default:
-        if (file_str.f_type || file_str.f_ops) {
-            (void) snpf(NameChars, NameCharsLength,
-            "%s file struct, ty=%#x, op=%s",
-            print_kptr(file_addr, tbuf, sizeof(tbuf)), (int)file_str.f_type,
-            print_kptr((KA_T)file_str.f_ops, (char *)NULL, 0));
-            enter_nm(NameChars);
-            return;
-        }
+            if (file_str.f_type || file_str.f_ops) {
+                (void)snpf(NameChars, NameCharsLength, "%s file struct, ty=%#x, op=%s",
+                           print_kptr(file_addr, tbuf, sizeof(tbuf)), (int)file_str.f_type,
+                           print_kptr((KA_T)file_str.f_ops, (char *)NULL, 0));
+                enter_nm(NameChars);
+                return;
+            }
         }
     }
     enter_nm("no more information");
 }
-#else	/* !defined(USE_LIB_PROCESS_FILE) */
+#else  /* !defined(USE_LIB_PROCESS_FILE) */
 char prfp_d1[] = "d";
 char *prfp_d2 = prfp_d1;
-#endif    /* defined(USE_LIB_PROCESS_FILE) */
+#endif /* defined(USE_LIB_PROCESS_FILE) */

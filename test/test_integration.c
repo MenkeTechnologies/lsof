@@ -31,14 +31,8 @@ static const char *find_lsof(void) {
 #ifdef LSOF_BUILD_PATH
         LSOF_BUILD_PATH,
 #endif
-        "./lsof",
-        "../lsof",
-        "./build/lsof",
-        "../build/lsof",
-        "/usr/bin/lsof",
-        "/usr/sbin/lsof",
-        NULL
-    };
+        "./lsof",         "../lsof", "./build/lsof", "../build/lsof", "/usr/bin/lsof",
+        "/usr/sbin/lsof", NULL};
     for (int i = 0; candidates[i]; i++) {
         if (access(candidates[i], X_OK) == 0) {
             lsof_path = candidates[i];
@@ -55,7 +49,8 @@ static const char *find_lsof(void) {
  */
 static int run_lsof(const char *args, char *buf, size_t bufsz) {
     const char *lsof = find_lsof();
-    if (!lsof) return -1;
+    if (!lsof)
+        return -1;
 
     /* tokenize args into argv */
     char argbuf[1024];
@@ -75,7 +70,8 @@ static int run_lsof(const char *args, char *buf, size_t bufsz) {
 
     /* pipe for stdout */
     int pipefd[2];
-    if (pipe(pipefd) < 0) return -1;
+    if (pipe(pipefd) < 0)
+        return -1;
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -104,7 +100,8 @@ static int run_lsof(const char *args, char *buf, size_t bufsz) {
         size_t total = 0;
         while (total < bufsz - 1) {
             ssize_t n = read(pipefd[0], buf + total, bufsz - 1 - total);
-            if (n <= 0) break;
+            if (n <= 0)
+                break;
             total += (size_t)n;
         }
         buf[total] = '\0';
@@ -122,14 +119,16 @@ static int lsof_available(void) {
     return find_lsof() != NULL;
 }
 
-
 TEST(lsof_exists) {
     ASSERT_TRUE(lsof_available());
 }
 
 TEST(lsof_diag) {
     const char *p = find_lsof();
-    if (!p) { fprintf(stderr, "  DIAG: lsof not found\n"); return; }
+    if (!p) {
+        fprintf(stderr, "  DIAG: lsof not found\n");
+        return;
+    }
     fprintf(stderr, "  DIAG: lsof path = %s\n", p);
     char buf[4096];
     int rc = run_lsof("-v", buf, sizeof(buf));
@@ -142,21 +141,24 @@ TEST(lsof_diag) {
 }
 
 TEST(lsof_help_flag) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char buf[4096];
     int rc = run_lsof("-h", buf, sizeof(buf));
     ASSERT_TRUE(rc == 0 || rc == 1);
 }
 
 TEST(lsof_version_flag) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char buf[4096];
     run_lsof("-v", buf, sizeof(buf));
     ASSERT_TRUE(1); /* just verify no crash */
 }
 
 TEST(lsof_finds_own_pid) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[8192];
     pid_t mypid = getpid();
@@ -171,7 +173,8 @@ TEST(lsof_finds_own_pid) {
 }
 
 TEST(lsof_field_output_format) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -184,9 +187,12 @@ TEST(lsof_field_output_format) {
     int has_pid = 0, has_cmd = 0, has_fd = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 'p') has_pid = 1;
-        if (*line == 'c') has_cmd = 1;
-        if (*line == 'f') has_fd = 1;
+        if (*line == 'p')
+            has_pid = 1;
+        if (*line == 'c')
+            has_cmd = 1;
+        if (*line == 'f')
+            has_fd = 1;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -196,7 +202,8 @@ TEST(lsof_field_output_format) {
 }
 
 TEST(lsof_finds_open_file) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -218,7 +225,8 @@ TEST(lsof_finds_open_file) {
 }
 
 TEST(lsof_cwd_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -230,10 +238,12 @@ TEST(lsof_cwd_detection) {
 }
 
 TEST(lsof_tcp_socket_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -266,14 +276,19 @@ TEST(lsof_tcp_socket_detection) {
 }
 
 TEST(lsof_unix_socket_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char sockpath[] = "/tmp/lsof_test_unix_XXXXXX";
     int tmpfd = mkstemp(sockpath);
-    if (tmpfd >= 0) { close(tmpfd); unlink(sockpath); }
+    if (tmpfd >= 0) {
+        close(tmpfd);
+        unlink(sockpath);
+    }
 
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
@@ -302,14 +317,16 @@ TEST(lsof_unix_socket_detection) {
 }
 
 TEST(lsof_invalid_pid) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char buf[4096];
     int rc = run_lsof("-p 99999999 -Fp", buf, sizeof(buf));
     ASSERT_EQ(rc, 1);
 }
 
 TEST(lsof_and_option) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -321,7 +338,8 @@ TEST(lsof_and_option) {
 }
 
 TEST(lsof_fd_selection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_fd_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -341,9 +359,9 @@ TEST(lsof_fd_selection) {
     ASSERT_NOT_NULL(strstr(buf, "cwd"));
 }
 
-
 TEST(lsof_multiple_pids) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[256];
     char buf[16384];
     pid_t mypid = getpid();
@@ -361,7 +379,8 @@ TEST(lsof_multiple_pids) {
 }
 
 TEST(lsof_txt_fd) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -373,7 +392,8 @@ TEST(lsof_txt_fd) {
 }
 
 TEST(lsof_rtd_fd) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -386,9 +406,11 @@ TEST(lsof_rtd_fd) {
 }
 
 TEST(lsof_pipe_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     int pipefd[2];
-    if (pipe(pipefd) < 0) return;
+    if (pipe(pipefd) < 0)
+        return;
 
     char args[128];
     char buf[16384];
@@ -405,7 +427,8 @@ TEST(lsof_pipe_detection) {
 }
 
 TEST(lsof_multiple_fd_selection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -418,7 +441,8 @@ TEST(lsof_multiple_fd_selection) {
 }
 
 TEST(lsof_numeric_fd) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_numfd_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -441,7 +465,8 @@ TEST(lsof_numeric_fd) {
 }
 
 TEST(lsof_field_type_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -454,7 +479,8 @@ TEST(lsof_field_type_output) {
     int has_type = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 't') has_type = 1;
+        if (*line == 't')
+            has_type = 1;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -462,9 +488,11 @@ TEST(lsof_field_type_output) {
 }
 
 TEST(lsof_dev_null_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     int fd = open("/dev/null", O_RDONLY);
-    if (fd < 0) return;
+    if (fd < 0)
+        return;
 
     char args[128];
     char buf[16384];
@@ -480,10 +508,12 @@ TEST(lsof_dev_null_detection) {
 }
 
 TEST(lsof_udp_socket_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -512,7 +542,8 @@ TEST(lsof_udp_socket_detection) {
 }
 
 TEST(lsof_no_output_for_nonexistent_file) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char buf[4096];
     int rc = run_lsof("/nonexistent/path/that/does/not/exist/ever", buf, sizeof(buf));
     /* lsof should exit with 1 (no matches) */
@@ -520,7 +551,8 @@ TEST(lsof_no_output_for_nonexistent_file) {
 }
 
 TEST(lsof_fd_range_selection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -533,7 +565,8 @@ TEST(lsof_fd_range_selection) {
 }
 
 TEST(lsof_exclude_fd) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -547,7 +580,8 @@ TEST(lsof_exclude_fd) {
 }
 
 TEST(lsof_no_header_with_field_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -562,7 +596,8 @@ TEST(lsof_no_header_with_field_output) {
 /* ===== Edge case tests for distro-readiness ===== */
 
 TEST(lsof_deleted_file_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_del_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -587,7 +622,8 @@ TEST(lsof_deleted_file_detection) {
 }
 
 TEST(lsof_dup_fd_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_dup_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -616,20 +652,26 @@ TEST(lsof_dup_fd_detection) {
     /* both FDs should reference the same file */
     int count = 0;
     char *p = buf;
-    while ((p = strstr(p, tmppath)) != NULL) { count++; p++; }
+    while ((p = strstr(p, tmppath)) != NULL) {
+        count++;
+        p++;
+    }
     ASSERT_GE(count, 2);
 }
 
 TEST(lsof_high_fd_number) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int fd = open("/dev/null", O_RDONLY);
-    if (fd < 0) return;
+    if (fd < 0)
+        return;
 
     /* move to a high FD number */
     int highfd = dup2(fd, 200);
     close(fd);
-    if (highfd < 0) return;
+    if (highfd < 0)
+        return;
 
     char args[256];
     char buf[16384];
@@ -646,7 +688,8 @@ TEST(lsof_high_fd_number) {
 }
 
 TEST(lsof_symlink_target) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_sym_target_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -684,18 +727,22 @@ TEST(lsof_symlink_target) {
 }
 
 TEST(lsof_many_open_files) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     /* open 50 FDs to stress the file listing */
     int fds[50];
     int opened = 0;
     for (int i = 0; i < 50; i++) {
         fds[i] = open("/dev/null", O_RDONLY);
-        if (fds[i] >= 0) opened++;
-        else break;
+        if (fds[i] >= 0)
+            opened++;
+        else
+            break;
     }
     if (opened < 10) {
-        for (int i = 0; i < opened; i++) close(fds[i]);
+        for (int i = 0; i < opened; i++)
+            close(fds[i]);
         return;
     }
 
@@ -705,14 +752,16 @@ TEST(lsof_many_open_files) {
     snprintf(args, sizeof(args), "-p %d -Ff", (int)mypid);
     int rc = run_lsof(args, buf, sizeof(buf));
 
-    for (int i = 0; i < opened; i++) close(fds[i]);
+    for (int i = 0; i < opened; i++)
+        close(fds[i]);
 
     ASSERT_EQ(rc, 0);
     /* count how many 'f' lines we see — should be at least our opened count + cwd/txt/rtd */
     int fcount = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 'f') fcount++;
+        if (*line == 'f')
+            fcount++;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -720,10 +769,12 @@ TEST(lsof_many_open_files) {
 }
 
 TEST(lsof_socketpair_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sv[2];
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) < 0) return;
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) < 0)
+        return;
 
     char args[256];
     char buf[16384];
@@ -741,10 +792,12 @@ TEST(lsof_socketpair_detection) {
 }
 
 TEST(lsof_ipv6_socket_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sock = socket(AF_INET6, SOCK_STREAM, 0);
-    if (sock < 0) return; /* IPv6 not available */
+    if (sock < 0)
+        return; /* IPv6 not available */
 
     struct sockaddr_in6 addr;
     memset(&addr, 0, sizeof(addr));
@@ -777,11 +830,13 @@ TEST(lsof_ipv6_socket_detection) {
 }
 
 TEST(lsof_connected_tcp_pair) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     /* create a listener */
     int listener = socket(AF_INET, SOCK_STREAM, 0);
-    if (listener < 0) return;
+    if (listener < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -801,7 +856,10 @@ TEST(lsof_connected_tcp_pair) {
 
     /* connect a client */
     int client = socket(AF_INET, SOCK_STREAM, 0);
-    if (client < 0) { close(listener); return; }
+    if (client < 0) {
+        close(listener);
+        return;
+    }
 
     if (connect(client, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         close(client);
@@ -833,10 +891,12 @@ TEST(lsof_connected_tcp_pair) {
 }
 
 TEST(lsof_dev_zero_detection) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int fd = open("/dev/zero", O_RDONLY);
-    if (fd < 0) return;
+    if (fd < 0)
+        return;
 
     char args[128];
     char buf[16384];
@@ -851,7 +911,8 @@ TEST(lsof_dev_zero_detection) {
 }
 
 TEST(lsof_read_write_mode) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath_r[] = "/tmp/lsof_test_ro_XXXXXX";
     char tmppath_w[] = "/tmp/lsof_test_rw_XXXXXX";
@@ -886,10 +947,12 @@ TEST(lsof_read_write_mode) {
 }
 
 TEST(lsof_directory_fd) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmpdir[] = "/tmp/lsof_test_dir_XXXXXX";
-    if (mkdtemp(tmpdir) == NULL) return;
+    if (mkdtemp(tmpdir) == NULL)
+        return;
 
     int fd = open(tmpdir, O_RDONLY | O_DIRECTORY);
     if (fd < 0) {
@@ -912,7 +975,8 @@ TEST(lsof_directory_fd) {
 }
 
 TEST(lsof_command_name_filter) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char args[256];
     char buf[16384];
@@ -929,7 +993,8 @@ TEST(lsof_command_name_filter) {
 }
 
 TEST(lsof_command_name_no_match) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char args[256];
     char buf[16384];
@@ -943,7 +1008,8 @@ TEST(lsof_command_name_no_match) {
 }
 
 TEST(lsof_user_filter) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char args[256];
     char buf[16384];
@@ -951,7 +1017,8 @@ TEST(lsof_user_filter) {
     uid_t uid = getuid();
 
     struct passwd *pw = getpwuid(uid);
-    if (!pw) return;
+    if (!pw)
+        return;
 
     snprintf(args, sizeof(args), "-a -p %d -u %s -Fp", (int)mypid, pw->pw_name);
     int rc = run_lsof(args, buf, sizeof(buf));
@@ -963,7 +1030,8 @@ TEST(lsof_user_filter) {
 }
 
 TEST(lsof_user_filter_no_match) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char args[256];
     char buf[16384];
@@ -972,7 +1040,8 @@ TEST(lsof_user_filter_no_match) {
     /* filter by a user that isn't us (use exclusion) */
     uid_t uid = getuid();
     struct passwd *pw = getpwuid(uid);
-    if (!pw) return;
+    if (!pw)
+        return;
 
     /* exclude our own user — should find nothing for our PID */
     snprintf(args, sizeof(args), "-a -p %d -u ^%s -Fp", (int)mypid, pw->pw_name);
@@ -981,7 +1050,8 @@ TEST(lsof_user_filter_no_match) {
 }
 
 TEST(lsof_terse_mode) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char args[128];
     char buf[4096];
@@ -1002,7 +1072,8 @@ TEST(lsof_terse_mode) {
 }
 
 TEST(lsof_offset_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_off_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -1027,7 +1098,8 @@ TEST(lsof_offset_output) {
     int has_offset = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 'o') has_offset = 1;
+        if (*line == 'o')
+            has_offset = 1;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -1035,7 +1107,8 @@ TEST(lsof_offset_output) {
 }
 
 TEST(lsof_size_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_sz_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -1057,7 +1130,8 @@ TEST(lsof_size_output) {
     int has_size = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 's') has_size = 1;
+        if (*line == 's')
+            has_size = 1;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -1065,7 +1139,8 @@ TEST(lsof_size_output) {
 }
 
 TEST(lsof_all_field_types) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[32768];
     pid_t mypid = getpid();
@@ -1078,11 +1153,16 @@ TEST(lsof_all_field_types) {
     int has_p = 0, has_c = 0, has_f = 0, has_t = 0, has_n = 0;
     char *line = buf;
     while (line && *line) {
-        if (*line == 'p') has_p = 1;
-        if (*line == 'c') has_c = 1;
-        if (*line == 'f') has_f = 1;
-        if (*line == 't') has_t = 1;
-        if (*line == 'n') has_n = 1;
+        if (*line == 'p')
+            has_p = 1;
+        if (*line == 'c')
+            has_c = 1;
+        if (*line == 'f')
+            has_f = 1;
+        if (*line == 't')
+            has_t = 1;
+        if (*line == 'n')
+            has_n = 1;
         char *nl = strchr(line, '\n');
         line = nl ? nl + 1 : NULL;
     }
@@ -1094,7 +1174,8 @@ TEST(lsof_all_field_types) {
 }
 
 TEST(lsof_empty_pid_list) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     /* PID 1 and a nonexistent PID — should still succeed if PID 1 is readable */
     char buf[8192];
     int rc = run_lsof("-p 1 -Fp", buf, sizeof(buf));
@@ -1103,7 +1184,8 @@ TEST(lsof_empty_pid_list) {
 }
 
 TEST(lsof_multiple_file_types_same_process) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     /* open a regular file, a pipe, and a socket simultaneously */
     char tmppath[] = "/tmp/lsof_test_multi_XXXXXX";
@@ -1111,11 +1193,17 @@ TEST(lsof_multiple_file_types_same_process) {
     ASSERT_TRUE(reg_fd >= 0);
 
     int pipefd[2];
-    if (pipe(pipefd) < 0) { close(reg_fd); unlink(tmppath); return; }
+    if (pipe(pipefd) < 0) {
+        close(reg_fd);
+        unlink(tmppath);
+        return;
+    }
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        close(reg_fd); close(pipefd[0]); close(pipefd[1]);
+        close(reg_fd);
+        close(pipefd[0]);
+        close(pipefd[1]);
         unlink(tmppath);
         return;
     }
@@ -1139,7 +1227,8 @@ TEST(lsof_multiple_file_types_same_process) {
 }
 
 TEST(lsof_repeated_same_flag) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -1152,7 +1241,8 @@ TEST(lsof_repeated_same_flag) {
 }
 
 TEST(lsof_nul_terminated_field_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[128];
     char buf[16384];
     pid_t mypid = getpid();
@@ -1168,7 +1258,8 @@ TEST(lsof_nul_terminated_field_output) {
 }
 
 TEST(lsof_stdin_stdout_stderr) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[256];
     char buf[16384];
     pid_t mypid = getpid();
@@ -1183,7 +1274,8 @@ TEST(lsof_stdin_stdout_stderr) {
 }
 
 TEST(lsof_file_after_write) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     char tmppath[] = "/tmp/lsof_test_write_XXXXXX";
     int fd = mkstemp(tmppath);
@@ -1209,7 +1301,8 @@ TEST(lsof_file_after_write) {
 }
 
 TEST(lsof_pid_exclusion) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
     char args[256];
     char buf[16384];
     pid_t mypid = getpid();
@@ -1225,11 +1318,13 @@ TEST(lsof_pid_exclusion) {
 }
 
 TEST(lsof_internet_connections_list) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     /* create a socket so there's at least one */
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -1253,10 +1348,12 @@ TEST(lsof_internet_connections_list) {
 }
 
 TEST(lsof_numeric_port_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -1289,10 +1386,12 @@ TEST(lsof_numeric_port_output) {
 }
 
 TEST(lsof_numeric_host_output) {
-    if (!lsof_available()) return;
+    if (!lsof_available())
+        return;
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) return;
+    if (sock < 0)
+        return;
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -1324,7 +1423,8 @@ TEST(lsof_numeric_host_output) {
 }
 
 int main(int argc, char **argv) {
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 
     TEST_SUITE("LSOF INTEGRATION TESTS");
 

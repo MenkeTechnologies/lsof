@@ -2,7 +2,6 @@
  * dstore.c - NetBSD and OpenBSD global storage for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,9 +27,7 @@
 
 #include "lsof.h"
 
-
-struct file *Cfp;        /* current file's file struct pointer */
-
+struct file *Cfp; /* current file's file struct pointer */
 
 /*
  * Drive_Nl -- table to drive the building of NlistTable[] via build_Nl()
@@ -39,67 +36,69 @@ struct file *Cfp;        /* current file's file struct pointer */
 
 struct drive_Nl Drive_Nl[] = {
 
-#if    (defined(OPENBSDV) && OPENBSDV >= 2010) || (defined(NETBSDV) && NETBSDV >= 1002000)
-{ X_NCACHE,	"_nchashtbl",	},
-{ X_NCSIZE,	"_nchash"	},
-#else	/* (defined(OPENBSDV) && OPENBSDV>=2010) || (defined(NETBSDV) && NETBSDV>=1002000) */
-# if    defined(NetBSD1_0) && NetBSD < 1994101
-        { X_NCACHE,	"_nchhead",	},
-# else	/* !defined(NetBSD1_0) || NetBSD>=1994101 */
-        {X_NCACHE, "_nclruhead"},
-# endif    /* defined(NetBSD1_0) && NetBSD<1994101 */
+#if (defined(OPENBSDV) && OPENBSDV >= 2010) || (defined(NETBSDV) && NETBSDV >= 1002000)
+    {
+        X_NCACHE,
+        "_nchashtbl",
+    },
+    {X_NCSIZE, "_nchash"},
+#else /* (defined(OPENBSDV) && OPENBSDV>=2010) || (defined(NETBSDV) && NETBSDV>=1002000) */
+#if defined(NetBSD1_0) && NetBSD < 1994101
+    {
+        X_NCACHE,
+        "_nchhead",
+    },
+#else  /* !defined(NetBSD1_0) || NetBSD>=1994101 */
+    {X_NCACHE, "_nclruhead"},
+#endif /* defined(NetBSD1_0) && NetBSD<1994101 */
 
-        {X_NCSIZE, "_numcache"},
-#endif    /* (defined(OPENBSDV) && OPENBSDV>=2010) || (defined(NETBSDV) && NETBSDV>=1002000) */
+    {X_NCSIZE, "_numcache"},
+#endif /* (defined(OPENBSDV) && OPENBSDV>=2010) || (defined(NETBSDV) && NETBSDV>=1002000) */
 
-        {"pgshift", "_pgshift"},
-        {"", ""},
-        {NULL, NULL}
-};
+    {"pgshift", "_pgshift"},
+    {"", ""},
+    {NULL, NULL}};
 
-kvm_t *Kd;            /* kvm descriptor */
-KA_T Kpa;            /* kernel proc struct address */
+kvm_t *Kd; /* kvm descriptor */
+KA_T Kpa;  /* kernel proc struct address */
 
-struct l_vfs *Lvfs = NULL;    /* local vfs structure table */
+struct l_vfs *Lvfs = NULL; /* local vfs structure table */
 
-int Np = 0;            /* number of kernel processes */
+int Np = 0; /* number of kernel processes */
 
-#if    defined(HASKVMGETPROC2)
-struct kinfo_proc2 *P = NULL;	/* local process table copy */
-#else	/* !defined(HASKVMGETPROC2) */
-struct kinfo_proc *P = NULL;    /* local process table copy */
-#endif    /* defined(HASKVMGETPROC2) */
+#if defined(HASKVMGETPROC2)
+struct kinfo_proc2 *P = NULL; /* local process table copy */
+#else                         /* !defined(HASKVMGETPROC2) */
+struct kinfo_proc *P = NULL; /* local process table copy */
+#endif                        /* defined(HASKVMGETPROC2) */
 
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
-struct pff_tab Pff_tab[] = {
-    { (long)FREAD,		FF_READ		},
-    { (long)FWRITE,		FF_WRITE	},
-    { (long)FNONBLOCK,	FF_NBLOCK	},
-    { (long)FNDELAY,	FF_NDELAY	},
-    { (long)FAPPEND,	FF_APPEND	},
-    { (long)FASYNC,		FF_ASYNC	},
+struct pff_tab Pff_tab[] = {{(long)FREAD, FF_READ},
+                            {(long)FWRITE, FF_WRITE},
+                            {(long)FNONBLOCK, FF_NBLOCK},
+                            {(long)FNDELAY, FF_NDELAY},
+                            {(long)FAPPEND, FF_APPEND},
+                            {(long)FASYNC, FF_ASYNC},
 
-# if	defined(FDSYNC)
-    { (long)FDSYNC,		FF_DSYNC	},
-# endif	/* defined*FDSYNC) */
+#if defined(FDSYNC)
+                            {(long)FDSYNC, FF_DSYNC},
+#endif /* defined*FDSYNC) */
 
-    { (long)FFSYNC,		FF_FSYNC	},
+                            {(long)FFSYNC, FF_FSYNC},
 
-# if	defined(FRSYNC)
-    { (long)FRSYNC,		FF_RSYNC	},
-# endif	/* defined(FRSYNC( */
+#if defined(FRSYNC)
+                            {(long)FRSYNC, FF_RSYNC},
+#endif /* defined(FRSYNC( */
 
-    { (long)FMARK,		FF_MARK		},
-    { (long)FDEFER,		FF_DEFER	},
-    { (long)FHASLOCK,	FF_HASLOCK	},
-    { (long)O_NOCTTY,	FF_NOCTTY	},
-    { (long)0,		NULL 		}
-};
-
+                            {(long)FMARK, FF_MARK},
+                            {(long)FDEFER, FF_DEFER},
+                            {(long)FHASLOCK, FF_HASLOCK},
+                            {(long)O_NOCTTY, FF_NOCTTY},
+                            {(long)0, NULL}};
 
 /*
  * Pof_tab[] - table for print process open file flags
@@ -107,16 +106,15 @@ struct pff_tab Pff_tab[] = {
 
 struct pff_tab Pof_tab[] = {
 
-# if	defined(UF_EXCLOSE)
-    { (long)UF_EXCLOSE,	POF_CLOEXEC	},
-# endif	/* defined(UF_EXCLOSE) */
+#if defined(UF_EXCLOSE)
+    {(long)UF_EXCLOSE, POF_CLOEXEC},
+#endif /* defined(UF_EXCLOSE) */
 
-# if	defined(UF_MAPPED)
-    { (long)UF_MAPPED,	POF_MAPPED	},
-# endif	/* defined(UF_MAPPED) */
+#if defined(UF_MAPPED)
+    {(long)UF_MAPPED, POF_MAPPED},
+#endif /* defined(UF_MAPPED) */
 
-    { (long)0,		NULL		}
-};
-#endif    /* defined(HASFSTRUCT) */
+    {(long)0, NULL}};
+#endif /* defined(HASFSTRUCT) */
 
-int pgshift = 0;        /* kernel's page shift */
+int pgshift = 0; /* kernel's page shift */

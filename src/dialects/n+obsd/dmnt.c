@@ -2,7 +2,6 @@
  * dmnt.c - NetBSD and OpenBSD mount support functions for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,58 +25,55 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if     defined(NETBSDV) && defined(HASSTATVFS)
+#if defined(NETBSDV) && defined(HASSTATVFS)
 /*
  * NetBSD needs the statvfs structure to be defined without the 
  * pre-definition of _KERNEL.
  */
-  
+
 #include <sys/statvfs.h>
-#endif  /* defined(NETBSDV) && defined(HASSTATVFS) */
+#endif /* defined(NETBSDV) && defined(HASSTATVFS) */
 
 #include "lsof.h"
-
 
 /*
  * Local static definitions
  */
 
-static struct mounts *Lmi = (struct mounts *) NULL;    /* local mount info */
-static int Lmist = 0;                    /* Lmi status */
-
+static struct mounts *Lmi = (struct mounts *)NULL; /* local mount info */
+static int Lmist = 0;                              /* Lmi status */
 
 /*
  * readmnt() - read mount table
  */
 
-struct mounts *
-readmnt() {
-    char *dn = (char *) NULL;
+struct mounts *readmnt() {
+    char *dn = (char *)NULL;
     char *ln;
     struct mounts *mtp;
     int n;
     struct stat sb;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
     unsigned char procfs = 0;
-#endif    /* defined(HASPROCFS) */
+#endif /* defined(HASPROCFS) */
 
-#if    defined(HASSTATVFS)
+#if defined(HASSTATVFS)
     struct statvfs *mb = (struct statvfs *)NULL;
-#else	/* !defined(HASSTATVFS) */
-    struct statfs *mb = (struct statfs *) NULL;
-#endif    /* defined(HASSTATVFS) */
+#else  /* !defined(HASSTATVFS) */
+    struct statfs *mb = (struct statfs *)NULL;
+#endif /* defined(HASSTATVFS) */
 
     if (Lmi || Lmist)
         return (Lmi);
-/*
+    /*
  * Access mount information.
  */
     if ((n = getmntinfo(&mb, MNT_NOWAIT)) <= 0) {
-        (void) fprintf(stderr, "%s: no mount information\n", ProgramName);
+        (void)fprintf(stderr, "%s: no mount information\n", ProgramName);
         return (0);
     }
-/*
+    /*
  * Read mount information.
  */
     for (; n; n--, mb++) {
@@ -88,27 +84,26 @@ readmnt() {
          * Interpolate a possible symbolic directory link.
          */
         if (dn)
-            (void) free((FREE_P *) dn);
-        if (!(dn = mkstrcpy(mb->f_mntonname, (MALLOC_S *) NULL))) {
+            (void)free((FREE_P *)dn);
+        if (!(dn = mkstrcpy(mb->f_mntonname, (MALLOC_S *)NULL))) {
 
-            no_space_for_mount:
+        no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(mb->f_mntonname, stderr, 0);
-            (void) fprintf(stderr, " (");
+            (void)fprintf(stderr, " (");
             safestrprt(mb->f_mntfromname, stderr, 0);
-            (void) fprintf(stderr, ")\n");
+            (void)fprintf(stderr, ")\n");
             Exit(1);
         }
         if ((ln = Readlink(dn)) == NULL) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             continue;
         }
         if (ln != dn) {
-            (void) free((FREE_P *) dn);
+            (void)free((FREE_P *)dn);
             dn = ln;
         }
         if (*dn != '/')
@@ -118,64 +113,61 @@ readmnt() {
          */
         if (statsafely(dn, &sb)) {
             if (!OptWarnings) {
-                (void) fprintf(stderr, "%s: WARNING: can't stat() ", ProgramName);
+                (void)fprintf(stderr, "%s: WARNING: can't stat() ", ProgramName);
                 safestrprt(mb->f_fstypename, stderr, 0);
-                (void) fprintf(stderr, " file system ");
+                (void)fprintf(stderr, " file system ");
                 safestrprt(mb->f_mntonname, stderr, 1);
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
-            (void) bzero((char *) &sb, sizeof(sb));
+            (void)bzero((char *)&sb, sizeof(sb));
 
-#if    defined(HASSTATVFS)
+#if defined(HASSTATVFS)
             sb.st_dev = (dev_t)mb->f_fsid;
-#else	/* !defined(HASSTATVFS) */
-            sb.st_dev = (dev_t) mb->f_fsid.val[0];
-#endif    /* defined(HASSTATVFS) */
+#else  /* !defined(HASSTATVFS) */
+            sb.st_dev = (dev_t)mb->f_fsid.val[0];
+#endif /* defined(HASSTATVFS) */
 
             sb.st_mode = S_IFDIR | 0777;
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "      assuming \"dev=%x\" from mount table\n",
-                               sb.st_dev);
+                (void)fprintf(stderr, "      assuming \"dev=%x\" from mount table\n", sb.st_dev);
             }
         }
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *) malloc(sizeof(struct mounts))))
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
             goto no_space_for_mount;
         mtp->dir = dn;
-        dn = (char *) NULL;
+        dn = (char *)NULL;
 
-#if    defined(HASPROCFS)
+#if defined(HASPROCFS)
         if (strcmp(mb->f_fstypename, MOUNT_PROCFS) == 0) {
 
-        /*
+            /*
          * Save information on exactly one procfs file system.
          */
-        if (procfs)
-            Mtprocfs = (struct mounts *)NULL;
-        else {
-            procfs = 1;
-            Mtprocfs = mtp;
+            if (procfs)
+                Mtprocfs = (struct mounts *)NULL;
+            else {
+                procfs = 1;
+                Mtprocfs = mtp;
+            }
         }
-        }
-#endif    /* defined(HASPROCFS) */
+#endif /* defined(HASPROCFS) */
 
         mtp->next = Lmi;
         mtp->dev = sb.st_dev;
         mtp->rdev = sb.st_rdev;
-        mtp->inode = (INODETYPE) sb.st_ino;
+        mtp->inode = (INODETYPE)sb.st_ino;
         mtp->mode = sb.st_mode;
         /*
          * Interpolate a possible file system (mounted-on) device name link.
          */
-        if (!(dn = mkstrcpy(mb->f_mntfromname, (MALLOC_S *) NULL)))
+        if (!(dn = mkstrcpy(mb->f_mntfromname, (MALLOC_S *)NULL)))
             goto no_space_for_mount;
         mtp->fsname = dn;
         ln = Readlink(dn);
-        dn = (char *) NULL;
+        dn = (char *)NULL;
         /*
          * Stat() the file system (mounted-on) name and add file system
          * information to the local mount table entry.
@@ -186,57 +178,53 @@ readmnt() {
         mtp->fs_mode = sb.st_mode;
         Lmi = mtp;
     }
-/*
+    /*
  * Clean up and return local mount info table address.
  */
     if (dn)
-        (void) free((FREE_P *) dn);
+        (void)free((FREE_P *)dn);
     Lmist = 1;
     return (Lmi);
 }
-
 
 /*
  * readvfs() - read vfs structure
  */
 
-struct l_vfs *
-readvfs(KA_T vm)
-{
+struct l_vfs *readvfs(KA_T vm) {
     struct mount m;
     struct l_vfs *vp;
-/*
+    /*
  * Search for match on existing entry.
  */
     for (vp = Lvfs; vp; vp = vp->next) {
         if (vm == vp->addr)
             return (vp);
     }
-/*
+    /*
  * Read the (new) mount structure, allocate a local entry, and fill it.
  */
-    if (kread(vm, (char *) &m, sizeof(m)) != 0)
-        return ((struct l_vfs *) NULL);
-    if (!(vp = (struct l_vfs *) malloc(sizeof(struct l_vfs)))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if (kread(vm, (char *)&m, sizeof(m)) != 0)
+        return ((struct l_vfs *)NULL);
+    if (!(vp = (struct l_vfs *)malloc(sizeof(struct l_vfs)))) {
+        (void)fprintf(stderr, "%s: PID %d, no space for vfs\n", ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
-    if (!(vp->dir = mkstrcpy(m.m_stat.f_mntonname, (MALLOC_S *) NULL))
-        || !(vp->fsname = mkstrcpy(m.m_stat.f_mntfromname, (MALLOC_S *) NULL))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for mount names\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if (!(vp->dir = mkstrcpy(m.m_stat.f_mntonname, (MALLOC_S *)NULL)) ||
+        !(vp->fsname = mkstrcpy(m.m_stat.f_mntfromname, (MALLOC_S *)NULL))) {
+        (void)fprintf(stderr, "%s: PID %d, no space for mount names\n", ProgramName,
+                      CurrentLocalProc->pid);
         Exit(1);
     }
     vp->addr = vm;
 
-#if    defined(HASSTATVFS)
+#if defined(HASSTATVFS)
     vp->fsid = m.m_stat.f_fsidx;
-#else	/* !defined(HASSTATVFS) */
+#else  /* !defined(HASSTATVFS) */
     vp->fsid = m.m_stat.f_fsid;
-#endif    /* defined(HASSTATVFS) */
+#endif /* defined(HASSTATVFS) */
 
-    (void) snpf(vp->type, sizeof(vp->type), "%s", m.m_stat.f_fstypename);
+    (void)snpf(vp->type, sizeof(vp->type), "%s", m.m_stat.f_fstypename);
     vp->next = Lvfs;
     Lvfs = vp;
     return (vp);

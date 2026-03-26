@@ -5,7 +5,6 @@
  * structure definitions.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -31,39 +30,85 @@
 
 #include "lsof.h"
 
-#if    defined(HAS9660FS)
+#if defined(HAS9660FS)
 
 /*
  * Do a little preparation for #include'ing cd9660_node.h, then #include it.
  */
 
-#undef	i_size;
-#undef	doff_t
-#undef	IN_ACCESS
+#undef i_size;
+#undef doff_t
+#undef IN_ACCESS
 
-struct vop_abortop_args	 { int dummy; };
-struct vop_access_args	 { int dummy; };
-struct vop_blkatoff_args { int dummy; };
-struct vop_bmap_args	 { int dummy; };
-struct vop_close_args	 { int dummy; };
-struct vop_getattr_args	 { int dummy; };
-struct vop_inactive_args { int dummy; };
-struct vop_ioctl_args	 { int dummy; };
-struct vop_islocked_args { int dummy; };
-struct vop_lock_args	 { int dummy; };
-struct vop_lookup_args	 { int dummy; };
-struct vop_mmap_args	 { int dummy; };
-struct vop_open_args	 { int dummy; };
-struct vop_pathconf_args { int dummy; };
-struct vop_print_args	 { int dummy; };
-struct vop_read_args	 { int dummy; };
-struct vop_readdir_args	 { int dummy; };
-struct vop_readlink_args { int dummy; };
-struct vop_reclaim_args	 { int dummy; };
-struct vop_seek_args	 { int dummy; };
-struct vop_select_args	 { int dummy; };
-struct vop_strategy_args { int dummy; };
-struct vop_unlock_args	 { int dummy; };
+struct vop_abortop_args {
+    int dummy;
+};
+struct vop_access_args {
+    int dummy;
+};
+struct vop_blkatoff_args {
+    int dummy;
+};
+struct vop_bmap_args {
+    int dummy;
+};
+struct vop_close_args {
+    int dummy;
+};
+struct vop_getattr_args {
+    int dummy;
+};
+struct vop_inactive_args {
+    int dummy;
+};
+struct vop_ioctl_args {
+    int dummy;
+};
+struct vop_islocked_args {
+    int dummy;
+};
+struct vop_lock_args {
+    int dummy;
+};
+struct vop_lookup_args {
+    int dummy;
+};
+struct vop_mmap_args {
+    int dummy;
+};
+struct vop_open_args {
+    int dummy;
+};
+struct vop_pathconf_args {
+    int dummy;
+};
+struct vop_print_args {
+    int dummy;
+};
+struct vop_read_args {
+    int dummy;
+};
+struct vop_readdir_args {
+    int dummy;
+};
+struct vop_readlink_args {
+    int dummy;
+};
+struct vop_reclaim_args {
+    int dummy;
+};
+struct vop_seek_args {
+    int dummy;
+};
+struct vop_select_args {
+    int dummy;
+};
+struct vop_strategy_args {
+    int dummy;
+};
+struct vop_unlock_args {
+    int dummy;
+};
 
 #include <isofs/cd9660/cd9660_node.h>
 
@@ -71,15 +116,12 @@ struct vop_unlock_args	 { int dummy; };
  * read_iso_node() -- read CD 9660 iso_node
  */
 
-int
-read_iso_node(struct vnode * v, dev_t * d, int * dd, INODETYPE * ino, long * nl, SZOFFTYPE * sz)
-{
+int read_iso_node(struct vnode *v, dev_t *d, int *dd, INODETYPE *ino, long *nl, SZOFFTYPE *sz) {
 
     struct iso_node i;
 
-    if (!v->v_data
-    ||  kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
-        return(1);
+    if (!v->v_data || kread((KA_T)v->v_data, (char *)&i, sizeof(i)))
+        return (1);
 
     *d = i.i_dev;
     *dd = 1;
@@ -87,6 +129,6 @@ read_iso_node(struct vnode * v, dev_t * d, int * dd, INODETYPE * ino, long * nl,
     *nl = (long)i.inode.iso_links;
     *sz = (SZOFFTYPE)i.i_size;
 
-    return(0);
+    return (0);
 }
-#endif    /* defined(HAS9660FS) */
+#endif /* defined(HAS9660FS) */

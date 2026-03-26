@@ -9,14 +9,36 @@
 
 TEST(field_ids_are_unique) {
     char ids[] = {
-        LSOF_FID_ACCESS, LSOF_FID_CMD, LSOF_FID_FILE_STRUCT_COUNT, LSOF_FID_DEV_CHAR,
-        LSOF_FID_DEV_NUM, LSOF_FID_FILE_DESC, LSOF_FID_FILE_STRUCT_ADDR, LSOF_FID_FILE_FLAGS,
-        LSOF_FID_INODE, LSOF_FID_NLINK, LSOF_FID_TID, LSOF_FID_LOCK,
-        LSOF_FID_LOGIN, LSOF_FID_MARK, LSOF_FID_NAME, LSOF_FID_NODE_ID,
-        LSOF_FID_OFFSET, LSOF_FID_PID, LSOF_FID_PGID, LSOF_FID_PROTO,
-        LSOF_FID_RDEV, LSOF_FID_PPID, LSOF_FID_SIZE, LSOF_FID_STREAM,
-        LSOF_FID_TYPE, LSOF_FID_TCP_TPI_INFO, LSOF_FID_UID, LSOF_FID_ZONE,
-        LSOF_FID_SEC_CONTEXT, LSOF_FID_TERM,
+        LSOF_FID_ACCESS,
+        LSOF_FID_CMD,
+        LSOF_FID_FILE_STRUCT_COUNT,
+        LSOF_FID_DEV_CHAR,
+        LSOF_FID_DEV_NUM,
+        LSOF_FID_FILE_DESC,
+        LSOF_FID_FILE_STRUCT_ADDR,
+        LSOF_FID_FILE_FLAGS,
+        LSOF_FID_INODE,
+        LSOF_FID_NLINK,
+        LSOF_FID_TID,
+        LSOF_FID_LOCK,
+        LSOF_FID_LOGIN,
+        LSOF_FID_MARK,
+        LSOF_FID_NAME,
+        LSOF_FID_NODE_ID,
+        LSOF_FID_OFFSET,
+        LSOF_FID_PID,
+        LSOF_FID_PGID,
+        LSOF_FID_PROTO,
+        LSOF_FID_RDEV,
+        LSOF_FID_PPID,
+        LSOF_FID_SIZE,
+        LSOF_FID_STREAM,
+        LSOF_FID_TYPE,
+        LSOF_FID_TCP_TPI_INFO,
+        LSOF_FID_UID,
+        LSOF_FID_ZONE,
+        LSOF_FID_SEC_CONTEXT,
+        LSOF_FID_TERM,
     };
     int n = sizeof(ids) / sizeof(ids[0]);
     for (int i = 0; i < n; i++) {
@@ -117,14 +139,36 @@ TEST(field_names_non_empty) {
 
 TEST(field_ids_are_printable_ascii) {
     char ids[] = {
-        LSOF_FID_ACCESS, LSOF_FID_CMD, LSOF_FID_FILE_STRUCT_COUNT, LSOF_FID_DEV_CHAR,
-        LSOF_FID_DEV_NUM, LSOF_FID_FILE_DESC, LSOF_FID_FILE_STRUCT_ADDR, LSOF_FID_FILE_FLAGS,
-        LSOF_FID_INODE, LSOF_FID_NLINK, LSOF_FID_TID, LSOF_FID_LOCK,
-        LSOF_FID_LOGIN, LSOF_FID_MARK, LSOF_FID_NAME, LSOF_FID_NODE_ID,
-        LSOF_FID_OFFSET, LSOF_FID_PID, LSOF_FID_PGID, LSOF_FID_PROTO,
-        LSOF_FID_RDEV, LSOF_FID_PPID, LSOF_FID_SIZE, LSOF_FID_STREAM,
-        LSOF_FID_TYPE, LSOF_FID_TCP_TPI_INFO, LSOF_FID_UID, LSOF_FID_ZONE,
-        LSOF_FID_SEC_CONTEXT, LSOF_FID_TERM,
+        LSOF_FID_ACCESS,
+        LSOF_FID_CMD,
+        LSOF_FID_FILE_STRUCT_COUNT,
+        LSOF_FID_DEV_CHAR,
+        LSOF_FID_DEV_NUM,
+        LSOF_FID_FILE_DESC,
+        LSOF_FID_FILE_STRUCT_ADDR,
+        LSOF_FID_FILE_FLAGS,
+        LSOF_FID_INODE,
+        LSOF_FID_NLINK,
+        LSOF_FID_TID,
+        LSOF_FID_LOCK,
+        LSOF_FID_LOGIN,
+        LSOF_FID_MARK,
+        LSOF_FID_NAME,
+        LSOF_FID_NODE_ID,
+        LSOF_FID_OFFSET,
+        LSOF_FID_PID,
+        LSOF_FID_PGID,
+        LSOF_FID_PROTO,
+        LSOF_FID_RDEV,
+        LSOF_FID_PPID,
+        LSOF_FID_SIZE,
+        LSOF_FID_STREAM,
+        LSOF_FID_TYPE,
+        LSOF_FID_TCP_TPI_INFO,
+        LSOF_FID_UID,
+        LSOF_FID_ZONE,
+        LSOF_FID_SEC_CONTEXT,
+        LSOF_FID_TERM,
     };
     int n = sizeof(ids) / sizeof(ids[0]);
     for (int i = 0; i < n; i++) {
@@ -137,11 +181,10 @@ TEST(field_total_count) {
     ASSERT_EQ(LSOF_FIX_TERM, 29);
 }
 
-
 /* ===== Cross-over option value tests ===== */
-#define XO_FILESYS  0x1
-#define XO_SYMLINK  0x2
-#define XO_ALL      (XO_FILESYS | XO_SYMLINK)
+#define XO_FILESYS 0x1
+#define XO_SYMLINK 0x2
+#define XO_ALL     (XO_FILESYS | XO_SYMLINK)
 
 TEST(crossover_flags) {
     ASSERT_EQ(XO_FILESYS & XO_SYMLINK, 0);
@@ -150,12 +193,11 @@ TEST(crossover_flags) {
     ASSERT_TRUE((XO_SYMLINK & XO_ALL) != 0);
 }
 
-
 /* ===== FSV flag tests ===== */
-#define FSV_FILE_ADDR 0x1
+#define FSV_FILE_ADDR  0x1
 #define FSV_FILE_COUNT 0x2
 #define FSV_FILE_FLAGS 0x4
-#define FSV_NODE_ID 0x8
+#define FSV_NODE_ID    0x8
 
 TEST(fsv_flags_no_overlap) {
     ASSERT_EQ(FSV_FILE_ADDR & FSV_FILE_COUNT, 0);

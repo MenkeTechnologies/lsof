@@ -4,7 +4,6 @@
  * The _PROTOTYPE macro is defined in the common proto.h.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,44 +27,42 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dproto.h,v 1.7 2008/04/15 13:32:26 abe Exp $
  */
 
+#if defined(HASSELINUX)
+_PROTOTYPE(extern int enter_cntx_arg, (char *cnxt));
+#endif /* defined(HASSELINUX) */
 
-#if    defined(HASSELINUX)
-_PROTOTYPE(extern int enter_cntx_arg,(char *cnxt));
-#endif    /* defined(HASSELINUX) */
-
-_PROTOTYPE(extern int get_fields,(char *ln, char *sep, char ***fr, int *eb, int en)
-
-);
-
-_PROTOTYPE(extern void get_locks,(char *p)
+_PROTOTYPE(extern int get_fields, (char *ln, char *sep, char ***fr, int *eb, int en)
 
 );
 
-_PROTOTYPE(extern int is_file_named,(char *p, int cd)
+_PROTOTYPE(extern void get_locks, (char *p)
 
 );
 
-_PROTOTYPE(extern int make_proc_path,(char *pp, int lp, char **np, int *npl, char *sf)
+_PROTOTYPE(extern int is_file_named, (char *p, int cd)
 
 );
 
-_PROTOTYPE(extern FILE *open_proc_stream,(char *p, char *mode, char **buf, size_t *sz, int act)
+_PROTOTYPE(extern int make_proc_path, (char *pp, int lp, char **np, int *npl, char *sf)
 
 );
 
-_PROTOTYPE(extern void process_proc_node,(char *p, struct stat *s, int ss, struct stat *l, int ls)
+_PROTOTYPE(extern FILE *open_proc_stream, (char *p, char *mode, char **buf, size_t *sz, int act)
 
 );
 
-_PROTOTYPE(extern void process_proc_sock,(char *p, struct stat *s, int ss, struct stat *l, int ls)
+_PROTOTYPE(extern void process_proc_node, (char *p, struct stat *s, int ss, struct stat *l, int ls)
 
 );
 
-_PROTOTYPE(extern void set_net_paths,(char *p, int pl)
+_PROTOTYPE(extern void process_proc_sock, (char *p, struct stat *s, int ss, struct stat *l, int ls)
+
+);
+
+_PROTOTYPE(extern void set_net_paths, (char *p, int pl)
 
 );

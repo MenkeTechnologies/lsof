@@ -5,9 +5,7 @@
 #ifndef TEST_UNIT_X2DEV_H
 #define TEST_UNIT_X2DEV_H
 
-static char *
-test_hex_to_device(char *hex_input, dev_t *device_out)
-{
+static char *test_hex_to_device(char *hex_input, dev_t *device_out) {
     char *scan_pos, *prefix_check;
     int digit_count;
     dev_t accumulated;

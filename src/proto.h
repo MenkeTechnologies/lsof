@@ -38,7 +38,8 @@ extern void add_nma(char *str, int len);
 
 extern void alloc_lfile(char *nm, int num);
 
-extern void alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sel_flags);
+extern void alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss,
+                        int sel_flags);
 
 extern void build_IPstates(void);
 
@@ -46,21 +47,22 @@ extern void childx(void);
 
 extern int ck_fd_status(char *nm, int num);
 
-extern int ck_file_arg(int first_arg_idx, int arg_count, char *av[], int fs_value, int readlink_status, struct stat *sbp);
+extern int ck_file_arg(int first_arg_idx, int arg_count, char *av[], int fs_value,
+                       int readlink_status, struct stat *sbp);
 
 extern void ckkv(char *dialect, char *expected_rev, char *expected_ver, char *expected_arch);
 
 extern void clr_devtab(void);
 
-extern int compdev(COMP_P * lhs, COMP_P * rhs);
+extern int compdev(COMP_P *lhs, COMP_P *rhs);
 
-extern int comppid(COMP_P * lhs, COMP_P * rhs);
+extern int comppid(COMP_P *lhs, COMP_P *rhs);
 
 #if defined(WILLDROPGID)
 extern void dropgid(void);
 #endif
 
-extern char *endnm(size_t * remaining_size);
+extern char *endnm(size_t *remaining_size);
 
 extern int enter_cmd_rx(char *regex_str);
 
@@ -86,12 +88,12 @@ extern void enter_nm(char *m);
 extern int enter_state_spec(char *ss);
 #endif
 
-extern int enter_str_lst(char *opt, char *str_val, struct str_lst **list_ptr,
-        int *incl, int *excl);
+extern int enter_str_lst(char *opt, char *str_val, struct str_lst **list_ptr, int *incl, int *excl);
 
 extern int enter_uid(char *us);
 
-extern void ent_inaddr(unsigned char *local_addr, int lp, unsigned char *foreign_addr, int fp, int af);
+extern void ent_inaddr(unsigned char *local_addr, int lp, unsigned char *foreign_addr, int fp,
+                       int af);
 
 extern int examine_lproc(void);
 
@@ -105,7 +107,7 @@ extern void gather_proc_info(void);
 
 extern char *gethostnm(unsigned char *inet_addr, int addr_family);
 
-#ifndef GET_MAX_FD/*
+#ifndef GET_MAX_FD /*
  * This is not strictly a prototype, but GET_MAX_FD is the name of the
  * function that, in lieu of getdtablesize(), returns the maximum file
  * descriptor plus one (or file descriptor count).  GET_MAX_FD may be
@@ -113,7 +115,7 @@ extern char *gethostnm(unsigned char *inet_addr, int addr_family);
  * selects getdtablesize().
  */
 
-#define    GET_MAX_FD    getdtablesize
+#define GET_MAX_FD getdtablesize
 #endif
 
 extern int hashbyname(char *name, int mod);
@@ -148,7 +150,8 @@ extern int lstatsafely(char *path, struct stat *buf);
 
 extern char *mkstrcpy(char *src, MALLOC_S *rlp);
 
-extern char *mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3, MALLOC_S *clp);
+extern char *mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3,
+                      MALLOC_S *clp);
 
 extern int printdevname(dev_t *dev, dev_t *rdev, int force, int nty);
 
@@ -204,7 +207,7 @@ extern char *x2dev(char *hex_str, dev_t *dev_ptr);
 
 #if defined(HASBLKDEV)
 extern void find_bl_ino(void);
-extern struct l_dev *lkupbdev(dev_t *dev,dev_t *rdev,int i,int r);
+extern struct l_dev *lkupbdev(dev_t *dev, dev_t *rdev, int i, int r);
 extern int printbdevname(dev_t *dev, dev_t *rdev, int f);
 #endif
 

@@ -5,7 +5,6 @@
  * files.
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -29,87 +28,77 @@
  * 4. This notice may not be removed or altered.
  */
 
-#if    defined(HAS_ZFS)
+#if defined(HAS_ZFS)
 
 #define _KERNEL
 #include <sys/zfs_znode.h>
-#undef	_KERNEL
+#undef _KERNEL
 
 #include "dzfs.h"
-
 
 /*
  * readzfsnode() -- read the ZFS node
  */
 
-char *
-readzfsnode(KA_T za, zfs_info_t * zi, int vr)
-{
-    struct znode zn;		/* ZFS node */
+char *readzfsnode(KA_T za, zfs_info_t *zi, int vr) {
+    struct znode zn; /* ZFS node */
 
-# if	defined(HAS_Z_PHYS)
-    znode_phys_t zp;		/* ZFS physical node */
-# else	/* !defined(HAS_Z_PHYS) */
-    KA_T ka;			/* temporary kernel address */
-    zfsvfs_t zv;			/* znode's zfsvfs structure */
-# endif	/* defined(HAS_Z_PHYS) */
+#if defined(HAS_Z_PHYS)
+    znode_phys_t zp; /* ZFS physical node */
+#else                /* !defined(HAS_Z_PHYS) */
+    KA_T ka;     /* temporary kernel address */
+    zfsvfs_t zv; /* znode's zfsvfs structure */
+#endif               /* defined(HAS_Z_PHYS) */
 
     memset((void *)zi, 0, sizeof(zfs_info_t));
-    if (!za
-    ||  kread(za, (char *)&zn, sizeof(zn))
-    ) {
+    if (!za || kread(za, (char *)&zn, sizeof(zn))) {
         if (!za)
-        return("No ZFS node address");
-        return("Can't read znode");
+            return ("No ZFS node address");
+        return ("Can't read znode");
     }
-/*
+    /*
  * Return items contained in the znode.
  */
     zi->ino = (INODETYPE)zn.z_id;
     zi->ino_def = 1;
 
-# if	!defined(HAS_V_LOCKF)
+#if !defined(HAS_V_LOCKF)
     zi->lockf = (KA_T)zn.z_lockf;
-# endif	/* !defined(HAS_V_LOCKF) */
+#endif /* !defined(HAS_V_LOCKF) */
 
-# if	defined(HAS_Z_PHYS)
-/*
+#if defined(HAS_Z_PHYS)
+    /*
  * If the physical znode exists in this ZFS implementation, read it.
  */
-    if (!zn.z_phys
-    ||  kread((KA_T)zn.z_phys, (char *)&zp, sizeof(zp))
-    ) {
+    if (!zn.z_phys || kread((KA_T)zn.z_phys, (char *)&zp, sizeof(zp))) {
         if (!zn.z_phys)
-        return("No physical znode address");
-        return("Can't read physical znode");
+            return ("No physical znode address");
+        return ("Can't read physical znode");
     }
-/*
+    /*
  * Return items contained in the physical znode.
  */
     zi->nl = (long)zp.zp_links;
     zi->rdev = zp.zp_rdev;
     zi->sz = (SZOFFTYPE)zp.zp_size;
     zi->nl_def = zi->rdev_def = zi->sz_def = 1;
-# else	/* !defined(HAS_Z_PHYS) */
-/*
+#else  /* !defined(HAS_Z_PHYS) */
+    /*
  * If this implementation has no physical znode, return items now contained
  * in the znode.
  */
     zi->nl = (long)zn.z_links;
     if (vr && (ka = (KA_T)zn.z_zfsvfs)) {
         if (!kread(ka, (char *)&zv, sizeof(zv))) {
-        if ((zn.z_id == zv.z_root)
-        &&  (zv.z_ctldir != NULL)
-        &&  (zv.z_show_ctldir)
-        ) {
-            zi->nl++;
-        }
+            if ((zn.z_id == zv.z_root) && (zv.z_ctldir != NULL) && (zv.z_show_ctldir)) {
+                zi->nl++;
+            }
         }
     }
     zi->sz = (SZOFFTYPE)zn.z_size;
     zi->nl_def = zi->sz_def = 1;
-# endif	/* defined(HAS_Z_PHYS) */
+#endif /* defined(HAS_Z_PHYS) */
 
-    return((char *)NULL);
+    return ((char *)NULL);
 }
-#endif    /* defined(HAS_ZFS) */
+#endif /* defined(HAS_ZFS) */

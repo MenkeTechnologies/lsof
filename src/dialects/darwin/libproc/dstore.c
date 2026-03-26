@@ -2,7 +2,6 @@
  * dstore.c -- Darwin global storage for libproc-based lsof
  */
 
-
 /*
  * Portions Copyright 2005 Apple Computer, Inc.  All rights reserved.
  *
@@ -32,30 +31,21 @@
 
 #include "lsof.h"
 
-
-#if    defined(HASFSTRUCT)
+#if defined(HASFSTRUCT)
 /*
  * Pff_tab[] - table for printing file flags
  */
 
 struct pff_tab Pff_tab[] = {
-    { (long)FREAD,		FF_READ		},
-    { (long)FWRITE,		FF_WRITE	},
-    { (long)FNONBLOCK,	FF_NBLOCK	},
-    { (long)FNDELAY,	FF_NDELAY	},
-    { (long)FAPPEND,	FF_APPEND	},
-    { (long)FASYNC,		FF_ASYNC	},
-    { (long)FFSYNC,		FF_FSYNC	},
+    {(long)FREAD, FF_READ},       {(long)FWRITE, FF_WRITE},      {(long)FNONBLOCK, FF_NBLOCK},
+    {(long)FNDELAY, FF_NDELAY},   {(long)FAPPEND, FF_APPEND},    {(long)FASYNC, FF_ASYNC},
+    {(long)FFSYNC, FF_FSYNC},
 
-# if	defined(FHASLOCK)
-    { (long)FHASLOCK,	FF_HASLOCK	},
-# endif	/* defined(FHASLOCK) */
+#if defined(FHASLOCK)
+    {(long)FHASLOCK, FF_HASLOCK},
+#endif /* defined(FHASLOCK) */
 
-    { (long)O_NOCTTY,	FF_NOCTTY	},
-    { (long)O_EVTONLY,	FF_EVTONLY	},
-    { (long)0,		NULL 		}
-};
-
+    {(long)O_NOCTTY, FF_NOCTTY},  {(long)O_EVTONLY, FF_EVTONLY}, {(long)0, NULL}};
 
 /*
  * Pof_tab[] - table for print process open file flags
@@ -63,18 +53,17 @@ struct pff_tab Pff_tab[] = {
 
 struct pff_tab Pof_tab[] = {
 
-# if	defined(UF_CLOSING)
-    { (long)UF_CLOSING,	POF_CLOSING	},
-# endif	/* defined(UF_CLOSING) */
+#if defined(UF_CLOSING)
+    {(long)UF_CLOSING, POF_CLOSING},
+#endif /* defined(UF_CLOSING) */
 
-# if	defined(UF_EXCLOSE)
-    { (long)UF_EXCLOSE,	POF_CLOEXEC	},
-# endif	/* defined(UF_EXCLOSE) */
+#if defined(UF_EXCLOSE)
+    {(long)UF_EXCLOSE, POF_CLOEXEC},
+#endif /* defined(UF_EXCLOSE) */
 
-# if	defined(UF_RESERVED)
-    { (long)UF_RESERVED,	POF_RESERVED	},
-# endif	/* defined(UF_RESERVED) */
+#if defined(UF_RESERVED)
+    {(long)UF_RESERVED, POF_RESERVED},
+#endif /* defined(UF_RESERVED) */
 
-    { (long)0,		NULL		}
-};
-#endif    /* defined(HASFSTRUCT) */
+    {(long)0, NULL}};
+#endif /* defined(HASFSTRUCT) */

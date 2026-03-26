@@ -43,7 +43,8 @@ BENCH(isprint_scan, 5000000) {
     for (int j = 0; j < bf_iters; j++) {
         int count = 0;
         for (char *p = str; *p; p++) {
-            if (isprint((unsigned char)*p)) count++;
+            if (isprint((unsigned char)*p))
+                count++;
         }
         BENCH_SINK_INT(count);
     }
@@ -51,8 +52,8 @@ BENCH(isprint_scan, 5000000) {
 
 /* ===== strncmp prefix match benchmark (command matching pattern) ===== */
 BENCH(strncmp_prefix_match, 10000000) {
-    const char *cmds[] = {"systemd", "sshd", "bash", "python3", "node",
-                          "postgres", "nginx", "docker", "java", "chrome"};
+    const char *cmds[] = {"systemd",  "sshd",  "bash",   "python3", "node",
+                          "postgres", "nginx", "docker", "java",    "chrome"};
     for (int i = 0; i < bf_iters; i++) {
         const char *cmd = cmds[i % 10];
         int match = (strncmp(cmd, "ssh", 3) == 0);
@@ -98,13 +99,8 @@ BENCH(strncpy_cmd_short, 10000000) {
 
 BENCH(strncpy_cmd_long, 5000000) {
     char dst[16];
-    char *cmds[] = {
-        "chromium-browser-stable",
-        "gnome-terminal-server",
-        "firefox-developer-edition",
-        "docker-containerd-shim",
-        "systemd-resolved.service"
-    };
+    char *cmds[] = {"chromium-browser-stable", "gnome-terminal-server", "firefox-developer-edition",
+                    "docker-containerd-shim", "systemd-resolved.service"};
     for (int i = 0; i < bf_iters; i++) {
         strncpy(dst, cmds[i % 5], 15);
         dst[15] = '\0';
@@ -135,23 +131,22 @@ BENCH(fd_classify, 10000000) {
 /* ===== IPv6 address detection benchmark ===== */
 BENCH(ipv6_colon_count, 5000000) {
     const char *addrs[] = {
-        "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-        "::1",
-        "fe80::1%lo0",
-        "192.168.1.1",
-        "10.0.0.1",
+        "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "::1", "fe80::1%lo0", "192.168.1.1", "10.0.0.1",
     };
     for (int i = 0; i < bf_iters; i++) {
         const char *a = addrs[i % 5];
         int colons = 0;
-        for (const char *p = a; *p; p++) if (*p == ':') colons++;
+        for (const char *p = a; *p; p++)
+            if (*p == ':')
+                colons++;
         BENCH_SINK_INT(colons);
     }
 }
 
 /* ===== Path classification benchmark ===== */
 BENCH(path_is_absolute, 10000000) {
-    const char *paths[] = {"/dev/null", "/proc/1/fd/0", "relative", "./local", "/", "../up", "/var/log/syslog"};
+    const char *paths[] = {"/dev/null", "/proc/1/fd/0", "relative",       "./local",
+                           "/",         "../up",        "/var/log/syslog"};
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(paths[i % 7][0] == '/');
     }
@@ -162,7 +157,9 @@ BENCH(path_depth_count, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
         const char *p = paths[i % 4];
         int depth = 0;
-        for (; *p; p++) if (*p == '/') depth++;
+        for (; *p; p++)
+            if (*p == '/')
+                depth++;
         BENCH_SINK_INT(depth);
     }
 }
@@ -172,26 +169,29 @@ BENCH(path_basename_search, 5000000) {
     for (int i = 0; i < bf_iters; i++) {
         const char *p = paths[i % 4];
         const char *last_slash = p;
-        for (; *p; p++) if (*p == '/') last_slash = p;
+        for (; *p; p++)
+            if (*p == '/')
+                last_slash = p;
         BENCH_SINK_PTR((void *)last_slash);
     }
 }
 
 /* ===== Process name matching benchmark ===== */
 BENCH(cmd_exact_match, 10000000) {
-    const char *cmds[] = {"sshd", "nginx", "postgres", "lsof", "bash", "systemd", "init", "kworker"};
+    const char *cmds[] = {"sshd", "nginx",   "postgres", "lsof",
+                          "bash", "systemd", "init",     "kworker"};
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(strcmp(cmds[i % 8], "lsof") == 0);
     }
 }
 
 BENCH(cmd_prefix_match, 10000000) {
-    const char *cmds[] = {"sshd", "nginx", "postgres", "lsof", "bash", "systemd", "init", "kworker"};
+    const char *cmds[] = {"sshd", "nginx",   "postgres", "lsof",
+                          "bash", "systemd", "init",     "kworker"};
     for (int i = 0; i < bf_iters; i++) {
         BENCH_SINK_INT(strncmp(cmds[i % 8], "ls", 2) == 0);
     }
 }
-
 
 /* ===== memmove vs memcpy (overlapping vs non-overlapping) ===== */
 BENCH(memmove_64, 10000000) {
@@ -215,7 +215,8 @@ BENCH(manual_colon_scan, 10000000) {
     const char *addrs[] = {"192.168.1.1:8080", "10.0.0.1:443", "0.0.0.0:22", "127.0.0.1:3306"};
     for (int i = 0; i < bf_iters; i++) {
         const char *p = addrs[i % 4];
-        while (*p && *p != ':') p++;
+        while (*p && *p != ':')
+            p++;
         BENCH_SINK_PTR((void *)p);
     }
 }
@@ -226,7 +227,8 @@ BENCH(tolower_loop, 10000000) {
     const char *protos[] = {"TCP", "UDP", "Tcp", "Udp", "tcp"};
     for (int i = 0; i < bf_iters; i++) {
         const char *s = protos[i % 5];
-        for (int j = 0; j < 3; j++) buf[j] = (char)tolower((unsigned char)s[j]);
+        for (int j = 0; j < 3; j++)
+            buf[j] = (char)tolower((unsigned char)s[j]);
         buf[3] = '\0';
         BENCH_SINK_INT(buf[0]);
     }

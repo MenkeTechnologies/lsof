@@ -18,9 +18,7 @@ struct test_l_dev {
     int v;
 };
 
-static int
-test_compare_devices(const void *first, const void *second)
-{
+static int test_compare_devices(const void *first, const void *second) {
     struct test_l_dev **dev_ptr1 = (struct test_l_dev **)first;
     struct test_l_dev **dev_ptr2 = (struct test_l_dev **)second;
 
@@ -79,14 +77,11 @@ TEST(compdev_name_compare) {
 
 TEST(compdev_sort_array) {
     struct test_l_dev devs[] = {
-        {3, 10, "c", 0},
-        {1, 10, "a", 0},
-        {2, 10, "b", 0},
-        {1, 5, "a", 0},
-        {1, 10, "z", 0},
+        {3, 10, "c", 0}, {1, 10, "a", 0}, {2, 10, "b", 0}, {1, 5, "a", 0}, {1, 10, "z", 0},
     };
     struct test_l_dev *ptrs[5];
-    for (int i = 0; i < 5; i++) ptrs[i] = &devs[i];
+    for (int i = 0; i < 5; i++)
+        ptrs[i] = &devs[i];
 
     qsort(ptrs, 5, sizeof(struct test_l_dev *), test_compare_devices);
 
@@ -101,7 +96,6 @@ TEST(compdev_sort_array) {
     ASSERT_EQ(ptrs[4]->rdev, 3);
 }
 
-
 /* ===== compare_devices() flat variant (for extended tests) ===== */
 typedef struct test_devcomp {
     dev_t rdev;
@@ -112,11 +106,16 @@ typedef struct test_devcomp {
 static int test_compare_devices_fn(const void *a, const void *b) {
     const test_devcomp_t *da = (const test_devcomp_t *)a;
     const test_devcomp_t *db = (const test_devcomp_t *)b;
-    if (da->rdev < db->rdev) return -1;
-    if (da->rdev > db->rdev) return 1;
-    if (da->inode < db->inode) return -1;
-    if (da->inode > db->inode) return 1;
-    if (da->name && db->name) return strcmp(da->name, db->name);
+    if (da->rdev < db->rdev)
+        return -1;
+    if (da->rdev > db->rdev)
+        return 1;
+    if (da->inode < db->inode)
+        return -1;
+    if (da->inode > db->inode)
+        return 1;
+    if (da->name && db->name)
+        return strcmp(da->name, db->name);
     return 0;
 }
 
@@ -173,16 +172,15 @@ TEST(compdev_one_null_name) {
     ASSERT_EQ(test_compare_devices_fn(&a, &b), 0);
 }
 
-
 /* ===== compare_pids() reimplementation ===== */
-static int
-test_compare_pids(const void *first, const void *second)
-{
+static int test_compare_pids(const void *first, const void *second) {
     int *pid_ptr1 = (int *)first;
     int *pid_ptr2 = (int *)second;
 
-    if (*pid_ptr1 < *pid_ptr2) return -1;
-    if (*pid_ptr1 > *pid_ptr2) return 1;
+    if (*pid_ptr1 < *pid_ptr2)
+        return -1;
+    if (*pid_ptr1 > *pid_ptr2)
+        return 1;
     return 0;
 }
 
@@ -242,20 +240,19 @@ TEST(pid_zero_vs_negative) {
     ASSERT_EQ(test_compare_pids(&a, &b), 1);
 }
 
-
 /* ===== cmp_int_lst() reimplementation ===== */
 struct test_int_lst {
     int i;
     int selected;
 };
 
-static int
-test_cmp_int_lst(const void *lhs, const void *rhs)
-{
+static int test_cmp_int_lst(const void *lhs, const void *rhs) {
     const struct test_int_lst *a = (const struct test_int_lst *)lhs;
     const struct test_int_lst *b = (const struct test_int_lst *)rhs;
-    if (a->i < b->i) return -1;
-    if (a->i > b->i) return 1;
+    if (a->i < b->i)
+        return -1;
+    if (a->i > b->i)
+        return 1;
     return 0;
 }
 
@@ -300,11 +297,8 @@ TEST(cmp_int_lst_int_extremes) {
     ASSERT_GT(test_cmp_int_lst(&b, &a), 0);
 }
 
-
 /* ===== find_int_lst() reimplementation (binary search) ===== */
-static struct test_int_lst *
-test_find_int_lst(struct test_int_lst *list, int num_entries, int val)
-{
+static struct test_int_lst *test_find_int_lst(struct test_int_lst *list, int num_entries, int val) {
     int low = 0, high = num_entries - 1;
     while (low <= high) {
         int mid = (low + high) / 2;
@@ -372,7 +366,6 @@ TEST(find_int_lst_large_sorted) {
     ASSERT_NULL(test_find_int_lst(lst, 100, 1000));
 }
 
-
 /* ===== Device number decomposition ===== */
 TEST(devnum_major_minor) {
     dev_t d = makedev(8, 1);
@@ -393,13 +386,13 @@ TEST(devnum_zero) {
     ASSERT_EQ((int)minor(d), 0);
 }
 
-
 /* ===== rmdupdev logic ===== */
 static int test_remove_dup_devs(test_devcomp_t *devs, int n) {
-    if (n <= 1) return n;
+    if (n <= 1)
+        return n;
     int out = 1;
     for (int i = 1; i < n; i++) {
-        if (devs[i].rdev != devs[i-1].rdev || devs[i].inode != devs[i-1].inode) {
+        if (devs[i].rdev != devs[i - 1].rdev || devs[i].inode != devs[i - 1].inode) {
             devs[out++] = devs[i];
         }
     }
@@ -442,12 +435,8 @@ TEST(rmdupdev_same_rdev_diff_inode) {
 }
 
 TEST(rmdupdev_interleaved) {
-    test_devcomp_t devs[] = {
-        {1, 1, NULL}, {1, 1, NULL},
-        {2, 2, NULL},
-        {3, 3, NULL}, {3, 3, NULL}, {3, 3, NULL},
-        {4, 4, NULL}
-    };
+    test_devcomp_t devs[] = {{1, 1, NULL}, {1, 1, NULL}, {2, 2, NULL}, {3, 3, NULL},
+                             {3, 3, NULL}, {3, 3, NULL}, {4, 4, NULL}};
     int n = test_remove_dup_devs(devs, 7);
     ASSERT_EQ(n, 4);
     ASSERT_EQ((int)devs[0].rdev, 1);

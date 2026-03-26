@@ -36,7 +36,7 @@
  */
 
 #ifndef MAXSYMLINKS
-#define    MAXSYMLINKS    32
+#define MAXSYMLINKS 32
 #endif
 
 /*
@@ -67,16 +67,16 @@ static char *safepup(unsigned int ch, int *char_len);
  * Local variables
  */
 
-static pid_t Cpid = 0;            /* child PID */
-static jmp_buf Jmp_buf;            /* jump buffer */
-static int Pipes[] =            /* pipes for child process */
-        {-1, -1, -1, -1};
+static pid_t Cpid = 0;  /* child PID */
+static jmp_buf Jmp_buf; /* jump buffer */
+static int Pipes[] =    /* pipes for child process */
+    {-1, -1, -1, -1};
 static int CtSigs[] = {0, SIGINT, SIGKILL};
 /* child termination signals (in order
  * of application) -- the first is a
  * dummy to allow pipe closure to
  * cause the child to exit */
-#define    NCTSIGS    (sizeof(CtSigs) / sizeof(int))
+#define NCTSIGS (sizeof(CtSigs) / sizeof(int))
 
 #if defined(HASNLIST)
 /*
@@ -84,27 +84,21 @@ static int CtSigs[] = {0, SIGINT, SIGKILL};
  */
 
 static struct drive_Nl *Build_Nl = (struct drive_Nl *)NULL;
-                    /* the default Drive_Nl address */
+/* the default Drive_Nl address */
 
-void
-build_Nl(struct drive_Nl *drv)
-{
+void build_Nl(struct drive_Nl *drv) {
     struct drive_Nl *drive_ptr;
     int i, num;
 
     for (drive_ptr = drv, num = 0; drive_ptr->nn; drive_ptr++, num++)
         ;
     if (num < 1) {
-        fprintf(stderr,
-        "%s: can't calculate kernel name list length\n", ProgramName);
+        fprintf(stderr, "%s: can't calculate kernel name list length\n", ProgramName);
         Exit(1);
     }
-    if (!(NlistTable = (struct NLIST_TYPE *)calloc((num + 1),
-                           sizeof(struct NLIST_TYPE))))
-    {
-        fprintf(stderr,
-        "%s: can't allocate %d bytes to kernel name list structure\n",
-        ProgramName, (int)((num + 1) * sizeof(struct NLIST_TYPE)));
+    if (!(NlistTable = (struct NLIST_TYPE *)calloc((num + 1), sizeof(struct NLIST_TYPE)))) {
+        fprintf(stderr, "%s: can't allocate %d bytes to kernel name list structure\n", ProgramName,
+                (int)((num + 1) * sizeof(struct NLIST_TYPE)));
         Exit(1);
     }
     for (drive_ptr = drv, i = 0; i < num; drive_ptr++, i++) {
@@ -119,8 +113,7 @@ build_Nl(struct drive_Nl *drv)
  * childx() - make child process exit (if possible)
  */
 
-void
-childx() {
+void childx() {
     static int alarm_time, sig_idx;
     pid_t wpid;
 
@@ -153,9 +146,8 @@ childx() {
                 if (sig_idx < (NCTSIGS - 1))
                     continue;
                 if (!OptWarnings)
-                    fprintf(stderr,
-                                   "%s: WARNING -- child process %d may be hung.\n",
-                                   ProgramName, (int) Cpid);
+                    fprintf(stderr, "%s: WARNING -- child process %d may be hung.\n", ProgramName,
+                            (int)Cpid);
                 break;
             }
             /*
@@ -168,7 +160,7 @@ childx() {
                 kill(Cpid, CtSigs[sig_idx]);
             signal(SIGALRM, handleint);
             alarm(alarm_time);
-            wpid = (pid_t) wait(NULL);
+            wpid = (pid_t)wait(NULL);
             alarm(0);
             signal(SIGALRM, SIG_DFL);
             if (wpid == Cpid)
@@ -182,8 +174,7 @@ childx() {
  * closePipes() - close open pipe file descriptors
  */
 
-static void
-closePipes() {
+static void closePipes() {
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -198,19 +189,17 @@ closePipes() {
  * compdev() - compare DeviceTable[] entries
  */
 
-int
-compdev(COMP_P *lhs, COMP_P *rhs)
-{
-    struct l_dev **p1 = (struct l_dev **) lhs;
-    struct l_dev **p2 = (struct l_dev **) rhs;
+int compdev(COMP_P *lhs, COMP_P *rhs) {
+    struct l_dev **p1 = (struct l_dev **)lhs;
+    struct l_dev **p2 = (struct l_dev **)rhs;
 
     if ((dev_t)((*p1)->rdev) < (dev_t)((*p2)->rdev))
         return (-1);
     if ((dev_t)((*p1)->rdev) > (dev_t)((*p2)->rdev))
         return (1);
-    if ((INODETYPE) ((*p1)->inode) < (INODETYPE) ((*p2)->inode))
+    if ((INODETYPE)((*p1)->inode) < (INODETYPE)((*p2)->inode))
         return (-1);
-    if ((INODETYPE) ((*p1)->inode) > (INODETYPE) ((*p2)->inode))
+    if ((INODETYPE)((*p1)->inode) > (INODETYPE)((*p2)->inode))
         return (1);
     return (strcmp((*p1)->name, (*p2)->name));
 }
@@ -219,20 +208,16 @@ compdev(COMP_P *lhs, COMP_P *rhs)
  * doinchild() -- do a function in a child process
  */
 
-static int
-doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
-{
+static int doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln) {
     int errno_val, return_val;
-/*
+    /*
  * Check reply buffer size.
  */
     if (!OptOverhead && rbln > MAXPATHLEN) {
-        fprintf(stderr,
-                       "%s: doinchild error; response buffer too large: %d\n",
-                       ProgramName, rbln);
+        fprintf(stderr, "%s: doinchild error; response buffer too large: %d\n", ProgramName, rbln);
         Exit(1);
     }
-/*
+    /*
  * Set up to handle an alarm signal; handle an alarm signal; build
  * pipes for exchanging information with a child process; start the
  * child process; and perform functions in the child process.
@@ -255,8 +240,7 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
              * process.
              */
             if (pipe(Pipes) < 0 || pipe(&Pipes[2]) < 0) {
-                fprintf(stderr, "%s: can't open pipes: %s\n",
-                               ProgramName, strerror(errno));
+                fprintf(stderr, "%s: can't open pipes: %s\n", ProgramName, strerror(errno));
                 Exit(1);
             }
             /*
@@ -296,24 +280,20 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
                  * Read function requests, process them, and return replies.
                  */
                 for (;;) {
-                    if (read(Pipes[0], (char *) &r_fn, sizeof(r_fn))
-                        != (int) sizeof(r_fn)
-                        || read(Pipes[0], (char *) &r_al, sizeof(int))
-                           != (int) sizeof(int)
-                        || r_al < 1
-                        || r_al > (int) sizeof(r_arg)
-                        || read(Pipes[0], r_arg, r_al) != r_al
-                        || read(Pipes[0], (char *) &r_rbln, sizeof(r_rbln))
-                           != (int) sizeof(r_rbln)
-                        || r_rbln < 1 || r_rbln > (int) sizeof(r_rbuf))
+                    if (read(Pipes[0], (char *)&r_fn, sizeof(r_fn)) != (int)sizeof(r_fn) ||
+                        read(Pipes[0], (char *)&r_al, sizeof(int)) != (int)sizeof(int) ||
+                        r_al < 1 || r_al > (int)sizeof(r_arg) ||
+                        read(Pipes[0], r_arg, r_al) != r_al ||
+                        read(Pipes[0], (char *)&r_rbln, sizeof(r_rbln)) != (int)sizeof(r_rbln) ||
+                        r_rbln < 1 || r_rbln > (int)sizeof(r_rbuf))
                         break;
                     return_val = r_fn(r_arg, r_rbuf, r_rbln);
                     errno_val = errno;
-                    if (write(Pipes[3], (char *) &return_val, sizeof(return_val))
-                        != sizeof(return_val)
-                        || write(Pipes[3], (char *) &errno_val, sizeof(errno_val))
-                           != sizeof(errno_val)
-                        || write(Pipes[3], r_rbuf, r_rbln) != r_rbln)
+                    if (write(Pipes[3], (char *)&return_val, sizeof(return_val)) !=
+                            sizeof(return_val) ||
+                        write(Pipes[3], (char *)&errno_val, sizeof(errno_val)) !=
+                            sizeof(errno_val) ||
+                        write(Pipes[3], r_rbuf, r_rbln) != r_rbln)
                         break;
                 }
                 _exit(0);
@@ -322,8 +302,7 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
              * Continue in the parent process to finish the setup.
              */
             if (Cpid < 0) {
-                fprintf(stderr, "%s: can't fork: %s\n",
-                               ProgramName, strerror(errno));
+                fprintf(stderr, "%s: can't fork: %s\n", ProgramName, strerror(errno));
                 Exit(1);
             }
             close(Pipes[0]);
@@ -340,13 +319,13 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
         len = strlen(func_arg) + 1;
         signal(SIGALRM, handleint);
         alarm(TimeoutLimit);
-        if (write(Pipes[1], (char *) &func, sizeof(func)) != sizeof(func)
-            || write(Pipes[1], (char *) &len, sizeof(len)) != sizeof(len)
-            || write(Pipes[1], func_arg, len) != len
-            || write(Pipes[1], (char *) &rbln, sizeof(rbln)) != sizeof(rbln)
-            || read(Pipes[2], (char *) &return_val, sizeof(return_val)) != sizeof(return_val)
-            || read(Pipes[2], (char *) &errno_val, sizeof(errno_val)) != sizeof(errno_val)
-            || read(Pipes[2], rbuf, rbln) != rbln) {
+        if (write(Pipes[1], (char *)&func, sizeof(func)) != sizeof(func) ||
+            write(Pipes[1], (char *)&len, sizeof(len)) != sizeof(len) ||
+            write(Pipes[1], func_arg, len) != len ||
+            write(Pipes[1], (char *)&rbln, sizeof(rbln)) != sizeof(rbln) ||
+            read(Pipes[2], (char *)&return_val, sizeof(return_val)) != sizeof(return_val) ||
+            read(Pipes[2], (char *)&errno_val, sizeof(errno_val)) != sizeof(errno_val) ||
+            read(Pipes[2], rbuf, rbln) != rbln) {
             alarm(0);
             signal(SIGALRM, SIG_DFL);
             childx();
@@ -363,7 +342,7 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
         return_val = func(func_arg, rbuf, rbln);
         errno_val = errno;
     }
-/*
+    /*
  * Function completed, response collected -- complete the operation.
  */
     alarm(0);
@@ -376,22 +355,19 @@ doinchild(int (*func)(), char *func_arg, char *rbuf, int rbln)
  * dolstat() - do an lstat() function
  */
 
-static int
-dolstat(char *path, char *rbuf, int rbln)
+static int dolstat(char *path, char *rbuf, int rbln)
 
 /* ARGSUSED */
 
 {
-    return (lstat(path, (struct stat *) rbuf));
+    return (lstat(path, (struct stat *)rbuf));
 }
 
 /*
  * doreadlink() -- do a readlink() function
  */
 
-static int
-doreadlink(char *path, char *rbuf, int rbln)
-{
+static int doreadlink(char *path, char *rbuf, int rbln) {
     return (readlink(path, rbuf, rbln));
 }
 
@@ -399,13 +375,12 @@ doreadlink(char *path, char *rbuf, int rbln)
  * dostat() - do a stat() function
  */
 
-static int
-dostat(char *path, char *rbuf, int rbln)
+static int dostat(char *path, char *rbuf, int rbln)
 
 /* ARGSUSED */
 
 {
-    return (stat(path, (struct stat *) rbuf));
+    return (stat(path, (struct stat *)rbuf));
 }
 
 #if defined(WILLDROPGID)
@@ -413,14 +388,12 @@ dostat(char *path, char *rbuf, int rbln)
  * dropgid() - drop setgid permission
  */
 
-void
-dropgid()
-{
+void dropgid() {
     if (!SetuidRootState && SetgidState) {
         if (setgid(MyRealGid) < 0) {
-        fprintf(stderr, "%s: can't setgid(%d): %s\n",
-            ProgramName, (int)MyRealGid, strerror(errno));
-        Exit(1);
+            fprintf(stderr, "%s: can't setgid(%d): %s\n", ProgramName, (int)MyRealGid,
+                    strerror(errno));
+            Exit(1);
         }
         SetgidState = 0;
     }
@@ -431,21 +404,19 @@ dropgid()
  * enter_dev_ch() - enter device characters in file structure
  */
 
-void
-enter_dev_ch(char *msg)
-{
+void enter_dev_ch(char *msg) {
     char *msg_ptr;
 
     if (!msg || *msg == '\0')
         return;
     if (!(msg_ptr = mkstrcpy(msg, NULL))) {
-        fprintf(stderr, "%s: no more dev_ch space at PID %d: \n",
-                       ProgramName, CurrentLocalProc->pid);
+        fprintf(stderr, "%s: no more dev_ch space at PID %d: \n", ProgramName,
+                CurrentLocalProc->pid);
         safestrprt(msg, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->dev_ch)
-        free((FREE_P *) CurrentLocalFile->dev_ch);
+        free((FREE_P *)CurrentLocalFile->dev_ch);
     CurrentLocalFile->dev_ch = msg_ptr;
 }
 
@@ -453,9 +424,7 @@ enter_dev_ch(char *msg)
  * enter_IPstate() -- enter a TCP or UDP state
  */
 
-void
-enter_IPstate(char *type, char *name, int state_num)
-{
+void enter_IPstate(char *type, char *name, int state_num) {
 
 #if defined(USE_LIB_PRINT_TCPTPI)
     TcpNumStates = state_num;
@@ -464,12 +433,11 @@ enter_IPstate(char *type, char *name, int state_num)
     int alloc_len, i, j, occur_count, new_num, num_states, off, tx;
     char *char_ptr;
     MALLOC_S len;
-/*
+    /*
  * Check the type name and set the type index.
  */
     if (!type) {
-        fprintf(stderr,
-                       "%s: no type specified to enter_IPstate()\n", ProgramName);
+        fprintf(stderr, "%s: no type specified to enter_IPstate()\n", ProgramName);
         Exit(1);
     }
     if (!strcmp(type, "TCP"))
@@ -477,11 +445,10 @@ enter_IPstate(char *type, char *name, int state_num)
     else if (!strcmp(type, "UDP"))
         tx = 1;
     else {
-        fprintf(stderr, "%s: unknown type for enter_IPstate: %s\n",
-                       ProgramName, type);
+        fprintf(stderr, "%s: unknown type for enter_IPstate: %s\n", ProgramName, type);
         Exit(1);
     }
-/*
+    /*
  * If the name argument is NULL, reduce the allocated table to its minimum
  * size.
  */
@@ -489,18 +456,17 @@ enter_IPstate(char *type, char *name, int state_num)
         if (tx) {
             if (UdpStateNames) {
                 if (!UdpNumStates) {
-                    free((MALLOC_P *) UdpStateNames);
-                    UdpStateNames = (char **) NULL;
+                    free((MALLOC_P *)UdpStateNames);
+                    UdpStateNames = (char **)NULL;
                 }
                 if (UdpNumStates < UdpStateAlloc) {
                     char **tmp;
                     len = (MALLOC_S)(UdpNumStates * sizeof(char *));
-                    tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
+                    tmp = (char **)realloc((MALLOC_P *)UdpStateNames, len);
                     if (!tmp) {
-                        fprintf(stderr,
-                                       "%s: can't reduce UdpStateNames[]\n", ProgramName);
-                        free((FREE_P *) UdpStateNames);
-                        UdpStateNames = (char **) NULL;
+                        fprintf(stderr, "%s: can't reduce UdpStateNames[]\n", ProgramName);
+                        free((FREE_P *)UdpStateNames);
+                        UdpStateNames = (char **)NULL;
                         Exit(1);
                     }
                     UdpStateNames = tmp;
@@ -510,18 +476,17 @@ enter_IPstate(char *type, char *name, int state_num)
         } else {
             if (TcpStateNames) {
                 if (!TcpNumStates) {
-                    free((MALLOC_P *) TcpStateNames);
-                    TcpStateNames = (char **) NULL;
+                    free((MALLOC_P *)TcpStateNames);
+                    TcpStateNames = (char **)NULL;
                 }
                 if (TcpNumStates < TcpStateAlloc) {
                     char **tmp;
                     len = (MALLOC_S)(TcpNumStates * sizeof(char *));
-                    tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
+                    tmp = (char **)realloc((MALLOC_P *)TcpStateNames, len);
                     if (!tmp) {
-                        fprintf(stderr,
-                                       "%s: can't reduce TcpStateNames[]\n", ProgramName);
-                        free((FREE_P *) TcpStateNames);
-                        TcpStateNames = (char **) NULL;
+                        fprintf(stderr, "%s: can't reduce TcpStateNames[]\n", ProgramName);
+                        free((FREE_P *)TcpStateNames);
+                        TcpStateNames = (char **)NULL;
                         Exit(1);
                     }
                     TcpStateNames = tmp;
@@ -531,24 +496,22 @@ enter_IPstate(char *type, char *name, int state_num)
         }
         return;
     }
-/*
+    /*
  * Check the name and number.
  */
-    if ((len = (size_t) strlen(name)) < 1) {
-        fprintf(stderr,
-                       "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, type, name, state_num);
+    if ((len = (size_t)strlen(name)) < 1) {
+        fprintf(stderr, "%s: bad %s name (\"%s\"), number=%d\n", ProgramName, type, name,
+                state_num);
         Exit(1);
     }
-/*
+    /*
  * Make a copy of the name.
  */
     if (!(char_ptr = mkstrcpy(name, NULL))) {
-        fprintf(stderr,
-                       "%s: enter_IPstate(): no %s space for %s\n",
-                       ProgramName, type, name);
+        fprintf(stderr, "%s: enter_IPstate(): no %s space for %s\n", ProgramName, type, name);
         Exit(1);
     }
-/*
+    /*
  * Set the necessary offset for using state_num as an index.  If it is
  * a new offset, adjust previous entries.
  */
@@ -569,19 +532,19 @@ enter_IPstate(char *type, char *name, int state_num)
                 }
                 len = (MALLOC_S)(alloc_len * sizeof(char *));
                 if (tx) {
-                    char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
+                    char **tmp = (char **)realloc((MALLOC_P *)UdpStateNames, len);
                     if (!tmp) {
-                        free((FREE_P *) UdpStateNames);
-                        UdpStateNames = (char **) NULL;
+                        free((FREE_P *)UdpStateNames);
+                        UdpStateNames = (char **)NULL;
                         goto no_IP_space;
                     }
                     UdpStateNames = tmp;
                     UdpStateAlloc = alloc_len;
                 } else {
-                    char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
+                    char **tmp = (char **)realloc((MALLOC_P *)TcpStateNames, len);
                     if (!tmp) {
-                        free((FREE_P *) TcpStateNames);
-                        TcpStateNames = (char **) NULL;
+                        free((FREE_P *)TcpStateNames);
+                        TcpStateNames = (char **)NULL;
                         goto no_IP_space;
                     }
                     TcpStateNames = tmp;
@@ -609,7 +572,7 @@ enter_IPstate(char *type, char *name, int state_num)
         else
             TcpStateOffset = off;
     }
-/*
+    /*
  * Enter name as {Tc|Ud}pSt[state_num + {Tc|Ud}pStOff].
  *
  * Allocate space, as required.
@@ -625,17 +588,17 @@ enter_IPstate(char *type, char *name, int state_num)
         len = (MALLOC_S)(alloc_len * sizeof(char *));
         if (tx) {
             if (UdpStateNames) {
-                char **tmp = (char **) realloc((MALLOC_P *) UdpStateNames, len);
+                char **tmp = (char **)realloc((MALLOC_P *)UdpStateNames, len);
                 if (!tmp) {
-                    free((FREE_P *) UdpStateNames);
-                    UdpStateNames = (char **) NULL;
+                    free((FREE_P *)UdpStateNames);
+                    UdpStateNames = (char **)NULL;
                 } else
                     UdpStateNames = tmp;
             } else
-                UdpStateNames = (char **) malloc(len);
+                UdpStateNames = (char **)malloc(len);
             if (!UdpStateNames) {
 
-                no_IP_space:
+            no_IP_space:
 
                 fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
                 Exit(1);
@@ -644,14 +607,14 @@ enter_IPstate(char *type, char *name, int state_num)
             UdpStateAlloc = alloc_len;
         } else {
             if (TcpStateNames) {
-                char **tmp = (char **) realloc((MALLOC_P *) TcpStateNames, len);
+                char **tmp = (char **)realloc((MALLOC_P *)TcpStateNames, len);
                 if (!tmp) {
-                    free((FREE_P *) TcpStateNames);
-                    TcpStateNames = (char **) NULL;
+                    free((FREE_P *)TcpStateNames);
+                    TcpStateNames = (char **)NULL;
                 } else
                     TcpStateNames = tmp;
             } else
-                TcpStateNames = (char **) malloc(len);
+                TcpStateNames = (char **)malloc(len);
             if (!TcpStateNames)
                 goto no_IP_space;
             TcpNumStates = new_num;
@@ -676,13 +639,13 @@ enter_IPstate(char *type, char *name, int state_num)
     if (tx) {
         if (UdpStateNames[state_num + UdpStateOffset]) {
 
-            dup_IP_state:
+        dup_IP_state:
 
-            fprintf(stderr,
-                           "%s: duplicate %s state %d (already %s): %s\n",
-                           ProgramName, type, state_num,
-                           tx ? UdpStateNames[state_num + UdpStateOffset] : TcpStateNames[state_num + TcpStateOffset],
-                           name);
+            fprintf(stderr, "%s: duplicate %s state %d (already %s): %s\n", ProgramName, type,
+                    state_num,
+                    tx ? UdpStateNames[state_num + UdpStateOffset]
+                       : TcpStateNames[state_num + TcpStateOffset],
+                    name);
             Exit(1);
         }
         UdpStateNames[state_num + UdpStateOffset] = char_ptr;
@@ -692,28 +655,24 @@ enter_IPstate(char *type, char *name, int state_num)
         TcpStateNames[state_num + TcpStateOffset] = char_ptr;
     }
 #endif
-
 }
 
 /*
  * enter_nm() - enter name in local file structure
  */
 
-void
-enter_nm(char *name)
-{
+void enter_nm(char *name) {
     char *name_ptr;
 
     if (!name || *name == '\0')
         return;
     if (!(name_ptr = mkstrcpy(name, NULL))) {
-        fprintf(stderr, "%s: no more nm space at PID %d for: ",
-                       ProgramName, CurrentLocalProc->pid);
+        fprintf(stderr, "%s: no more nm space at PID %d for: ", ProgramName, CurrentLocalProc->pid);
         safestrprt(name, stderr, 1);
         Exit(1);
     }
     if (CurrentLocalFile->name)
-        free((FREE_P *) CurrentLocalFile->name);
+        free((FREE_P *)CurrentLocalFile->name);
     CurrentLocalFile->name = name_ptr;
 }
 
@@ -721,15 +680,13 @@ enter_nm(char *name)
  * Exit() - do a clean exit()
  */
 
-void
-Exit(int exit_val)
-{
+void Exit(int exit_val) {
     childx();
 
 #if defined(HASDCACHE)
     if (DevCacheRebuilt && !OptWarnings)
-        fprintf(stderr, "%s: WARNING: %s was updated.\n",
-        ProgramName, DevCachePath[DevCachePathIndex]);
+        fprintf(stderr, "%s: WARNING: %s was updated.\n", ProgramName,
+                DevCachePath[DevCachePathIndex]);
 #endif
 
     exit(exit_val);
@@ -740,23 +697,21 @@ Exit(int exit_val)
  * get_Nl_value() - get NlistTable value for nickname
  */
 
-int
-get_Nl_value(char *nickname, struct drive_Nl *drv, KA_T *value)
-{
+int get_Nl_value(char *nickname, struct drive_Nl *drv, KA_T *value) {
     int i;
 
     if (!NlistTable || !NlistLength)
-        return(-1);
+        return (-1);
     if (!drv)
         drv = Build_Nl;
     for (i = 0; drv->nn; drv++, i++) {
         if (strcmp(drv->nn, nickname) == 0) {
-        if (value)
-            *value = (KA_T)NlistTable[i].n_value;
-        return(i);
+            if (value)
+                *value = (KA_T)NlistTable[i].n_value;
+            return (i);
         }
     }
-    return(-1);
+    return (-1);
 }
 #endif
 
@@ -772,8 +727,7 @@ static void
 
 /* ARGSUSED */
 
-handleint(int sig)
-{
+handleint(int sig) {
     longjmp(Jmp_buf, 1);
 }
 
@@ -781,26 +735,22 @@ handleint(int sig)
  * hashbyname() - hash by name
  */
 
-int
-hashbyname(char *name, int mod)
-{
+int hashbyname(char *name, int mod) {
     int i, j;
 
     for (i = j = 0; *name; name++) {
-        i ^= (int) *name << j;
+        i ^= (int)*name << j;
         if (++j > 7)
             j = 0;
     }
-    return (((int) (i * 31415)) & (mod - 1));
+    return (((int)(i * 31415)) & (mod - 1));
 }
 
 /*
  * is_nw_addr() - is this network address selected?
  */
 
-int
-is_nw_addr(unsigned char *inet_addr, int port, int addr_family)
-{
+int is_nw_addr(unsigned char *inet_addr, int port, int addr_family) {
     struct nwad *node;
 
     if (!(node = NetworkAddrList))
@@ -833,7 +783,7 @@ is_nw_addr(unsigned char *inet_addr, int port, int addr_family)
 
 #if defined(HASIPv6)
         else
-        continue;
+            continue;
 #endif
 
         if (node->sport == -1 || (port >= node->sport && port <= node->eport)) {
@@ -851,14 +801,12 @@ is_nw_addr(unsigned char *inet_addr, int port, int addr_family)
  *	   copy length (optional)
  */
 
-char *
-mkstrcpy(char *src, MALLOC_S *rlp)
-{
+char *mkstrcpy(char *src, MALLOC_S *rlp) {
     MALLOC_S len;
     char *ns;
 
     len = (MALLOC_S)(src ? strlen(src) : 0);
-    ns = (char *) malloc(len + 1);
+    ns = (char *)malloc(len + 1);
     if (ns) {
         if (src)
             memcpy(ns, src, len + 1);
@@ -878,27 +826,24 @@ mkstrcpy(char *src, MALLOC_S *rlp)
  *	   copy string length (optional)
  */
 
-char *
-mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3,
-         MALLOC_S *clp)
-{
+char *mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3, MALLOC_S *clp) {
     MALLOC_S cat_len, slen1, slen2, slen3;
     char *char_ptr;
 
     if (str1)
         slen1 = (MALLOC_S)((len1 >= 0) ? len1 : strlen(str1));
     else
-        slen1 = (MALLOC_S) 0;
+        slen1 = (MALLOC_S)0;
     if (str2)
         slen2 = (MALLOC_S)((len2 >= 0) ? len2 : strlen(str2));
     else
-        slen2 = (MALLOC_S) 0;
+        slen2 = (MALLOC_S)0;
     if (str3)
         slen3 = (MALLOC_S)((len3 >= 0) ? len3 : strlen(str3));
     else
-        slen3 = (MALLOC_S) 0;
+        slen3 = (MALLOC_S)0;
     cat_len = slen1 + slen2 + slen3;
-    if ((char_ptr = (char *) malloc(cat_len + 1))) {
+    if ((char_ptr = (char *)malloc(cat_len + 1))) {
         char *text_ptr = char_ptr;
 
         if (str1 && slen1) {
@@ -924,9 +869,7 @@ mkstrcat(char *str1, int len1, char *str2, int len2, char *str3, int len3,
  * is_readable() -- is file readable
  */
 
-int
-is_readable(char *path, int msg)
-{
+int is_readable(char *path, int msg) {
     if (access(path, R_OK) < 0) {
         if (!OptWarnings && msg == 1)
             fprintf(stderr, ACCESSERRFMT, ProgramName, path, strerror(errno));
@@ -939,27 +882,21 @@ is_readable(char *path, int msg)
  * lstatsafely() - lstat path safely (i. e., with timeout)
  */
 
-int
-lstatsafely(char *path, struct stat *buf)
-{
+int lstatsafely(char *path, struct stat *buf) {
     if (OptBlockDevice) {
         if (!OptWarnings)
-            fprintf(stderr,
-                           "%s: avoiding stat(%s): -b was specified.\n",
-                           ProgramName, path);
+            fprintf(stderr, "%s: avoiding stat(%s): -b was specified.\n", ProgramName, path);
         errno = EWOULDBLOCK;
         return (1);
     }
-    return (doinchild(dolstat, path, (char *) buf, sizeof(struct stat)));
+    return (doinchild(dolstat, path, (char *)buf, sizeof(struct stat)));
 }
 
 /*
  * Readlink() - read and interpret file system symbolic links
  */
 
-char *
-Readlink(char *arg)
-{
+char *Readlink(char *arg) {
     char abuf[MAXPATHLEN + 1];
     int alen;
     char *ap;
@@ -969,10 +906,10 @@ Readlink(char *arg)
     static char *op = NULL;
     static int ss = 0;
     char *s1;
-    static char **stk = (char **) NULL;
+    static char **stk = (char **)NULL;
     static int sx = 0;
     char tbuf[MAXPATHLEN + 1];
-/*
+    /*
  * See if avoiding kernel blocks.
  */
     if (OptBlockDevice) {
@@ -984,31 +921,31 @@ Readlink(char *arg)
         op = NULL;
         return (arg);
     }
-/*
+    /*
  * Save the original path.
  */
     if (!op)
         op = arg;
-/*
+    /*
  * Evaluate each component of the argument for a symbolic link.
  */
     for (alen = 0, ap = abuf, argp1 = argp2 = arg; *argp2; argp1 = argp2) {
-        for (argp2 = argp1 + 1; *argp2 && *argp2 != '/'; argp2++);
-        if ((len = argp2 - arg) >= (int) sizeof(tbuf)) {
+        for (argp2 = argp1 + 1; *argp2 && *argp2 != '/'; argp2++)
+            ;
+        if ((len = argp2 - arg) >= (int)sizeof(tbuf)) {
 
-            path_too_long:
+        path_too_long:
             if (!OptWarnings) {
-                fprintf(stderr,
-                               "%s: readlink() path too long: ", ProgramName);
+                fprintf(stderr, "%s: readlink() path too long: ", ProgramName);
                 safestrprt(op ? op : arg, stderr, 1);
             }
             for (i = 0; i < sx; i++) {
-                free((FREE_P *) stk[i]);
+                free((FREE_P *)stk[i]);
                 stk[i] = NULL;
             }
             if (stk) {
-                free((FREE_P *) stk);
-                stk = (char **) NULL;
+                free((FREE_P *)stk);
+                stk = (char **)NULL;
             }
             ss = sx = 0;
             op = NULL;
@@ -1073,7 +1010,7 @@ Readlink(char *arg)
         /*
          * Add to the path assembly.
          */
-        if ((alen + llen + slen) >= (int) sizeof(abuf))
+        if ((alen + llen + slen) >= (int)sizeof(abuf))
             goto path_too_long;
         if (slen == 2)
             *ap++ = '/';
@@ -1082,27 +1019,27 @@ Readlink(char *arg)
         *ap = '\0';
         alen += (llen + slen - 1);
     }
-/*
+    /*
  * If the assembled path and argument are the same, free all but the
  * last string in the stack, and return the argument.
  */
     if (strcmp(arg, abuf) == 0) {
         for (i = 0; i < sx; i++) {
             if (i < (sx - 1))
-                free((FREE_P *) stk[i]);
+                free((FREE_P *)stk[i]);
             stk[i] = NULL;
         }
         sx = 0;
         op = NULL;
         return (arg);
     }
-/*
+    /*
  * If the assembled path and argument are different, add it to the
  * string stack, then Readlink() it.
  */
     if (!(s1 = mkstrcpy(abuf, NULL))) {
 
-        no_readlink_space:
+    no_readlink_space:
 
         fprintf(stderr, "%s: no Readlink string space for ", ProgramName);
         safestrprt(abuf, stderr, 1);
@@ -1115,27 +1052,25 @@ Readlink(char *arg)
          * the stack, and return no path.
          */
         if (!OptWarnings) {
-            fprintf(stderr,
-                           "%s: too many (> %d) symbolic links in readlink() path: ",
-                           ProgramName, MAXSYMLINKS);
+            fprintf(stderr, "%s: too many (> %d) symbolic links in readlink() path: ", ProgramName,
+                    MAXSYMLINKS);
             safestrprt(op ? op : arg, stderr, 1);
         }
         for (i = 0; i < sx; i++) {
-            free((FREE_P *) stk[i]);
+            free((FREE_P *)stk[i]);
             stk[i] = NULL;
         }
-        free((FREE_P *) stk);
-        stk = (char **) NULL;
+        free((FREE_P *)stk);
+        stk = (char **)NULL;
         ss = sx = 0;
         op = NULL;
         return (NULL);
     }
     if (++sx > ss) {
         if (!stk)
-            stk = (char **) malloc((MALLOC_S)(sizeof(char *) * sx));
+            stk = (char **)malloc((MALLOC_S)(sizeof(char *) * sx));
         else
-            stk = (char **) realloc((MALLOC_P *) stk,
-                                    (MALLOC_S)(sizeof(char *) * sx));
+            stk = (char **)realloc((MALLOC_P *)stk, (MALLOC_S)(sizeof(char *) * sx));
         if (!stk)
             goto no_readlink_space;
         ss = sx;
@@ -1149,84 +1084,72 @@ Readlink(char *arg)
  * readstdata() - read stream's stdata structure
  */
 
-int
-readstdata(KA_T addr, struct stdata *buf)
-{
-    if (!addr
-    ||  kread(addr, (char *)buf, sizeof(struct stdata))) {
-        snpf(NameChars, NameCharsLength, "no stream data in %s",
-        print_kptr(addr, NULL, 0));
-        return(1);
+int readstdata(KA_T addr, struct stdata *buf) {
+    if (!addr || kread(addr, (char *)buf, sizeof(struct stdata))) {
+        snpf(NameChars, NameCharsLength, "no stream data in %s", print_kptr(addr, NULL, 0));
+        return (1);
     }
-    return(0);
+    return (0);
 }
 
 /*
  * readsthead() - read stream head
  */
 
-int
-readsthead(KA_T addr, struct queue *buf)
-{
+int readsthead(KA_T addr, struct queue *buf) {
     KA_T kern_ptr;
 
     if (!addr) {
         snpf(NameChars, NameCharsLength, "no stream queue head");
-        return(1);
+        return (1);
     }
     for (kern_ptr = addr; kern_ptr; kern_ptr = (KA_T)buf->q_next) {
         if (kread(kern_ptr, (char *)buf, sizeof(struct queue))) {
-        snpf(NameChars, NameCharsLength, "bad stream queue link at %s",
-            print_kptr(kern_ptr, NULL, 0));
-        return(1);
+            snpf(NameChars, NameCharsLength, "bad stream queue link at %s",
+                 print_kptr(kern_ptr, NULL, 0));
+            return (1);
         }
     }
-    return(0);
+    return (0);
 }
 
 /*
  * readstidnm() - read stream module ID name
  */
 
-int
-readstidnm(KA_T addr, char *buf, READLEN_T len)
-{
+int readstidnm(KA_T addr, char *buf, READLEN_T len) {
     if (!addr || kread(addr, buf, len)) {
         snpf(NameChars, NameCharsLength, "can't read module ID name from %s",
-        print_kptr(addr, NULL, 0));
-        return(1);
+             print_kptr(addr, NULL, 0));
+        return (1);
     }
-    return(0);
+    return (0);
 }
 
 /*
  * readstmin() - read stream's module info
  */
 
-int
-readstmin(KA_T addr, struct module_info *buf)
-{
+int readstmin(KA_T addr, struct module_info *buf) {
     if (!addr || kread(addr, (char *)buf, sizeof(struct module_info))) {
         snpf(NameChars, NameCharsLength, "can't read module info from %s",
-        print_kptr(addr, NULL, 0));
-        return(1);
+             print_kptr(addr, NULL, 0));
+        return (1);
     }
-    return(0);
+    return (0);
 }
 
 /*
  * readstqinit() - read stream's queue information structure
  */
 
-int
-readstqinit(KA_T addr, struct qinit *buf)
-{
+int readstqinit(KA_T addr, struct qinit *buf) {
     if (!addr || kread(addr, (char *)buf, sizeof(struct qinit))) {
         snpf(NameChars, NameCharsLength, "can't read queue info from %s",
-        print_kptr(addr, NULL, 0));
-        return(1);
+             print_kptr(addr, NULL, 0));
+        return (1);
     }
-    return(0);
+    return (0);
 }
 #endif
 
@@ -1238,35 +1161,33 @@ readstqinit(KA_T addr, struct qinit *buf)
  *	   cl = strlen(printable equivalent)
  */
 
-static char *
-safepup(unsigned int ch, int *char_len)
-{
+static char *safepup(unsigned int ch, int *char_len) {
     int len;
     char *rp;
     static char up[8];
 
     if (ch < 0x20) {
         switch (ch) {
-            case '\b':
-                rp = "\\b";
-                break;
-            case '\f':
-                rp = "\\f";
-                break;
-            case '\n':
-                rp = "\\n";
-                break;
-            case '\r':
-                rp = "\\r";
-                break;
-            case '\t':
-                rp = "\\t";
-                break;
-            default:
-                up[0] = '^';
-                up[1] = (char)(ch + 0x40);
-                up[2] = '\0';
-                rp = up;
+        case '\b':
+            rp = "\\b";
+            break;
+        case '\f':
+            rp = "\\f";
+            break;
+        case '\n':
+            rp = "\\n";
+            break;
+        case '\r':
+            rp = "\\r";
+            break;
+        case '\t':
+            rp = "\\t";
+            break;
+        default:
+            up[0] = '^';
+            up[1] = (char)(ch + 0x40);
+            up[2] = '\0';
+            rp = up;
         }
         len = 2;
     } else if (ch == 0xff) {
@@ -1295,15 +1216,13 @@ safepup(unsigned int ch, int *char_len)
  *		  non-printable characters when printed in a printable form
  */
 
-int
-safestrlen(char *str, int flags)
-{
+int safestrlen(char *str, int flags) {
     char unprintable_ch;
     int len = 0;
 
     unprintable_ch = (flags & 2) ? ' ' : '\0';
     if (str) {
-    /*
+        /*
      * Use a lookup table for character expansion length to avoid
      * per-character isprint() calls:
      *   1 = printable (passthrough), 2 = control/0xff (^. form),
@@ -1311,26 +1230,264 @@ safestrlen(char *str, int flags)
      */
         static const unsigned char explen[256] = {
             /* 0x00-0x1f: control chars -> 2 */
-            2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
-            2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
             /* 0x20-0x7e: printable -> 1 */
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
             /* 0x7f: DEL -> 4 */
             4,
             /* 0x80-0xfe: high bytes -> 4 */
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
-            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
             /* 0xff -> 2 */
             2,
         };
@@ -1350,9 +1507,7 @@ safestrlen(char *str, int flags)
  *		  print unprintable characters in a printable form
  */
 
-void
-safestrprt(char *str, FILE *stream, int flags)
-{
+void safestrprt(char *str, FILE *stream, int flags) {
     char ch;
     int new_line_count, total_line_count, sl;
 
@@ -1367,27 +1522,267 @@ safestrprt(char *str, FILE *stream, int flags)
     if (flags & 4)
         putc('"', stream);
     if (str) {
-    /*
+        /*
      * Use a lookup table to classify printable characters, avoiding
      * per-character isprint() calls.  1 = printable (0x20-0x7e).
      */
         static const unsigned char printable[256] = {
-            /* 0x00-0x1f */ 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-            /* 0x20-0x7e */ 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,
-            /* 0x7f-0xff */ 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
+            /* 0x00-0x1f */ 0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            /* 0x20-0x7e */ 1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            /* 0x7f-0xff */ 0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         };
 
         for (sl = strlen(str); *str; sl -= new_line_count, str += new_line_count) {
@@ -1396,19 +1791,20 @@ safestrprt(char *str, FILE *stream, int flags)
             if (wcmx > 1) {
                 new_line_count = mblen(str, sl);
                 if (new_line_count > 1) {
-                if ((mbtowc(&wchar, str, sl) == new_line_count) && iswprint(wchar)) {
-                    for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
-                    putc((int)*(str + total_line_count), stream);
+                    if ((mbtowc(&wchar, str, sl) == new_line_count) && iswprint(wchar)) {
+                        for (total_line_count = 0; total_line_count < new_line_count;
+                             total_line_count++) {
+                            putc((int)*(str + total_line_count), stream);
+                        }
+                    } else {
+                        for (total_line_count = 0; total_line_count < new_line_count;
+                             total_line_count++) {
+                            fputs(safepup((unsigned int)*(str + total_line_count), NULL), stream);
+                        }
                     }
-                } else {
-                    for (total_line_count = 0; total_line_count < new_line_count; total_line_count++) {
-                        fputs(safepup((unsigned int)*(str + total_line_count),
-                              NULL), stream);
-                    }
-                }
-                continue;
+                    continue;
                 } else
-                new_line_count = 1;
+                    new_line_count = 1;
             } else
                 new_line_count = 1;
 #else
@@ -1416,11 +1812,11 @@ safestrprt(char *str, FILE *stream, int flags)
 #endif
 
             if (printable[(unsigned char)*str] && *str != ch)
-                putc((int) (*str & 0xff), stream);
+                putc((int)(*str & 0xff), stream);
             else {
                 if ((flags & 8) && (*str == '\n') && !*(str + 1))
                     break;
-                fputs(safepup((unsigned int) *str, NULL), stream);
+                fputs(safepup((unsigned int)*str, NULL), stream);
             }
         }
     }
@@ -1435,45 +1831,283 @@ safestrprt(char *str, FILE *stream, int flags)
  *		   "safely" to the indicated stream
  */
 
-void
-safestrprtn(char *str, int len, FILE *stream, int flags)
-{
+void safestrprtn(char *str, int len, FILE *stream, int flags) {
     char ch, *uchar_ptr;
     int char_len, i;
 
     if (flags & 4)
         putc('"', stream);
     if (str) {
-    /*
+        /*
      * Use a lookup table for printable classification (matches safestrprt).
      */
         static const unsigned char printable[256] = {
-            /* 0x00-0x1f */ 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-            /* 0x20-0x7e */ 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
-                            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,
-            /* 0x7f-0xff */ 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,
+            /* 0x00-0x1f */ 0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            /* 0x20-0x7e */ 1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            /* 0x7f-0xff */ 0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         };
         ch = (flags & 2) ? ' ' : '\0';
         for (i = 0; i < len && *str; str++) {
             if (printable[(unsigned char)*str] && *str != ch) {
-                putc((int) (*str & 0xff), stream);
+                putc((int)(*str & 0xff), stream);
                 i++;
             } else {
                 if ((flags & 8) && (*str == '\n') && !*(str + 1))
                     break;
-                uchar_ptr = safepup((unsigned int) *str, &char_len);
+                uchar_ptr = safepup((unsigned int)*str, &char_len);
                 if ((i + char_len) > len)
                     break;
                 fputs(uchar_ptr, stream);
@@ -1494,52 +2128,45 @@ safestrprtn(char *str, int len, FILE *stream, int flags)
  * statsafely() - stat path safely (i. e., with timeout)
  */
 
-int
-statsafely(char *path, struct stat *buf)
-{
+int statsafely(char *path, struct stat *buf) {
     if (OptBlockDevice) {
         if (!OptWarnings)
-            fprintf(stderr,
-                           "%s: avoiding stat(%s): -b was specified.\n",
-                           ProgramName, path);
+            fprintf(stderr, "%s: avoiding stat(%s): -b was specified.\n", ProgramName, path);
         errno = EWOULDBLOCK;
         return (1);
     }
-    return (doinchild(dostat, path, (char *) buf, sizeof(struct stat)));
+    return (doinchild(dostat, path, (char *)buf, sizeof(struct stat)));
 }
 
 /*
  * stkdir() - stack directory name
  */
 
-void
-stkdir(char *path)
-{
+void stkdir(char *path) {
     MALLOC_S len;
-/*
+    /*
  * Provide adequate space for directory stack pointers.
  */
     if (DirStackIndex >= DirStackAlloc) {
         DirStackAlloc += 128;
         len = (MALLOC_S)(DirStackAlloc * sizeof(char *));
         if (!DirStack)
-            DirStack = (char **) malloc(len);
+            DirStack = (char **)malloc(len);
         else {
-            char **tmp = (char **) realloc((MALLOC_P *) DirStack, len);
+            char **tmp = (char **)realloc((MALLOC_P *)DirStack, len);
             if (!tmp) {
-                free((FREE_P *) DirStack);
-                DirStack = (char **) NULL;
+                free((FREE_P *)DirStack);
+                DirStack = (char **)NULL;
             } else
                 DirStack = tmp;
         }
         if (!DirStack) {
-            fprintf(stderr,
-                           "%s: no space for directory stack at: ", ProgramName);
+            fprintf(stderr, "%s: no space for directory stack at: ", ProgramName);
             safestrprt(path, stderr, 1);
             Exit(1);
         }
     }
-/*
+    /*
  * Allocate space for the name, copy it there and put its pointer on the stack.
  */
     if (!(DirStack[DirStackIndex] = mkstrcpy(path, NULL))) {
@@ -1554,14 +2181,12 @@ stkdir(char *path)
  * x2dev() - convert hexadecimal ASCII string to device number
  */
 
-char *
-x2dev(char *hex_str, dev_t *dev_ptr)
-{
+char *x2dev(char *hex_str, dev_t *dev_ptr) {
     char *cp, *cp1;
     int num;
     dev_t result;
 
-/*
+    /*
  * Skip an optional leading 0x.  Count the number of hex digits up to the end
  * of the string, or to a space, or to a comma.  Return an error if an unknown
  * character is encountered.  If the count is larger than (2 * sizeof(dev_t))
@@ -1571,25 +2196,27 @@ x2dev(char *hex_str, dev_t *dev_ptr)
     if (strncasecmp(hex_str, "0x", 2) == 0)
         hex_str += 2;
     {
-    /*
+        /*
      * Classify characters via lookup table to avoid per-character branching.
      * 1 = hex digit, 2 = stop character (space/comma), 0 = invalid.
      */
         static const unsigned char cls[256] = {
-            ['0']=1,['1']=1,['2']=1,['3']=1,['4']=1,['5']=1,['6']=1,['7']=1,
-            ['8']=1,['9']=1,['a']=1,['b']=1,['c']=1,['d']=1,['e']=1,['f']=1,
-            ['A']=1,['B']=1,['C']=1,['D']=1,['E']=1,['F']=1,[' ']=2,[',']=2,
+            ['0'] = 1, ['1'] = 1, ['2'] = 1, ['3'] = 1, ['4'] = 1, ['5'] = 1, ['6'] = 1, ['7'] = 1,
+            ['8'] = 1, ['9'] = 1, ['a'] = 1, ['b'] = 1, ['c'] = 1, ['d'] = 1, ['e'] = 1, ['f'] = 1,
+            ['A'] = 1, ['B'] = 1, ['C'] = 1, ['D'] = 1, ['E'] = 1, ['F'] = 1, [' '] = 2, [','] = 2,
         };
         for (cp = hex_str, num = 0; *cp; cp++, num++) {
             unsigned char c = cls[(unsigned char)*cp];
-            if (c == 1) continue;
-            if (c == 2) break;
+            if (c == 1)
+                continue;
+            if (c == 2)
+                break;
             return (NULL);
         }
     }
     if (!num)
         return (NULL);
-    if (num > (2 * (int) sizeof(dev_t))) {
+    if (num > (2 * (int)sizeof(dev_t))) {
         cp1 = hex_str;
         hex_str += (num - (2 * sizeof(dev_t)));
         while (cp1 < hex_str) {
@@ -1598,7 +2225,7 @@ x2dev(char *hex_str, dev_t *dev_ptr)
             cp1++;
         }
     }
-/*
+    /*
  * Assemble the validated hex digits of the device number, starting at a point
  * in the string relevant to sizeof(dev_t).
  *
@@ -1606,10 +2233,10 @@ x2dev(char *hex_str, dev_t *dev_ptr)
  */
     {
         static const signed char hv[256] = {
-            ['0']=0, ['1']=1, ['2']=2, ['3']=3, ['4']=4,
-            ['5']=5, ['6']=6, ['7']=7, ['8']=8, ['9']=9,
-            ['a']=10,['b']=11,['c']=12,['d']=13,['e']=14,['f']=15,
-            ['A']=10,['B']=11,['C']=12,['D']=13,['E']=14,['F']=15,
+            ['0'] = 0,  ['1'] = 1,  ['2'] = 2,  ['3'] = 3,  ['4'] = 4,  ['5'] = 5,
+            ['6'] = 6,  ['7'] = 7,  ['8'] = 8,  ['9'] = 9,  ['a'] = 10, ['b'] = 11,
+            ['c'] = 12, ['d'] = 13, ['e'] = 14, ['f'] = 15, ['A'] = 10, ['B'] = 11,
+            ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
         };
         for (result = 0; hex_str < cp; hex_str++) {
             result = (result << 4) | (hv[(unsigned char)*hex_str] & 0xf);

@@ -7,7 +7,7 @@
 
 /* ===== HASHPORT macro test ===== */
 #define PORTHASHBUCKETS 128
-#define HASHPORT(p) (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
+#define HASHPORT(p)     (((((int)(p)) * 31415) >> 3) & (PORTHASHBUCKETS - 1))
 
 TEST(hashport_range) {
     for (int port_num = 0; port_num < 65536; port_num++) {
@@ -25,7 +25,8 @@ TEST(hashport_distribution) {
     }
     int used = 0;
     for (int i = 0; i < PORTHASHBUCKETS; i++) {
-        if (buckets[i] > 0) used++;
+        if (buckets[i] > 0)
+            used++;
     }
     ASSERT_GT(used, PORTHASHBUCKETS / 2);
 }
@@ -66,23 +67,20 @@ TEST(hashport_common_ports_in_range) {
     }
 }
 
-
 /* ===== hash_by_name() reimplementation test ===== */
-static int
-test_hash_by_name(char *name, int modulus)
-{
+static int test_hash_by_name(char *name, int modulus) {
     int hash_accum, shift_pos;
     for (hash_accum = shift_pos = 0; *name; name++) {
-        hash_accum ^= (int) *name << shift_pos;
+        hash_accum ^= (int)*name << shift_pos;
         if (++shift_pos > 7)
             shift_pos = 0;
     }
-    return (((int) (hash_accum * 31415)) & (modulus - 1));
+    return (((int)(hash_accum * 31415)) & (modulus - 1));
 }
 
 TEST(hashbyname_range) {
-    const char *names[] = {"tcp", "udp", "icmp", "http", "ssh", "/dev/null",
-                           "/var/log/syslog", "a", "", "Z"};
+    const char *names[] = {"tcp", "udp", "icmp", "http", "ssh", "/dev/null", "/var/log/syslog",
+                           "a",   "",    "Z"};
     int mod = 128;
     for (int i = 0; i < 10; i++) {
         int hash_val = test_hash_by_name((char *)names[i], mod);
@@ -132,13 +130,14 @@ TEST(hashbyname_distribution) {
     }
     int used = 0;
     for (int i = 0; i < 64; i++)
-        if (buckets[i] > 0) used++;
+        if (buckets[i] > 0)
+            used++;
     ASSERT_GT(used, 20);
 }
 
 TEST(hashbyname_no_trivial_collision_set) {
-    const char *protos[] = {"tcp", "udp", "icmp", "sctp", "dccp",
-                            "raw", "igmp", "esp", "ah", "gre"};
+    const char *protos[] = {"tcp", "udp",  "icmp", "sctp", "dccp",
+                            "raw", "igmp", "esp",  "ah",   "gre"};
     int hashes[10];
     for (int i = 0; i < 10; i++)
         hashes[i] = test_hash_by_name((char *)protos[i], 128);
@@ -168,7 +167,8 @@ TEST(hashbyname_single_char_spread) {
     }
     int used = 0;
     for (int i = 0; i < 64; i++)
-        if (buckets[i] > 0) used++;
+        if (buckets[i] > 0)
+            used++;
     ASSERT_GT(used, 10);
 }
 

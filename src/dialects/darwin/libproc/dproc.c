@@ -2,7 +2,6 @@
  * dproc.c -- Darwin process access functions for libproc-based lsof
  */
 
-
 /*
  * Portions Copyright 2005-2007 Apple Inc.  All rights reserved.
  *
@@ -32,34 +31,31 @@
 
 #include "lsof.h"
 
-
 /*
  * Local definitions
  */
 
-#define    PIDS_INCR    (sizeof(int) * 32)    /* PID space increment */
-#define    VIPS_INCR    16            /* Vips space increment */
+#define PIDS_INCR (sizeof(int) * 32) /* PID space increment */
+#define VIPS_INCR 16                 /* Vips space increment */
 
-#if    DARWINV >= 900
-#define	THREADS_INCR	(sizeof(uint64_t) * 32)	/* Threads space increment */
-#endif    /* DARWINV>=900 */
-
+#if DARWINV >= 900
+#define THREADS_INCR (sizeof(uint64_t) * 32) /* Threads space increment */
+#endif                                       /* DARWINV>=900 */
 
 /*
  * Local static variables
  */
 
-static struct proc_fdinfo *Fds = (struct proc_fdinfo *) NULL;
+static struct proc_fdinfo *Fds = (struct proc_fdinfo *)NULL;
 /* FD buffer */
-static int NbPids = 0;                /* bytes allocated to Pids */
-static int NbFds = 0;                /* bytes allocated to FDs */
-static int *Pids = (int *) NULL;            /* PID buffer */
+static int NbPids = 0;          /* bytes allocated to Pids */
+static int NbFds = 0;           /* bytes allocated to FDs */
+static int *Pids = (int *)NULL; /* PID buffer */
 
-#if    DARWINV >= 900
-static int NbThreads = 0;			/* Threads bytes allocated */
-static uint64_t *Threads = (uint64_t *)NULL;	/* Thread buffer */
-#endif    /* DARWINV>=900 */
-
+#if DARWINV >= 900
+static int NbThreads = 0;                    /* Threads bytes allocated */
+static uint64_t *Threads = (uint64_t *)NULL; /* Thread buffer */
+#endif                                       /* DARWINV>=900 */
 
 /*
  * Local structure definitions
@@ -68,10 +64,9 @@ static uint64_t *Threads = (uint64_t *)NULL;	/* Thread buffer */
 static struct vips_info {
     dev_t dev;
     ino_t ino;
-} *Vips = (struct vips_info *) NULL;        /* recorded vnodes */
-static int NbVips = 0;                /* bytes allocated to Vips */
-static int NVips = 0;                /* entries allocated to Vips */
-
+} *Vips = (struct vips_info *)NULL; /* recorded vnodes */
+static int NbVips = 0;              /* bytes allocated to Vips */
+static int NVips = 0;               /* entries allocated to Vips */
 
 /*
  * Local function prototypes
@@ -82,37 +77,34 @@ static void process_fds(int pid, uint32_t n, int ckscko);
 
 static void process_text(int pid);
 
-#if    DARWINV >= 900
+#if DARWINV >= 900
 static void process_threads(int pid, uint32_t n);
-#endif    /* DARWINV>=900 */
-
+#endif /* DARWINV>=900 */
 
 /*
  * enter_vn_text() -- enter vnode information text reference
  */
 
-static void
-enter_vn_text(struct vnode_info_path * vip, int * n)
-{
+static void enter_vn_text(struct vnode_info_path *vip, int *n) {
     int i;
-/*
+    /*
  * Ignore the request if the vnode information has already been entered.
  */
     for (i = 0; i < *n; i++) {
-        if ((vip->vip_vi.vi_stat.vst_dev == Vips[i].dev)
-            && (vip->vip_vi.vi_stat.vst_ino == Vips[i].ino)) {
+        if ((vip->vip_vi.vi_stat.vst_dev == Vips[i].dev) &&
+            (vip->vip_vi.vi_stat.vst_ino == Vips[i].ino)) {
             return;
         }
     }
-/*
+    /*
  * Save the text file information.
  */
     alloc_lfile(" txt", -1);
-    Cfp = (struct file *) NULL;
-    (void) enter_vnode_info(vip);
+    Cfp = (struct file *)NULL;
+    (void)enter_vnode_info(vip);
     if (CurrentLocalFile->sel_flags)
         link_lfile();
-/*
+    /*
  * Record the entry of the vnode information.
  */
     if (i >= NVips) {
@@ -121,23 +113,22 @@ enter_vn_text(struct vnode_info_path * vip, int * n)
          * Allocate space for recording the vnode information.
          */
         NVips += VIPS_INCR;
-        NbVips += (int) (VIPS_INCR * sizeof(struct vips_info));
+        NbVips += (int)(VIPS_INCR * sizeof(struct vips_info));
         if (!Vips)
-            Vips = (struct vips_info *) malloc((MALLOC_S) NbVips);
+            Vips = (struct vips_info *)malloc((MALLOC_S)NbVips);
         else {
-            struct vips_info *tmp = (struct vips_info *) realloc((MALLOC_P *) Vips,
-                                                (MALLOC_S) NbVips);
+            struct vips_info *tmp = (struct vips_info *)realloc((MALLOC_P *)Vips, (MALLOC_S)NbVips);
             if (!tmp)
-                free((FREE_P *) Vips);
+                free((FREE_P *)Vips);
             Vips = tmp;
         }
         if (!Vips) {
-            (void) fprintf(stderr, "%s: PID %d: no text recording space\n",
-                           ProgramName, CurrentLocalProc->pid);
+            (void)fprintf(stderr, "%s: PID %d: no text recording space\n", ProgramName,
+                          CurrentLocalProc->pid);
             Exit(1);
         }
     }
-/*
+    /*
  * Record the vnode information.
  */
     Vips[*n].dev = vip->vip_vi.vi_stat.vst_dev;
@@ -145,18 +136,16 @@ enter_vn_text(struct vnode_info_path * vip, int * n)
     (*n)++;
 }
 
-
 /*
  * gather_proc_info() -- gather process information
  */
 
-void
-gather_proc_info() {
-    short cckreg;            /* conditional status of regular file
+void gather_proc_info() {
+    short cckreg; /* conditional status of regular file
 					 * checking:
 					 *     0 = unconditionally check
 					 *     1 = conditionally check */
-    short ckscko;            /* socket file only checking status:
+    short ckscko; /* socket file only checking status:
 					 *     0 = none
 					 *     1 = check only socket files,
 					 *	   including TCP and UDP
@@ -166,7 +155,7 @@ gather_proc_info() {
     short pss, sf;
     struct proc_taskallinfo tai;
     struct proc_vnodepathinfo vpi;
-/*
+    /*
  * Define socket and regular file conditional processing flags.
  *
  * If only socket files have been selected, or socket files have been
@@ -215,14 +204,13 @@ gather_proc_info() {
          */
         cckreg = ckscko = 0;
     }
-/*
+    /*
  * Determine how many bytes are needed to contain the PIDs on the system;
  * make sure sufficient buffer space is allocated to hold them (and a few
  * extra); then read the list of PIDs.
  */
     if ((nb = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0)) <= 0) {
-        (void) fprintf(stderr, "%s: can't get PID byte count: %s\n",
-                       ProgramName, strerror(errno));
+        (void)fprintf(stderr, "%s: can't get PID byte count: %s\n", ProgramName, strerror(errno));
         Exit(1);
     }
     if (nb > NbPids) {
@@ -230,27 +218,25 @@ gather_proc_info() {
             NbPids += PIDS_INCR;
         }
         if (!Pids)
-            Pids = (int *) malloc((MALLOC_S) NbPids);
+            Pids = (int *)malloc((MALLOC_S)NbPids);
         else {
-            int *tmp = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+            int *tmp = (int *)realloc((MALLOC_P *)Pids, (MALLOC_S)NbPids);
             if (!tmp)
-                free((FREE_P *) Pids);
+                free((FREE_P *)Pids);
             Pids = tmp;
         }
         if (!Pids) {
-            (void) fprintf(stderr,
-                           "%s: can't allocate space for %d PIDs\n", ProgramName,
-                           (int) (NbPids / sizeof(int *)));
+            (void)fprintf(stderr, "%s: can't allocate space for %d PIDs\n", ProgramName,
+                          (int)(NbPids / sizeof(int *)));
             Exit(1);
         }
     }
-/*
+    /*
  * Get the list of PIDs.
  */
     for (ef = 0; !ef;) {
         if ((nb = proc_listpids(PROC_ALL_PIDS, 0, Pids, NbPids)) <= 0) {
-            (void) fprintf(stderr, "%s: can't get list of PIDs: %s\n",
-                           ProgramName, strerror(errno));
+            (void)fprintf(stderr, "%s: can't get list of PIDs: %s\n", ProgramName, strerror(errno));
             Exit(1);
         }
 
@@ -268,20 +254,19 @@ gather_proc_info() {
              */
             NbPids += PIDS_INCR;
             {
-                int *tmp = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+                int *tmp = (int *)realloc((MALLOC_P *)Pids, (MALLOC_S)NbPids);
                 if (!tmp)
-                    free((FREE_P *) Pids);
+                    free((FREE_P *)Pids);
                 Pids = tmp;
             }
             if (!Pids) {
-                (void) fprintf(stderr,
-                               "%s: can't allocate space for %d PIDs\n", ProgramName,
-                               (int) (NbPids / sizeof(int *)));
+                (void)fprintf(stderr, "%s: can't allocate space for %d PIDs\n", ProgramName,
+                              (int)(NbPids / sizeof(int *)));
                 Exit(1);
             }
         }
     }
-/*
+    /*
  * Loop through the identified processes.
  */
     for (i = 0; i < np; i++) {
@@ -292,24 +277,20 @@ gather_proc_info() {
             if ((errno == EPERM) || (errno == ESRCH))
                 continue;
             if (!OptWarnings) {
-                (void) fprintf(stderr, "%s: PID %d information error: %s\n",
-                               ProgramName, pid, strerror(errno));
+                (void)fprintf(stderr, "%s: PID %d information error: %s\n", ProgramName, pid,
+                              strerror(errno));
             }
             continue;
         } else if (nb < sizeof(tai)) {
-            (void) fprintf(stderr,
-                           "%s: PID %d: proc_pidinfo(PROC_PIDTASKALLINFO);\n",
-                           ProgramName, pid);
-            (void) fprintf(stderr,
-                           "      too few bytes; expected %ld, got %d\n",
-                           sizeof(tai), nb);
+            (void)fprintf(stderr, "%s: PID %d: proc_pidinfo(PROC_PIDTASKALLINFO);\n", ProgramName,
+                          pid);
+            (void)fprintf(stderr, "      too few bytes; expected %ld, got %d\n", sizeof(tai), nb);
             Exit(1);
         }
         /*
          * Check for process or command exclusion.
          */
-        if (is_proc_excl((int) pid, (int) tai.pbsd.pbi_rgid,
-                         (UID_ARG) tai.pbsd.pbi_uid, &pss, &sf)) {
+        if (is_proc_excl((int)pid, (int)tai.pbsd.pbi_rgid, (UID_ARG)tai.pbsd.pbi_uid, &pss, &sf)) {
             continue;
         }
         tai.pbsd.pbi_comm[sizeof(tai.pbsd.pbi_comm) - 1] = '\0';
@@ -333,18 +314,15 @@ gather_proc_info() {
          * Get root and current directory information.
          */
         if (!ckscko) {
-            nb = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi,
-                              sizeof(vpi));
+            nb = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &vpi, sizeof(vpi));
             if (nb <= 0) {
                 cre = errno;
                 cres = 1;
             } else if (nb < sizeof(vpi)) {
-                (void) fprintf(stderr,
-                               "%s: PID %d: proc_pidinfo(PROC_PIDVNODEPATHINFO);\n",
-                               ProgramName, pid);
-                (void) fprintf(stderr,
-                               "      too few bytes; expected %ld, got %d\n",
-                               sizeof(vpi), nb);
+                (void)fprintf(stderr, "%s: PID %d: proc_pidinfo(PROC_PIDVNODEPATHINFO);\n",
+                              ProgramName, pid);
+                (void)fprintf(stderr, "      too few bytes; expected %ld, got %d\n", sizeof(vpi),
+                              nb);
                 Exit(1);
             } else
                 cres = 0;
@@ -352,19 +330,18 @@ gather_proc_info() {
         /*
          * Allocate local process space.
          */
-        alloc_lproc((int) pid, (int) tai.pbsd.pbi_rgid,
-                    (int) tai.pbsd.pbi_ppid, (UID_ARG) tai.pbsd.pbi_uid,
-                    (tai.pbsd.pbi_name[0] != '\0') ? tai.pbsd.pbi_name
-                                                   : tai.pbsd.pbi_comm,
-                    (int) pss, (int) sf);
-        PrevLocalFile = (struct lfile *) NULL;
+        alloc_lproc((int)pid, (int)tai.pbsd.pbi_rgid, (int)tai.pbsd.pbi_ppid,
+                    (UID_ARG)tai.pbsd.pbi_uid,
+                    (tai.pbsd.pbi_name[0] != '\0') ? tai.pbsd.pbi_name : tai.pbsd.pbi_comm,
+                    (int)pss, (int)sf);
+        PrevLocalFile = (struct lfile *)NULL;
         /*
          * Save current working directory information.
          */
         if (!ckscko) {
             if (cres || vpi.pvi_cdir.vip_path[0]) {
                 alloc_lfile(CWD, -1);
-                Cfp = (struct file *) NULL;
+                Cfp = (struct file *)NULL;
                 if (cres) {
 
                     /*
@@ -373,15 +350,15 @@ gather_proc_info() {
                      * CWD's NAME  column.
                      */
                     if (cre != ESRCH) {
-                        (void) snpf(NameChars, NameCharsLength, "%s|%s info error: %s",
-                                    &CWD[1], &RTD[1], strerror(cre));
+                        (void)snpf(NameChars, NameCharsLength, "%s|%s info error: %s", &CWD[1],
+                                   &RTD[1], strerror(cre));
                         NameChars[NameCharsLength - 1] = '\0';
                         enter_nm(NameChars);
                         if (CurrentLocalFile->sel_flags)
                             link_lfile();
                     }
                 } else {
-                    (void) enter_vnode_info(&vpi.pvi_cdir);
+                    (void)enter_vnode_info(&vpi.pvi_cdir);
                     if (CurrentLocalFile->sel_flags)
                         link_lfile();
                 }
@@ -393,33 +370,33 @@ gather_proc_info() {
         if (!ckscko) {
             if (!cres && vpi.pvi_rdir.vip_path[0]) {
                 alloc_lfile(RTD, -1);
-                Cfp = (struct file *) NULL;
-                (void) enter_vnode_info(&vpi.pvi_rdir);
+                Cfp = (struct file *)NULL;
+                (void)enter_vnode_info(&vpi.pvi_rdir);
                 if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
         }
 
-#if    DARWINV >= 900
+#if DARWINV >= 900
         /*
          * Check for per-thread current working directories
          */
-            if (!ckscko) {
+        if (!ckscko) {
             if (tai.pbsd.pbi_flags & PROC_FLAG_THCWD) {
-                    (void) process_threads(pid, tai.ptinfo.pti_threadnum);
+                (void)process_threads(pid, tai.ptinfo.pti_threadnum);
             }
-            }
-#endif    /* DARWINV>=900 */
+        }
+#endif /* DARWINV>=900 */
 
         /*
          * Print text file information.
          */
         if (!ckscko)
-            (void) process_text(pid);
+            (void)process_text(pid);
         /*
          * Loop through the file descriptors.
          */
-        (void) process_fds(pid, tai.pbsd.pbi_nfiles, ckscko);
+        (void)process_fds(pid, tai.pbsd.pbi_nfiles, ckscko);
         /*
          * Examine results.
          */
@@ -428,31 +405,25 @@ gather_proc_info() {
     }
 }
 
-
 /*
  * initialize() -- perform all initialization
  */
 
-void
-initialize() {
-}
-
+void initialize() {}
 
 /*
  * process_fds() -- process file descriptors
  */
 
-static void
-process_fds(int pid, uint32_t n, int ckscko)
-{
+static void process_fds(int pid, uint32_t n, int ckscko) {
     int i, isock, nb, nf;
     struct proc_fdinfo *fdp;
-/*
+    /*
  * Make sure an FD buffer has been allocated.
  */
     if (!Fds) {
         NbFds = sizeof(struct proc_fdinfo) * n;
-        Fds = (struct proc_fdinfo *) malloc((MALLOC_S) NbFds);
+        Fds = (struct proc_fdinfo *)malloc((MALLOC_S)NbFds);
     } else if (NbFds < sizeof(struct proc_fdinfo) * n) {
 
         /*
@@ -460,20 +431,19 @@ process_fds(int pid, uint32_t n, int ckscko)
          */
         NbFds = sizeof(struct proc_fdinfo) * n;
         {
-            struct proc_fdinfo *tmp = (struct proc_fdinfo *) realloc((MALLOC_P *) Fds,
-                                                 (MALLOC_S) NbFds);
+            struct proc_fdinfo *tmp =
+                (struct proc_fdinfo *)realloc((MALLOC_P *)Fds, (MALLOC_S)NbFds);
             if (!tmp)
-                free((FREE_P *) Fds);
+                free((FREE_P *)Fds);
             Fds = tmp;
         }
     }
     if (!Fds) {
-        (void) fprintf(stderr,
-                       "%s: PID %d: can't allocate space for %d FDs\n",
-                       ProgramName, pid, (int) (NbFds / sizeof(struct proc_fdinfo)));
+        (void)fprintf(stderr, "%s: PID %d: can't allocate space for %d FDs\n", ProgramName, pid,
+                      (int)(NbFds / sizeof(struct proc_fdinfo)));
         Exit(1);
     }
-/*
+    /*
  * Get FD information for the process.
  */
     nb = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, Fds, NbFds);
@@ -489,61 +459,60 @@ process_fds(int pid, uint32_t n, int ckscko)
          * Make a dummy file entry with an error message in its NAME column.
          */
         alloc_lfile(" err", -1);
-        (void) snpf(NameChars, NameCharsLength, "FD info error: %s", strerror(errno));
+        (void)snpf(NameChars, NameCharsLength, "FD info error: %s", strerror(errno));
         NameChars[NameCharsLength - 1] = '\0';
         enter_nm(NameChars);
         if (CurrentLocalFile->sel_flags)
             link_lfile();
         return;
     }
-    nf = (int) (nb / sizeof(struct proc_fdinfo));
-/*
+    nf = (int)(nb / sizeof(struct proc_fdinfo));
+    /*
  * Loop through the file descriptors.
  */
     for (i = 0; i < nf; i++) {
         fdp = &Fds[i];
-        alloc_lfile(NULL, (int) fdp->proc_fd);
+        alloc_lfile(NULL, (int)fdp->proc_fd);
         /*
          * Process the file by its type.
          */
         isock = 0;
         switch (fdp->proc_fdtype) {
-            case PROX_FDTYPE_ATALK:
-                if (!ckscko)
-                    (void) process_atalk(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_FSEVENTS:
-                if (!ckscko)
-                    (void) process_fsevents(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_KQUEUE:
-                if (!ckscko)
-                    (void) process_kqueue(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_PIPE:
-                if (!ckscko)
-                    (void) process_pipe(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_PSEM:
-                if (!ckscko)
-                    (void) process_psem(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_SOCKET:
-                (void) process_socket(pid, fdp->proc_fd);
-                isock = 1;
-                break;
-            case PROX_FDTYPE_PSHM:
-                (void) process_pshm(pid, fdp->proc_fd);
-                break;
-            case PROX_FDTYPE_VNODE:
-                (void) process_vnode(pid, fdp->proc_fd);
-                break;
-            default:
-                (void) snpf(NameChars, NameCharsLength - 1, "unknown file type: %d",
-                            fdp->proc_fdtype);
-                NameChars[NameCharsLength - 1] = '\0';
-                (void) enter_nm(NameChars);
-                break;
+        case PROX_FDTYPE_ATALK:
+            if (!ckscko)
+                (void)process_atalk(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_FSEVENTS:
+            if (!ckscko)
+                (void)process_fsevents(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_KQUEUE:
+            if (!ckscko)
+                (void)process_kqueue(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_PIPE:
+            if (!ckscko)
+                (void)process_pipe(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_PSEM:
+            if (!ckscko)
+                (void)process_psem(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_SOCKET:
+            (void)process_socket(pid, fdp->proc_fd);
+            isock = 1;
+            break;
+        case PROX_FDTYPE_PSHM:
+            (void)process_pshm(pid, fdp->proc_fd);
+            break;
+        case PROX_FDTYPE_VNODE:
+            (void)process_vnode(pid, fdp->proc_fd);
+            break;
+        default:
+            (void)snpf(NameChars, NameCharsLength - 1, "unknown file type: %d", fdp->proc_fdtype);
+            NameChars[NameCharsLength - 1] = '\0';
+            (void)enter_nm(NameChars);
+            break;
         }
         if (CurrentLocalFile->sel_flags) {
             if (!ckscko || isock)
@@ -551,7 +520,6 @@ process_fds(int pid, uint32_t n, int ckscko)
         }
     }
 }
-
 
 /*
  * process_text() -- process text information
@@ -566,16 +534,13 @@ process_fds(int pid, uint32_t n, int ckscko)
 #define PROC_PIDREGIONPATHINFO2 22
 #endif
 
-static void
-process_text(int pid)
-{
+static void process_text(int pid) {
     uint64_t a;
     int i, n, nb;
     struct proc_regionwithpathinfo rwpi;
 
-    for (a = (uint64_t) 0, i = n = 0; i < 10000; i++) {
-        nb = proc_pidinfo(pid, PROC_PIDREGIONPATHINFO2, a, &rwpi,
-                          sizeof(rwpi));
+    for (a = (uint64_t)0, i = n = 0; i < 10000; i++) {
+        nb = proc_pidinfo(pid, PROC_PIDREGIONPATHINFO2, a, &rwpi, sizeof(rwpi));
         if (nb <= 0) {
             if ((errno == ESRCH) || (errno == EINVAL)) {
 
@@ -589,21 +554,17 @@ process_text(int pid)
              * Warn about all other errors via a NAME column message.
              */
             alloc_lfile(" txt", -1);
-            Cfp = (struct file *) NULL;
-            (void) snpf(NameChars, NameCharsLength,
-                        "region info error: %s", strerror(errno));
+            Cfp = (struct file *)NULL;
+            (void)snpf(NameChars, NameCharsLength, "region info error: %s", strerror(errno));
             NameChars[NameCharsLength - 1] = '\0';
             enter_nm(NameChars);
             if (CurrentLocalFile->sel_flags)
                 link_lfile();
             return;
         } else if (nb < sizeof(rwpi)) {
-            (void) fprintf(stderr,
-                           "%s: PID %d: proc_pidinfo(PROC_PIDREGIONPATHINFO2);\n",
-                           ProgramName, pid);
-            (void) fprintf(stderr,
-                           "      too few bytes; expected %ld, got %d\n",
-                           sizeof(rwpi), nb);
+            (void)fprintf(stderr, "%s: PID %d: proc_pidinfo(PROC_PIDREGIONPATHINFO2);\n",
+                          ProgramName, pid);
+            (void)fprintf(stderr, "      too few bytes; expected %ld, got %d\n", sizeof(rwpi), nb);
             Exit(1);
         }
         if (rwpi.prp_vip.vip_path[0])
@@ -612,59 +573,55 @@ process_text(int pid)
     }
 }
 
-
-#if    DARWINV >= 900
+#if DARWINV >= 900
 /*
  * process_threads() -- process thread information
  */
 
-#define TWD		" twd"          /* per-thread current working directory
+#define TWD \
+    " twd" /* per-thread current working directory
                      * fd name */
 
-static void
-process_threads(int pid, uint32_t n)
-{
+static void process_threads(int pid, uint32_t n) {
     int i, nb, nt;
-/*
+    /*
  * Make sure a thread buffer has been allocated.
  */
     n += 10;
     if (n > NbThreads) {
         while (n > NbThreads) {
-        NbThreads += THREADS_INCR;
+            NbThreads += THREADS_INCR;
         }
         if (!Threads)
-        Threads = (uint64_t *)malloc((MALLOC_S)NbThreads);
+            Threads = (uint64_t *)malloc((MALLOC_S)NbThreads);
         else {
-        uint64_t *tmp = (uint64_t *)realloc((MALLOC_P *)Threads,
-                            (MALLOC_S)NbThreads);
-        if (!tmp)
-            free((FREE_P *)Threads);
-        Threads = tmp;
+            uint64_t *tmp = (uint64_t *)realloc((MALLOC_P *)Threads, (MALLOC_S)NbThreads);
+            if (!tmp)
+                free((FREE_P *)Threads);
+            Threads = tmp;
         }
         if (!Threads) {
-        (void) fprintf(stderr,
-            "%s: can't allocate space for %d Threads\n", ProgramName,
-            (int)(NbThreads / sizeof(int *)));
-        Exit(1);
+            (void)fprintf(stderr, "%s: can't allocate space for %d Threads\n", ProgramName,
+                          (int)(NbThreads / sizeof(int *)));
+            Exit(1);
         }
     }
-/*
+    /*
  * Get thread information for the process.
  */
     nb = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, Threads, NbThreads);
     if (nb <= 0) {
         if (errno == ESRCH) {
 
-        /*
+            /*
          * Quit if no thread information is available for the
          * process.
          */
-        return;
+            return;
         }
     }
     nt = (int)(nb / sizeof(uint64_t));
-/*
+    /*
  * Loop through the threads.
  */
     for (i = 0; i < nt; i++) {
@@ -672,45 +629,40 @@ process_threads(int pid, uint32_t n)
         struct proc_threadwithpathinfo tpi;
 
         t = Threads[i];
-        nb = proc_pidinfo(pid, PROC_PIDTHREADPATHINFO, t, &tpi,
-                  sizeof(tpi));
+        nb = proc_pidinfo(pid, PROC_PIDTHREADPATHINFO, t, &tpi, sizeof(tpi));
         if (nb <= 0) {
-        if ((errno == ESRCH) || (errno == EINVAL)) {
+            if ((errno == ESRCH) || (errno == EINVAL)) {
 
-        /*
+                /*
          * Quit if no more thread information is available for the
          * process.
          */
-            return;
-        }
-        /*
+                return;
+            }
+            /*
          * Warn about all other errors via a NAME column message.
          */
-        alloc_lfile(TWD, -1);
-        Cfp = (struct file *)NULL;
-        (void) snpf(NameChars, NameCharsLength,
-            "thread info error: %s", strerror(errno));
-        NameChars[NameCharsLength - 1] = '\0';
-        enter_nm(NameChars);
-        if (CurrentLocalFile->sel_flags)
-            link_lfile();
-        return;
+            alloc_lfile(TWD, -1);
+            Cfp = (struct file *)NULL;
+            (void)snpf(NameChars, NameCharsLength, "thread info error: %s", strerror(errno));
+            NameChars[NameCharsLength - 1] = '\0';
+            enter_nm(NameChars);
+            if (CurrentLocalFile->sel_flags)
+                link_lfile();
+            return;
         } else if (nb < sizeof(tpi)) {
-        (void) fprintf(stderr,
-            "%s: PID %d: proc_pidinfo(PROC_PIDTHREADPATHINFO);\n",
-            ProgramName, pid);
-        (void) fprintf(stderr,
-            "      too few bytes; expected %ld, got %d\n",
-            sizeof(tpi), nb);
-        Exit(1);
+            (void)fprintf(stderr, "%s: PID %d: proc_pidinfo(PROC_PIDTHREADPATHINFO);\n",
+                          ProgramName, pid);
+            (void)fprintf(stderr, "      too few bytes; expected %ld, got %d\n", sizeof(tpi), nb);
+            Exit(1);
         }
         if (tpi.pvip.vip_path[0]) {
-        alloc_lfile(TWD, -1);
-        Cfp = (struct file *)NULL;
-        (void) enter_vnode_info(&tpi.pvip);
-        if (CurrentLocalFile->sel_flags)
-            link_lfile();
+            alloc_lfile(TWD, -1);
+            Cfp = (struct file *)NULL;
+            (void)enter_vnode_info(&tpi.pvip);
+            if (CurrentLocalFile->sel_flags)
+                link_lfile();
         }
     }
 }
-#endif    /* DARWINV>=900 */
+#endif /* DARWINV>=900 */

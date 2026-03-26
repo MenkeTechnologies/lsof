@@ -7,16 +7,16 @@
  * February, 1998
  */
 
-#if    !defined(LSOF_RNODE_H)
-#define    LSOF_RNODE_H
+#if !defined(LSOF_RNODE_H)
+#define LSOF_RNODE_H
 
 #include "kernbits.h"
 
-#define    _KERNEL
+#define _KERNEL
 
 #include <sys/spinlock.h>
 
-#undef    _KERNEL
+#undef _KERNEL
 
 #include "vnode.h"
 
@@ -44,7 +44,7 @@ typedef struct rnode {
     KA_T r_freef;
     KA_T r_freeb;
     KA_T r_hash;
-    vnode_t r_vnode;    /* the vnode that contains this rnode */
+    vnode_t r_vnode; /* the vnode that contains this rnode */
     krwlock_t r_rwlock;
     kmutex_t r_statelock;
     nfs_fhandle_t r_fh;
@@ -55,13 +55,13 @@ typedef struct rnode {
     KA_T r_unlcred;
     KA_T r_unlname;
     KA_T r_unldvp;
-    int64_t r_size;        /* This should be an off_t, but there's an
+    int64_t r_size;      /* This should be an off_t, but there's an
 				 * unresolvable conflict between the kernel
 				 * and application off_t sizes. */
-    struct vattr r_attr;    /* the vnode attributes -- e.g., node number,
+    struct vattr r_attr; /* the vnode attributes -- e.g., node number,
 				 * size, etc.  (See ./vnode.h.) */
 
-/*
+    /*
  * These q4 elements are ignored.
 
 	time_t r_attrtime;
@@ -92,4 +92,4 @@ typedef struct rnode {
 
 } rnode_t;
 
-#endif    /* !defined(LSOF_RNODE_H) */
+#endif /* !defined(LSOF_RNODE_H) */

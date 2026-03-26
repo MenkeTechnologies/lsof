@@ -9,23 +9,28 @@
 #ifndef TEST_UNIT_MEMLEAK_H
 #define TEST_UNIT_MEMLEAK_H
 
-static int alloc_count = 0;   /* tracks net allocations */
+static int alloc_count = 0; /* tracks net allocations */
 
 static void *counted_malloc(size_t sz) {
     void *p = malloc(sz);
-    if (p) alloc_count++;
+    if (p)
+        alloc_count++;
     return p;
 }
 
 static void counted_free(void *p) {
-    if (p) { free(p); alloc_count--; }
+    if (p) {
+        free(p);
+        alloc_count--;
+    }
 }
 
 static char *counted_mkstrcpy(const char *src) {
     size_t len = src ? strlen(src) : 0;
     char *ns = (char *)counted_malloc(len + 1);
     if (ns) {
-        if (src) memcpy(ns, src, len);
+        if (src)
+            memcpy(ns, src, len);
         ns[len] = '\0';
     }
     return ns;
@@ -33,24 +38,26 @@ static char *counted_mkstrcpy(const char *src) {
 
 static void *counted_realloc(void *ptr, size_t sz) {
     void *p = realloc(ptr, sz);
-    if (p && !ptr) alloc_count++;   /* new allocation */
-    if (!p && ptr) { /* realloc failed, old pointer still valid */ }
+    if (p && !ptr)
+        alloc_count++; /* new allocation */
+    if (!p && ptr) {   /* realloc failed, old pointer still valid */
+    }
     return p;
 }
 
-static char *counted_mkstrcat(const char *s1, int l1,
-                               const char *s2, int l2) {
+static char *counted_mkstrcat(const char *s1, int l1, const char *s2, int l2) {
     size_t len1 = s1 ? (l1 >= 0 ? (size_t)l1 : strlen(s1)) : 0;
     size_t len2 = s2 ? (l2 >= 0 ? (size_t)l2 : strlen(s2)) : 0;
     char *cursor = (char *)counted_malloc(len1 + len2 + 1);
     if (cursor) {
-        if (s1 && len1) memcpy(cursor, s1, len1);
-        if (s2 && len2) memcpy(cursor + len1, s2, len2);
+        if (s1 && len1)
+            memcpy(cursor, s1, len1);
+        if (s2 && len2)
+            memcpy(cursor + len1, s2, len2);
         cursor[len1 + len2] = '\0';
     }
     return cursor;
 }
-
 
 TEST(memleak_enter_network_address_hn_freed) {
     alloc_count = 0;
@@ -78,9 +85,12 @@ TEST(memleak_enter_network_address_error_frees_all) {
 
     ASSERT_EQ(alloc_count, 3);
 
-    if (proto) counted_free(proto);
-    if (hn)    counted_free(hn);
-    if (sn)    counted_free(sn);
+    if (proto)
+        counted_free(proto);
+    if (hn)
+        counted_free(hn);
+    if (sn)
+        counted_free(sn);
 
     ASSERT_EQ(alloc_count, 0);
 }
@@ -98,7 +108,8 @@ TEST(memleak_enter_fd_lst_dup_frees_nm) {
     struct test_fd_lst *f1 = (struct test_fd_lst *)counted_malloc(sizeof(*f1));
     ASSERT_NOT_NULL(f1);
     f1->nm = counted_mkstrcpy("cwd");
-    f1->lo = 1; f1->hi = 0;
+    f1->lo = 1;
+    f1->hi = 0;
     f1->next = list;
     list = f1;
     ASSERT_EQ(alloc_count, 2);
@@ -106,7 +117,8 @@ TEST(memleak_enter_fd_lst_dup_frees_nm) {
     struct test_fd_lst *f2 = (struct test_fd_lst *)counted_malloc(sizeof(*f2));
     ASSERT_NOT_NULL(f2);
     f2->nm = counted_mkstrcpy("cwd");
-    f2->lo = 1; f2->hi = 0;
+    f2->lo = 1;
+    f2->hi = 0;
     ASSERT_EQ(alloc_count, 4);
 
     int is_dup = 0;
@@ -123,7 +135,8 @@ TEST(memleak_enter_fd_lst_dup_frees_nm) {
     counted_free(f2);
     ASSERT_EQ(alloc_count, 2);
 
-    if (f1->nm) counted_free(f1->nm);
+    if (f1->nm)
+        counted_free(f1->nm);
     counted_free(f1);
     ASSERT_EQ(alloc_count, 0);
 }
@@ -153,7 +166,8 @@ TEST(memleak_enter_fd_lst_dup_numeric_no_leak) {
     }
     ASSERT_TRUE(is_dup);
 
-    if (f2->nm) counted_free(f2->nm);
+    if (f2->nm)
+        counted_free(f2->nm);
     counted_free(f2);
     ASSERT_EQ(alloc_count, 1);
 
@@ -368,7 +382,8 @@ TEST(memleak_alloc_lproc_realloc_pattern) {
     int sz = 4;
     int *table = (int *)counted_malloc((size_t)(sz * sizeof(int)));
     ASSERT_NOT_NULL(table);
-    for (int i = 0; i < sz; i++) table[i] = i;
+    for (int i = 0; i < sz; i++)
+        table[i] = i;
     ASSERT_EQ(alloc_count, 1);
 
     sz += 4;
@@ -467,7 +482,8 @@ TEST(memleak_enter_id_realloc_pattern) {
     int mx = 4;
     int *s = (int *)counted_malloc((size_t)(mx * sizeof(int)));
     ASSERT_NOT_NULL(s);
-    for (int i = 0; i < mx; i++) s[i] = i * 100;
+    for (int i = 0; i < mx; i++)
+        s[i] = i * 100;
     ASSERT_EQ(alloc_count, 1);
 
     mx += 4;
@@ -547,7 +563,8 @@ TEST(memleak_dstk_realloc_pattern) {
     dstkn += 4;
     char **tmp = (char **)counted_realloc(dstk, (size_t)(dstkn * sizeof(char *)));
     if (!tmp) {
-        for (int i = 0; i < 4; i++) counted_free(dstk[i]);
+        for (int i = 0; i < 4; i++)
+            counted_free(dstk[i]);
         counted_free(dstk);
         dstk = NULL;
     } else {
@@ -556,7 +573,8 @@ TEST(memleak_dstk_realloc_pattern) {
     ASSERT_NOT_NULL(dstk);
     ASSERT_EQ(alloc_count, 5);
 
-    for (int i = 0; i < 4; i++) counted_free(dstk[i]);
+    for (int i = 0; i < 4; i++)
+        counted_free(dstk[i]);
     counted_free(dstk);
     ASSERT_EQ(alloc_count, 0);
 }
@@ -574,18 +592,21 @@ TEST(memleak_ipstate_realloc_pattern) {
     int new_nstates = 8;
     char **tmp = (char **)counted_realloc(st, (size_t)(new_nstates * sizeof(char *)));
     if (!tmp) {
-        for (int i = 0; i < nstates; i++) counted_free(st[i]);
+        for (int i = 0; i < nstates; i++)
+            counted_free(st[i]);
         counted_free(st);
         st = NULL;
     } else {
         st = tmp;
     }
     ASSERT_NOT_NULL(st);
-    for (int i = nstates; i < new_nstates; i++) st[i] = NULL;
+    for (int i = nstates; i < new_nstates; i++)
+        st[i] = NULL;
     ASSERT_EQ(alloc_count, 5);
 
     for (int i = 0; i < new_nstates; i++) {
-        if (st[i]) counted_free(st[i]);
+        if (st[i])
+            counted_free(st[i]);
     }
     counted_free(st);
     ASSERT_EQ(alloc_count, 0);
@@ -677,17 +698,21 @@ TEST(memleak_nwad_exit_frees_arg) {
     alloc_count = 0;
 
     /* Simulate the allocations present when nwad_exit is reached */
-    char *arg = counted_mkstrcpy("192.168.1.1");   /* n.arg */
-    char *proto = counted_mkstrcat("tcp", 3, NULL, -1);  /* n.proto */
-    char *hn = counted_mkstrcpy("localhost");       /* hn */
-    char *sn = counted_mkstrcpy("http");            /* sn */
+    char *arg = counted_mkstrcpy("192.168.1.1");        /* n.arg */
+    char *proto = counted_mkstrcat("tcp", 3, NULL, -1); /* n.proto */
+    char *hn = counted_mkstrcpy("localhost");           /* hn */
+    char *sn = counted_mkstrcpy("http");                /* sn */
     ASSERT_EQ(alloc_count, 4);
 
     /* nwad_exit cleanup — must free all four, including arg */
-    if (arg)   counted_free(arg);
-    if (proto) counted_free(proto);
-    if (hn)    counted_free(hn);
-    if (sn)    counted_free(sn);
+    if (arg)
+        counted_free(arg);
+    if (proto)
+        counted_free(proto);
+    if (hn)
+        counted_free(hn);
+    if (sn)
+        counted_free(sn);
     ASSERT_EQ(alloc_count, 0);
 }
 
@@ -701,10 +726,14 @@ TEST(memleak_nwad_exit_arg_null_safe) {
     char *sn = NULL;
     ASSERT_EQ(alloc_count, 1);
 
-    if (arg)   counted_free(arg);
-    if (proto) counted_free(proto);
-    if (hn)    counted_free(hn);
-    if (sn)    counted_free(sn);
+    if (arg)
+        counted_free(arg);
+    if (proto)
+        counted_free(proto);
+    if (hn)
+        counted_free(hn);
+    if (sn)
+        counted_free(sn);
     ASSERT_EQ(alloc_count, 0);
 }
 
@@ -731,14 +760,17 @@ TEST(memleak_readlink_path_too_long_frees_stack) {
                 stk = (char **)counted_malloc((size_t)(ss * sizeof(char *)));
             else {
                 char **tmp = (char **)counted_realloc(stk, (size_t)(ss * sizeof(char *)));
-                if (!tmp) { counted_free(stk); stk = NULL; }
-                else stk = tmp;
+                if (!tmp) {
+                    counted_free(stk);
+                    stk = NULL;
+                } else
+                    stk = tmp;
             }
             ASSERT_NOT_NULL(stk);
         }
         stk[sx - 1] = counted_mkstrcpy("/some/symlink/target");
     }
-    ASSERT_EQ(alloc_count, 4);  /* 1 stk array + 3 strings */
+    ASSERT_EQ(alloc_count, 4); /* 1 stk array + 3 strings */
 
     /* Simulate path_too_long cleanup (the fix) */
     for (int i = 0; i < sx; i++) {

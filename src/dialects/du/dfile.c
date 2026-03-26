@@ -3,7 +3,6 @@
  *	     lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -29,29 +28,25 @@
 
 #include "lsof.h"
 
-
-#if    defined(HASIPv6)
+#if defined(HASIPv6)
 /*
  * gethostbyname2() -- an RFC2133-compatible get-host-by-name-two function
  *		       to get AF_INET and AF_INET6 addresses from host names,
  *		       using the RFC2553-compatible getipnodebyname() function
  */
 
-extern struct hostent *
-gethostbyname2(char * nm, int prot)
-{
+extern struct hostent *gethostbyname2(char *nm, int prot) {
     int err;
     static struct hostent *hep = (struct hostent *)NULL;
 
     if (hep)
-        (void) freehostent(hep);
+        (void)freehostent(hep);
     hep = getipnodebyname(nm, prot, 0, &err);
-    return(hep);
+    return (hep);
 }
-#endif    /* defined(HASIPv6) */
+#endif /* defined(HASIPv6) */
 
-
-#if    defined(HASPRIVNMCACHE)
+#if defined(HASPRIVNMCACHE)
 /*
  * print_advfs_path() - print an ADVFS file path
  *
@@ -62,42 +57,35 @@ gethostbyname2(char * nm, int prot)
  * This function is called by the name HASPRIVNMCACHE from printname().
  */
 
-int
-print_advfs_path(struct lfile * lf)
-{
-    char buf[MAXPATHLEN+1];
+int print_advfs_path(struct lfile *lf) {
+    char buf[MAXPATHLEN + 1];
     mlBfTagT t2pb;
-/*
+    /*
  * Print any non-NULL path returned by tag_to_path() for ADVFS files that
  * have sequence and inode numbers.
  */
     if (!lf->advfs_seq_stat || lf->inp_ty != 1 || !lf->fsdir || !*lf->fsdir)
-        return(0);
+        return (0);
     t2pb.ml_ino = (int)lf->inode;
     t2pb.ml_seq = lf->advfs_seq;
     if (tag_to_path(lf->fsdir, t2pb, MAXPATHLEN, buf) || !*buf)
-        return(0);
+        return (0);
     buf[MAXPATHLEN] = '\0';
     safestrprt((buf[0] == '/' && buf[1] == '/') ? &buf[1] : buf, stdout, 0);
-    return(1);
+    return (1);
 }
-#endif    /* defined(HASPRIVNMCACHE) */
-
+#endif /* defined(HASPRIVNMCACHE) */
 
 /*
  * print_dev() - print device
  */
 
-char *
-print_dev(struct lfile * lf, dev_t * dev)
-{
+char *print_dev(struct lfile *lf, dev_t *dev) {
     static char buf[128];
 
     if (GET_MIN_DEV(*dev) > 9999999)
-        (void) snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev),
-                    GET_MIN_DEV(*dev));
+        (void)snpf(buf, sizeof(buf), "%d,%#x", GET_MAJ_DEV(*dev), GET_MIN_DEV(*dev));
     else
-        (void) snpf(buf, sizeof(buf), "%d,%d", GET_MAJ_DEV(*dev),
-                    GET_MIN_DEV(*dev));
+        (void)snpf(buf, sizeof(buf), "%d,%d", GET_MAJ_DEV(*dev), GET_MIN_DEV(*dev));
     return (buf);
 }

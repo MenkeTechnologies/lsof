@@ -30,9 +30,9 @@
 #include "test_unit_devhash.h"
 #include "test_unit_portcache.h"
 
-
 int main(int argc, char **argv) {
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 
     TEST_SUITE("LSOF UNIT TESTS");
 

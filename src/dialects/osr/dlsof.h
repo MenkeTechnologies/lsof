@@ -2,7 +2,6 @@
  * dlsof.h - SCO OpenServer header file for lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -26,14 +25,12 @@
  * 4. This notice may not be removed or altered.
  */
 
-
 /*
  * $Id: dlsof.h,v 1.14 2007/04/24 16:22:40 abe Exp $
  */
 
-
-#if    !defined(OSR_LSOF_H)
-#define    OSR_LSOF_H    1
+#if !defined(OSR_LSOF_H)
+#define OSR_LSOF_H 1
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -43,9 +40,9 @@
 #include <signal.h>
 #include <string.h>
 
-# if    OSRV >= 500
+#if OSRV >= 500
 #include <strings.h>
-# endif    /* OSRV>=500 */
+#endif /* OSRV>=500 */
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -80,15 +77,15 @@
  * minor() macros.
  */
 
-#define    xdevmap    XDEVMAP
-#define    _INKERNEL
+#define xdevmap XDEVMAP
+#define _INKERNEL
 
 #include <sys/sysmacros.h>
 
-#undef    _INKERNEL
+#undef _INKERNEL
 extern struct XDEVMAP *Xdevmap;
-#undef    xdevmap
-#define    xdevmap    Xdevmap
+#undef xdevmap
+#define xdevmap Xdevmap
 
 #include <sys/stream.h>
 #include <sys/time.h>
@@ -96,33 +93,33 @@ extern struct XDEVMAP *Xdevmap;
 #include <sys/user.h>
 #include <sys/var.h>
 
-# if    defined(HAS_NFS)
-#define	multiple_groups	1
+#if defined(HAS_NFS)
+#define multiple_groups 1
 #include <sys/fs/nfs/types.h>
 #include <sys/fs/nfs/nfs.h>
 #include <sys/fs/nfs/ucred.h>
 #include <sys/fs/nfs/rnode.h>
-# endif    /* defined(HAS_NFS) */
+#endif /* defined(HAS_NFS) */
 
 #include <sys/socket.h>
 #include <sys/net/domain.h>
 
-#undef    NOGROUP
+#undef NOGROUP
 
 #include <rpc/rpc.h>
 #include <rpc/pmap_prot.h>
 
-# if    OSRV < 500
+#if OSRV < 500
 
 #include <sys/net/protosw.h>
 #include <sys/net/socketvar.h>
 
-# else	/* OSRV>=500 */
+#else /* OSRV>=500 */
 #include <sys/protosw.h>
 #include <sys/socketvar.h>
 #include <sys/un.h>
 #include <sys/fs/hpps.h>
-# endif    /* OSRV<500 */
+#endif /* OSRV<500 */
 
 #include <sys/netinet/in.h>
 #include <sys/net/route.h>
@@ -135,54 +132,51 @@ extern struct XDEVMAP *Xdevmap;
 #include <sys/netinet/udp.h>
 #include <sys/utsname.h>
 
-#define    INKERNEL
+#define INKERNEL
 
 #include <sys/netinet/udp_var.h>
 
-#undef    INKERNEL
-
+#undef INKERNEL
 
 /*
  * Adjust for the availability of symbolic links.
  */
 
-# if    defined(HAS_STATLSTAT)
-#define	lstat	statlstat
-# else	/* !defined(HAS_STATLSTAT) */
-#define    lstat    stat
-#define    readlink(path, buf, len)    (-1)
-# endif    /* defined(HAS_STATLSTAT) */
+#if defined(HAS_STATLSTAT)
+#define lstat statlstat
+#else /* !defined(HAS_STATLSTAT) */
+#define lstat                    stat
+#define readlink(path, buf, len) (-1)
+#endif /* defined(HAS_STATLSTAT) */
 
-
-#define    COMP_P        const void
-#define DEVINCR        1024    /* device table malloc() increment */
-#define    DIRTYPE        dirent
+#define COMP_P  const void
+#define DEVINCR 1024 /* device table malloc() increment */
+#define DIRTYPE dirent
 typedef off_t KA_T;
-#define    KMEM        "/dev/kmem"
-#define MALLOC_P    void
-#define    MNTTAB        "/etc/mnttab"
-#define FREE_P        MALLOC_P
-#define MALLOC_S    size_t
+#define KMEM     "/dev/kmem"
+#define MALLOC_P void
+#define MNTTAB   "/etc/mnttab"
+#define FREE_P   MALLOC_P
+#define MALLOC_S size_t
 
-# if    !defined(MAXPATHLEN)
-#define    MAXPATHLEN    1024
-# endif    /* !defined(MAXPATHLEN) */
+#if !defined(MAXPATHLEN)
+#define MAXPATHLEN 1024
+#endif /* !defined(MAXPATHLEN) */
 
-#define MAXSEGS        100    /* maximum text segments */
-#define    MAXSYSCMDL    (PSCOMSIZ - 1)    /* max system command name length */
+#define MAXSEGS    100            /* maximum text segments */
+#define MAXSYSCMDL (PSCOMSIZ - 1) /* max system command name length */
 
-# if    OSRV < 500
-#define    N_UNIX        "/unix"
-# endif    /* OSRV<500 */
+#if OSRV < 500
+#define N_UNIX "/unix"
+#endif /* OSRV<500 */
 
-#define    PROCBFRD    16    /* count of proc structures buffered */
-#define    PROCSIZE    sizeof(struct proc)
-#define QSORT_P        void
-#define    READLEN_T    unsigned
-#define STRNCPY_L    size_t
-#define    STRNML        32
-#define U_SIZE        sizeof(struct user)
-
+#define PROCBFRD  16 /* count of proc structures buffered */
+#define PROCSIZE  sizeof(struct proc)
+#define QSORT_P   void
+#define READLEN_T unsigned
+#define STRNCPY_L size_t
+#define STRNML    32
+#define U_SIZE    sizeof(struct user)
 
 /*
  * Global storage definitions (including their structure definitions)
@@ -201,41 +195,40 @@ extern int Hz;
 extern int Kd;
 extern KA_T Lbolt;
 
-extern int nxdevmaps;            /* maximum kernel xdevmap[] index */
+extern int nxdevmaps; /* maximum kernel xdevmap[] index */
 
 struct mounts {
-    char *dir;            /* directory (mounted on) */
-    char *fsname;            /* file system
+    char *dir;           /* directory (mounted on) */
+    char *fsname;        /* file system
 					 * (symbolic links unresolved) */
-    char *fsnmres;            /* file system
+    char *fsnmres;       /* file system
 					 * (symbolic links resolved) */
-    dev_t dev;            /* directory st_dev */
-    dev_t rdev;            /* directory st_rdev */
-    INODETYPE inode;        /* directory st_ino */
-    mode_t mode;            /* directory st_mode */
-    mode_t fs_mode;            /* file system st_mode */
-    struct mounts *next;        /* forward link */
+    dev_t dev;           /* directory st_dev */
+    dev_t rdev;          /* directory st_rdev */
+    INODETYPE inode;     /* directory st_ino */
+    mode_t mode;         /* directory st_mode */
+    mode_t fs_mode;      /* file system st_mode */
+    struct mounts *next; /* forward link */
 
-# if    defined(HASFSTYPE)
-    char *fstype;			/* st_fstype */
-# endif
-
+#if defined(HASFSTYPE)
+    char *fstype; /* st_fstype */
+#endif
 };
 
-#define    NL_NAME        n_name        /* name element in struct nlist */
+#define NL_NAME n_name /* name element in struct nlist */
 
 struct sfile {
-    char *aname;            /* argument file name */
-    char *name;            /* file name (after readlink()) */
-    char *devnm;            /* device name (optional) */
-    dev_t dev;            /* device */
-    dev_t rdev;            /* raw device */
-    mode_t mode;            /* S_IFMT mode bits from stat() */
-    int type;            /* file type: 0 = file system
+    char *aname;        /* argument file name */
+    char *name;         /* file name (after readlink()) */
+    char *devnm;        /* device name (optional) */
+    dev_t dev;          /* device */
+    dev_t rdev;         /* raw device */
+    mode_t mode;        /* S_IFMT mode bits from stat() */
+    int type;           /* file type: 0 = file system
 				 	 *	      1 = regular file */
-    INODETYPE i;            /* inode number */
-    int f;                /* file found flag */
-    struct sfile *next;        /* forward link */
+    INODETYPE i;        /* inode number */
+    int f;              /* file found flag */
+    struct sfile *next; /* forward link */
 };
 
 extern int Sockdev;
@@ -245,15 +238,15 @@ extern KA_T Socktab;
  * Definitions for dvch.c, isfn.c, and rdev.c
  */
 
-#define    CLONEMAJ    CloneMajor    /* clone major variable name */
+#define CLONEMAJ CloneMajor /* clone major variable name */
 
-# if    defined(HASDCACHE)
-#  if	OSRV<500
-#define	DVCH_CHOWN	1		/* no fchown() below release 5.0 */
-#  endif	/* OSRV<500 */
-# endif    /* defined(HASDCACHE) */
+#if defined(HASDCACHE)
+#if OSRV < 500
+#define DVCH_CHOWN 1 /* no fchown() below release 5.0 */
+#endif               /* OSRV<500 */
+#endif               /* defined(HASDCACHE) */
 
-#define    HAS_STD_CLONE    1        /* has standard clone structure */
-#define    HAVECLONEMAJ    HaveCloneMajor    /* clone major status variable name */
+#define HAS_STD_CLONE 1              /* has standard clone structure */
+#define HAVECLONEMAJ  HaveCloneMajor /* clone major status variable name */
 
-#endif    /* OSR_LSOF_H	*/
+#endif /* OSR_LSOF_H	*/

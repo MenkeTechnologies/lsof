@@ -2,7 +2,6 @@
  * dnode.c - Linux node functions for /proc-based lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -28,17 +27,16 @@
 
 #include "lsof.h"
 
-
 /*
  * Local definitions
  */
 
-#define    OFFSET_MAX    ((off_t)0x7fffffff)    /* this is defined in
+#define OFFSET_MAX \
+    ((off_t)0x7fffffff) /* this is defined in
 						 * .../src/fs/locks.c and not
 						 * in a header file */
-#define    PIDBUCKS    64            /* PID hash buckets */
-#define    HASHPID(pid)    (((int)((pid * 31415) >> 3)) & (PIDBUCKS - 1))
-
+#define PIDBUCKS     64 /* PID hash buckets */
+#define HASHPID(pid) (((int)((pid * 31415) >> 3)) & (PIDBUCKS - 1))
 
 /*
  * Local structure definitions
@@ -52,13 +50,11 @@ struct llock {
     struct llock *next;
 };
 
-
 /*
  * Local definitions
  */
 
-struct llock **LckH = (struct llock **) NULL; /* PID-hashed locks */
-
+struct llock **LckH = (struct llock **)NULL; /* PID-hashed locks */
 
 /*
  * Local function prototypes
@@ -66,52 +62,49 @@ struct llock **LckH = (struct llock **) NULL; /* PID-hashed locks */
 
 _PROTOTYPE(static void check_lock, (void));
 
-
 /*
  * check_lock() - check lock for file *CurrentLocalFile, process *CurrentLocalProc
  */
 
-static void
-check_lock() {
+static void check_lock() {
     int h;
     struct llock *lp;
 
     h = HASHPID(CurrentLocalProc->pid);
     for (lp = LckH[h]; lp; lp = lp->next) {
-        if (CurrentLocalProc->pid == lp->pid
-            && CurrentLocalFile->dev == lp->dev
-            && CurrentLocalFile->inode == lp->inode) {
+        if (CurrentLocalProc->pid == lp->pid && CurrentLocalFile->dev == lp->dev &&
+            CurrentLocalFile->inode == lp->inode) {
             CurrentLocalFile->lock = lp->type;
             return;
         }
     }
 }
 
-
 /*
  * get_fields() - separate a line into fields
  */
 
-int
-get_fields(ln, sep, fr, eb, en)
-        char *ln;            /* input line */
-        char *sep;            /* separator list */
-        char ***fr;            /* field pointer return address */
-        int *eb;            /* indexes of fields where blank or an
+int get_fields(ln, sep, fr, eb, en)
+char *ln;   /* input line */
+char *sep;  /* separator list */
+char ***fr; /* field pointer return address */
+int *eb;    /* indexes of fields where blank or an
 					 * entry from the separator list may be
 					 * embedded and are not separators
 					 * (may be NULL) */
-        int en;                /* number of entries in eb[] (may be
+int en;     /* number of entries in eb[] (may be
 					 * zero) */
 {
     char *bp, *cp, *sp;
     int i, j, n;
     MALLOC_S len;
-    static char **fp = (char **) NULL;
+    static char **fp = (char **)NULL;
     static int nfpa = 0;
 
     for (cp = ln, n = 0; cp && *cp;) {
-        for (bp = cp; *bp && (*bp == ' ' || *bp == '\t'); bp++);;
+        for (bp = cp; *bp && (*bp == ' ' || *bp == '\t'); bp++)
+            ;
+        ;
         if (!*bp || *bp == '\n')
             break;
         for (cp = bp; *cp; cp++) {
@@ -119,7 +112,7 @@ get_fields(ln, sep, fr, eb, en)
                 *cp = '\0';
                 break;
             }
-            if (*cp == '\t')    /* TAB is always a separator */
+            if (*cp == '\t') /* TAB is always a separator */
                 break;
             if (*cp == ' ') {
 
@@ -174,13 +167,12 @@ get_fields(ln, sep, fr, eb, en)
             nfpa += 32;
             len = (MALLOC_S)(nfpa * sizeof(char *));
             if (fp)
-                fp = (char **) realloc((MALLOC_P *) fp, len);
+                fp = (char **)realloc((MALLOC_P *)fp, len);
             else
-                fp = (char **) malloc(len);
+                fp = (char **)malloc(len);
             if (!fp) {
-                (void) fprintf(stderr,
-                               "%s: can't allocate %d bytes for field pointers.\n",
-                               ProgramName, (int) len);
+                (void)fprintf(stderr, "%s: can't allocate %d bytes for field pointers.\n",
+                              ProgramName, (int)len);
                 Exit(1);
             }
         }
@@ -190,14 +182,11 @@ get_fields(ln, sep, fr, eb, en)
     return (n);
 }
 
-
 /*
  * get_locks() - get lock information from /proc/locks
  */
 
-void
-get_locks(char * p)
-{
+void get_locks(char *p) {
     unsigned long bp, ep;
     char buf[MAXPATHLEN], *ec, **fp;
     dev_t dev;
@@ -207,41 +196,39 @@ get_locks(char * p)
     FILE *ls;
     long maj, min;
     char type;
-    static char *vbuf = (char *) NULL;
-    static size_t vsz = (size_t) 0;
-/*
+    static char *vbuf = (char *)NULL;
+    static size_t vsz = (size_t)0;
+    /*
  * Destroy previous lock information.
  */
     if (LckH) {
         for (i = 0; i < PIDBUCKS; i++) {
             for (lp = LckH[i]; lp; lp = np) {
                 np = lp->next;
-                (void) free((FREE_P *) lp);
+                (void)free((FREE_P *)lp);
             }
-            LckH[i] = (struct llock *) NULL;
+            LckH[i] = (struct llock *)NULL;
         }
     } else {
 
         /*
          * If first time, allocate the lock PID hash buckets.
          */
-        LckH = (struct llock **) calloc((MALLOC_S) PIDBUCKS,
-                                        sizeof(struct llock *));
+        LckH = (struct llock **)calloc((MALLOC_S)PIDBUCKS, sizeof(struct llock *));
         if (!LckH) {
-            (void) fprintf(stderr,
-                           "%s: can't allocate %d lock hash bytes\n",
-                           ProgramName, (int) (sizeof(struct llock *) * PIDBUCKS));
+            (void)fprintf(stderr, "%s: can't allocate %d lock hash bytes\n", ProgramName,
+                          (int)(sizeof(struct llock *) * PIDBUCKS));
             Exit(1);
         }
     }
-/*
+    /*
  * Open the /proc lock file, assign a page size buffer to its stream,
  * and read it.
  */
     if (!(ls = open_proc_stream(p, "r", &vbuf, &vsz, 0)))
         return;
     while (fgets(buf, sizeof(buf), ls)) {
-        if (get_fields(buf, ":", &fp, (int *) NULL, 0) < 10)
+        if (get_fields(buf, ":", &fp, (int *)NULL, 0) < 10)
             continue;
         if (!fp[1] || strcmp(fp[1], "->") == 0)
             continue;
@@ -265,41 +252,37 @@ get_locks(char * p)
         /*
          * Get device number.
          */
-        ec = (char *) NULL;
-        if (!fp[5] || !*fp[5]
-            || (maj = strtol(fp[5], &ec, 16)) == LONG_MIN || maj == LONG_MAX
-            || !ec || *ec)
+        ec = (char *)NULL;
+        if (!fp[5] || !*fp[5] || (maj = strtol(fp[5], &ec, 16)) == LONG_MIN || maj == LONG_MAX ||
+            !ec || *ec)
             continue;
-        ec = (char *) NULL;
-        if (!fp[6] || !*fp[6]
-            || (min = strtol(fp[6], &ec, 16)) == LONG_MIN || min == LONG_MAX
-            || !ec || *ec)
+        ec = (char *)NULL;
+        if (!fp[6] || !*fp[6] || (min = strtol(fp[6], &ec, 16)) == LONG_MIN || min == LONG_MAX ||
+            !ec || *ec)
             continue;
-        dev = (dev_t) makedev((int) maj, (int) min);
+        dev = (dev_t)makedev((int)maj, (int)min);
         /*
          * Get inode number.
          */
-        ec = (char *) NULL;
-        if (!fp[7] || !*fp[7]
-            || (inode = strtoull(fp[7], &ec, 0)) == ULONG_MAX
-            || !ec || *ec)
+        ec = (char *)NULL;
+        if (!fp[7] || !*fp[7] || (inode = strtoull(fp[7], &ec, 0)) == ULONG_MAX || !ec || *ec)
             continue;
         /*
          * Get lock extent.  Convert it and the lock type to a lock character.
          */
         if (!fp[8] || !*fp[8] || !fp[9] || !*fp[9])
             continue;
-        ec = (char *) NULL;
+        ec = (char *)NULL;
         if ((bp = strtoul(fp[8], &ec, 0)) == ULONG_MAX || !ec || *ec)
             continue;
-        if (!strcmp(fp[9], "EOF"))        /* for Linux 2.4.x */
+        if (!strcmp(fp[9], "EOF")) /* for Linux 2.4.x */
             ep = OFFSET_MAX;
         else {
-            ec = (char *) NULL;
+            ec = (char *)NULL;
             if ((ep = strtoul(fp[9], &ec, 0)) == ULONG_MAX || !ec || *ec)
                 continue;
         }
-        ex = ((off_t) bp == (off_t) 0 && (off_t) ep == OFFSET_MAX) ? 1 : 0;
+        ex = ((off_t)bp == (off_t)0 && (off_t)ep == OFFSET_MAX) ? 1 : 0;
         if (mode)
             type = ex ? 'W' : 'w';
         else
@@ -309,10 +292,7 @@ get_locks(char * p)
          */
         h = HASHPID(pid);
         for (lp = LckH[h]; lp; lp = lp->next) {
-            if (lp->pid == pid
-                && lp->dev == dev
-                && lp->inode == inode
-                && lp->type == type)
+            if (lp->pid == pid && lp->dev == dev && lp->inode == inode && lp->type == type)
                 break;
         }
         if (lp)
@@ -320,11 +300,10 @@ get_locks(char * p)
         /*
          * Allocate a new llock structure and link it to the PID hash bucket.
          */
-        if (!(lp = (struct llock *) malloc(sizeof(struct llock)))) {
-            (void) snpf(buf, sizeof(buf), InodeFormatDecimal, inode);
-            (void) fprintf(stderr,
-                           "%s: can't allocate llock: PID %d; dev %x; inode %s\n",
-                           ProgramName, pid, (int) dev, buf);
+        if (!(lp = (struct llock *)malloc(sizeof(struct llock)))) {
+            (void)snpf(buf, sizeof(buf), InodeFormatDecimal, inode);
+            (void)fprintf(stderr, "%s: can't allocate llock: PID %d; dev %x; inode %s\n",
+                          ProgramName, pid, (int)dev, buf);
             Exit(1);
         }
         lp->pid = pid;
@@ -334,30 +313,27 @@ get_locks(char * p)
         lp->next = LckH[h];
         LckH[h] = lp;
     }
-    (void) fclose(ls);
+    (void)fclose(ls);
 }
-
 
 /*
  * process_proc_node() - process file node
  */
 
-void
-process_proc_node(p, s, ss, l, ls)
-        char *p;            /* node's readlink() path */
-        struct stat *s;            /* stat() result for path */
-        int ss;                /* *s status -- i.e., SB_* values */
-        struct stat *l;            /* lstat() result for FD (NULL for
+void process_proc_node(p, s, ss, l, ls) char *p; /* node's readlink() path */
+struct stat *s;                                  /* stat() result for path */
+int ss;                                          /* *s status -- i.e., SB_* values */
+struct stat *l;                                  /* lstat() result for FD (NULL for
 					 * others) */
-        int ls;                /* *l status -- i.e., SB_* values */
+int ls;                                          /* *l status -- i.e., SB_* values */
 {
     mode_t access;
     mode_t type = 0;
     char *cp;
-    struct mounts *mp = (struct mounts *) NULL;
+    struct mounts *mp = (struct mounts *)NULL;
     size_t sz;
     char *tn;
-/*
+    /*
  * Set the access mode, if possible.
  */
     if (l && (ls & SB_MODE) && ((l->st_mode & S_IFMT) == S_IFLNK)) {
@@ -368,29 +344,29 @@ process_proc_node(p, s, ss, l, ls)
         else
             CurrentLocalFile->access = 'u';
     }
-/*
+    /*
  * Determine node type.
  */
     if (ss & SB_MODE) {
         type = s->st_mode & S_IFMT;
         switch (type) {
-            case S_IFBLK:
-                NodeType = N_BLK;
-                break;
-            case S_IFCHR:
-                NodeType = N_CHR;
-                break;
-            case S_IFIFO:
-                NodeType = N_FIFO;
-                break;
-            case S_IFSOCK:
-                process_proc_sock(p, s, ss, l, ls);
-                return;
+        case S_IFBLK:
+            NodeType = N_BLK;
+            break;
+        case S_IFCHR:
+            NodeType = N_CHR;
+            break;
+        case S_IFIFO:
+            NodeType = N_FIFO;
+            break;
+        case S_IFSOCK:
+            process_proc_sock(p, s, ss, l, ls);
+            return;
         }
     }
     if (SelectInetOnly)
         return;
-/*
+    /*
  * Save the device.  If it is an NFS device, change the node type to N_NFS.
  */
     if (ss & SB_DEV) {
@@ -405,118 +381,115 @@ process_proc_node(p, s, ss, l, ls)
     }
     if (NodeType == N_REGLR && (HasNFS == 2)) {
         for (mp = readmnt(); mp; mp = mp->next) {
-            if ((mp->ty == N_NFS)
-                && (mp->ds & SB_DEV) && (CurrentLocalFile->dev == mp->dev)
-                    ) {
+            if ((mp->ty == N_NFS) && (mp->ds & SB_DEV) && (CurrentLocalFile->dev == mp->dev)) {
                 NodeType = N_NFS;
                 break;
             }
         }
     }
-/*
+    /*
  * Save the inode number.
  */
     if (ss & SB_INO) {
-        CurrentLocalFile->inode = (INODETYPE) s->st_ino;
+        CurrentLocalFile->inode = (INODETYPE)s->st_ino;
         CurrentLocalFile->inp_ty = 1;
     }
-/*
+    /*
  * Check for a lock.
  */
     if (CurrentLocalFile->dev_def && (CurrentLocalFile->inp_ty == 1))
-        (void) check_lock();
-/*
+        (void)check_lock();
+    /*
  * Save the file size.
  */
     switch (NodeType) {
-        case N_BLK:
-        case N_CHR:
-        case N_FIFO:
-            if (!OptSize && l && (ls & SB_SIZE) && OffType) {
-                CurrentLocalFile->off = (SZOFFTYPE) l->st_size;
+    case N_BLK:
+    case N_CHR:
+    case N_FIFO:
+        if (!OptSize && l && (ls & SB_SIZE) && OffType) {
+            CurrentLocalFile->off = (SZOFFTYPE)l->st_size;
+            CurrentLocalFile->off_def = 1;
+        }
+        break;
+    default:
+        if (OptOffset) {
+            if (l && (ls & SB_SIZE) && OffType) {
+                CurrentLocalFile->off = (SZOFFTYPE)l->st_size;
                 CurrentLocalFile->off_def = 1;
             }
-            break;
-        default:
-            if (OptOffset) {
-                if (l && (ls & SB_SIZE) && OffType) {
-                    CurrentLocalFile->off = (SZOFFTYPE) l->st_size;
-                    CurrentLocalFile->off_def = 1;
-                }
-            } else if (!OptOffset || OptSize) {
-                if (ss & SB_SIZE) {
-                    CurrentLocalFile->sz = (SZOFFTYPE) s->st_size;
-                    CurrentLocalFile->sz_def = 1;
-                }
+        } else if (!OptOffset || OptSize) {
+            if (ss & SB_SIZE) {
+                CurrentLocalFile->sz = (SZOFFTYPE)s->st_size;
+                CurrentLocalFile->sz_def = 1;
             }
+        }
     }
-/*
+    /*
  * Record the link count.
  */
     if (OptLinkCount && (ss & SB_NLINK)) {
-        CurrentLocalFile->nlink = (long) s->st_nlink;
+        CurrentLocalFile->nlink = (long)s->st_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
             CurrentLocalFile->sel_flags |= SELNLINK;
     }
-/*
+    /*
  * Format the type name.
  */
     if (ss & SB_MODE) {
         switch (type) {
-            case S_IFBLK:
-                tn = "BLK";
-                break;
-            case S_IFCHR:
-                tn = "CHR";
-                break;
-            case S_IFDIR:
-                tn = "DIR";
-                break;
-            case S_IFIFO:
-                tn = "FIFO";
-                break;
-            case S_IFREG:
-                tn = "REG";
-                break;
-            case S_IFLNK:
-                tn = "LINK";
-                break;
-            case S_ISVTX:
-                tn = "VTXT";
-                break;
-            default:
-                (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o",
-                            ((type >> 12) & 0xf));
-                tn = (char *) NULL;
+        case S_IFBLK:
+            tn = "BLK";
+            break;
+        case S_IFCHR:
+            tn = "CHR";
+            break;
+        case S_IFDIR:
+            tn = "DIR";
+            break;
+        case S_IFIFO:
+            tn = "FIFO";
+            break;
+        case S_IFREG:
+            tn = "REG";
+            break;
+        case S_IFLNK:
+            tn = "LINK";
+            break;
+        case S_ISVTX:
+            tn = "VTXT";
+            break;
+        default:
+            (void)snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%04o",
+                       ((type >> 12) & 0xf));
+            tn = (char *)NULL;
         }
     } else
         tn = "unknown";
     if (tn)
-        (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", tn);
+        (void)snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "%s", tn);
     CurrentLocalFile->ntype = NodeType;
-/*
+    /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
         CurrentLocalFile->sel_flags |= SELNFS;
-/*
+    /*
  * Test for specified file.
  */
-    if (SearchFileChain
-        && is_file_named((char *) NULL,
-                         ((type == S_IFCHR) || (type == S_IFBLK)) ? 1 : 0))
+    if (SearchFileChain &&
+        is_file_named((char *)NULL, ((type == S_IFCHR) || (type == S_IFBLK)) ? 1 : 0))
         CurrentLocalFile->sel_flags |= SELNM;
-/*
+    /*
  * If no NAME information has been stored, store the path.
  *
  * Store the remote host and mount point for an NFS file.
  */
     if (!NameChars[0]) {
-        (void) snpf(NameChars, NameCharsLength, "%s", p);
+        (void)snpf(NameChars, NameCharsLength, "%s", p);
         if ((NodeType == N_NFS) && mp && mp->fsname) {
             cp = endnm(&sz);
-            (void) snpf(cp, sz, " (%s)", mp->fsname);
+            (void)snpf(cp, sz, " (%s)", mp->fsname);
         }
     }
     if (NameChars[0])

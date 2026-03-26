@@ -8,18 +8,18 @@
  * February, 1998
  */
 
-#if    !defined(LSOF_LLA_H)
-#define    LSOF_LLA_H
+#if !defined(LSOF_LLA_H)
+#define LSOF_LLA_H
 
 #include "kernbits.h"
 #include <sys/types.h>
 
-#define    LLA_IS_ETHER    0x1
-#define    LLA_FWRITE    0x100
-#define    LLA_FREAD    0x200
-#define    LLA_IS_8025    0x800
-#define    LLA_IS_SNAP8025    0x1000
-#define    LLA_IS_FA8025    0x4000
+#define LLA_IS_ETHER    0x1
+#define LLA_FWRITE      0x100
+#define LLA_FREAD       0x200
+#define LLA_IS_8025     0x800
+#define LLA_IS_SNAP8025 0x1000
+#define LLA_IS_FA8025   0x4000
 
 typedef struct lla_hdr {
     union {
@@ -80,7 +80,7 @@ typedef struct lla_cb {
     struct lla_hdr packet_header;
     short lla_msgsqd;
     short lla_maxmsgs;
-    u_short lla_flags;        /* flags, including type  -- i.e.,
+    u_short lla_flags; /* flags, including type  -- i.e.,
 					 * the LLA_* symbols defined above */
     short hdr_size;
     int func_addr;

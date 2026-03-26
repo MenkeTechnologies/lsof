@@ -8,9 +8,7 @@
 #define TEST_UNIT_STRINGS_H
 
 /* ===== safe_string_length() reimplementation ===== */
-static int
-test_safe_string_length(char *string_ptr, int flags)
-{
+static int test_safe_string_length(char *string_ptr, int flags) {
     char non_print_marker;
     int safe_len = 0;
 
@@ -109,23 +107,30 @@ TEST(safestrlen_space_as_nonprint) {
     ASSERT_EQ(test_safe_string_length(" ", 2), 4);
 }
 
-
 /* ===== safe_print_unprintable() reimplementation ===== */
 static char safepup_buf[8];
 
-static char *
-test_safe_print_unprintable(unsigned int char_code, int *output_length)
-{
+static char *test_safe_print_unprintable(unsigned int char_code, int *output_length) {
     int encoded_len;
     char *result_str;
 
     if (char_code < 0x20) {
         switch (char_code) {
-        case '\b': result_str = "\\b"; break;
-        case '\f': result_str = "\\f"; break;
-        case '\n': result_str = "\\n"; break;
-        case '\r': result_str = "\\r"; break;
-        case '\t': result_str = "\\t"; break;
+        case '\b':
+            result_str = "\\b";
+            break;
+        case '\f':
+            result_str = "\\f";
+            break;
+        case '\n':
+            result_str = "\\n";
+            break;
+        case '\r':
+            result_str = "\\r";
+            break;
+        case '\t':
+            result_str = "\\t";
+            break;
         default:
             snprintf(safepup_buf, sizeof(safepup_buf), "^%c", char_code + 0x40);
             result_str = safepup_buf;
@@ -222,7 +227,6 @@ TEST(safepup_del_char) {
     ASSERT_FALSE(isprint(0x7f));
 }
 
-
 /* ===== safestrprt() output test ===== */
 TEST(safestrprt_printable_to_buffer) {
     FILE *f = tmpfile();
@@ -252,11 +256,8 @@ TEST(safestrprt_control_char_format) {
     fclose(f);
 }
 
-
 /* ===== make_string_copy() reimplementation ===== */
-static char *
-test_make_string_copy(char *source, size_t *result_length)
-{
+static char *test_make_string_copy(char *source, size_t *result_length) {
     size_t length = (size_t)(source ? strlen(source) : 0);
     char *new_str = (char *)malloc(length + 1);
     if (new_str) {
@@ -325,12 +326,9 @@ TEST(mkstrcpy_is_independent_copy) {
     free(copy);
 }
 
-
 /* ===== make_string_concat() reimplementation ===== */
-static char *
-test_make_string_concat(char *str1, int len1_limit, char *str2, int len2_limit,
-                        char *str3, int len3_limit, size_t *total_length)
-{
+static char *test_make_string_concat(char *str1, int len1_limit, char *str2, int len2_limit,
+                                     char *str3, int len3_limit, size_t *total_length) {
     size_t len1 = str1 ? (size_t)((len1_limit >= 0) ? len1_limit : (int)strlen(str1)) : 0;
     size_t len2 = str2 ? (size_t)((len2_limit >= 0) ? len2_limit : (int)strlen(str2)) : 0;
     size_t len3 = str3 ? (size_t)((len3_limit >= 0) ? len3_limit : (int)strlen(str3)) : 0;
@@ -338,12 +336,22 @@ test_make_string_concat(char *str1, int len1_limit, char *str2, int len2_limit,
     char *result = (char *)malloc(combined_len + 1);
     if (result) {
         char *write_pos = result;
-        if (str1 && len1) { memcpy(write_pos, str1, len1); write_pos += len1; }
-        if (str2 && len2) { memcpy(write_pos, str2, len2); write_pos += len2; }
-        if (str3 && len3) { memcpy(write_pos, str3, len3); write_pos += len3; }
+        if (str1 && len1) {
+            memcpy(write_pos, str1, len1);
+            write_pos += len1;
+        }
+        if (str2 && len2) {
+            memcpy(write_pos, str2, len2);
+            write_pos += len2;
+        }
+        if (str3 && len3) {
+            memcpy(write_pos, str3, len3);
+            write_pos += len3;
+        }
         *write_pos = '\0';
     }
-    if (total_length) *total_length = combined_len;
+    if (total_length)
+        *total_length = combined_len;
     return result;
 }
 
@@ -427,8 +435,10 @@ TEST(mkstrcat_only_third) {
 
 TEST(mkstrcat_long_concat) {
     char a[128], b[128];
-    memset(a, 'A', 127); a[127] = '\0';
-    memset(b, 'B', 127); b[127] = '\0';
+    memset(a, 'A', 127);
+    a[127] = '\0';
+    memset(b, 'B', 127);
+    b[127] = '\0';
     size_t len = 0;
     char *result = test_make_string_concat(a, -1, b, -1, NULL, -1, &len);
     ASSERT_NOT_NULL(result);

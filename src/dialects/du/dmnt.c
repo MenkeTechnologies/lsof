@@ -3,7 +3,6 @@
  *	    lsof
  */
 
-
 /*
  *
  * Written by Jacob Menke
@@ -29,26 +28,23 @@
 
 #include "lsof.h"
 
-#undef    KERNEL
+#undef KERNEL
 
-#include <sys/fs_types.h>        /* this defines char *mnt_names[] */
-
+#include <sys/fs_types.h> /* this defines char *mnt_names[] */
 
 /*
  * Local static definitions
  */
 
-static struct mounts *Lmi = (struct mounts *) NULL;    /* local mount info */
-static int Lmist = 0;                    /* Lmi status */
-
+static struct mounts *Lmi = (struct mounts *)NULL; /* local mount info */
+static int Lmist = 0;                              /* Lmi status */
 
 /*
  * readmnt() - read mount table
  */
 
-struct mounts *
-readmnt() {
-    char *dn = (char *) NULL;
+struct mounts *readmnt() {
+    char *dn = (char *)NULL;
     char *ln;
     struct statfs *mb;
     struct mounts *mtp;
@@ -58,14 +54,14 @@ readmnt() {
 
     if (Lmi || Lmist)
         return (Lmi);
-/*
+    /*
  * Access mount information.
  */
     if ((n = getmntinfo(&mb, MNT_NOWAIT)) <= 0) {
-        (void) fprintf(stderr, "%s: no mount information\n", ProgramName);
+        (void)fprintf(stderr, "%s: no mount information\n", ProgramName);
         return (0);
     }
-/*
+    /*
  * Read mount information.
  */
     for (; n; n--, mb++) {
@@ -84,7 +80,8 @@ readmnt() {
              */
             if ((ln = strchr(mb->f_mntfromname, ':'))) {
                 if (strncmp(ln + 1, "(pid", 4) == 0 && isdigit(*(ln + 5))) {
-                    for (ln += 6; *ln && isdigit(*ln); ln++) { ;
+                    for (ln += 6; *ln && isdigit(*ln); ln++) {
+                        ;
                     }
                     if (*ln == ')' && *(ln + 1) == '\0')
                         continue;
@@ -94,8 +91,7 @@ readmnt() {
              * Another automounter mount-from name form is "amd:<n>" --
              * where <n> is the PID of the automounter process.
              */
-            if (strncmp(mb->f_mntfromname, "amd:", 4) == 0
-                && isdigit(mb->f_mntfromname[4])) {
+            if (strncmp(mb->f_mntfromname, "amd:", 4) == 0 && isdigit(mb->f_mntfromname[4])) {
                 ln = &mb->f_mntfromname[5];
                 while (*ln && isdigit(*ln)) {
                     ln++;
@@ -108,27 +104,26 @@ readmnt() {
          * Interpolate a possible symbolic directory link.
          */
         if (dn)
-            (void) free((FREE_P *) dn);
-        if (!(dn = mkstrcpy(mb->f_mntonname, (MALLOC_S *) NULL))) {
+            (void)free((FREE_P *)dn);
+        if (!(dn = mkstrcpy(mb->f_mntonname, (MALLOC_S *)NULL))) {
 
-            no_space_for_mount:
+        no_space_for_mount:
 
-            (void) fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(mb->f_mntonname, stderr, 0);
-            (void) fprintf(stderr, " (");
+            (void)fprintf(stderr, " (");
             safestrprt(mb->f_mntfromname, stderr, 0);
-            (void) fprintf(stderr, ")\n");
+            (void)fprintf(stderr, ")\n");
             Exit(1);
         }
         if (!(ln = Readlink(dn))) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             continue;
         }
         if (ln != dn) {
-            (void) free((FREE_P *) dn);
+            (void)free((FREE_P *)dn);
             dn = ln;
         }
         if (*dn != '/')
@@ -138,27 +133,23 @@ readmnt() {
          */
         if (statsafely(dn, &sb)) {
             if (!OptWarnings) {
-                (void) fprintf(stderr,
-                               "%s: WARNING: can't stat() %s file system: ",
-                               ProgramName, mnt_names[mb->f_type]);
+                (void)fprintf(stderr, "%s: WARNING: can't stat() %s file system: ", ProgramName,
+                              mnt_names[mb->f_type]);
                 safestrprt(mb->f_mntonname, stderr, 1);
-                (void) fprintf(stderr,
-                               "      Output information may be incomplete.\n");
+                (void)fprintf(stderr, "      Output information may be incomplete.\n");
             }
             if (mb->f_type != MOUNT_PROCFS
 
-                #if    !defined(ADVFSV) || ADVFSV < 400
+#if !defined(ADVFSV) || ADVFSV < 400
                 && mb->f_type != MOUNT_MSFS
-#endif    /* !defined(ADVFSV) || ADVFSV<400 */
+#endif /* !defined(ADVFSV) || ADVFSV<400 */
 
-                    ) {
-                memset((char *) &sb, 0, sizeof(sb));
-                sb.st_dev = (dev_t) mb->f_fsid.val[0];
+            ) {
+                memset((char *)&sb, 0, sizeof(sb));
+                sb.st_dev = (dev_t)mb->f_fsid.val[0];
                 sb.st_mode = S_IFDIR | 0777;
                 if (!OptWarnings) {
-                    (void) fprintf(stderr,
-                                   "      assuming dev=%x from mount table\n",
-                                   sb.st_dev);
+                    (void)fprintf(stderr, "      assuming dev=%x from mount table\n", sb.st_dev);
                 }
             } else
                 continue;
@@ -166,24 +157,24 @@ readmnt() {
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *) malloc(sizeof(struct mounts))))
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
             goto no_space_for_mount;
         mtp->dir = dn;
-        dn = (char *) NULL;
+        dn = (char *)NULL;
         mtp->dev = sb.st_dev;
         mtp->fsid = mb->f_fsid;
-        mtp->inode = (INODETYPE) sb.st_ino;
+        mtp->inode = (INODETYPE)sb.st_ino;
         mtp->mode = sb.st_mode;
         mtp->next = Lmi;
         mtp->rdev = sb.st_rdev;
         /*
          * Interpolate a possible file system (mounted-on) device path.
          */
-        if (!(dn = mkstrcpy(mb->f_mntfromname, (MALLOC_S *) NULL)))
+        if (!(dn = mkstrcpy(mb->f_mntfromname, (MALLOC_S *)NULL)))
             goto no_space_for_mount;
         mtp->fsname = dn;
         ln = Readlink(dn);
-        dn = (char *) NULL;
+        dn = (char *)NULL;
         /*
          * Stat the file system (mounted-on) name and add file sysem
          * information to the local mount table.
@@ -199,106 +190,99 @@ readmnt() {
              * Save information on exactly one procfs file system.
              */
             if (procfs)
-                Mtprocfs = (struct mounts *) NULL;
+                Mtprocfs = (struct mounts *)NULL;
             else {
                 procfs = 1;
                 Mtprocfs = mtp;
             }
         }
     }
-/*
+    /*
  * Clean up and return the local mount info table address.
  */
     if (dn)
-        (void) free((FREE_P *) dn);
+        (void)free((FREE_P *)dn);
     Lmist = 1;
     return (Lmi);
 }
-
 
 /*
  * readvfs() - read vfs structure
  */
 
-struct l_vfs *
-readvfs(KA_T vm)
-{
+struct l_vfs *readvfs(KA_T vm) {
     struct mount m;
     struct l_vfs *vp;
     fsid_t f;
     struct mounts *mp;
 
-#if    DUV >= 40000
+#if DUV >= 40000
     int bl;
-    char fb[MAX_MNT_PATHLEN+1];
-    char ob[MAX_MNT_PATHLEN+1];
-#endif    /* DUV>=40000 */
+    char fb[MAX_MNT_PATHLEN + 1];
+    char ob[MAX_MNT_PATHLEN + 1];
+#endif /* DUV>=40000 */
 
-/*
+    /*
  * Search for match on existing entry.
  */
     for (vp = Lvfs; vp; vp = vp->next) {
         if (vm == vp->addr)
             return (vp);
     }
-/*
+    /*
  * Read the (new) mount structure, allocate a local entry, and fill it.
  */
-    if (kread((KA_T) vm, (char *) &m, sizeof(m)) != 0)
-        return ((struct l_vfs *) NULL);
-    if (!(vp = (struct l_vfs *) malloc(sizeof(struct l_vfs)))) {
-        (void) fprintf(stderr, "%s: PID %d, no space for vfs\n",
-                       ProgramName, CurrentLocalProc->pid);
+    if (kread((KA_T)vm, (char *)&m, sizeof(m)) != 0)
+        return ((struct l_vfs *)NULL);
+    if (!(vp = (struct l_vfs *)malloc(sizeof(struct l_vfs)))) {
+        (void)fprintf(stderr, "%s: PID %d, no space for vfs\n", ProgramName, CurrentLocalProc->pid);
         Exit(1);
     }
 
-#if    DUV < 40000
-    if (!(vp->dir = mkstrcpy(m.m_stat.f_mntonname, (MALLOC_S *) NULL))
-        || !(vp->fsname = mkstrcpy(m.m_stat.f_mntfromname, (MALLOC_S *) NULL)))
-#else	/* DUV>=40000 */
-        bl = sizeof(ob) - 1;
-        if (!m.m_stat.f_mntonname
-        ||  kread((KA_T)m.m_stat.f_mntonname, ob, bl))
-            bl = 0;
-        ob[bl] = '\0';
-        bl = sizeof(fb) - 1;
-        if (!m.m_stat.f_mntfromname
-        ||  kread((KA_T)m.m_stat.f_mntfromname, fb, bl))
-            bl = 0;
-        fb[bl] = '\0';
-        if (!(vp->dir = mkstrcpy(ob, (MALLOC_S *)NULL))
-        ||  !(vp->fsname = mkstrcpy(fb, (MALLOC_S *)NULL)))
-#endif    /* DUV<40000 */
+#if DUV < 40000
+    if (!(vp->dir = mkstrcpy(m.m_stat.f_mntonname, (MALLOC_S *)NULL)) ||
+        !(vp->fsname = mkstrcpy(m.m_stat.f_mntfromname, (MALLOC_S *)NULL)))
+#else  /* DUV>=40000 */
+    bl = sizeof(ob) - 1;
+    if (!m.m_stat.f_mntonname || kread((KA_T)m.m_stat.f_mntonname, ob, bl))
+        bl = 0;
+    ob[bl] = '\0';
+    bl = sizeof(fb) - 1;
+    if (!m.m_stat.f_mntfromname || kread((KA_T)m.m_stat.f_mntfromname, fb, bl))
+        bl = 0;
+    fb[bl] = '\0';
+    if (!(vp->dir = mkstrcpy(ob, (MALLOC_S *)NULL)) ||
+        !(vp->fsname = mkstrcpy(fb, (MALLOC_S *)NULL)))
+#endif /* DUV<40000 */
 
     {
-        (void) fprintf(stderr, "%s: PID %d, no space for mount names\n",
-                       ProgramName, CurrentLocalProc->pid);
+        (void)fprintf(stderr, "%s: PID %d, no space for mount names\n", ProgramName,
+                      CurrentLocalProc->pid);
         Exit(1);
     }
     vp->addr = vm;
     vp->fsid = m.m_stat.f_fsid;
     vp->type = m.m_stat.f_type;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
     vp->fs_ino = 0;
-#endif    /* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
     vp->next = Lvfs;
     Lvfs = vp;
-/*
+    /*
  * Derive the device and raw device numbers from a search for the
  * file system ID in the local mount table.
  */
     vp->dev = vp->rdev = 0;
     for (f = vp->fsid, mp = readmnt(); mp; mp = mp->next) {
-        if (f.val[0] == mp->fsid.val[0]
-            && f.val[1] == mp->fsid.val[1]) {
+        if (f.val[0] == mp->fsid.val[0] && f.val[1] == mp->fsid.val[1]) {
             vp->dev = mp->dev;
             vp->rdev = mp->rdev;
 
-#if    defined(HASFSINO)
+#if defined(HASFSINO)
             vp->fs_ino = mp->inode;
-#endif    /* defined(HASFSINO) */
+#endif /* defined(HASFSINO) */
 
             break;
         }
