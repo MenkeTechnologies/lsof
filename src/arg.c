@@ -92,9 +92,6 @@ static int ckfd_range(char *first, char *dash, char *last, int *low_fd, int *hig
  */
     for (char_ptr = first, *low_fd = 0; *char_ptr && char_ptr < dash; char_ptr++) {
         if (!isdigit((unsigned char)*char_ptr)) {
-
-        FD_range_nondigit:
-
             fprintf(stderr, "%s: non-digit in -d FD range: ", ProgramName);
             safestrprt(first, stderr, 1);
             return (1);
@@ -102,8 +99,11 @@ static int ckfd_range(char *first, char *dash, char *last, int *low_fd, int *hig
         *low_fd = (*low_fd * 10) + (int)(*char_ptr - '0');
     }
     for (char_ptr = dash + 1, *high_fd = 0; *char_ptr && char_ptr < last; char_ptr++) {
-        if (!isdigit((unsigned char)*char_ptr))
-            goto FD_range_nondigit;
+        if (!isdigit((unsigned char)*char_ptr)) {
+            fprintf(stderr, "%s: non-digit in -d FD range: ", ProgramName);
+            safestrprt(first, stderr, 1);
+            return (1);
+        }
         *high_fd = (*high_fd * 10) + (int)(*char_ptr - '0');
     }
     if (*low_fd >= *high_fd) {
@@ -1353,6 +1353,7 @@ int enter_network_address(char *na) {
     char *sn = NULL;
     int start_port = -1;
     MALLOC_S snl = 0;
+    int err = 0;
 
 #if defined(HASIPv6)
     char *char_ptr;
@@ -1364,6 +1365,8 @@ int enter_network_address(char *na) {
     }
     zeromem((char *)&n, sizeof(n));
     wa = na;
+
+    do {
     /*
  * Process an IP version type specification, IPv4 or IPv6, optionally followed
  * by a '@' and a host name or Internet address, or a ':' and a service name or
@@ -1379,7 +1382,8 @@ int enter_network_address(char *na) {
 #else
             fprintf(stderr, "%s: IPv6 not supported: -i ", ProgramName);
             safestrprt(na, stderr, 1);
-            goto nwad_exit;
+            err = 1;
+            break;
 #endif
         }
         wa++;
@@ -1430,16 +1434,8 @@ int enter_network_address(char *na) {
             if (!(n.proto = mkstrcat(p, l, NULL, -1, NULL, -1, NULL))) {
                 fprintf(stderr, "%s: no space for protocol name from: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
-            nwad_exit:
-                if (n.arg)
-                    free((FREE_P *)n.arg);
-                if (n.proto)
-                    free((FREE_P *)n.proto);
-                if (hn)
-                    free((FREE_P *)hn);
-                if (sn)
-                    free((FREE_P *)sn);
-                return (1);
+                err = 1;
+                break;
             }
             /*
              * The protocol name should be "tcp", "udp" or "udplite".
@@ -1448,7 +1444,8 @@ int enter_network_address(char *na) {
                 (strcasecmp(n.proto, "udplite") != 0)) {
                 fprintf(stderr, "%s: unknown protocol name (%s) in: -i ", ProgramName, n.proto);
                 safestrprt(na, stderr, 1);
-                goto nwad_exit;
+                err = 1;
+                break;
             }
             /*
              * Convert protocol name to lower case.
@@ -1467,14 +1464,10 @@ int enter_network_address(char *na) {
     if (*wa == '@') {
         wa++;
         if (!*wa || *wa == ':') {
-
-#if defined(HASIPv6)
-        unacc_address:
-#endif
-
             fprintf(stderr, "%s: unacceptable Internet address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
-            goto nwad_exit;
+            err = 1;
+            break;
         }
 
         if ((p = isIPv4addr(wa, n.addr, sizeof(n.addr)))) {
@@ -1485,7 +1478,8 @@ int enter_network_address(char *na) {
             if (ft == 6) {
                 fprintf(stderr, "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
-                goto nwad_exit;
+                err = 1;
+                break;
             }
             wa = p;
             n.addr_family = AF_INET;
@@ -1499,26 +1493,40 @@ int enter_network_address(char *na) {
             if (ft == 4) {
                 fprintf(stderr, "%s: IPv6 addresses are prohibited: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
-                goto nwad_exit;
+                err = 1;
+                break;
             }
-            if (!(char_ptr = strrchr(++wa, ']')))
-                goto unacc_address;
+            if (!(char_ptr = strrchr(++wa, ']'))) {
+                fprintf(stderr, "%s: unacceptable Internet address in: -i ", ProgramName);
+                safestrprt(na, stderr, 1);
+                err = 1;
+                break;
+            }
             *char_ptr = '\0';
             i = inet_pton(AF_INET6, wa, (void *)&n.addr);
             *char_ptr = ']';
-            if (i != 1)
-                goto unacc_address;
+            if (i != 1) {
+                fprintf(stderr, "%s: unacceptable Internet address in: -i ", ProgramName);
+                safestrprt(na, stderr, 1);
+                err = 1;
+                break;
+            }
             for (addr_entry = i = 0; i < MAX_AF_ADDR; i++) {
                 if ((addr_entry |= n.addr[i]))
                     break;
             }
-            if (!addr_entry)
-                goto unacc_address;
+            if (!addr_entry) {
+                fprintf(stderr, "%s: unacceptable Internet address in: -i ", ProgramName);
+                safestrprt(na, stderr, 1);
+                err = 1;
+                break;
+            }
             if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.addr[0])) {
                 if (ft == 6) {
                     fprintf(stderr, "%s: IPv4 addresses are prohibited: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
-                    goto nwad_exit;
+                    err = 1;
+                    break;
                 }
                 for (i = 0; i < 4; i++) {
                     n.addr[i] = n.addr[i + 12];
@@ -1530,7 +1538,8 @@ int enter_network_address(char *na) {
 #else
             fprintf(stderr, "%s: unsupported IPv6 address in: -i ", ProgramName);
             safestrprt(na, stderr, 1);
-            goto nwad_exit;
+            err = 1;
+            break;
 #endif
 
         } else {
@@ -1544,7 +1553,8 @@ int enter_network_address(char *na) {
                 if (!(hn = mkstrcat(wa, l, NULL, -1, NULL, -1, NULL))) {
                     fprintf(stderr, "%s: no space for host name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
-                    goto nwad_exit;
+                    err = 1;
+                    break;
                 }
 
 #if defined(HASIPv6)
@@ -1571,7 +1581,8 @@ int enter_network_address(char *na) {
                 if (!host_entry) {
                     fprintf(stderr, "%s: unknown host name (%s) in: -i ", ProgramName, hn);
                     safestrprt(na, stderr, 1);
-                    goto nwad_exit;
+                    err = 1;
+                    break;
                 }
             }
             wa = p;
@@ -1580,8 +1591,31 @@ int enter_network_address(char *na) {
     /*
  * If there is no port number, enter the address.
  */
-    if (!*wa)
-        goto nwad_enter;
+    if (!*wa) {
+        for (i = 1; i;) {
+            if (enter_nwad(&n, start_port, end_port, na, host_entry)) {
+                err = 1;
+                break;
+            }
+
+#if defined(HASIPv6)
+            /*
+             * If IPv6 is enabled, a host name was specified, and the
+             * associated * address is for the AF_INET6 address family,
+             * try to get and address for the AF_INET family, too, unless
+             * IPv4 is prohibited.
+             */
+            if (hn && (n.addr_family == AF_INET6) && (ft != 6)) {
+                n.addr_family = AF_INET;
+                if ((host_entry = lkup_hostnm(hn, &n)))
+                    continue;
+            }
+#endif
+
+            i = 0;
+        }
+        break;
+    }
     /*
  * Process a service name or port number list, preceded by a colon.
  *
@@ -1592,13 +1626,13 @@ int enter_network_address(char *na) {
  * of a range can't be a service name.
  */
     if (*wa != ':' || *(wa + 1) == '\0') {
-
-    unacc_port:
         fprintf(stderr, "%s: unacceptable port specification in: -i ", ProgramName);
         safestrprt(na, stderr, 1);
-        goto nwad_exit;
+        err = 1;
+        break;
     }
     for (++wa; wa && *wa; wa++) {
+        int port_err = 0;
         for (end_port = protocol = start_port = 0; *wa; wa++) {
             if (*wa < '0' || *wa > '9') {
 
@@ -1612,7 +1646,8 @@ int enter_network_address(char *na) {
                 if (!(l = wa - p)) {
                     fprintf(stderr, "%s: invalid service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
-                    goto nwad_exit;
+                    err = 1;
+                    break;
                 }
                 if (sn) {
                     if (l > snl) {
@@ -1631,7 +1666,8 @@ int enter_network_address(char *na) {
                 if (!sn) {
                     fprintf(stderr, "%s: no space for service name: -i ", ProgramName);
                     safestrprt(na, stderr, 1);
-                    goto nwad_exit;
+                    err = 1;
+                    break;
                 }
                 strncpy(sn, p, l);
                 *(sn + l) = '\0';
@@ -1645,7 +1681,8 @@ int enter_network_address(char *na) {
                         fprintf(stderr, "%s: unknown service %s for %s in: -i ", ProgramName, sn,
                                 n.proto);
                         safestrprt(na, stderr, 1);
-                        goto nwad_exit;
+                        err = 1;
+                        break;
                     }
                     pt = (int)ntohs(se->s_port);
                 } else {
@@ -1661,18 +1698,22 @@ int enter_network_address(char *na) {
                     if (!se && !se1) {
                         fprintf(stderr, "%s: unknown service %s in: -i ", ProgramName, sn);
                         safestrprt(na, stderr, 1);
-                        goto nwad_exit;
+                        err = 1;
+                        break;
                     }
                     if (se && se1 && pt != port_upper) {
                         fprintf(stderr, "%s: TCP=%d and UDP=%d %s ports conflict;\n", ProgramName,
                                 pt, port_upper, sn);
                         fprintf(stderr, "      specify \"tcp:%s\" or \"udp:%s\": -i ", sn, sn);
                         safestrprt(na, stderr, 1);
-                        goto nwad_exit;
+                        err = 1;
+                        break;
                     }
                     if (!se && se1)
                         pt = port_upper;
                 }
+                if (err)
+                    break;
                 if (protocol)
                     end_port = pt;
                 else {
@@ -1687,38 +1728,59 @@ int enter_network_address(char *na) {
                  */
                 for (; *wa && *wa != ','; wa++) {
                     if (*wa == '-') {
-                        if (protocol)
-                            goto unacc_port;
+                        if (protocol) {
+                            port_err = 1;
+                            break;
+                        }
                         protocol++;
                         break;
                     }
-                    if (*wa < '0' || *wa > '9')
-                        goto unacc_port;
+                    if (*wa < '0' || *wa > '9') {
+                        port_err = 1;
+                        break;
+                    }
                     if (protocol)
                         end_port = (end_port * 10) + *wa - '0';
                     else
                         start_port = (start_port * 10) + *wa - '0';
                 }
+                if (port_err)
+                    break;
             }
+            if (err)
+                break;
             if (!*wa || *wa == ',')
                 break;
             if (protocol)
                 continue;
-            goto unacc_port;
+            port_err = 1;
+            break;
+        }
+        if (err)
+            break;
+        if (port_err) {
+            fprintf(stderr, "%s: unacceptable port specification in: -i ", ProgramName);
+            safestrprt(na, stderr, 1);
+            err = 1;
+            break;
         }
         if (!protocol)
             end_port = start_port;
-        if (end_port < start_port)
-            goto unacc_port;
+        if (end_port < start_port) {
+            fprintf(stderr, "%s: unacceptable port specification in: -i ", ProgramName);
+            safestrprt(na, stderr, 1);
+            err = 1;
+            break;
+        }
         /*
          * Enter completed port or port range specification.
          */
 
-    nwad_enter:
-
         for (i = 1; i;) {
-            if (enter_nwad(&n, start_port, end_port, na, host_entry))
-                goto nwad_exit;
+            if (enter_nwad(&n, start_port, end_port, na, host_entry)) {
+                err = 1;
+                break;
+            }
 
 #if defined(HASIPv6)
             /*
@@ -1736,8 +1798,24 @@ int enter_network_address(char *na) {
 
             i = 0;
         }
+        if (err)
+            break;
         if (!*wa)
             break;
+    }
+
+    } while (0);
+
+    if (err) {
+        if (n.arg)
+            free((FREE_P *)n.arg);
+        if (n.proto)
+            free((FREE_P *)n.proto);
+        if (hn)
+            free((FREE_P *)hn);
+        if (sn)
+            free((FREE_P *)sn);
+        return (1);
     }
     if (hn)
         free((FREE_P *)hn);
@@ -1897,9 +1975,6 @@ int enter_state_spec(char *ss) {
                 if (!(UdpStateInclude =
                           (unsigned char *)calloc((MALLOC_S)UdpNumStates, sizeof(unsigned char)))) {
                     ty = "UDP state inclusion";
-
-                no_IorX_space:
-
                     fprintf(stderr, "%s: no %s table space\n", ProgramName, ty);
                     Exit(1);
                 }
@@ -1908,7 +1983,8 @@ int enter_state_spec(char *ss) {
                 if (!(UdpStateExclude =
                           (unsigned char *)calloc((MALLOC_S)UdpNumStates, sizeof(unsigned char)))) {
                     ty = "UDP state exclusion";
-                    goto no_IorX_space;
+                    fprintf(stderr, "%s: no %s table space\n", ProgramName, ty);
+                    Exit(1);
                 }
             }
         }
@@ -1918,14 +1994,16 @@ int enter_state_spec(char *ss) {
                 if (!(TcpStateInclude =
                           (unsigned char *)calloc((MALLOC_S)TcpNumStates, sizeof(unsigned char)))) {
                     ty = "TCP state inclusion";
-                    goto no_IorX_space;
+                    fprintf(stderr, "%s: no %s table space\n", ProgramName, ty);
+                    Exit(1);
                 }
             }
             if (!TcpStateExclude) {
                 if (!(TcpStateExclude =
                           (unsigned char *)calloc((MALLOC_S)TcpNumStates, sizeof(unsigned char)))) {
                     ty = "TCP state exclusion";
-                    goto no_IorX_space;
+                    fprintf(stderr, "%s: no %s table space\n", ProgramName, ty);
+                    Exit(1);
                 }
             }
         }

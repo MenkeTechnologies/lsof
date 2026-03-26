@@ -136,9 +136,6 @@ struct mounts *readmnt() {
              * Allocate space for a copy of the file system name.
              */
             if (!(ln = mkstrcpy(fsnm, (MALLOC_S *)NULL))) {
-
-            no_space_for_mount:
-
                 (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
                 safestrprt(fsnm, stderr, 0);
                 (void)fprintf(stderr, " (");
@@ -162,8 +159,14 @@ struct mounts *readmnt() {
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
-            goto no_space_for_mount;
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts)))) {
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            safestrprt(fsnm, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(dvnm, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
         mtp->dir = ln;
         ln = (char *)NULL;
         mtp->next = Lmi;
@@ -174,8 +177,14 @@ struct mounts *readmnt() {
         /*
          * Interpolate a possible file system (mounted-on) device name link
          */
-        if (!(cp = mkstrcpy(dvnm, (MALLOC_S *)NULL)))
-            goto no_space_for_mount;
+        if (!(cp = mkstrcpy(dvnm, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            safestrprt(fsnm, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(dvnm, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
         mtp->fsname = cp;
         ln = Readlink(cp);
         /*

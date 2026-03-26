@@ -67,9 +67,8 @@ struct l_dev *lkupbdev(dev_t *dev, dev_t *rdev, int inode_match, int rebuild) {
  */
 
 #if defined(HASDCACHE)
-
-lkupbdev_again:
-
+    for (;;) {
+        int retry = 0;
 #endif /* defined(HASDCACHE) */
 
     low = mid = 0;
@@ -85,8 +84,10 @@ lkupbdev_again:
             if ((inode_match == 0) || (ty != 1) || (inode == dp->inode)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !dp->v && !vfy_dev(dp))
-                    goto lkupbdev_again;
+                if (DevCacheUnsafe && !dp->v && !vfy_dev(dp)) {
+                    retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 return (dp);
@@ -99,10 +100,14 @@ lkupbdev_again:
     }
 
 #if defined(HASDCACHE)
+    if (retry)
+        continue;
     if (DevCacheUnsafe && rebuild) {
         (void)rereaddev();
-        goto lkupbdev_again;
+        continue;
     }
+    break;
+    } /* end for(;;) */
 #endif /* defined(HASDCACHE) */
 
     return ((struct l_dev *)NULL);
@@ -132,9 +137,8 @@ struct l_dev *lkupdev(dev_t *dev, dev_t *rdev, int inode_match, int rebuild) {
  */
 
 #if defined(HASDCACHE)
-
-lkupdev_again:
-
+    for (;;) {
+        int retry = 0;
 #endif /* defined(HASDCACHE) */
 
     low = mid = 0;
@@ -150,8 +154,10 @@ lkupdev_again:
             if ((inode_match == 0) || (ty != 1) || (inode == dp->inode)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !dp->v && !vfy_dev(dp))
-                    goto lkupdev_again;
+                if (DevCacheUnsafe && !dp->v && !vfy_dev(dp)) {
+                    retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 return (dp);
@@ -164,10 +170,14 @@ lkupdev_again:
     }
 
 #if defined(HASDCACHE)
+    if (retry)
+        continue;
     if (DevCacheUnsafe && rebuild) {
         (void)rereaddev();
-        goto lkupdev_again;
+        continue;
     }
+    break;
+    } /* end for(;;) */
 #endif /* defined(HASDCACHE) */
 
     return ((struct l_dev *)NULL);

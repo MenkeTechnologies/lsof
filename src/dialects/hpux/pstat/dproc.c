@@ -511,9 +511,6 @@ static void process_text(struct pst_status *p) {
         ntva = TXTVMINCR;
         nb = (MALLOC_S)(ntva * sizeof(struct txtvm));
         if (!(tv = (struct txtvm *)malloc(nb))) {
-
-        no_txtvm_space:
-
             (void)fprintf(stderr, "%s: no memory for text and VM info array; PID: %d\n",
                           ProgramName, (int)p->pst_pid);
             Exit(1);
@@ -562,8 +559,11 @@ static void process_text(struct pst_status *p) {
             if (ntvu >= ntva) {
                 ntva += TXTVMINCR;
                 nb = (MALLOC_S)(ntva * sizeof(struct txtvm));
-                if (!(tv = (struct txtvm *)realloc((MALLOC_P *)tv, nb)))
-                    goto no_txtvm_space;
+                if (!(tv = (struct txtvm *)realloc((MALLOC_P *)tv, nb))) {
+                    (void)fprintf(stderr, "%s: no memory for text and VM info array; PID: %d\n",
+                                  ProgramName, (int)p->pst_pid);
+                    Exit(1);
+                }
             }
             /*
              * See if we can read the file details for this region.
@@ -691,8 +691,6 @@ static struct pst_status *read_proc(int *n) {
             else
                 ps = (struct pst_status *)realloc((MALLOC_P *)ps, nb);
             if (!ps) {
-
-            ps_alloc_error:
                 (void)fprintf(stderr, "%s: can't allocate %d bytes for pst_status table\n",
                               ProgramName, nb);
                 Exit(1);
@@ -714,8 +712,11 @@ static struct pst_status *read_proc(int *n) {
  */
     if (!RepeatTime && ps && np && (np < npa)) {
         nb = (MALLOC_S)(np * sizeof(struct pst_status));
-        if (!(ps = (struct pst_status *)realloc((MALLOC_P *)ps, nb)))
-            goto ps_alloc_error;
+        if (!(ps = (struct pst_status *)realloc((MALLOC_P *)ps, nb))) {
+            (void)fprintf(stderr, "%s: can't allocate %d bytes for pst_status table\n",
+                          ProgramName, nb);
+            Exit(1);
+        }
     }
     *n = np;
     return (ps);

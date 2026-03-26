@@ -1103,11 +1103,7 @@ static int printinaddr() {
             /*
              * If this is the foreign address, insert the separator.
              */
-            if (name_len < 2)
-
-            addr_too_long:
-
-            {
+            if (name_len < 2) {
                 snpf(NameChars, NameCharsLength, "network addresses too long");
                 return (1);
             }
@@ -1199,8 +1195,10 @@ static int printinaddr() {
          * Enter the host name.
          */
         if (host) {
-            if ((len = strlen(host)) > name_len)
-                goto addr_too_long;
+            if ((len = strlen(host)) > name_len) {
+                snpf(NameChars, NameCharsLength, "network addresses too long");
+                return (1);
+            }
             if (len) {
                 snpf(np, name_len, "%s", host);
                 np += len;
@@ -1211,8 +1209,10 @@ static int printinaddr() {
          * Enter the port number, preceded by a colon.
          */
         if (port) {
-            if (((len = strlen(port)) + 1) >= name_len)
-                goto addr_too_long;
+            if (((len = strlen(port)) + 1) >= name_len) {
+                snpf(NameChars, NameCharsLength, "network addresses too long");
+                return (1);
+            }
             snpf(np, name_len, ":%s", port);
             np += len + 1;
             name_len -= len - 1;
@@ -1952,6 +1952,7 @@ void printname(int newline) {
 
     int print_status = 0;
 
+    do {
     if (CurrentLocalFile->name && CurrentLocalFile->name[0]) {
 
         /*
@@ -1960,7 +1961,7 @@ void printname(int newline) {
         safestrprt(CurrentLocalFile->name, stdout, 0);
         print_status++;
         if (!CurrentLocalFile->li[0].addr_family && !CurrentLocalFile->li[1].addr_family)
-            goto print_nma;
+            break;
     }
     if (CurrentLocalFile->li[0].addr_family || CurrentLocalFile->li[1].addr_family) {
         if (print_status)
@@ -1970,7 +1971,7 @@ void printname(int newline) {
          */
         if (printinaddr())
             print_status++;
-        goto print_nma;
+        break;
     }
     if (((CurrentLocalFile->ntype == N_BLK) || (CurrentLocalFile->ntype == N_CHR)) &&
         CurrentLocalFile->dev_def && CurrentLocalFile->rdev_def &&
@@ -1980,7 +1981,7 @@ void printname(int newline) {
          * If this is a block or character device and it has a name, print it.
          */
         print_status++;
-        goto print_nma;
+        break;
     }
     if (CurrentLocalFile->is_com) {
 
@@ -1989,13 +1990,13 @@ void printname(int newline) {
          */
         fputs("COMMON: ", stdout);
         print_status++;
-        goto print_nma;
+        break;
     }
 
 #if defined(HASPRIVNMCACHE)
     if (HASPRIVNMCACHE(CurrentLocalFile)) {
         print_status++;
-        goto print_nma;
+        break;
     }
 #endif
 
@@ -2054,19 +2055,19 @@ void printname(int newline) {
             if ((char_ptr = ncache_lookup(buf, sizeof(buf), &full_path))) {
                 char *cp1;
 
-                if (*char_ptr == '\0')
-                    goto print_nma;
-                if (full_path && CurrentLocalFile->fsdir) {
-                    if (*char_ptr != '/') {
-                        cp1 = strrchr(CurrentLocalFile->fsdir, '/');
-                        if (cp1 == NULL || *(cp1 + 1) != '\0')
-                            putchar('/');
-                    }
-                } else
-                    fputs(" -- ", stdout);
-                safestrprt(char_ptr, stdout, 0);
-                print_status++;
-                goto print_nma;
+                if (*char_ptr != '\0') {
+                    if (full_path && CurrentLocalFile->fsdir) {
+                        if (*char_ptr != '/') {
+                            cp1 = strrchr(CurrentLocalFile->fsdir, '/');
+                            if (cp1 == NULL || *(cp1 + 1) != '\0')
+                                putchar('/');
+                        }
+                    } else
+                        fputs(" -- ", stdout);
+                    safestrprt(char_ptr, stdout, 0);
+                    print_status++;
+                }
+                break;
             }
         }
 #else
@@ -2099,7 +2100,7 @@ void printname(int newline) {
                     print_status++;
                 }
             }
-            goto print_nma;
+            break;
         }
         if (CurrentLocalFile->fsdir) {
             safestrprt(CurrentLocalFile->fsdir, stdout, 0);
@@ -2118,12 +2119,11 @@ void printname(int newline) {
             print_status++;
         }
     }
+    } while (0);
     /*
  * Print the NAME column addition, if there is one.  If there isn't
  * make sure a NL is printed, as requested.
  */
-
-print_nma:
 
     if (CurrentLocalFile->name_append) {
         if (print_status)

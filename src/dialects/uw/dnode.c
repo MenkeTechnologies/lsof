@@ -314,39 +314,40 @@ static struct l_dev *findstrdev(dev_t *dev, dev_t *rdev) {
  * Search device table for match.
  */
 
-#if HASDCACHE
-
-findstrdev_again:
-
-#endif /* HASDCACHE */
-
-    if ((dp = lkupdev(dev, rdev, 0, 0)))
-        return (dp);
-    /*
- * Search for clone.
- */
-    if (Clone) {
-        for (c = Clone; c; c = c->next) {
-            if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(DeviceTable[c->dx].rdev)) {
+    for (;;) {
+        if ((dp = lkupdev(dev, rdev, 0, 0)))
+            return (dp);
+        /*
+     * Search for clone.
+     */
+        if (Clone) {
+            int restarted = 0;
+            for (c = Clone; c; c = c->next) {
+                if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(DeviceTable[c->dx].rdev)) {
 
 #if HASDCACHE
-                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
-                    goto findstrdev_again;
+                    if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx])) {
+                        restarted = 1;
+                        break;
+                    }
 #endif /* HASDCACHE */
 
-                return (&DeviceTable[c->dx]);
+                    return (&DeviceTable[c->dx]);
+                }
             }
+            if (restarted)
+                continue;
         }
-    }
 
 #if UNIXWAREV < 70103
-    return ((struct l_dev *)NULL);
+        return ((struct l_dev *)NULL);
 #else  /* UNIXWAREV>=70103 */
-    /*
-     * Search for non-clone clone.
-     */
-    return (findspdev(dev, rdev));
+        /*
+         * Search for non-clone clone.
+         */
+        return (findspdev(dev, rdev));
 #endif /* UNIXWAREV<70103 */
+    }
 }
 
 #if UNIXWAREV >= 70103
@@ -617,8 +618,7 @@ void process_node(KA_T na) {
     /*
  * Determine the lock state.
  */
-
-get_lock_state:
+    for (;;) {
 
     CurrentLocalFile->lock = isvlocked(&v);
     /*
@@ -704,7 +704,7 @@ get_lock_state:
         fx = rfx;
         kv = rkv;
         v = rv;
-        goto get_lock_state;
+        continue; /* restart from get_lock_state */
 
 #if defined(HASPROCFS)
     case N_PROC:
@@ -1002,6 +1002,8 @@ get_lock_state:
             return;
         }
     }
+    break;
+    } /* end for(;;) get_lock_state loop */
     /*
  * Get device and type for printing.
  */

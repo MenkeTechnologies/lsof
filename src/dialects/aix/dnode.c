@@ -393,17 +393,19 @@ void process_node(KA_T va) {
                 (ka = (KA_T)dn.dv_pdata)) {
 
 #if defined(HASDCACHE)
-
-            process_clone_again:
-
+                int process_clone_retry;
+                do {
+                    process_clone_retry = 0;
 #endif /* defined(HASDCACHE) */
 
                 for (cl = Clone; cl; cl = cl->next) {
                     if (GET_MAJ_DEV(g.gn_rdev) == GET_MIN_DEV(cl->cd.rdev)) {
 
 #if defined(HASDCACHE)
-                        if (DevCacheUnsafe && !cl->cd.v && !vfy_dev(&cl->cd))
-                            goto process_clone_again;
+                        if (DevCacheUnsafe && !cl->cd.v && !vfy_dev(&cl->cd)) {
+                            process_clone_retry = 1;
+                            break;
+                        }
 #endif /* defined(HASDCACHE) */
 
                         /*
@@ -488,6 +490,11 @@ void process_node(KA_T va) {
                         break;
                     }
                 }
+
+#if defined(HASDCACHE)
+                } while (process_clone_retry);
+#endif /* defined(HASDCACHE) */
+
             }
 #endif /* AIXV>=4140 */
 

@@ -275,7 +275,7 @@ static void dopr(char *buf_ptr, char *end_ptr, char *fmt, va_list args) {
             ljust = len = zpad = zxflag = maxwidth = 0;
             longflag = longlongflag = pointflag = 0;
 
-        nextch:
+            for (;;) {
 
             ch = *fmt++;
             switch (ch) {
@@ -284,7 +284,7 @@ static void dopr(char *buf_ptr, char *end_ptr, char *fmt, va_list args) {
                 return;
             case '-':
                 ljust = 1;
-                goto nextch;
+                continue;
             case '0': /* set zero padding if len not set */
                 if ((len == 0) && !pointflag)
                     zpad = '0';
@@ -301,27 +301,27 @@ static void dopr(char *buf_ptr, char *end_ptr, char *fmt, va_list args) {
                     maxwidth = (maxwidth * 10) + (int)(ch - '0');
                 else
                     len = (len * 10) + (int)(ch - '0');
-                goto nextch;
+                continue;
             case '*':
                 if (pointflag)
                     maxwidth = va_arg(args, int);
                 else
                     len = va_arg(args, int);
-                goto nextch;
+                continue;
             case '#':
                 zxflag = 1;
-                goto nextch;
+                continue;
             case '.':
                 pointflag = 1;
-                goto nextch;
+                continue;
             case 'l':
                 if (longflag) {
                     longflag = 0;
                     longlongflag = 1;
-                    goto nextch;
+                    continue;
                 }
                 longflag = 1;
-                goto nextch;
+                continue;
             case 'u':
             case 'U':
                 if (longlongflag) {
@@ -466,6 +466,8 @@ static void dopr(char *buf_ptr, char *end_ptr, char *fmt, va_list args) {
                 ebuf[(int)ebufl] = '\0';
                 (void)dostr(&buf_ptr, end_ptr, ebuf, 0);
             }
+            break;
+            } /* end for(;;) */
             break;
         default:
             (void)dopr_outch(&buf_ptr, end_ptr, ch);

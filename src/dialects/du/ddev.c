@@ -80,85 +80,86 @@ int printdevname(dev_t *dev, dev_t *rdev, int f, int nty) {
  * Search for clone.
  */
 
-#if defined(HASDCACHE)
-
-printdevname_again:
-
-#endif /* defined(HASDCACHE) */
-
-    if ((nty == N_CHR) && Clone && HAVECLONEMAJ && (*dev == DeviceOfDev) &&
-        (GET_MAJ_DEV(*rdev) == CLONEMAJ)) {
-        for (c = Clone; c; c = c->next) {
-            if (DeviceTable[c->dx].rdev == *rdev) {
+    for (;;) {
+        if ((nty == N_CHR) && Clone && HAVECLONEMAJ && (*dev == DeviceOfDev) &&
+            (GET_MAJ_DEV(*rdev) == CLONEMAJ)) {
+            int restarted = 0;
+            for (c = Clone; c; c = c->next) {
+                if (DeviceTable[c->dx].rdev == *rdev) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
-                    goto printdevname_again;
+                    if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx])) {
+                        restarted = 1;
+                        break;
+                    }
 #endif /* defined(HASDCACHE) */
 
-                safestrprt(DeviceTable[c->dx].name, stdout, f);
-                return (1);
+                    safestrprt(DeviceTable[c->dx].name, stdout, f);
+                    return (1);
+                }
             }
+            if (restarted)
+                continue;
         }
-    }
-    /*
- * Search device table for a full match.
- */
-
-#if defined(HASBLKDEV)
-    if (nty == N_BLK)
-        dp = lkupbdev(dev, rdev, 1, 0);
-    else
-#endif /* defined(HASBLKDEV) */
-
-        dp = lkupdev(dev, rdev, 1, 0);
-    if (dp) {
-        safestrprt(dp->name, stdout, f);
-        return (1);
-    }
-    /*
- * Search device table for a match without inode number and dev.
- */
-
-#if defined(HASBLKDEV)
-    if (nty == N_BLK)
-        dp = lkupbdev(&DeviceOfDev, rdev, 0, 0);
-    else
-#endif /* defined(HASBLKDEV) */
-
-        dp = lkupdev(&DeviceOfDev, rdev, 0, 0);
-    if (dp) {
-
         /*
-         * A raw device match was found.  Record it as a name column addition.
-         */
-        char *cp, *ttl;
-        int len;
+     * Search device table for a full match.
+     */
 
-        ttl = (nty == N_BLK) ? LIKE_BLK_SPEC : LIKE_CHR_SPEC;
-        len = (int)(1 + strlen(ttl) + 1 + strlen(dp->name) + 1);
-        if (!(cp = (char *)malloc((MALLOC_S)(len + 1)))) {
-            (void)fprintf(stderr, "%s: no nma space for: (%s %s)\n", ProgramName, ttl, dp->name);
-            Exit(1);
+#if defined(HASBLKDEV)
+        if (nty == N_BLK)
+            dp = lkupbdev(dev, rdev, 1, 0);
+        else
+#endif /* defined(HASBLKDEV) */
+
+            dp = lkupdev(dev, rdev, 1, 0);
+        if (dp) {
+            safestrprt(dp->name, stdout, f);
+            return (1);
         }
-        (void)snpf(cp, len + 1, "(%s %s)", ttl, dp->name);
-        (void)add_nma(cp, len);
-        (void)free((FREE_P *)cp);
+        /*
+     * Search device table for a match without inode number and dev.
+     */
+
+#if defined(HASBLKDEV)
+        if (nty == N_BLK)
+            dp = lkupbdev(&DeviceOfDev, rdev, 0, 0);
+        else
+#endif /* defined(HASBLKDEV) */
+
+            dp = lkupdev(&DeviceOfDev, rdev, 0, 0);
+        if (dp) {
+
+            /*
+             * A raw device match was found.  Record it as a name column addition.
+             */
+            char *cp, *ttl;
+            int len;
+
+            ttl = (nty == N_BLK) ? LIKE_BLK_SPEC : LIKE_CHR_SPEC;
+            len = (int)(1 + strlen(ttl) + 1 + strlen(dp->name) + 1);
+            if (!(cp = (char *)malloc((MALLOC_S)(len + 1)))) {
+                (void)fprintf(stderr, "%s: no nma space for: (%s %s)\n", ProgramName, ttl, dp->name);
+                Exit(1);
+            }
+            (void)snpf(cp, len + 1, "(%s %s)", ttl, dp->name);
+            (void)add_nma(cp, len);
+            (void)free((FREE_P *)cp);
+            return (0);
+        }
+
+#if defined(HASDCACHE)
+        /*
+         * If the device cache is "unsafe" and we haven't found any match, reload
+         * the device cache.
+         */
+        if (DevCacheUnsafe) {
+            (void)rereaddev();
+            continue;
+        }
+#endif /* defined(HASDCACHE) */
+
         return (0);
     }
-
-#if defined(HASDCACHE)
-    /*
-     * If the device cache is "unsafe" and we haven't found any match, reload
-     * the device cache.
-     */
-    if (DevCacheUnsafe) {
-        (void)rereaddev();
-        goto printdevname_again;
-    }
-#endif /* defined(HASDCACHE) */
-
-    return (0);
 }
 
 /*

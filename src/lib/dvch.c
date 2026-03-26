@@ -606,19 +606,14 @@ int open_dcache(int mode, int reuse, struct stat *stat_buf) {
         if ((DevCacheFd = open(DevCachePath[DevCachePathIndex], O_RDONLY, 0)) < 0) {
             if (DevCacheState == 3 && errno == ENOENT)
                 return (1);
-
-        cant_open:
             (void)fprintf(stderr, "%s: WARNING: can't open %s: %s\n", ProgramName,
                           DevCachePath[DevCachePathIndex], strerror(errno));
             return (1);
         }
         if (stat(DevCachePath[DevCachePathIndex], stat_buf) != 0) {
-
-        cant_stat:
             if (!OptWarnings)
                 (void)fprintf(stderr, "%s: WARNING: can't stat(%s): %s\n", ProgramName,
                               DevCachePath[DevCachePathIndex], strerror(errno));
-        close_exit:
             (void)close(DevCacheFd);
             DevCacheFd = -1;
             return (1);
@@ -635,7 +630,9 @@ int open_dcache(int mode, int reuse, struct stat *stat_buf) {
             if (!OptWarnings)
                 (void)fprintf(stderr, "%s: WARNING: %s %s.\n", ProgramName,
                               DevCachePath[DevCachePathIndex], w);
-            goto close_exit;
+            (void)close(DevCacheFd);
+            DevCacheFd = -1;
+            return (1);
         }
         return (0);
     case 2:
@@ -653,8 +650,11 @@ int open_dcache(int mode, int reuse, struct stat *stat_buf) {
             }
         }
         if ((DevCacheFd = open(DevCachePath[DevCachePathIndex], O_RDWR | O_CREAT | O_EXCL, 0600)) <
-            0)
-            goto cant_open;
+            0) {
+            (void)fprintf(stderr, "%s: WARNING: can't open %s: %s\n", ProgramName,
+                          DevCachePath[DevCachePathIndex], strerror(errno));
+            return (1);
+        }
         /*
      * If the real user is not root, but the process is setuid-root,
      * change the ownerships of the file to the real ones.
@@ -678,7 +678,12 @@ int open_dcache(int mode, int reuse, struct stat *stat_buf) {
                           DevCachePath[DevCachePathIndex]);
         if (stat(DevCachePath[DevCachePathIndex], stat_buf) != 0) {
             (void)unlink(DevCachePath[DevCachePathIndex]);
-            goto cant_stat;
+            if (!OptWarnings)
+                (void)fprintf(stderr, "%s: WARNING: can't stat(%s): %s\n", ProgramName,
+                              DevCachePath[DevCachePathIndex], strerror(errno));
+            (void)close(DevCacheFd);
+            DevCacheFd = -1;
+            return (1);
         }
         return (0);
     default:
@@ -699,6 +704,7 @@ int open_dcache(int mode, int reuse, struct stat *stat_buf) {
 int read_dcache() {
     char buf[MAXPATHLEN * 2], cbuf[64], *cp;
     int i, len, ov;
+    int read_ok = 0;
     struct stat sb, devsb;
     /*
  * Open the device cache file.
@@ -739,297 +745,323 @@ int read_dcache() {
         return (1);
     }
     /*
- * Read the section count line; initialize the CRC table;
- * validate the section count line.
+ * Use do { ... } while(0) so that break replaces goto read_close.
  */
-    if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-
-    cant_read:
-        if (!OptWarnings)
-            (void)fprintf(stderr, "%s: WARNING: can't fread %s: %s\n", ProgramName,
-                          DevCachePath[DevCachePathIndex], strerror(errno));
-    read_close:
-        (void)fclose(DevCacheStream);
-        DevCacheFd = -1;
-        DevCacheStream = (FILE *)NULL;
-        (void)clr_devtab();
-
-#if defined(DCACHE_CLR)
-        (void)DCACHE_CLR();
-#endif /* defined(DCACHE_CLR) */
-
-        return (1);
-    }
-    (void)crcbld();
-    DevCacheChecksum = 0;
-    (void)crc(buf, strlen(buf), &DevCacheChecksum);
-    i = 1;
-    cp = "";
+    do {
+        /*
+     * Read the section count line; initialize the CRC table;
+     * validate the section count line.
+     */
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+            if (!OptWarnings)
+                (void)fprintf(stderr, "%s: WARNING: can't fread %s: %s\n", ProgramName,
+                              DevCachePath[DevCachePathIndex], strerror(errno));
+            break;
+        }
+        (void)crcbld();
+        DevCacheChecksum = 0;
+        (void)crc(buf, strlen(buf), &DevCacheChecksum);
+        i = 1;
+        cp = "";
 
 #if defined(HASBLKDEV)
-    i++;
-    cp = "s";
+        i++;
+        cp = "s";
 #endif /* defined(HASBLKDEV) */
 
 #if defined(DCACHE_CLONE)
-    i++;
-    cp = "s";
+        i++;
+        cp = "s";
 #endif /* defined(DCACHE_CLONE) */
 
 #if defined(DCACHE_PSEUDO)
-    i++;
-    cp = "s";
+        i++;
+        cp = "s";
 #endif /* defined(DCACHE_PSEUDO) */
 
-    (void)snpf(cbuf, sizeof(cbuf), "%d section%s", i, cp);
-    len = strlen(cbuf);
-    (void)snpf(&cbuf[len], sizeof(cbuf) - len, ", dev=%lx\n", (long)DeviceOfDev);
-    if (!strncmp(buf, cbuf, len) && (buf[len] == '\n')) {
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: no /dev device in %s: line ", ProgramName,
-                          DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
-        }
-        goto read_close;
-    }
-    if (strcmp(buf, cbuf)) {
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: bad section count line in %s: line ", ProgramName,
-                          DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
-        }
-        goto read_close;
-    }
-    /*
- * Read device section header and validate it.
- */
-    if (!fgets(buf, sizeof(buf), DevCacheStream))
-        goto cant_read;
-    (void)crc(buf, strlen(buf), &DevCacheChecksum);
-    len = strlen("device section: ");
-    if (strncmp(buf, "device section: ", len) != 0) {
-
-    read_dhdr:
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: bad device section header in %s: line ",
-                          ProgramName, DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
-        }
-        goto read_close;
-    }
-    /*
- * Compute the device count; allocate SortedDevices[] and DeviceTable[] space.
- */
-    if ((NumDevices = atoi(&buf[len])) < 1)
-        goto read_dhdr;
-    alloc_dcache();
-    /*
- * Read the device lines and store their information in DeviceTable[].
- * Construct the SortedDevices[] pointers to DeviceTable[].
- */
-    for (i = 0; i < NumDevices; i++) {
-        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-            if (!OptWarnings)
-                (void)fprintf(stderr, "%s: WARNING: can't read device %d from %s\n", ProgramName,
-                              i + 1, DevCachePath[DevCachePathIndex]);
-            goto read_close;
-        }
-        (void)crc(buf, strlen(buf), &DevCacheChecksum);
-        /*
-     * Convert hexadecimal device number.
-     */
-        if (!(cp = x2dev(buf, &DeviceTable[i].rdev)) || *cp != ' ') {
+        (void)snpf(cbuf, sizeof(cbuf), "%d section%s", i, cp);
+        len = strlen(cbuf);
+        (void)snpf(&cbuf[len], sizeof(cbuf) - len, ", dev=%lx\n", (long)DeviceOfDev);
+        if (!strncmp(buf, cbuf, len) && (buf[len] == '\n')) {
             if (!OptWarnings) {
-                (void)fprintf(stderr, "%s: device %d: bad device in %s: line ", ProgramName, i + 1,
+                (void)fprintf(stderr, "%s: WARNING: no /dev device in %s: line ", ProgramName,
                               DevCachePath[DevCachePathIndex]);
                 safestrprt(buf, stderr, 1 + 4 + 8);
             }
-            goto read_close;
+            break;
         }
-        /*
-     * Convert inode number.
-     */
-        for (cp++, DeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
-            if (*cp < '0' || *cp > '9') {
-                if (!OptWarnings) {
-                    (void)fprintf(stderr, "%s: WARNING: device %d: bad inode # in %s: line ",
-                                  ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
-                    safestrprt(buf, stderr, 1 + 4 + 8);
-                }
-                goto read_close;
-            }
-            DeviceTable[i].inode = (INODETYPE)((DeviceTable[i].inode * 10) + (int)(*cp - '0'));
-        }
-        /*
-     * Get path name; allocate space for it; copy it; store the
-     * pointer in DeviceTable[]; clear verify status; construct the SortedDevices[]
-     * pointer to DeviceTable[].
-     */
-        if ((len = strlen(++cp)) < 2 || *(cp + len - 1) != '\n') {
+        if (strcmp(buf, cbuf)) {
             if (!OptWarnings) {
-                (void)fprintf(stderr, "%s: WARNING: device %d: bad path in %s: line ", ProgramName,
-                              i + 1, DevCachePath[DevCachePathIndex]);
+                (void)fprintf(stderr, "%s: WARNING: bad section count line in %s: line ", ProgramName,
+                              DevCachePath[DevCachePathIndex]);
                 safestrprt(buf, stderr, 1 + 4 + 8);
             }
-            goto read_close;
+            break;
         }
-        *(cp + len - 1) = '\0';
-        if (!(DeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
-            (void)fprintf(stderr, "%s: device %d: no space for path: line ", ProgramName, i + 1);
-            safestrprt(buf, stderr, 1 + 4 + 8);
-            Exit(1);
-        }
-        DeviceTable[i].v = 0;
-        SortedDevices[i] = &DeviceTable[i];
-    }
-
-#if defined(HASBLKDEV)
-    /*
- * Read block device section header and validate it.
- */
-    if (!fgets(buf, sizeof(buf), DevCacheStream))
-        goto cant_read;
-    (void)crc(buf, strlen(buf), &DevCacheChecksum);
-    len = strlen("block device section: ");
-    if (strncmp(buf, "block device section: ", len) != 0) {
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: bad block device section header in %s: line ",
-                          ProgramName, DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
-        }
-        goto read_close;
-    }
-    /*
- * Compute the block device count; allocate BlockSortedDevices[] and BlockDeviceTable[] space.
- */
-    if ((BlockNumDevices = atoi(&buf[len])) > 0) {
-        alloc_bdcache();
         /*
-     * Read the block device lines and store their information in BlockDeviceTable[].
-     * Construct the BlockSortedDevices[] pointers to BlockDeviceTable[].
+     * Read device section header and validate it.
      */
-        for (i = 0; i < BlockNumDevices; i++) {
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+            if (!OptWarnings)
+                (void)fprintf(stderr, "%s: WARNING: can't fread %s: %s\n", ProgramName,
+                              DevCachePath[DevCachePathIndex], strerror(errno));
+            break;
+        }
+        (void)crc(buf, strlen(buf), &DevCacheChecksum);
+        len = strlen("device section: ");
+        if (strncmp(buf, "device section: ", len) != 0 ||
+            (NumDevices = atoi(&buf[len])) < 1) {
+            if (!OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: bad device section header in %s: line ",
+                              ProgramName, DevCachePath[DevCachePathIndex]);
+                safestrprt(buf, stderr, 1 + 4 + 8);
+            }
+            break;
+        }
+        /*
+     * Compute the device count; allocate SortedDevices[] and DeviceTable[] space.
+     */
+        alloc_dcache();
+        /*
+     * Read the device lines and store their information in DeviceTable[].
+     * Construct the SortedDevices[] pointers to DeviceTable[].
+     */
+        for (i = 0; i < NumDevices; i++) {
             if (!fgets(buf, sizeof(buf), DevCacheStream)) {
                 if (!OptWarnings)
-                    (void)fprintf(stderr, "%s: WARNING: can't read block device %d from %s\n",
-                                  ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
-                goto read_close;
+                    (void)fprintf(stderr, "%s: WARNING: can't read device %d from %s\n", ProgramName,
+                                  i + 1, DevCachePath[DevCachePathIndex]);
+                break;
             }
             (void)crc(buf, strlen(buf), &DevCacheChecksum);
             /*
          * Convert hexadecimal device number.
          */
-            if (!(cp = x2dev(buf, &BlockDeviceTable[i].rdev)) || *cp != ' ') {
+            if (!(cp = x2dev(buf, &DeviceTable[i].rdev)) || *cp != ' ') {
                 if (!OptWarnings) {
-                    (void)fprintf(stderr, "%s: block dev %d: bad device in %s: line ", ProgramName,
-                                  i + 1, DevCachePath[DevCachePathIndex]);
+                    (void)fprintf(stderr, "%s: device %d: bad device in %s: line ", ProgramName, i + 1,
+                                  DevCachePath[DevCachePathIndex]);
                     safestrprt(buf, stderr, 1 + 4 + 8);
                 }
-                goto read_close;
+                break;
             }
             /*
          * Convert inode number.
          */
-            for (cp++, BlockDeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
+            for (cp++, DeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
                 if (*cp < '0' || *cp > '9') {
                     if (!OptWarnings) {
-                        (void)fprintf(stderr, "%s: WARNING: block dev %d: bad inode # in %s: line ",
+                        (void)fprintf(stderr, "%s: WARNING: device %d: bad inode # in %s: line ",
                                       ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
                         safestrprt(buf, stderr, 1 + 4 + 8);
                     }
-                    goto read_close;
+                    break;
                 }
-                BlockDeviceTable[i].inode =
-                    (INODETYPE)((BlockDeviceTable[i].inode * 10) + (int)(*cp - '0'));
+                DeviceTable[i].inode = (INODETYPE)((DeviceTable[i].inode * 10) + (int)(*cp - '0'));
             }
+            if (*cp != ' ')
+                break;
             /*
          * Get path name; allocate space for it; copy it; store the
-         * pointer in BlockDeviceTable[]; clear verify status; construct the BlockSortedDevices[]
-         * pointer to BlockDeviceTable[].
+         * pointer in DeviceTable[]; clear verify status; construct the SortedDevices[]
+         * pointer to DeviceTable[].
          */
             if ((len = strlen(++cp)) < 2 || *(cp + len - 1) != '\n') {
                 if (!OptWarnings) {
-                    (void)fprintf(stderr, "%s: WARNING: block dev %d: bad path in %s: line",
-                                  ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
+                    (void)fprintf(stderr, "%s: WARNING: device %d: bad path in %s: line ", ProgramName,
+                                  i + 1, DevCachePath[DevCachePathIndex]);
                     safestrprt(buf, stderr, 1 + 4 + 8);
                 }
-                goto read_close;
+                break;
             }
             *(cp + len - 1) = '\0';
-            if (!(BlockDeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
-                (void)fprintf(stderr, "%s: block dev %d: no space for path: line", ProgramName,
-                              i + 1);
+            if (!(DeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
+                (void)fprintf(stderr, "%s: device %d: no space for path: line ", ProgramName, i + 1);
                 safestrprt(buf, stderr, 1 + 4 + 8);
                 Exit(1);
             }
-            BlockDeviceTable[i].v = 0;
-            BlockSortedDevices[i] = &BlockDeviceTable[i];
+            DeviceTable[i].v = 0;
+            SortedDevices[i] = &DeviceTable[i];
         }
-    }
+        if (i < NumDevices)
+            break;
+
+#if defined(HASBLKDEV)
+        /*
+     * Read block device section header and validate it.
+     */
+        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+            if (!OptWarnings)
+                (void)fprintf(stderr, "%s: WARNING: can't fread %s: %s\n", ProgramName,
+                              DevCachePath[DevCachePathIndex], strerror(errno));
+            break;
+        }
+        (void)crc(buf, strlen(buf), &DevCacheChecksum);
+        len = strlen("block device section: ");
+        if (strncmp(buf, "block device section: ", len) != 0) {
+            if (!OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: bad block device section header in %s: line ",
+                              ProgramName, DevCachePath[DevCachePathIndex]);
+                safestrprt(buf, stderr, 1 + 4 + 8);
+            }
+            break;
+        }
+        /*
+     * Compute the block device count; allocate BlockSortedDevices[] and BlockDeviceTable[] space.
+     */
+        if ((BlockNumDevices = atoi(&buf[len])) > 0) {
+            alloc_bdcache();
+            /*
+         * Read the block device lines and store their information in BlockDeviceTable[].
+         * Construct the BlockSortedDevices[] pointers to BlockDeviceTable[].
+         */
+            for (i = 0; i < BlockNumDevices; i++) {
+                if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+                    if (!OptWarnings)
+                        (void)fprintf(stderr, "%s: WARNING: can't read block device %d from %s\n",
+                                      ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
+                    break;
+                }
+                (void)crc(buf, strlen(buf), &DevCacheChecksum);
+                /*
+             * Convert hexadecimal device number.
+             */
+                if (!(cp = x2dev(buf, &BlockDeviceTable[i].rdev)) || *cp != ' ') {
+                    if (!OptWarnings) {
+                        (void)fprintf(stderr, "%s: block dev %d: bad device in %s: line ", ProgramName,
+                                      i + 1, DevCachePath[DevCachePathIndex]);
+                        safestrprt(buf, stderr, 1 + 4 + 8);
+                    }
+                    break;
+                }
+                /*
+             * Convert inode number.
+             */
+                for (cp++, BlockDeviceTable[i].inode = (INODETYPE)0; *cp != ' '; cp++) {
+                    if (*cp < '0' || *cp > '9') {
+                        if (!OptWarnings) {
+                            (void)fprintf(stderr, "%s: WARNING: block dev %d: bad inode # in %s: line ",
+                                          ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
+                            safestrprt(buf, stderr, 1 + 4 + 8);
+                        }
+                        break;
+                    }
+                    BlockDeviceTable[i].inode =
+                        (INODETYPE)((BlockDeviceTable[i].inode * 10) + (int)(*cp - '0'));
+                }
+                if (*cp != ' ')
+                    break;
+                /*
+             * Get path name; allocate space for it; copy it; store the
+             * pointer in BlockDeviceTable[]; clear verify status; construct the BlockSortedDevices[]
+             * pointer to BlockDeviceTable[].
+             */
+                if ((len = strlen(++cp)) < 2 || *(cp + len - 1) != '\n') {
+                    if (!OptWarnings) {
+                        (void)fprintf(stderr, "%s: WARNING: block dev %d: bad path in %s: line",
+                                      ProgramName, i + 1, DevCachePath[DevCachePathIndex]);
+                        safestrprt(buf, stderr, 1 + 4 + 8);
+                    }
+                    break;
+                }
+                *(cp + len - 1) = '\0';
+                if (!(BlockDeviceTable[i].name = mkstrcpy(cp, (MALLOC_S *)NULL))) {
+                    (void)fprintf(stderr, "%s: block dev %d: no space for path: line", ProgramName,
+                                  i + 1);
+                    safestrprt(buf, stderr, 1 + 4 + 8);
+                    Exit(1);
+                }
+                BlockDeviceTable[i].v = 0;
+                BlockSortedDevices[i] = &BlockDeviceTable[i];
+            }
+            if (i < BlockNumDevices)
+                break;
+        }
 #endif /* defined(HASBLKDEV) */
 
 #if defined(DCACHE_CLONE)
-    /*
- * Read the clone section.
- */
-    if (DCACHE_CLONE(1))
-        goto read_close;
+        /*
+     * Read the clone section.
+     */
+        if (DCACHE_CLONE(1))
+            break;
 #endif /* defined(DCACHE_CLONE) */
 
 #if defined(DCACHE_PSEUDO)
-    /*
- * Read the pseudo section.
- */
-    if (DCACHE_PSEUDO(1))
-        goto read_close;
+        /*
+     * Read the pseudo section.
+     */
+        if (DCACHE_PSEUDO(1))
+            break;
 #endif /* defined(DCACHE_PSEUDO) */
 
-    /*
- * Read and check the CRC section; it must be the last thing in the file.
- */
-    (void)snpf(cbuf, sizeof(cbuf), "CRC section: %x\n", DevCacheChecksum);
-    if (!fgets(buf, sizeof(buf), DevCacheStream) || strcmp(buf, cbuf) != 0) {
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: bad CRC section in %s: line ", ProgramName,
-                          DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
+        /*
+     * Read and check the CRC section; it must be the last thing in the file.
+     */
+        (void)snpf(cbuf, sizeof(cbuf), "CRC section: %x\n", DevCacheChecksum);
+        if (!fgets(buf, sizeof(buf), DevCacheStream) || strcmp(buf, cbuf) != 0) {
+            if (!OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: bad CRC section in %s: line ", ProgramName,
+                              DevCachePath[DevCachePathIndex]);
+                safestrprt(buf, stderr, 1 + 4 + 8);
+            }
+            break;
         }
-        goto read_close;
-    }
-    if (fgets(buf, sizeof(buf), DevCacheStream)) {
-        if (!OptWarnings) {
-            (void)fprintf(stderr, "%s: WARNING: data follows CRC section in %s: line ", ProgramName,
-                          DevCachePath[DevCachePathIndex]);
-            safestrprt(buf, stderr, 1 + 4 + 8);
+        if (fgets(buf, sizeof(buf), DevCacheStream)) {
+            if (!OptWarnings) {
+                (void)fprintf(stderr, "%s: WARNING: data follows CRC section in %s: line ", ProgramName,
+                              DevCachePath[DevCachePathIndex]);
+                safestrprt(buf, stderr, 1 + 4 + 8);
+            }
+            break;
         }
-        goto read_close;
-    }
-    /*
- * Check one device entry at random -- the randomness based on our
- * PID.
- */
-    i = (int)(MyProcessId % NumDevices);
-    if (stat(DeviceTable[i].name, &sb) != 0
+        /*
+     * Check one device entry at random -- the randomness based on our
+     * PID.
+     */
+        i = (int)(MyProcessId % NumDevices);
+        if (stat(DeviceTable[i].name, &sb) != 0
 
 #if defined(DVCH_EXPDEV)
-        || expdev(sb.st_rdev) != DeviceTable[i].rdev
+            || expdev(sb.st_rdev) != DeviceTable[i].rdev
 #else  /* !defined(DVCH_EXPDEV) */
-        || sb.st_rdev != DeviceTable[i].rdev
+            || sb.st_rdev != DeviceTable[i].rdev
 #endif /* defined(DVCH_EXPDEV) */
 
-        || sb.st_ino != DeviceTable[i].inode) {
-        if (!OptWarnings)
-            (void)fprintf(stderr, "%s: WARNING: device cache mismatch: %s\n", ProgramName,
-                          DeviceTable[i].name);
-        goto read_close;
+            || sb.st_ino != DeviceTable[i].inode) {
+            if (!OptWarnings)
+                (void)fprintf(stderr, "%s: WARNING: device cache mismatch: %s\n", ProgramName,
+                              DeviceTable[i].name);
+            break;
+        }
+        /*
+     * All checks passed.
+     */
+        read_ok = 1;
+    } while (0);
+
+    if (read_ok) {
+        /*
+     * Close the device cache file and return OK.
+     */
+        (void)fclose(DevCacheStream);
+        DevCacheFd = -1;
+        DevCacheStream = (FILE *)NULL;
+        return (0);
     }
     /*
- * Close the device cache file and return OK.
+ * Error path: close stream, clear device tables, return failure.
  */
     (void)fclose(DevCacheStream);
     DevCacheFd = -1;
     DevCacheStream = (FILE *)NULL;
-    return (0);
+    (void)clr_devtab();
+
+#if defined(DCACHE_CLR)
+    (void)DCACHE_CLR();
+#endif /* defined(DCACHE_CLR) */
+
+    return (1);
 }
 
 #if defined(DCACHE_CLONE_LOCAL)
@@ -1049,8 +1081,6 @@ static int rw_clone_sect(int mode) {
      * Read the clone section header and validate it.
      */
         if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-
-        bad_clone_sect:
             if (!OptWarnings) {
                 (void)fprintf(stderr, "%s: bad clone section header in %s: line ", ProgramName,
                               DevCachePath[DevCachePathIndex]);
@@ -1060,14 +1090,21 @@ static int rw_clone_sect(int mode) {
         }
         (void)crc(buf, strlen(buf), &DevCacheChecksum);
         len = strlen("clone section: ");
-        if (strncmp(buf, "clone section: ", len) != 0)
-            goto bad_clone_sect;
-        if ((n = atoi(&buf[len])) < 0)
-            goto bad_clone_sect;
+        if (strncmp(buf, "clone section: ", len) != 0 ||
+            (n = atoi(&buf[len])) < 0) {
+            if (!OptWarnings) {
+                (void)fprintf(stderr, "%s: bad clone section header in %s: line ", ProgramName,
+                              DevCachePath[DevCachePathIndex]);
+                safestrprt(buf, stderr, 1 + 4 + 8);
+            }
+            return (1);
+        }
         /*
      * Read the clone section lines and create the Clone list.
      */
         for (i = 0; i < n; i++) {
+            int bad_index = 0;
+
             if (fgets(buf, sizeof(buf), DevCacheStream) == NULL) {
                 if (!OptWarnings) {
                     (void)fprintf(stderr, "%s: no %d clone line in %s: line ", ProgramName, i + 1,
@@ -1082,21 +1119,25 @@ static int rw_clone_sect(int mode) {
          */
             for (cp = buf, j = 0; *cp != ' '; cp++) {
                 if (*cp < '0' || *cp > '9') {
-
-                bad_clone_index:
-                    if (!OptWarnings) {
-                        (void)fprintf(stderr, "%s: clone %d: bad cached device index: line ",
-                                      ProgramName, i + 1);
-                        safestrprt(buf, stderr, 1 + 4 + 8);
-                    }
-                    return (1);
+                    bad_index = 1;
+                    break;
                 }
                 j = (j * 10) + (int)(*cp - '0');
             }
-            if (j < 0 || j >= NumDevices || (cp1 = strchr(++cp, '\n')) == NULL)
-                goto bad_clone_index;
-            if (strncmp(cp, DeviceTable[j].name, (cp1 - cp)) != 0)
-                goto bad_clone_index;
+            if (!bad_index) {
+                if (j < 0 || j >= NumDevices || (cp1 = strchr(++cp, '\n')) == NULL)
+                    bad_index = 1;
+                else if (strncmp(cp, DeviceTable[j].name, (cp1 - cp)) != 0)
+                    bad_index = 1;
+            }
+            if (bad_index) {
+                if (!OptWarnings) {
+                    (void)fprintf(stderr, "%s: clone %d: bad cached device index: line ",
+                                  ProgramName, i + 1);
+                    safestrprt(buf, stderr, 1 + 4 + 8);
+                }
+                return (1);
+            }
             /*
          * Allocate and complete a clone structure.
          */

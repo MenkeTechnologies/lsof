@@ -508,23 +508,27 @@ int rw_clone_sect(int m) {
         /*
      * Read the clone section header and validate it.
      */
-        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-
-        bad_clone_sect:
-
-            if (!OptWarnings) {
-                (void)fprintf(stderr, "%s: bad clone section header in %s: ", ProgramName,
-                              DevCachePath[DevCachePathIndex]);
-                safestrprt(buf, stderr, 1);
+        {
+            int bad_sect = 0;
+            if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+                bad_sect = 1;
+            } else {
+                (void)crc(buf, strlen(buf), &DevCacheChecksum);
+                len = strlen("clone section: ");
+                if (strncmp(buf, "clone section: ", len) != 0)
+                    bad_sect = 1;
+                else if ((n = atoi(&buf[len])) < 0)
+                    bad_sect = 1;
             }
-            return (1);
+            if (bad_sect) {
+                if (!OptWarnings) {
+                    (void)fprintf(stderr, "%s: bad clone section header in %s: ", ProgramName,
+                                  DevCachePath[DevCachePathIndex]);
+                    safestrprt(buf, stderr, 1);
+                }
+                return (1);
+            }
         }
-        (void)crc(buf, strlen(buf), &DevCacheChecksum);
-        len = strlen("clone section: ");
-        if (strncmp(buf, "clone section: ", len) != 0)
-            goto bad_clone_sect;
-        if ((n = atoi(&buf[len])) < 0)
-            goto bad_clone_sect;
         /*
      * Read the clone section lines and create the Clone list.
      */
@@ -550,8 +554,6 @@ int rw_clone_sect(int m) {
          * Enter the clone device number.
          */
             if (!(cp = x2dev(buf, &c->cd.rdev)) || *cp++ != ' ') {
-
-            bad_cached_clone:
                 if (!OptWarnings) {
                     (void)fprintf(stderr, "%s: bad cached clone device: ", ProgramName);
                     safestrprt(buf, stderr, 1);
@@ -562,10 +564,22 @@ int rw_clone_sect(int m) {
             /*
          * Enter the clone inode number.
          */
-            for (c->cd.inode = (INODETYPE)0; *cp != ' '; cp++) {
-                if (*cp < '0' || *cp > '9')
-                    goto bad_cached_clone;
-                c->cd.inode = (INODETYPE)((c->cd.inode * 10) + (*cp - '0'));
+            {
+                int bad_inode = 0;
+                for (c->cd.inode = (INODETYPE)0; *cp != ' '; cp++) {
+                    if (*cp < '0' || *cp > '9') {
+                        bad_inode = 1;
+                        break;
+                    }
+                    c->cd.inode = (INODETYPE)((c->cd.inode * 10) + (*cp - '0'));
+                }
+                if (bad_inode) {
+                    if (!OptWarnings) {
+                        (void)fprintf(stderr, "%s: bad cached clone device: ", ProgramName);
+                        safestrprt(buf, stderr, 1);
+                    }
+                    return (1);
+                }
             }
             /*
          * Enter the clone path name.

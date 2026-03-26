@@ -201,9 +201,6 @@ struct mounts *readmnt() {
         if (dn)
             (void)free((FREE_P *)dn);
         if (!(dn = mkstrcpy(dir, (MALLOC_S *)NULL))) {
-
-        no_space_for_mount:
-
             (void)fprintf(stderr, "%s: no space for mount at %s (%s)\n", ProgramName, fs, dir);
             Exit(1);
         }
@@ -222,8 +219,10 @@ struct mounts *readmnt() {
         /*
          * Allocate a local mounts structure and fill the directory information.
          */
-        if (!(mtp = (struct mounts *)malloc((MALLOC_S)sizeof(struct mounts))))
-            goto no_space_for_mount;
+        if (!(mtp = (struct mounts *)malloc((MALLOC_S)sizeof(struct mounts)))) {
+            (void)fprintf(stderr, "%s: no space for mount at %s (%s)\n", ProgramName, fs, dir);
+            Exit(1);
+        }
         mtp->dir = dn;
         dn = (char *)NULL;
         mtp->dev = sb.st_dev;
@@ -242,11 +241,15 @@ struct mounts *readmnt() {
          * the local mounts structure.
          */
         if (h && (v->vmt_flags & MNT_REMOTE)) {
-            if (!(dn = mkstrcat(h, -1, *h ? ":" : "", 1, fs, -1, (MALLOC_S *)NULL)))
-                goto no_space_for_mount;
+            if (!(dn = mkstrcat(h, -1, *h ? ":" : "", 1, fs, -1, (MALLOC_S *)NULL))) {
+                (void)fprintf(stderr, "%s: no space for mount at %s (%s)\n", ProgramName, fs, dir);
+                Exit(1);
+            }
         } else {
-            if (!(dn = mkstrcpy(fs, (MALLOC_S *)NULL)))
-                goto no_space_for_mount;
+            if (!(dn = mkstrcpy(fs, (MALLOC_S *)NULL))) {
+                (void)fprintf(stderr, "%s: no space for mount at %s (%s)\n", ProgramName, fs, dir);
+                Exit(1);
+            }
         }
         mtp->fsname = dn;
         ln = Readlink(dn);

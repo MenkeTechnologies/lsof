@@ -536,7 +536,8 @@ void enter_IPstate(char *type, char *name, int state_num) {
                     if (!tmp) {
                         free((FREE_P *)UdpStateNames);
                         UdpStateNames = (char **)NULL;
-                        goto no_IP_space;
+                        fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
+                        Exit(1);
                     }
                     UdpStateNames = tmp;
                     UdpStateAlloc = alloc_len;
@@ -545,7 +546,8 @@ void enter_IPstate(char *type, char *name, int state_num) {
                     if (!tmp) {
                         free((FREE_P *)TcpStateNames);
                         TcpStateNames = (char **)NULL;
-                        goto no_IP_space;
+                        fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
+                        Exit(1);
                     }
                     TcpStateNames = tmp;
                     TcpStateAlloc = alloc_len;
@@ -597,9 +599,6 @@ void enter_IPstate(char *type, char *name, int state_num) {
             } else
                 UdpStateNames = (char **)malloc(len);
             if (!UdpStateNames) {
-
-            no_IP_space:
-
                 fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
                 Exit(1);
             }
@@ -615,8 +614,10 @@ void enter_IPstate(char *type, char *name, int state_num) {
                     TcpStateNames = tmp;
             } else
                 TcpStateNames = (char **)malloc(len);
-            if (!TcpStateNames)
-                goto no_IP_space;
+            if (!TcpStateNames) {
+                fprintf(stderr, "%s: no %s state space\n", ProgramName, type);
+                Exit(1);
+            }
             TcpNumStates = new_num;
             TcpStateAlloc = alloc_len;
         }
@@ -638,20 +639,21 @@ void enter_IPstate(char *type, char *name, int state_num) {
     }
     if (tx) {
         if (UdpStateNames[state_num + UdpStateOffset]) {
-
-        dup_IP_state:
-
             fprintf(stderr, "%s: duplicate %s state %d (already %s): %s\n", ProgramName, type,
                     state_num,
-                    tx ? UdpStateNames[state_num + UdpStateOffset]
-                       : TcpStateNames[state_num + TcpStateOffset],
+                    UdpStateNames[state_num + UdpStateOffset],
                     name);
             Exit(1);
         }
         UdpStateNames[state_num + UdpStateOffset] = char_ptr;
     } else {
-        if (TcpStateNames[state_num + TcpStateOffset])
-            goto dup_IP_state;
+        if (TcpStateNames[state_num + TcpStateOffset]) {
+            fprintf(stderr, "%s: duplicate %s state %d (already %s): %s\n", ProgramName, type,
+                    state_num,
+                    TcpStateNames[state_num + TcpStateOffset],
+                    name);
+            Exit(1);
+        }
         TcpStateNames[state_num + TcpStateOffset] = char_ptr;
     }
 #endif
@@ -933,8 +935,6 @@ char *Readlink(char *arg) {
         for (argp2 = argp1 + 1; *argp2 && *argp2 != '/'; argp2++)
             ;
         if ((len = argp2 - arg) >= (int)sizeof(tbuf)) {
-
-        path_too_long:
             if (!OptWarnings) {
                 fprintf(stderr, "%s: readlink() path too long: ", ProgramName);
                 safestrprt(op ? op : arg, stderr, 1);
@@ -1010,8 +1010,23 @@ char *Readlink(char *arg) {
         /*
          * Add to the path assembly.
          */
-        if ((alen + llen + slen) >= (int)sizeof(abuf))
-            goto path_too_long;
+        if ((alen + llen + slen) >= (int)sizeof(abuf)) {
+            if (!OptWarnings) {
+                fprintf(stderr, "%s: readlink() path too long: ", ProgramName);
+                safestrprt(op ? op : arg, stderr, 1);
+            }
+            for (i = 0; i < sx; i++) {
+                free((FREE_P *)stk[i]);
+                stk[i] = NULL;
+            }
+            if (stk) {
+                free((FREE_P *)stk);
+                stk = (char **)NULL;
+            }
+            ss = sx = 0;
+            op = NULL;
+            return (NULL);
+        }
         if (slen == 2)
             *ap++ = '/';
         strncpy(ap, s1, llen);
@@ -1038,9 +1053,6 @@ char *Readlink(char *arg) {
  * string stack, then Readlink() it.
  */
     if (!(s1 = mkstrcpy(abuf, NULL))) {
-
-    no_readlink_space:
-
         fprintf(stderr, "%s: no Readlink string space for ", ProgramName);
         safestrprt(abuf, stderr, 1);
         Exit(1);
@@ -1071,8 +1083,11 @@ char *Readlink(char *arg) {
             stk = (char **)malloc((MALLOC_S)(sizeof(char *) * sx));
         else
             stk = (char **)realloc((MALLOC_P *)stk, (MALLOC_S)(sizeof(char *) * sx));
-        if (!stk)
-            goto no_readlink_space;
+        if (!stk) {
+            fprintf(stderr, "%s: no Readlink string space for ", ProgramName);
+            safestrprt(abuf, stderr, 1);
+            Exit(1);
+        }
         ss = sx;
     }
     stk[sx - 1] = s1;

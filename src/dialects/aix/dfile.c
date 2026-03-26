@@ -394,19 +394,21 @@ struct l_vfs *readvfs(struct vnode *vn) {
  * Read the vfs structure.
  */
     if (kread((KA_T)vn->v_vfsp, (char *)&v, sizeof(v))) {
-
-    vfs_exit:
         (void)free((FREE_P *)vp);
         return ((struct l_vfs *)NULL);
     }
     /*
  * Locate AIX mount information.
  */
-    if (!v.vfs_gfs || kread((KA_T)v.vfs_gfs, (char *)&g, sizeof(g)))
-        goto vfs_exit;
+    if (!v.vfs_gfs || kread((KA_T)v.vfs_gfs, (char *)&g, sizeof(g))) {
+        (void)free((FREE_P *)vp);
+        return ((struct l_vfs *)NULL);
+    }
     if (!v.vfs_mdata || kread((KA_T)((char *)v.vfs_mdata + offsetof(struct vmount, vmt_length)),
-                              (char *)&ul, sizeof(ul)))
-        goto vfs_exit;
+                              (char *)&ul, sizeof(ul))) {
+        (void)free((FREE_P *)vp);
+        return ((struct l_vfs *)NULL);
+    }
     if (!(mp = (void *)malloc((MALLOC_S)ul))) {
         (void)fprintf(stderr, "%s: PID %d, no space for mount data\n", ProgramName,
                       CurrentLocalProc->pid);
@@ -414,7 +416,8 @@ struct l_vfs *readvfs(struct vnode *vn) {
     }
     if (kread((KA_T)v.vfs_mdata, (char *)mp, (int)ul)) {
         (void)free((FREE_P *)mp);
-        goto vfs_exit;
+        (void)free((FREE_P *)vp);
+        return ((struct l_vfs *)NULL);
     }
     vm = (struct vmount *)mp;
     vp->vmt_flags = vm->vmt_flags;
@@ -464,8 +467,6 @@ struct l_vfs *readvfs(struct vnode *vn) {
         vp->dev = (dev_t)vm->vmt_fsid.fsid_dev;
     if ((s1 = vmt2dataptr(vm, VMT_STUB))) {
         if (!(vp->dir = mkstrcpy(s1, (MALLOC_S *)NULL))) {
-
-        readvfs_aix1:
             (void)fprintf(stderr, "%s: PID %d, readvfs, no space\n", ProgramName,
                           CurrentLocalProc->pid);
             Exit(1);
@@ -480,11 +481,17 @@ struct l_vfs *readvfs(struct vnode *vn) {
     else {
         if (vm->vmt_flags & MNT_REMOTE) {
             if (!(vp->fsname = mkstrcat(s1 ? s1 : "", -1, (s1 && *s1) ? ":" : "", -1, s2, -1,
-                                        (MALLOC_S *)NULL)))
-                goto readvfs_aix1;
+                                        (MALLOC_S *)NULL))) {
+                (void)fprintf(stderr, "%s: PID %d, readvfs, no space\n", ProgramName,
+                              CurrentLocalProc->pid);
+                Exit(1);
+            }
         } else {
-            if (!(vp->fsname = mkstrcpy(s2, (MALLOC_S *)NULL)))
-                goto readvfs_aix1;
+            if (!(vp->fsname = mkstrcpy(s2, (MALLOC_S *)NULL))) {
+                (void)fprintf(stderr, "%s: PID %d, readvfs, no space\n", ProgramName,
+                              CurrentLocalProc->pid);
+                Exit(1);
+            }
         }
     }
     (void)free((FREE_P *)mp);

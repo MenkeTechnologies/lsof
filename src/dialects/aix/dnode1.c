@@ -166,30 +166,33 @@ static int is_rootFid(struct vcache *vc, int *rfid) {
     case 0:
         if (!AFSnl[X_AFS_FID].n_value) {
             err = 1;
-
-        rfid_unavailable:
-
-            if (!w && !OptWarnings) {
-                (void)fprintf(stderr, "%s: WARNING: %s: %s\n", ProgramName,
-                              err ? "no kernel address" : "can't read from kernel",
-                              AFSnl[X_AFS_VOL]._n._n_name);
-                (void)fprintf(stderr, "      This may hamper AFS node number reporting.\n");
-                w = 1;
-            }
-            f = -1;
-            if (vc->v.v_flag & V_ROOT) {
-                *rfid = 1;
+        } else if (kread((KA_T)AFSnl[X_AFS_FID].n_value, (char *)&r, sizeof(r))) {
+            err = 0;
+        } else {
+            f = 1;
+            /* fall through to case 1 logic */
+            *rfid = 1;
+            if (vc->fid.Fid.Unique == r.Fid.Unique && vc->fid.Fid.Vnode == r.Fid.Vnode &&
+                vc->fid.Fid.Volume == r.Fid.Volume && vc->fid.Cell == r.Cell)
                 return (1);
-            }
             *rfid = 0;
             return (0);
         }
-        if (kread((KA_T)AFSnl[X_AFS_FID].n_value, (char *)&r, sizeof(r))) {
-            err = 0;
-            goto rfid_unavailable;
+        /* rfid_unavailable path */
+        if (!w && !OptWarnings) {
+            (void)fprintf(stderr, "%s: WARNING: %s: %s\n", ProgramName,
+                          err ? "no kernel address" : "can't read from kernel",
+                          AFSnl[X_AFS_VOL]._n._n_name);
+            (void)fprintf(stderr, "      This may hamper AFS node number reporting.\n");
+            w = 1;
         }
-        f = 1;
-        /* fall through */
+        f = -1;
+        if (vc->v.v_flag & V_ROOT) {
+            *rfid = 1;
+            return (1);
+        }
+        *rfid = 0;
+        return (0);
     case 1:
         *rfid = 1;
         if (vc->fid.Fid.Unique == r.Fid.Unique && vc->fid.Fid.Vnode == r.Fid.Vnode &&

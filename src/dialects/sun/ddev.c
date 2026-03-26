@@ -98,9 +98,10 @@ int printdevname(dev_t *dev, dev_t *rdev, int f, int nty) {
  */
 
 #if defined(HASDCACHE)
-
-printchdevname_again:
-
+    {
+    int devname_retry;
+    do {
+    devname_retry = 0;
 #endif /* defined(HASDCACHE) */
 
 #if defined(HASBLKDEV)
@@ -152,8 +153,10 @@ printchdevname_again:
             if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(c->cd.rdev)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !c->cd.v && !vfy_dev(&c->cd))
-                    goto printchdevname_again;
+                if (DevCacheUnsafe && !c->cd.v && !vfy_dev(&c->cd)) {
+                    devname_retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 safestrprt(c->cd.name, stdout, f);
@@ -161,6 +164,12 @@ printchdevname_again:
             }
         }
     }
+
+#if defined(HASDCACHE)
+    if (devname_retry)
+        continue;
+#endif /* defined(HASDCACHE) */
+
     /*
  * Search for pseudo device match on major device only.
  */
@@ -169,8 +178,10 @@ printchdevname_again:
             if (GET_MAJ_DEV(*rdev) == GET_MAJ_DEV(p->pd.rdev)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !p->pd.v && vfy_dev(&p->pd))
-                    goto printchdevname_again;
+                if (DevCacheUnsafe && !p->pd.v && vfy_dev(&p->pd)) {
+                    devname_retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 safestrprt(p->pd.name, stdout, f);
@@ -180,13 +191,17 @@ printchdevname_again:
     }
 
 #if defined(HASDCACHE)
+    if (devname_retry)
+        continue;
     /*
      * If the device cache is "unsafe" and we haven't found any match, reload
      * the device cache.
      */
     if (DevCacheUnsafe) {
         (void)rereaddev();
-        goto printchdevname_again;
+        continue;
+    }
+    } while (devname_retry);
     }
 #endif /* defined(HASDCACHE) */
 
@@ -649,23 +664,27 @@ int rw_clone_sect(int m) {
         /*
      * Read the clone section header and validate it.
      */
-        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-
-        bad_clone_sect:
-
-            if (!OptWarnings) {
-                (void)fprintf(stderr, "%s: bad clone section header in %s: ", ProgramName,
-                              DevCachePath[DevCachePathIndex]);
-                safestrprt(buf, stderr, 1);
+        {
+            int bad_sect = 0;
+            if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+                bad_sect = 1;
+            } else {
+                (void)crc(buf, strlen(buf), &DevCacheChecksum);
+                len = strlen("clone section: ");
+                if (strncmp(buf, "clone section: ", len) != 0)
+                    bad_sect = 1;
+                else if ((n = atoi(&buf[len])) < 0)
+                    bad_sect = 1;
             }
-            return (1);
+            if (bad_sect) {
+                if (!OptWarnings) {
+                    (void)fprintf(stderr, "%s: bad clone section header in %s: ", ProgramName,
+                                  DevCachePath[DevCachePathIndex]);
+                    safestrprt(buf, stderr, 1);
+                }
+                return (1);
+            }
         }
-        (void)crc(buf, strlen(buf), &DevCacheChecksum);
-        len = strlen("clone section: ");
-        if (strncmp(buf, "clone section: ", len) != 0)
-            goto bad_clone_sect;
-        if ((n = atoi(&buf[len])) < 0)
-            goto bad_clone_sect;
         /*
      * Read the clone section lines and create the Clone list.
      */
@@ -813,23 +832,27 @@ int rw_pseudo_sect(int m) {
         /*
      * Read the pseudo section header and validate it.
      */
-        if (!fgets(buf, sizeof(buf), DevCacheStream)) {
-
-        bad_pseudo_sect:
-
-            if (!OptWarnings) {
-                (void)fprintf(stderr, "%s: bad pseudo section header in %s: ", ProgramName,
-                              DevCachePath[DevCachePathIndex]);
-                safestrprt(buf, stderr, 1);
+        {
+            int bad_sect = 0;
+            if (!fgets(buf, sizeof(buf), DevCacheStream)) {
+                bad_sect = 1;
+            } else {
+                (void)crc(buf, strlen(buf), &DevCacheChecksum);
+                len = strlen("pseudo section: ");
+                if (strncmp(buf, "pseudo section: ", len) != 0)
+                    bad_sect = 1;
+                else if ((n = atoi(&buf[len])) < 0)
+                    bad_sect = 1;
             }
-            return (1);
+            if (bad_sect) {
+                if (!OptWarnings) {
+                    (void)fprintf(stderr, "%s: bad pseudo section header in %s: ", ProgramName,
+                                  DevCachePath[DevCachePathIndex]);
+                    safestrprt(buf, stderr, 1);
+                }
+                return (1);
+            }
         }
-        (void)crc(buf, strlen(buf), &DevCacheChecksum);
-        len = strlen("pseudo section: ");
-        if (strncmp(buf, "pseudo section: ", len) != 0)
-            goto bad_pseudo_sect;
-        if ((n = atoi(&buf[len])) < 0)
-            goto bad_pseudo_sect;
         /*
      * Read the pseudo section lines and create the Pseudo list.
      */

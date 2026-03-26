@@ -237,32 +237,43 @@ static int getnodety(struct vnode *v) {
         if (avops == (unsigned long)v->v_op)
             return (N_AFS);
         else {
-
-        unknown_v_op:
             (void)snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
                        print_kptr((KA_T)v->v_op, (char *)NULL, 0));
             enter_nm(NameChars);
             return (-1);
         }
-    } else if (v->v_data || !v->v_vfsp)
-        goto unknown_v_op;
-    else {
+    } else if (v->v_data || !v->v_vfsp) {
+        (void)snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
+                   print_kptr((KA_T)v->v_op, (char *)NULL, 0));
+        enter_nm(NameChars);
+        return (-1);
+    } else {
+        int unknown = 0;
         switch (afs) {
         case -1:
-            goto unknown_v_op;
+            unknown = 1;
+            break;
         case 0:
             if (!hasAFS(v)) {
                 afs = -1;
-                goto unknown_v_op;
+                unknown = 1;
+            } else {
+                afs = 1;
+                return (N_AFS);
             }
-            afs = 1;
-            return (N_AFS);
             break;
         case 1:
             if (v->v_vfsp == AFSVfsp)
                 return (N_AFS);
             else
-                goto unknown_v_op;
+                unknown = 1;
+            break;
+        }
+        if (unknown) {
+            (void)snpf(NameChars, NameCharsLength, "unknown file system type; v_op: %s",
+                       print_kptr((KA_T)v->v_op, (char *)NULL, 0));
+            enter_nm(NameChars);
+            return (-1);
         }
     }
 #else  /* !defined(HAS_AFS) */

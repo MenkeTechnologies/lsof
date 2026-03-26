@@ -518,7 +518,20 @@ char *get_nlist_path(int ap) {
                     if (is_boot(bfp)) {
                         pp = bfp;
                         (void)fclose(bf);
-                        goto get_nlist_return_path;
+                        /*
+                         * A boot path has been located.  As requested return a
+                         * malloc'd pointer to it.
+                         */
+                        if (!ap)
+                            return ("");
+                        len = (MALLOC_S)(strlen(pp) + 1);
+                        if (!(tp = (char *)malloc(len))) {
+                            (void)fprintf(stderr, "%s: can't allocate %d bytes for: %s\n", ProgramName, len,
+                                          pp);
+                            Exit(1);
+                        }
+                        (void)snpf(tp, len, "%s", pp);
+                        return (tp);
                     }
                     break;
                 }
@@ -555,8 +568,6 @@ char *get_nlist_path(int ap) {
             if (is_boot(b2)) {
                 (void)closedir(dp);
                 pp = b2;
-
-            get_nlist_return_path:
 
                 /*
                  * A boot path has been located.  As requested return a

@@ -161,34 +161,32 @@ static int lkup_dev_tty(dev_t *dr, INODETYPE *ir) {
 
     readdev(0);
 
-#if defined(HASDCACHE)
-
-lkup_dev_tty_again:
-
-#endif /* defined(HASDCACHE) */
-
-    for (i = 0; i < NumDevices; i++) {
-        if (strcmp(DeviceTable[i].name, "/dev/tty") == 0) {
+    for (;;) {
+        for (i = 0; i < NumDevices; i++) {
+            if (strcmp(DeviceTable[i].name, "/dev/tty") == 0) {
 
 #if defined(HASDCACHE)
-            if (DevCacheUnsafe && !DeviceTable[i].v && !vfy_dev(&DeviceTable[i]))
-                goto lkup_dev_tty_again;
+                if (DevCacheUnsafe && !DeviceTable[i].v && !vfy_dev(&DeviceTable[i]))
+                    break;
 #endif /* defined(HASDCACHE) */
 
-            *dr = DeviceTable[i].rdev;
-            *ir = DeviceTable[i].inode;
-            return (1);
+                *dr = DeviceTable[i].rdev;
+                *ir = DeviceTable[i].inode;
+                return (1);
+            }
         }
-    }
 
 #if defined(HASDCACHE)
-    if (DevCacheUnsafe) {
-        (void)rereaddev();
-        goto lkup_dev_tty_again;
-    }
+        if (i < NumDevices)
+            continue;
+        if (DevCacheUnsafe) {
+            (void)rereaddev();
+            continue;
+        }
 #endif /* defined(HASDCACHE) */
 
-    return (-1);
+        return (-1);
+    }
 }
 #endif /* defined(HASFDESCFS) && HASFDESCFS==1 */
 
@@ -345,8 +343,7 @@ void process_node(va) KA_T va; /* vnode kernel space address */
 						 * FREEBSDV>=5000 */
 
 #if defined(HASNULLFS)
-
-process_overlaid_node:
+    for (;;) {
 
     if (++sc > 1024) {
         (void)snpf(NameChars, NameCharsLength, "too many overlaid nodes");
@@ -656,7 +653,7 @@ process_overlaid_node:
             return;
         }
         va = (KA_T)nu.null_lowervp;
-        goto process_overlaid_node;
+        continue;
 #endif /* defined(HASNULLFS) */
 
 #if defined(HASPROCFS)
@@ -1372,6 +1369,11 @@ process_overlaid_node:
  */
     if (NameChars[0])
         enter_nm(NameChars);
+
+#if defined(HASNULLFS)
+    break;
+    } /* end for(;;) process_overlaid_node loop */
+#endif /* defined(HASNULLFS) */
 }
 
 #if FREEBSDV >= 2020

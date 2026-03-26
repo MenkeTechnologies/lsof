@@ -55,16 +55,18 @@ void find_bl_ino() {
 
     readdev(0);
 
-#if defined(HASDCACHE)
-find_bl_ino_again:
-#endif /* defined(HASDCACHE) */
-
-    low = mid = 0;
-    hi = BlockNumDevices - 1;
     if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) ||
         !CurrentLocalFile->rdev_def)
         return;
     ldev = CurrentLocalFile->rdev;
+
+#if defined(HASDCACHE)
+    for (;;) {
+        int retry = 0;
+#endif /* defined(HASDCACHE) */
+
+    low = mid = 0;
+    hi = BlockNumDevices - 1;
     while (low <= hi) {
         mid = (low + hi) / 2;
         tdev = BlockSortedDevices[mid]->rdev;
@@ -75,8 +77,10 @@ find_bl_ino_again:
         else {
 
 #if defined(HASDCACHE)
-            if (DevCacheUnsafe && !BlockSortedDevices[mid]->v && !vfy_dev(BlockSortedDevices[mid]))
-                goto find_bl_ino_again;
+            if (DevCacheUnsafe && !BlockSortedDevices[mid]->v && !vfy_dev(BlockSortedDevices[mid])) {
+                retry = 1;
+                break;
+            }
 #endif /* defined(HASDCACHE) */
 
             CurrentLocalFile->inode = BlockSortedDevices[mid]->inode;
@@ -85,6 +89,14 @@ find_bl_ino_again:
             return;
         }
     }
+
+#if defined(HASDCACHE)
+    if (retry)
+        continue;
+    break;
+    } /* end for(;;) */
+#endif /* defined(HASDCACHE) */
+
 }
 #endif /* defined(HASBLKDEV) */
 
@@ -99,16 +111,18 @@ void find_ch_ino() {
 
     readdev(0);
 
-#if defined(HASDCACHE)
-find_ch_ino_again:
-#endif /* defined(HASDCACHE) */
-
-    low = mid = 0;
-    hi = NumDevices - 1;
     if (!CurrentLocalFile->dev_def || (CurrentLocalFile->dev != DeviceOfDev) ||
         !CurrentLocalFile->rdev_def)
         return;
     ldev = CurrentLocalFile->rdev;
+
+#if defined(HASDCACHE)
+    for (;;) {
+        int retry = 0;
+#endif /* defined(HASDCACHE) */
+
+    low = mid = 0;
+    hi = NumDevices - 1;
     while (low <= hi) {
         mid = (low + hi) / 2;
         tdev = SortedDevices[mid]->rdev;
@@ -119,8 +133,10 @@ find_ch_ino_again:
         else {
 
 #if defined(HASDCACHE)
-            if (DevCacheUnsafe && !SortedDevices[mid]->v && !vfy_dev(SortedDevices[mid]))
-                goto find_ch_ino_again;
+            if (DevCacheUnsafe && !SortedDevices[mid]->v && !vfy_dev(SortedDevices[mid])) {
+                retry = 1;
+                break;
+            }
 #endif /* defined(HASDCACHE) */
 
             CurrentLocalFile->inode = SortedDevices[mid]->inode;
@@ -129,5 +145,13 @@ find_ch_ino_again:
             return;
         }
     }
+
+#if defined(HASDCACHE)
+    if (retry)
+        continue;
+    break;
+    } /* end for(;;) */
+#endif /* defined(HASDCACHE) */
+
 }
 #endif /* defined(USE_LIB_FIND_CH_INO) */

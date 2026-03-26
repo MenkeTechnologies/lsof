@@ -137,9 +137,6 @@ struct mounts *readmnt() {
         if (dn)
             (void)free((FREE_P *)dn);
         if (!(dn = mkstrcpy(dir, (MALLOC_S *)NULL))) {
-
-        no_space_for_mount:
-
             (void)fprintf(stderr, "%s: no space for mount ", ProgramName);
             safestrprt(fs, stderr, 0);
             (void)fprintf(stderr, " (");
@@ -221,12 +218,24 @@ struct mounts *readmnt() {
         /*
          * Allocate and fill a local mount structure.
          */
-        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts))))
-            goto no_space_for_mount;
+        if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts)))) {
+            (void)fprintf(stderr, "%s: no space for mount ", ProgramName);
+            safestrprt(fs, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(dir, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
 
 #if defined(HASFSTYPE)
-        if (!(mtp->fstype = mkstrcpy(sb.st_fstype, (MALLOC_S *)NULL)))
-            goto no_space_for_mount;
+        if (!(mtp->fstype = mkstrcpy(sb.st_fstype, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for mount ", ProgramName);
+            safestrprt(fs, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(dir, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
 #endif /* defined(HASFSTYPE) */
 
         mtp->dir = dn;
@@ -264,8 +273,14 @@ struct mounts *readmnt() {
         /*
          * Interpolate a possible file system (mounted-on) device name link.
          */
-        if (!(dn = mkstrcpy(fs, (MALLOC_S *)NULL)))
-            goto no_space_for_mount;
+        if (!(dn = mkstrcpy(fs, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for mount ", ProgramName);
+            safestrprt(fs, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(dir, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
         mtp->fsname = dn;
         ln = Readlink(dn);
         dn = (char *)NULL;

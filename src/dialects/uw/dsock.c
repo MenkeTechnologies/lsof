@@ -1080,15 +1080,65 @@ static struct sockaddr_un *find_unix_sockaddr_un(KA_T ka) {
      * Get a SOCK_STREAM PF_UNIX socket descriptor and use ioctl() to
      * send a stream message to acquire the list of PF_UNIX addresses.
      */
-        if ((sock = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
-
+        do {
+            if ((sock = socket(PF_UNIX, SOCK_STREAM, 0)) < 0)
+                break;
             /*
-         * Some error was detected.  Return allocated resources and
-         * indicate that no further attempts need be made.
+         * Read the address list.  Before starting, get an estimate of its
+         * size and add a small safety margin.
          */
+            if ((ct = ioctl(sock, SI_UX_COUNT, 0)) < 0)
+                break;
+            ct += 32;
+            pct = 0;
+            do {
+                if (ct > pct) {
 
-        find_err_exit:
-
+                    /*
+             * If the previously allocated space is insufficient,
+             * or if none has been allocated, allocate space.
+             */
+                    alen = (MALLOC_S)(ct * sizeof(struct soreq));
+                    if (ch)
+                        ch = (char *)realloc((MALLOC_P *)ch, alen);
+                    else
+                        ch = (char *)malloc(alen);
+                    if (!ch) {
+                        sock = -1; /* prevent double close since ch is gone */
+                        alct = -1;
+                        return ((struct sockaddr_un *)NULL);
+                    }
+                    pct = ct;
+                }
+                /*
+            * Read the address list into the allocated space.
+            */
+                ioc.ic_cmd = SI_UX_LIST;
+                ioc.ic_dp = ch;
+                ioc.ic_len = (int)alen;
+                ioc.ic_timout = 0;
+                if ((ct = ioctl(sock, I_STR, &ioc)) < 0)
+                    break;
+            } while (ct > pct);
+            if (ct < 0)
+                break;
+            /*
+         * The list has been acquired.  Free any excess space pre-allocated to
+         * it, then save its address.   Close the stream socket.
+         */
+            alct = ct;
+            if ((len = (MALLOC_S)(alct * sizeof(struct soreq))) < alen) {
+                if (!(ch = (char *)realloc((MALLOC_P *)ch, len)))
+                    break;
+            }
+            al = (struct soreq *)ch;
+            close(sock);
+            sock = -1;
+        } while (0);
+        /*
+     * If we broke out of the do-while, handle error cleanup.
+     */
+        if (!al) {
             alct = -1;
             if (sock >= 0)
                 close(sock);
@@ -1096,51 +1146,6 @@ static struct sockaddr_un *find_unix_sockaddr_un(KA_T ka) {
                 (void)free((FREE_P *)ch);
             return ((struct sockaddr_un *)NULL);
         }
-        /*
-     * Read the address list.  Before starting, get an estimate of its
-     * size and add a small safety margin.
-     */
-        if ((ct = ioctl(sock, SI_UX_COUNT, 0)) < 0)
-            goto find_err_exit;
-        ct += 32;
-        pct = 0;
-        do {
-            if (ct > pct) {
-
-                /*
-         * If the previously allocated space is insufficient,
-         * or if none has been allocated, allocate space.
-         */
-                alen = (MALLOC_S)(ct * sizeof(struct soreq));
-                if (ch)
-                    ch = (char *)realloc((MALLOC_P *)ch, alen);
-                else
-                    ch = (char *)malloc(alen);
-                if (!ch)
-                    goto find_err_exit;
-                pct = ct;
-            }
-            /*
-        * Read the address list into the allocated space.
-        */
-            ioc.ic_cmd = SI_UX_LIST;
-            ioc.ic_dp = ch;
-            ioc.ic_len = (int)alen;
-            ioc.ic_timout = 0;
-            if ((ct = ioctl(sock, I_STR, &ioc)) < 0)
-                goto find_err_exit;
-        } while (ct > pct);
-        /*
-     * The list has been acquired.  Free any excess space pre-allocated to
-     * it, then save its address.   Close the stream socket.
-     */
-        alct = ct;
-        if ((len = (MALLOC_S)(alct * sizeof(struct soreq))) < alen) {
-            if (!(ch = (char *)realloc((MALLOC_P *)ch, len)))
-                goto find_err_exit;
-        }
-        al = (struct soreq *)ch;
-        close(sock);
     }
     /*
  * Search a previously acquired address list, based on the supplied kernel

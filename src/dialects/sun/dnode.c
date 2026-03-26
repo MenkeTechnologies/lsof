@@ -1082,9 +1082,10 @@ static struct l_dev *finddev(dev_t *dev, dev_t *rdev, int flags) {
  */
 
 #if defined(HASDCACHE)
-
-finddev_again:
-
+    {
+    int finddev_retry;
+    do {
+    finddev_retry = 0;
 #endif /* defined(HASDCACHE) */
 
     if (flags & LOOKDEV_TAB) {
@@ -1099,14 +1100,22 @@ finddev_again:
             if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(c->cd.rdev)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !c->cd.v && !vfy_dev(&c->cd))
-                    goto finddev_again;
+                if (DevCacheUnsafe && !c->cd.v && !vfy_dev(&c->cd)) {
+                    finddev_retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 return (&c->cd);
             }
         }
     }
+
+#if defined(HASDCACHE)
+    if (finddev_retry)
+        continue;
+#endif /* defined(HASDCACHE) */
+
     /*
  * Search for pseudo device match on major device only.
  */
@@ -1115,14 +1124,22 @@ finddev_again:
             if (GET_MAJ_DEV(*rdev) == GET_MAJ_DEV(p->pd.rdev)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !p->pd.v && !vfy_dev(&p->pd))
-                    goto finddev_again;
+                if (DevCacheUnsafe && !p->pd.v && !vfy_dev(&p->pd)) {
+                    finddev_retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 return (&p->pd);
             }
         }
     }
+
+#if defined(HASDCACHE)
+    } while (finddev_retry);
+    }
+#endif /* defined(HASDCACHE) */
+
     return ((struct l_dev *)NULL);
 }
 
@@ -1363,9 +1380,6 @@ void process_node(KA_T va) {
     if ((ka = (KA_T)v->v_vfsp)) {
         if (kread(ka, (char *)&kv, sizeof(kv))) {
             vka = va;
-
-        vfs_read_error:
-
             (void)snpf(NameChars, NameCharsLength - 1, "vnode at %s: can't read vfs: %s",
                        print_kptr(vka, tbuf, sizeof(tbuf)), print_kptr(ka, (char *)NULL, 0));
             NameChars[NameCharsLength - 1] = '\0';
@@ -1474,7 +1488,11 @@ void process_node(KA_T va) {
         vfs = (struct l_vfs *)NULL;
     else if (!(vfs = readvfs(ka, &kv, v))) {
         vka = va;
-        goto vfs_read_error;
+        (void)snpf(NameChars, NameCharsLength - 1, "vnode at %s: can't read vfs: %s",
+                   print_kptr(vka, tbuf, sizeof(tbuf)), print_kptr(ka, (char *)NULL, 0));
+        NameChars[NameCharsLength - 1] = '\0';
+        enter_nm(NameChars);
+        return;
     }
     /*
  * Read the afsnode, autonode, cnode, door_node, fifonode, fnnode, lnode,

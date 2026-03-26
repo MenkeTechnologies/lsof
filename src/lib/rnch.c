@@ -397,9 +397,6 @@ void ncache_load() {
      */
         len = Nc * sizeof(struct l_nch);
         if (!(Ncache = (struct l_nch *)calloc(Nc, sizeof(struct l_nch)))) {
-
-        no_local_space:
-
             if (!OptWarnings)
                 (void)fprintf(stderr, "%s: no space for %d byte local name cache\n", ProgramName,
                               len);
@@ -598,8 +595,12 @@ void ncache_load() {
         Nc = n;
         if (!RepeatTime) {
             len = Nc * sizeof(struct l_nch);
-            if (!(Ncache = (struct l_nch *)realloc(Ncache, len)))
-                goto no_local_space;
+            if (!(Ncache = (struct l_nch *)realloc(Ncache, len))) {
+                if (!OptWarnings)
+                    (void)fprintf(stderr, "%s: no space for %d byte local name cache\n",
+                                  ProgramName, len);
+                Exit(1);
+            }
         }
     }
     /*

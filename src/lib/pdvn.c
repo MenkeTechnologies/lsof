@@ -69,9 +69,7 @@ int printdevname(dev_t *dev, dev_t *rdev, int force, int nty) {
     int r = 1;
 
 #if defined(HASDCACHE)
-
-printdevname_again:
-
+    for (;;) {
 #endif /* defined(HASDCACHE) */
 
 #if defined(HAS_STD_CLONE)
@@ -80,6 +78,11 @@ printdevname_again:
  * /dev (or /devices).
  */
     if ((nty == N_CHR) && CurrentLocalFile->is_stream && Clone && (*dev == DeviceOfDev)) {
+
+#if defined(HASDCACHE)
+        int clone_retry = 0;
+#endif /* defined(HASDCACHE) */
+
         r = 0; /* Don't let lkupdev() rebuild the device cache,
 			 * because when it has been rebuilt we want to
 			 * search again for clones. */
@@ -88,14 +91,22 @@ printdevname_again:
             if (GET_MAJ_DEV(*rdev) == GET_MIN_DEV(DeviceTable[c->dx].rdev)) {
 
 #if defined(HASDCACHE)
-                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx]))
-                    goto printdevname_again;
+                if (DevCacheUnsafe && !DeviceTable[c->dx].v && !vfy_dev(&DeviceTable[c->dx])) {
+                    clone_retry = 1;
+                    break;
+                }
 #endif /* defined(HASDCACHE) */
 
                 safestrprt(DeviceTable[c->dx].name, stdout, force);
                 return (1);
             }
         }
+
+#if defined(HASDCACHE)
+        if (clone_retry)
+            continue;
+#endif /* defined(HASDCACHE) */
+
     }
 #endif /* defined(HAS_STD_CLONE) */
 
@@ -153,8 +164,10 @@ printdevname_again:
  */
     if (!r && DevCacheUnsafe) {
         (void)rereaddev();
-        goto printdevname_again;
+        continue;
     }
+    break;
+    } /* end for(;;) */
 #endif /* defined(HASDCACHE) */
 
     return (0);

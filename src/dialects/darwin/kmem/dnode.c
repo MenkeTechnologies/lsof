@@ -93,7 +93,6 @@ static char *getvpath(KA_T va, struct vnode *rv) {
             pp--;
             *pp = '/';
             pl = 1;
-            goto getvpath_alloc;
         } else {
 
             /*
@@ -112,6 +111,7 @@ static char *getvpath(KA_T va, struct vnode *rv) {
      */
         vb = *rv;
     }
+    if (!((rv->v_flag & VROOT) && rv->v_mount && (mb.mnt_flag & MNT_ROOTFS))) {
     /*
  * Accumulate the path from the vnode chain.
  */
@@ -256,12 +256,11 @@ static char *getvpath(KA_T va, struct vnode *rv) {
                 return ((char *)NULL);
         }
     }
+    } /* end if not root fs */
     /*
  * Allocate space for the assembled path, including terminator, and return its
  * pointer.
  */
-
-getvpath_alloc:
 
     if (!(ap = (char *)malloc(pl + 1))) {
         (void)fprintf(stderr, "%s: no getvpath space (%d)\n", ProgramName, pl + 1);

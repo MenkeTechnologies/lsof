@@ -247,9 +247,12 @@ static int is_rootFid(struct vcache *vc, int *rfid) {
     case 0:
         if (get_Nl_value("arFid", Drive_Nl, &arFid) < 0 || !arFid) {
             err = "no _afs_rootFid kernel address";
-
-        rfid_unavailable:
-
+        } else if (kread((KA_T)arFid, (char *)&r, sizeof(r))) {
+            err = "can't read _afs_rootFid from kernel";
+        } else {
+            err = (char *)NULL;
+        }
+        if (err) {
             if (!w && !OptWarnings) {
                 (void)fprintf(stderr, "%s: WARNING: AFS root Fid error: %s\n", ProgramName, err);
                 (void)fprintf(stderr, "      This may hamper AFS node number reporting.\n");
@@ -262,10 +265,6 @@ static int is_rootFid(struct vcache *vc, int *rfid) {
             }
             *rfid = 0;
             return (0);
-        }
-        if (kread((KA_T)arFid, (char *)&r, sizeof(r))) {
-            err = "can't read _afs_rootFid from kernel";
-            goto rfid_unavailable;
         }
         f = 1;
         /* fall through */

@@ -110,8 +110,14 @@ struct mounts *readmnt() {
      */
         if (dn)
             (void)free((FREE_P *)dn);
-        if (!(dn = mkstrcpy(mp->mnt_dir, (MALLOC_S *)NULL)))
-            goto no_space_for_mount;
+        if (!(dn = mkstrcpy(mp->mnt_dir, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            safestrprt(mp->mnt_fsname, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(mp->mnt_dir, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
         if (!(ln = Readlink(dn))) {
             if (!OptWarnings)
                 (void)fprintf(stderr, "      Output information may be incomplete.\n");
@@ -152,9 +158,6 @@ struct mounts *readmnt() {
      * (mounted) information.
      */
         if (!(mtp = (struct mounts *)malloc(sizeof(struct mounts)))) {
-
-        no_space_for_mount:
-
             (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
             safestrprt(mp->mnt_fsname, stderr, 0);
             (void)fprintf(stderr, " (");
@@ -192,8 +195,14 @@ struct mounts *readmnt() {
         /*
      * Interpolate a possible file system (mounted-on device) name link.
      */
-        if (!(dn = mkstrcpy(mp->mnt_fsname, (MALLOC_S *)NULL)))
-            goto no_space_for_mount;
+        if (!(dn = mkstrcpy(mp->mnt_fsname, (MALLOC_S *)NULL))) {
+            (void)fprintf(stderr, "%s: no space for mount at ", ProgramName);
+            safestrprt(mp->mnt_fsname, stderr, 0);
+            (void)fprintf(stderr, " (");
+            safestrprt(mp->mnt_dir, stderr, 0);
+            (void)fprintf(stderr, ")\n");
+            Exit(1);
+        }
         mtp->fsname = dn;
         ln = Readlink(dn);
         dn = (char *)NULL;
