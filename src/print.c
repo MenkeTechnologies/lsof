@@ -48,8 +48,8 @@ static char copyright[] =
 					 * and fill_porttab() */
 
 struct hostcache {
-    unsigned char a[MAX_AF_ADDR];    /* numeric address */
-    int af;                /* address family -- e.g., AF_INET
+    unsigned char addr[MAX_AF_ADDR];    /* numeric address */
+    int addr_family;            /* address family -- e.g., AF_INET
 					 * or AF_INET6 */
     char *name;            /* name */
 };
@@ -384,13 +384,9 @@ gethostnm(inet_addr, addr_family)
 #endif    /* defined(HASIPv6) */
 
     for (i = 0; i < hcx; i++) {
-        if (addr_family != hc[i].af)
+        if (addr_family != hc[i].addr_family)
             continue;
-        for (j = 0; j < addr_len; j++) {
-            if (inet_addr[j] != hc[i].a[j])
-                break;
-        }
-        if (j >= addr_len)
+        if (memcmp(inet_addr, hc[i].addr, addr_len) == 0)
             return (hc[i].name);
     }
 /*
@@ -458,10 +454,8 @@ gethostnm(inet_addr, addr_family)
             Exit(1);
         }
     }
-    hc[hcx].af = addr_family;
-    for (i = 0; i < addr_len; i++) {
-        hc[hcx].a[i] = inet_addr[i];
-    }
+    hc[hcx].addr_family = addr_family;
+    (void) memcpy(hc[hcx].addr, inet_addr, addr_len);
     hc[hcx++].name = np;
     return (np);
 }
@@ -1246,10 +1240,13 @@ printinaddr() {
                 }
 #endif    /* !defined(HASNORPC_H) */
 
-                if (strcasecmp(CurrentLocalFile->iproto, "TCP") == 0)
-                    port = lkup_port(CurrentLocalFile->li[i].port, 0, src);
-                else if (strcasecmp(CurrentLocalFile->iproto, "UDP") == 0)
-                    port = lkup_port(CurrentLocalFile->li[i].port, 1, src);
+                {
+                    char proto_ch = CurrentLocalFile->iproto[0];
+                    if (proto_ch == 'T' || proto_ch == 't')
+                        port = lkup_port(CurrentLocalFile->li[i].port, 0, src);
+                    else if (proto_ch == 'U' || proto_ch == 'u')
+                        port = lkup_port(CurrentLocalFile->li[i].port, 1, src);
+                }
             }
             if (!port) {
                 (void) snpf(pbuf, sizeof(pbuf), "%d", CurrentLocalFile->li[i].port);

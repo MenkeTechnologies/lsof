@@ -875,27 +875,18 @@ is_nw_addr(inet_addr, port, addr_family)
 
 #if    defined(HASIPv6)
         if (addr_family == AF_INET6) {
-        if (node->addr[15] || node->addr[14] || node->addr[13] || node->addr[12]
-        ||  node->addr[11] || node->addr[10] || node->addr[9]  || node->addr[8]
-        ||  node->addr[7]  || node->addr[6]  || node->addr[5]  || node->addr[4]
-        ||  node->addr[3]  || node->addr[2]  || node->addr[1]  || node->addr[0]) {
-            if (inet_addr[15] != node->addr[15] || inet_addr[14] != node->addr[14]
-            ||  inet_addr[13] != node->addr[13] || inet_addr[12] != node->addr[12]
-            ||  inet_addr[11] != node->addr[11] || inet_addr[10] != node->addr[10]
-            ||  inet_addr[9]  != node->addr[9]  || inet_addr[8]  != node->addr[8]
-            ||  inet_addr[7]  != node->addr[7]  || inet_addr[6]  != node->addr[6]
-            ||  inet_addr[5]  != node->addr[5]  || inet_addr[4]  != node->addr[4]
-            ||  inet_addr[3]  != node->addr[3]  || inet_addr[2]  != node->addr[2]
-            ||  inet_addr[1]  != node->addr[1]  || inet_addr[0]  != node->addr[0])
-            continue;
-        }
+            static const unsigned char zero_addr[16] = {0};
+            if (memcmp(node->addr, zero_addr, 16) != 0) {
+                if (memcmp(inet_addr, node->addr, 16) != 0)
+                    continue;
+            }
         } else if (addr_family == AF_INET)
 #endif    /* defined(HASIPv6) */
 
         {
-            if (node->addr[3] || node->addr[2] || node->addr[1] || node->addr[0]) {
-                if (inet_addr[3] != node->addr[3] || inet_addr[2] != node->addr[2]
-                    || inet_addr[1] != node->addr[1] || inet_addr[0] != node->addr[0])
+            static const unsigned char zero_addr[4] = {0};
+            if (memcmp(node->addr, zero_addr, 4) != 0) {
+                if (memcmp(inet_addr, node->addr, 4) != 0)
                     continue;
             }
         }
@@ -935,7 +926,7 @@ mkstrcpy(src, rlp)
     ns = (char *) malloc(len + 1);
     if (ns) {
         if (src)
-            (void) snpf(ns, len + 1, "%s", src);
+            (void) memcpy(ns, src, len + 1);
         else
             *ns = '\0';
     }
