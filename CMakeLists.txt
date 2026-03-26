@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lsof C)
 
-set(LSOF_VERSION "5.5")
+set(LSOF_VERSION "5.6")
 set(CMAKE_C_STANDARD 11)
 
 # Detect dialect based on platform
@@ -108,7 +108,6 @@ add_custom_target(distclean
         ${CMAKE_BINARY_DIR}/install_manifest.txt
         ${CMAKE_BINARY_DIR}/Makefile
         ${CMAKE_BINARY_DIR}/compile_commands.json
-        ${CMAKE_BINARY_DIR}/CTestTestfile.cmake
         ${CMAKE_BINARY_DIR}/Testing
         ${CMAKE_BINARY_DIR}/bench/CMakeFiles
         ${CMAKE_BINARY_DIR}/tags
@@ -122,12 +121,9 @@ add_custom_target(distclean
 )
 
 # ===== Test Suite =====
-enable_testing()
-
 add_executable(check_unit test/test_unit.c)
 target_include_directories(check_unit PRIVATE ${PROJECT_SOURCE_DIR}/test)
 target_compile_options(check_unit PRIVATE -Wall -Wextra -Wpedantic)
-add_test(NAME check_unit COMMAND check_unit)
 
 add_executable(check_integration test/test_integration.c)
 target_include_directories(check_integration PRIVATE ${PROJECT_SOURCE_DIR}/test)
@@ -135,7 +131,6 @@ target_compile_options(check_integration PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(check_integration PRIVATE
     LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
 )
-add_test(NAME check_integration COMMAND check_integration)
 
 add_executable(check_stress test/test_stress.c)
 target_include_directories(check_stress PRIVATE ${PROJECT_SOURCE_DIR}/test)
@@ -143,7 +138,6 @@ target_compile_options(check_stress PRIVATE -Wall -Wextra -Wpedantic -Wno-unused
 target_compile_definitions(check_stress PRIVATE
     LSOF_BUILD_PATH="${CMAKE_BINARY_DIR}/lsof5"
 )
-add_test(NAME check_stress COMMAND check_stress)
 
 # 'make leakcheck' runs unit tests under macOS leaks tool
 add_custom_target(leakcheck
