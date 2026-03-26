@@ -338,6 +338,223 @@ TEST(lsof_fd_selection) {
 }
 
 
+TEST(lsof_multiple_pids) {
+    if (!lsof_available()) return;
+    char args[256];
+    char buf[16384];
+    pid_t mypid = getpid();
+    pid_t ppid = getppid();
+
+    snprintf(args, sizeof(args), "-p %d,%d -Fp", (int)mypid, (int)ppid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+
+    char expected_me[64], expected_parent[64];
+    snprintf(expected_me, sizeof(expected_me), "p%d", (int)mypid);
+    snprintf(expected_parent, sizeof(expected_parent), "p%d", (int)ppid);
+    ASSERT_NOT_NULL(strstr(buf, expected_me));
+    ASSERT_NOT_NULL(strstr(buf, expected_parent));
+}
+
+TEST(lsof_txt_fd) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -Ff", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "txt"));
+}
+
+TEST(lsof_rtd_fd) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -Ff", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    /* rtd may not be present on all platforms (e.g. macOS) */
+    ASSERT_TRUE(strstr(buf, "rtd") != NULL || strstr(buf, "txt") != NULL);
+}
+
+TEST(lsof_pipe_detection) {
+    if (!lsof_available()) return;
+    int pipefd[2];
+    if (pipe(pipefd) < 0) return;
+
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -Ft", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "PIPE"));
+}
+
+TEST(lsof_multiple_fd_selection) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-a -p %d -d cwd,txt -Ff", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "cwd"));
+    ASSERT_NOT_NULL(strstr(buf, "txt"));
+}
+
+TEST(lsof_numeric_fd) {
+    if (!lsof_available()) return;
+
+    char tmppath[] = "/tmp/lsof_test_numfd_XXXXXX";
+    int fd = mkstemp(tmppath);
+    ASSERT_TRUE(fd >= 0);
+
+    char args[256];
+    char buf[16384];
+    pid_t mypid = getpid();
+    char fdstr[16];
+    snprintf(fdstr, sizeof(fdstr), "%d", fd);
+
+    snprintf(args, sizeof(args), "-a -p %d -d %d -Ff", (int)mypid, fd);
+    int rc = run_lsof(args, buf, sizeof(buf));
+
+    close(fd);
+    unlink(tmppath);
+
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, fdstr));
+}
+
+TEST(lsof_field_type_output) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -F pct", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+
+    /* Should have type fields: REG, DIR, PIPE, etc */
+    int has_type = 0;
+    char *line = buf;
+    while (line && *line) {
+        if (*line == 't') has_type = 1;
+        char *nl = strchr(line, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    ASSERT_TRUE(has_type);
+}
+
+TEST(lsof_dev_null_detection) {
+    if (!lsof_available()) return;
+    int fd = open("/dev/null", O_RDONLY);
+    if (fd < 0) return;
+
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -a -d %d -Fn", (int)mypid, fd);
+    int rc = run_lsof(args, buf, sizeof(buf));
+
+    close(fd);
+
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "/dev/null"));
+}
+
+TEST(lsof_udp_socket_detection) {
+    if (!lsof_available()) return;
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) return;
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        close(sock);
+        return;
+    }
+
+    socklen_t addrlen = sizeof(addr);
+    getsockname(sock, (struct sockaddr *)&addr, &addrlen);
+    int port = ntohs(addr.sin_port);
+
+    char args[256];
+    char buf[16384];
+    snprintf(args, sizeof(args), "-i UDP:%d -Fn -P", port);
+    int rc = run_lsof(args, buf, sizeof(buf));
+
+    close(sock);
+
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(strlen(buf) > 0);
+}
+
+TEST(lsof_no_output_for_nonexistent_file) {
+    if (!lsof_available()) return;
+    char buf[4096];
+    int rc = run_lsof("/nonexistent/path/that/does/not/exist/ever", buf, sizeof(buf));
+    /* lsof should exit with 1 (no matches) */
+    ASSERT_EQ(rc, 1);
+}
+
+TEST(lsof_fd_range_selection) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    /* select fd range 0-2 (stdin, stdout, stderr) */
+    snprintf(args, sizeof(args), "-a -p %d -d 0-2 -Ff", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(strlen(buf) > 0);
+}
+
+TEST(lsof_exclude_fd) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    /* exclude cwd, should still have other entries */
+    snprintf(args, sizeof(args), "-a -p %d -d ^cwd -Ff", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    /* cwd should be excluded */
+    ASSERT_NULL(strstr(buf, "fcwd"));
+}
+
+TEST(lsof_no_header_with_field_output) {
+    if (!lsof_available()) return;
+    char args[128];
+    char buf[16384];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-p %d -Fp", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    /* field output should not contain the normal header line "COMMAND" */
+    ASSERT_NULL(strstr(buf, "COMMAND"));
+}
+
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
 
@@ -356,6 +573,19 @@ int main(int argc, char **argv) {
     RUN(lsof_invalid_pid);
     RUN(lsof_and_option);
     RUN(lsof_fd_selection);
+    RUN(lsof_multiple_pids);
+    RUN(lsof_txt_fd);
+    RUN(lsof_rtd_fd);
+    RUN(lsof_pipe_detection);
+    RUN(lsof_multiple_fd_selection);
+    RUN(lsof_numeric_fd);
+    RUN(lsof_field_type_output);
+    RUN(lsof_dev_null_detection);
+    RUN(lsof_udp_socket_detection);
+    RUN(lsof_no_output_for_nonexistent_file);
+    RUN(lsof_fd_range_selection);
+    RUN(lsof_exclude_fd);
+    RUN(lsof_no_header_with_field_output);
 
     TEST_REPORT();
 }
