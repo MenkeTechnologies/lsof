@@ -27,6 +27,8 @@
 #include "test_unit_network.h"
 #include "test_unit_fd.h"
 #include "test_unit_path.h"
+#include "test_unit_devhash.h"
+#include "test_unit_portcache.h"
 
 
 int main(int argc, char **argv) {
@@ -355,6 +357,31 @@ int main(int argc, char **argv) {
     RUN(path_depth_double_slash);
     RUN(path_depth_null);
     RUN(path_depth_no_slash);
+
+    /* --- devhash --- */
+    RUN(sfhash_range);
+    RUN(sfhash_deterministic);
+    RUN(sfhash_different_inodes_differ);
+    RUN(sfhash_different_majors_differ);
+    RUN(sfhash_different_minors_differ);
+    RUN(sfhash_power_of_two_mod);
+    RUN(sfhash_distribution);
+    RUN(sfhash_zero_inputs);
+    RUN(ncache_hash_range);
+    RUN(ncache_hash_deterministic);
+    RUN(ncache_hash_different_inodes_differ);
+    RUN(ncache_hash_different_addrs_differ);
+    RUN(ncache_hash_distribution);
+
+    /* --- portcache --- */
+    RUN(port_table_build);
+    RUN(port_table_lookup_hit);
+    RUN(port_table_lookup_miss);
+    RUN(port_table_collision_chain);
+    RUN(port_table_overwrite);
+    RUN(port_table_all_common_ports);
+    RUN(port_table_max_port);
+    RUN(port_table_zero_port);
 
     TEST_REPORT();
 }
