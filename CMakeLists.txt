@@ -78,7 +78,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(lsof5 ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
 target_compile_options(lsof5 PRIVATE
-    -O2 -Wno-deprecated-non-prototype
+    -O2
 )
 
 # --- Cyberpunk build banners ---

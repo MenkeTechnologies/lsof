@@ -179,7 +179,7 @@ struct mounts *readmnt() {
                           mp->RMNT_FSTYPE);
             Exit(1);
         }
-        (void)strcpy(mtp->MOUNTS_FSTYPE, mp->RMNT_FSTYPE);
+
 #endif /* defined(RMNT_FSTYP) && defined(MOUNTS_FSTYP) */
 
 #if defined(RMNT_STAT_FSTYPE) && defined(MOUNTS_STAT_FSTYPE)

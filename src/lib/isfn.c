@@ -342,7 +342,7 @@ int is_file_named(char *path, int cdev) {
         }
         break;
     case 2:
-        (void)strcpy(NameChars, path);
+        (void)snpf(NameChars, NameCharsLength, "%s", path);
         break;
 
 #if defined(HAVECLONEMAJ)
