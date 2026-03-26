@@ -32,6 +32,13 @@ If a process has a file descriptor, `lsof` sees it.
 mkdir build && cd build
 cmake ..
 make
+sudo make install
+```
+
+Installs to `/usr/local/sbin/lsof` by default. To change the prefix:
+
+```bash
+cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 ```
 
 ---
