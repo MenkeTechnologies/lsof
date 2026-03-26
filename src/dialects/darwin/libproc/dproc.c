@@ -555,7 +555,16 @@ process_fds(int pid, uint32_t n, int ckscko)
 
 /*
  * process_text() -- process text information
+ *
+ * Use PROC_PIDREGIONPATHINFO2 (private, flavor 22) which returns only
+ * unique text file regions rather than every memory mapping.  This
+ * matches Apple's lsof and avoids ~220K syscalls (~22s) in favor of
+ * ~16K (~0.07s).
  */
+
+#ifndef PROC_PIDREGIONPATHINFO2
+#define PROC_PIDREGIONPATHINFO2 22
+#endif
 
 static void
 process_text(int pid)
@@ -565,7 +574,7 @@ process_text(int pid)
     struct proc_regionwithpathinfo rwpi;
 
     for (a = (uint64_t) 0, i = n = 0; i < 10000; i++) {
-        nb = proc_pidinfo(pid, PROC_PIDREGIONPATHINFO, a, &rwpi,
+        nb = proc_pidinfo(pid, PROC_PIDREGIONPATHINFO2, a, &rwpi,
                           sizeof(rwpi));
         if (nb <= 0) {
             if ((errno == ESRCH) || (errno == EINVAL)) {
@@ -590,7 +599,7 @@ process_text(int pid)
             return;
         } else if (nb < sizeof(rwpi)) {
             (void) fprintf(stderr,
-                           "%s: PID %d: proc_pidinfo(PROC_PIDREGIONPATHINFO);\n",
+                           "%s: PID %d: proc_pidinfo(PROC_PIDREGIONPATHINFO2);\n",
                            ProgramName, pid);
             (void) fprintf(stderr,
                            "      too few bytes; expected %ld, got %d\n",
