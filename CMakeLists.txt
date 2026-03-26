@@ -112,9 +112,12 @@ add_test(NAME check_integration COMMAND check_integration)
 
 # 'make leakcheck' runs unit tests under macOS leaks tool
 add_custom_target(leakcheck
-    COMMAND ${PROJECT_SOURCE_DIR}/test/run_leakcheck.sh ${CMAKE_BINARY_DIR}
     DEPENDS check_unit check_integration
-    COMMENT "Running leak analysis on test binaries"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "  Running memory leak analysis..."
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND leaks --atExit -q -- $<TARGET_FILE:check_unit>
+    COMMAND leaks --atExit -q -- $<TARGET_FILE:check_integration>
 )
 
 # ===== Benchmark Suite =====
@@ -124,16 +127,19 @@ target_compile_options(benchmark_core PRIVATE -Wall -Wextra -Wpedantic -O2)
 
 # 'make check' runs all tests
 add_custom_target(check
-    COMMAND ${PROJECT_SOURCE_DIR}/test/run_checks.sh ${CMAKE_BINARY_DIR}
     DEPENDS check_unit check_integration
-    COMMENT "Running check suite -- output in check_*.log"
+    COMMAND ${PROJECT_SOURCE_DIR}/test/banner.sh start
+    COMMAND $<TARGET_FILE:check_unit>
+    COMMAND $<TARGET_FILE:check_integration>
+    COMMAND ${PROJECT_SOURCE_DIR}/test/banner.sh end
 )
 
 # 'make bench' runs benchmarks
 add_custom_target(bench
-    COMMAND ${PROJECT_SOURCE_DIR}/bench/run_benchmarks.sh ${CMAKE_BINARY_DIR}
     DEPENDS benchmark_core
-    COMMENT "Running benchmarks -- output in benchmark_*.log"
+    COMMAND ${PROJECT_SOURCE_DIR}/bench/banner.sh start
+    COMMAND $<TARGET_FILE:benchmark_core>
+    COMMAND ${PROJECT_SOURCE_DIR}/bench/banner.sh end
 )
 
 # 'make clean' also removes the lsof binary from the source root if present

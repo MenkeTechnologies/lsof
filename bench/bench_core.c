@@ -4,7 +4,7 @@
  * Measures performance of key internal algorithms and operations.
  */
 
-#include "bench_framework.h"
+#include "bench.h"
 
 #include <ctype.h>
 #include <sys/types.h>

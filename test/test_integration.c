@@ -5,7 +5,7 @@
  * They require lsof to be accessible on the system.
  */
 
-#include "test_framework.h"
+#include "test.h"
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -338,20 +338,24 @@ TEST(lsof_fd_selection) {
 }
 
 
-static tf_test_entry all_tests[] = {
-    REGISTER_TEST(lsof_exists),
-    REGISTER_TEST(lsof_diag),
-    REGISTER_TEST(lsof_help_flag),
-    REGISTER_TEST(lsof_version_flag),
-    REGISTER_TEST(lsof_finds_own_pid),
-    REGISTER_TEST(lsof_field_output_format),
-    REGISTER_TEST(lsof_finds_open_file),
-    REGISTER_TEST(lsof_cwd_detection),
-    REGISTER_TEST(lsof_tcp_socket_detection),
-    REGISTER_TEST(lsof_unix_socket_detection),
-    REGISTER_TEST(lsof_invalid_pid),
-    REGISTER_TEST(lsof_and_option),
-    REGISTER_TEST(lsof_fd_selection),
-};
+int main(int argc, char **argv) {
+    (void)argc; (void)argv;
 
-RUN_TESTS_FROM(all_tests)
+    TEST_SUITE("LSOF INTEGRATION TESTS");
+
+    RUN(lsof_exists);
+    RUN(lsof_diag);
+    RUN(lsof_help_flag);
+    RUN(lsof_version_flag);
+    RUN(lsof_finds_own_pid);
+    RUN(lsof_field_output_format);
+    RUN(lsof_finds_open_file);
+    RUN(lsof_cwd_detection);
+    RUN(lsof_tcp_socket_detection);
+    RUN(lsof_unix_socket_detection);
+    RUN(lsof_invalid_pid);
+    RUN(lsof_and_option);
+    RUN(lsof_fd_selection);
+
+    TEST_REPORT();
+}
