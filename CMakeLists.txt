@@ -78,6 +78,9 @@ file(GLOB LIB_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.c)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(lsof ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
+target_compile_options(lsof PRIVATE
+    -Wno-deprecated-non-prototype
+)
 
 # --- Cyberpunk build banners ---
 add_custom_target(build-banner

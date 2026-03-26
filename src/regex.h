@@ -614,6 +614,10 @@ End:
 
 #else	/* !defined(USE_LIB_REGEX) */
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-include-next"
+#pragma clang diagnostic ignored "-Winclude-next-absolute-path"
 #include_next <regex.h>
+#pragma clang diagnostic pop
 
 #endif    /* defined(USE_LIB_REGEX) */

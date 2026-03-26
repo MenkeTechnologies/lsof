@@ -1054,4 +1054,4 @@ BENCH(manual_lowercase_cmp, 10000000) {
 }
 
 
-RUN_BENCHMARKS();
+RUN_BENCHMARKS()

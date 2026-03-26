@@ -707,7 +707,7 @@ print_file() {
 #if    defined(HASTASKS)
         if (TaskPrtFl)
         (void) printf(" %*s", TidColW, TIDTTL);
-#endif    /* defined(HASTASKS)
+#endif    /* defined(HASTASKS) */
 
 #if	defined(HASZONES)
 	    if (Fzone)
