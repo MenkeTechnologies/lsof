@@ -66,7 +66,7 @@ file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h
 #define LSOF_LOGNAME \"\"\n\
 #define LSOF_SYSINFO \"\"\n\
 #define LSOF_USER \"\"\n\
-#define LSOF_VERSION \"5.0\"\n"
+#define LSOF_VERSION \"5.1\"\n"
 )
 
 # Source files
@@ -213,7 +213,7 @@ install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTION
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-end)")
 
 set(CPACK_PACKAGE_NAME "lsof")
-set(CPACK_PACKAGE_VERSION "5.0")
+set(CPACK_PACKAGE_VERSION "5.1")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "List open files — diagnostic tool for UNIX systems")
 set(CPACK_PACKAGE_DESCRIPTION "lsof (List Open Files) maps the topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.")
 set(CPACK_PACKAGE_CONTACT "lsof-maintainers")
