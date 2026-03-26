@@ -8,8 +8,11 @@
 #include "test.h"
 
 #include <ctype.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 /* ===== lsof_fields.h constants ===== */
@@ -2046,6 +2049,283 @@ TEST(safestrprt_control_char_format) {
 }
 
 
+/* ===== snpf() reimplementation tests ===== */
+static int test_snpf(char *buf, int count, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int len = vsnprintf(buf, (size_t)count, fmt, ap);
+    va_end(ap);
+    return len;
+}
+
+TEST(snpf_basic) {
+    char buf[64];
+    test_snpf(buf, sizeof(buf), "hello %s", "world");
+    ASSERT_STR_EQ(buf, "hello world");
+}
+
+TEST(snpf_truncation) {
+    char buf[6];
+    test_snpf(buf, sizeof(buf), "hello world");
+    ASSERT_STR_EQ(buf, "hello");
+}
+
+TEST(snpf_zero_buffer) {
+    char buf[1] = {'X'};
+    int len = test_snpf(buf, 0, "hello world");
+    ASSERT_GE(len, 11);
+    /* buf should be untouched since count is 0 */
+    ASSERT_EQ(buf[0], 'X');
+}
+
+TEST(snpf_integer) {
+    char buf[64];
+    test_snpf(buf, sizeof(buf), "%d", 42);
+    ASSERT_STR_EQ(buf, "42");
+}
+
+TEST(snpf_hex) {
+    char buf[64];
+    test_snpf(buf, sizeof(buf), "0x%x", 0xdead);
+    ASSERT_STR_EQ(buf, "0xdead");
+}
+
+TEST(snpf_multiple_args) {
+    char buf[64];
+    test_snpf(buf, sizeof(buf), "%s:%d", "tcp", 80);
+    ASSERT_STR_EQ(buf, "tcp:80");
+}
+
+TEST(snpf_empty_format) {
+    char buf[64];
+    buf[0] = 'X';
+    test_snpf(buf, sizeof(buf), "");
+    ASSERT_STR_EQ(buf, "");
+}
+
+TEST(snpf_percent_literal) {
+    char buf[64];
+    test_snpf(buf, sizeof(buf), "%%");
+    ASSERT_STR_EQ(buf, "%");
+}
+
+/* ===== Socket type string tests ===== */
+static const char *test_socktype_name(int type) {
+    switch (type) {
+        case SOCK_STREAM: return "SOCK_STREAM";
+        case SOCK_DGRAM: return "SOCK_DGRAM";
+        case SOCK_RAW: return "SOCK_RAW";
+        default: return NULL;
+    }
+}
+
+TEST(socktype_stream) {
+    ASSERT_STR_EQ(test_socktype_name(SOCK_STREAM), "SOCK_STREAM");
+}
+
+TEST(socktype_dgram) {
+    ASSERT_STR_EQ(test_socktype_name(SOCK_DGRAM), "SOCK_DGRAM");
+}
+
+TEST(socktype_raw) {
+    ASSERT_STR_EQ(test_socktype_name(SOCK_RAW), "SOCK_RAW");
+}
+
+TEST(socktype_unknown) {
+    ASSERT_NULL(test_socktype_name(9999));
+}
+
+/* ===== Device number decomposition tests ===== */
+TEST(devnum_major_minor) {
+    dev_t d = makedev(8, 1);
+    ASSERT_EQ((int)major(d), 8);
+    ASSERT_EQ((int)minor(d), 1);
+}
+
+TEST(devnum_makedev) {
+    unsigned int maj = 253, min = 7;
+    dev_t d = makedev(maj, min);
+    ASSERT_EQ((unsigned int)major(d), maj);
+    ASSERT_EQ((unsigned int)minor(d), min);
+}
+
+TEST(devnum_zero) {
+    dev_t d = 0;
+    ASSERT_EQ((int)major(d), 0);
+    ASSERT_EQ((int)minor(d), 0);
+}
+
+/* ===== PID range and boundary tests ===== */
+TEST(pid_max_int) {
+    int a = INT_MAX, b = 1;
+    ASSERT_EQ(test_compare_pids(&a, &b), 1);
+    ASSERT_EQ(test_compare_pids(&b, &a), -1);
+}
+
+TEST(pid_zero_vs_negative) {
+    int a = 0, b = -1;
+    ASSERT_EQ(test_compare_pids(&a, &b), 1);
+}
+
+/* ===== rmdupdev logic tests ===== */
+static int test_remove_dup_devs(test_devcomp_t *devs, int n) {
+    if (n <= 1) return n;
+    int out = 1;
+    for (int i = 1; i < n; i++) {
+        if (devs[i].rdev != devs[i-1].rdev || devs[i].inode != devs[i-1].inode) {
+            devs[out++] = devs[i];
+        }
+    }
+    return out;
+}
+
+TEST(rmdupdev_no_dups) {
+    test_devcomp_t devs[] = {{1, 1, NULL}, {2, 2, NULL}, {3, 3, NULL}};
+    int n = test_remove_dup_devs(devs, 3);
+    ASSERT_EQ(n, 3);
+}
+
+TEST(rmdupdev_all_same) {
+    test_devcomp_t devs[] = {{1, 1, NULL}, {1, 1, NULL}, {1, 1, NULL}};
+    int n = test_remove_dup_devs(devs, 3);
+    ASSERT_EQ(n, 1);
+}
+
+TEST(rmdupdev_adjacent_dups) {
+    test_devcomp_t devs[] = {{1, 1, NULL}, {1, 1, NULL}, {2, 2, NULL}, {2, 2, NULL}, {3, 3, NULL}};
+    int n = test_remove_dup_devs(devs, 5);
+    ASSERT_EQ(n, 3);
+}
+
+TEST(rmdupdev_single) {
+    test_devcomp_t devs[] = {{1, 1, NULL}};
+    int n = test_remove_dup_devs(devs, 1);
+    ASSERT_EQ(n, 1);
+}
+
+TEST(rmdupdev_empty) {
+    int n = test_remove_dup_devs(NULL, 0);
+    ASSERT_EQ(n, 0);
+}
+
+/* ===== FD number parsing tests ===== */
+static int test_parse_fd_num(const char *s, int *fd_out) {
+    if (!s || !*s) return -1;
+    char *end;
+    long val = strtol(s, &end, 10);
+    if (*end != '\0') return -1;
+    if (val < 0 || val > 65535) return -1;
+    *fd_out = (int)val;
+    return 0;
+}
+
+TEST(parse_fd_zero) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("0", &fd), 0);
+    ASSERT_EQ(fd, 0);
+}
+
+TEST(parse_fd_normal) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("42", &fd), 0);
+    ASSERT_EQ(fd, 42);
+}
+
+TEST(parse_fd_max) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("65535", &fd), 0);
+    ASSERT_EQ(fd, 65535);
+}
+
+TEST(parse_fd_overflow) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("65536", &fd), -1);
+}
+
+TEST(parse_fd_negative) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("-1", &fd), -1);
+}
+
+TEST(parse_fd_alpha) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("abc", &fd), -1);
+}
+
+TEST(parse_fd_mixed) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("3abc", &fd), -1);
+}
+
+TEST(parse_fd_empty) {
+    int fd;
+    ASSERT_EQ(test_parse_fd_num("", &fd), -1);
+}
+
+/* ===== IPv6 address detection tests ===== */
+static int test_has_ipv6_colons(const char *s) {
+    int colons = 0;
+    for (; *s; s++) if (*s == ':') colons++;
+    return colons >= 2;
+}
+
+TEST(ipv6_detect_full) {
+    ASSERT_TRUE(test_has_ipv6_colons("2001:db8::1"));
+}
+
+TEST(ipv6_detect_loopback) {
+    ASSERT_TRUE(test_has_ipv6_colons("::1"));
+}
+
+TEST(ipv6_detect_ipv4) {
+    ASSERT_FALSE(test_has_ipv6_colons("192.168.1.1"));
+}
+
+TEST(ipv6_detect_single_colon) {
+    ASSERT_FALSE(test_has_ipv6_colons("host:port"));
+}
+
+/* ===== Path normalization tests ===== */
+static int test_is_absolute_path(const char *p) {
+    return p && p[0] == '/';
+}
+
+static int test_path_depth(const char *p) {
+    if (!p || !*p) return 0;
+    int depth = 0;
+    for (; *p; p++) if (*p == '/') depth++;
+    return depth;
+}
+
+TEST(path_absolute_yes) {
+    ASSERT_TRUE(test_is_absolute_path("/usr/bin"));
+}
+
+TEST(path_absolute_no) {
+    ASSERT_FALSE(test_is_absolute_path("relative/path"));
+}
+
+TEST(path_absolute_empty) {
+    ASSERT_FALSE(test_is_absolute_path(""));
+}
+
+TEST(path_absolute_null) {
+    ASSERT_FALSE(test_is_absolute_path(NULL));
+}
+
+TEST(path_depth_root) {
+    ASSERT_EQ(test_path_depth("/"), 1);
+}
+
+TEST(path_depth_deep) {
+    ASSERT_EQ(test_path_depth("/a/b/c/d"), 4);
+}
+
+TEST(path_depth_empty) {
+    ASSERT_EQ(test_path_depth(""), 0);
+}
+
+
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
 
@@ -2199,6 +2479,47 @@ int main(int argc, char **argv) {
     RUN(ckfd_range_bad_pointers);
     RUN(safestrprt_printable_to_buffer);
     RUN(safestrprt_control_char_format);
+    RUN(snpf_basic);
+    RUN(snpf_truncation);
+    RUN(snpf_zero_buffer);
+    RUN(snpf_integer);
+    RUN(snpf_hex);
+    RUN(snpf_multiple_args);
+    RUN(snpf_empty_format);
+    RUN(snpf_percent_literal);
+    RUN(socktype_stream);
+    RUN(socktype_dgram);
+    RUN(socktype_raw);
+    RUN(socktype_unknown);
+    RUN(devnum_major_minor);
+    RUN(devnum_makedev);
+    RUN(devnum_zero);
+    RUN(pid_max_int);
+    RUN(pid_zero_vs_negative);
+    RUN(rmdupdev_no_dups);
+    RUN(rmdupdev_all_same);
+    RUN(rmdupdev_adjacent_dups);
+    RUN(rmdupdev_single);
+    RUN(rmdupdev_empty);
+    RUN(parse_fd_zero);
+    RUN(parse_fd_normal);
+    RUN(parse_fd_max);
+    RUN(parse_fd_overflow);
+    RUN(parse_fd_negative);
+    RUN(parse_fd_alpha);
+    RUN(parse_fd_mixed);
+    RUN(parse_fd_empty);
+    RUN(ipv6_detect_full);
+    RUN(ipv6_detect_loopback);
+    RUN(ipv6_detect_ipv4);
+    RUN(ipv6_detect_single_colon);
+    RUN(path_absolute_yes);
+    RUN(path_absolute_no);
+    RUN(path_absolute_empty);
+    RUN(path_absolute_null);
+    RUN(path_depth_root);
+    RUN(path_depth_deep);
+    RUN(path_depth_empty);
 
     TEST_REPORT();
 }

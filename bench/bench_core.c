@@ -1516,4 +1516,177 @@ BENCH(read_proc_self, 50000) {
 }
 
 
+/* ===== snpf (counted sprintf) vs snprintf benchmark ===== */
+BENCH(snpf_short_string, 5000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "%s", "hello");
+        BENCH_SINK_INT(buf[0]);
+    }
+}
+
+BENCH(snpf_pid_format, 5000000) {
+    char buf[64];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "p%d", 12345 + (i & 0xff));
+        BENCH_SINK_INT(buf[0]);
+    }
+}
+
+BENCH(snpf_path_format, 2000000) {
+    char buf[256];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "/proc/%d/fd/%d", 1234 + (i & 0xff), i & 0x3ff);
+        BENCH_SINK_INT(buf[0]);
+    }
+}
+
+BENCH(snpf_hex_device, 5000000) {
+    char buf[32];
+    for (int i = 0; i < bf_iters; i++) {
+        snprintf(buf, sizeof(buf), "0x%lx", (unsigned long)(0xdeadbeef + i));
+        BENCH_SINK_INT(buf[0]);
+    }
+}
+
+/* ===== Device number decomposition benchmark ===== */
+BENCH(major_minor_extract, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        dev_t d = (dev_t)(0x0802 + (i & 0xfff));
+        BENCH_SINK_INT((int)(major(d) + minor(d)));
+    }
+}
+
+BENCH(makedev_roundtrip, 10000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        dev_t d = makedev(8, i & 0xff);
+        BENCH_SINK_INT((int)(major(d) ^ minor(d)));
+    }
+}
+
+/* ===== FD string parsing benchmark ===== */
+BENCH(fd_parse_strtol, 10000000) {
+    const char *fds[] = {"0", "1", "2", "42", "255", "1024", "cwd", "txt", "mem", "rtd"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *s = fds[i % 10];
+        char *end;
+        long v = strtol(s, &end, 10);
+        BENCH_SINK_INT(*end == '\0' ? (int)v : -1);
+    }
+}
+
+BENCH(fd_classify, 10000000) {
+    const char *fds[] = {"0", "1", "2", "42", "255", "1024", "cwd", "txt", "mem", "rtd"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *s = fds[i % 10];
+        int numeric = (s[0] >= '0' && s[0] <= '9');
+        BENCH_SINK_INT(numeric);
+    }
+}
+
+/* ===== IPv6 address detection benchmark ===== */
+BENCH(ipv6_colon_count, 5000000) {
+    const char *addrs[] = {
+        "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "::1",
+        "fe80::1%lo0",
+        "192.168.1.1",
+        "10.0.0.1",
+    };
+    for (int i = 0; i < bf_iters; i++) {
+        const char *a = addrs[i % 5];
+        int colons = 0;
+        for (const char *p = a; *p; p++) if (*p == ':') colons++;
+        BENCH_SINK_INT(colons);
+    }
+}
+
+/* ===== Path classification benchmark ===== */
+BENCH(path_is_absolute, 10000000) {
+    const char *paths[] = {"/dev/null", "/proc/1/fd/0", "relative", "./local", "/", "../up", "/var/log/syslog"};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(paths[i % 7][0] == '/');
+    }
+}
+
+BENCH(path_depth_count, 5000000) {
+    const char *paths[] = {"/", "/dev/null", "/proc/1234/fd/0", "/usr/local/share/man/man1/lsof.1"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *p = paths[i % 4];
+        int depth = 0;
+        for (; *p; p++) if (*p == '/') depth++;
+        BENCH_SINK_INT(depth);
+    }
+}
+
+BENCH(path_basename_search, 5000000) {
+    const char *paths[] = {"/dev/null", "/proc/1234/fd/0", "/usr/bin/lsof", "/var/log/syslog.1.gz"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *p = paths[i % 4];
+        const char *last_slash = p;
+        for (; *p; p++) if (*p == '/') last_slash = p;
+        BENCH_SINK_PTR((void *)last_slash);
+    }
+}
+
+/* ===== Duplicate device removal benchmark ===== */
+BENCH(rmdupdev_100, 100000) {
+    /* Simulate removing dups from sorted device array */
+    static struct { unsigned long rdev; unsigned long inode; } devs[100];
+    for (int i = 0; i < bf_iters; i++) {
+        /* populate with ~30% dups */
+        for (int j = 0; j < 100; j++) {
+            devs[j].rdev = (unsigned long)(j * 7 / 10);
+            devs[j].inode = (unsigned long)(j * 7 / 10);
+        }
+        int out = 1;
+        for (int j = 1; j < 100; j++) {
+            if (devs[j].rdev != devs[j-1].rdev || devs[j].inode != devs[j-1].inode)
+                devs[out++] = devs[j];
+        }
+        BENCH_SINK_INT(out);
+    }
+}
+
+/* ===== UID to username cache lookup benchmark ===== */
+BENCH(uid_cache_linear_scan, 5000000) {
+    static struct { int uid; const char *name; } cache[32];
+    for (int j = 0; j < 32; j++) { cache[j].uid = j * 100; cache[j].name = "user"; }
+    for (int i = 0; i < bf_iters; i++) {
+        int target = (i % 32) * 100;
+        const char *found = NULL;
+        for (int j = 0; j < 32; j++) {
+            if (cache[j].uid == target) { found = cache[j].name; break; }
+        }
+        BENCH_SINK_PTR((void *)found);
+    }
+}
+
+BENCH(uid_cache_hash_lookup, 5000000) {
+    static struct { int uid; const char *name; } buckets[64];
+    for (int j = 0; j < 32; j++) { int h = (j * 100 * 31415) & 63; buckets[h].uid = j * 100; buckets[h].name = "user"; }
+    for (int i = 0; i < bf_iters; i++) {
+        int target = (i % 32) * 100;
+        int h = (target * 31415) & 63;
+        const char *found = (buckets[h].uid == target) ? buckets[h].name : NULL;
+        BENCH_SINK_PTR((void *)found);
+    }
+}
+
+/* ===== Process name matching benchmark ===== */
+BENCH(cmd_exact_match, 10000000) {
+    const char *cmds[] = {"sshd", "nginx", "postgres", "lsof", "bash", "systemd", "init", "kworker"};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(strcmp(cmds[i % 8], "lsof") == 0);
+    }
+}
+
+BENCH(cmd_prefix_match, 10000000) {
+    const char *cmds[] = {"sshd", "nginx", "postgres", "lsof", "bash", "systemd", "init", "kworker"};
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(strncmp(cmds[i % 8], "ls", 2) == 0);
+    }
+}
+
+
 RUN_BENCHMARKS()
