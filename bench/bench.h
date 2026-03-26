@@ -2,7 +2,11 @@
  * bench_framework.h - minimal C benchmark framework for lsof
  *
  * Usage:
+ *   #define BF_SECTION "Section Name"
  *   BENCH(name, iterations) { ... body ... }
+ *   #define BF_SECTION "Another Section"
+ *   BENCH(name2, iterations) { ... body ... }
+ *   BF_SECTIONS("Section Name", "Another Section")
  *   RUN_BENCHMARKS();
  */
 
@@ -35,8 +39,10 @@ typedef void (*bf_bench_fn)(int iterations);
 
 typedef struct {
     const char *name;
+    const char *section;
     bf_bench_fn fn;
     int iterations;
+    int order;
 } bf_bench_entry;
 
 static bf_bench_entry bf_registry[256];
@@ -64,12 +70,19 @@ static inline const char *bf_ops_color(double ops_sec) {
     return B_RED;
 }
 
+/* Default section for benchmarks without an explicit section */
+#ifndef BF_SECTION
+#define BF_SECTION NULL
+#endif
+
 #define BENCH(bench_name, iters) \
     static void bench_impl_##bench_name(int); \
     __attribute__((constructor)) static void register_bench_##bench_name(void) { \
         bf_registry[bf_registry_count].name = #bench_name; \
+        bf_registry[bf_registry_count].section = BF_SECTION; \
         bf_registry[bf_registry_count].fn = bench_impl_##bench_name; \
         bf_registry[bf_registry_count].iterations = (iters); \
+        bf_registry[bf_registry_count].order = bf_registry_count; \
         bf_registry_count++; \
     } \
     static void bench_impl_##bench_name(int bf_iters)
@@ -79,6 +92,34 @@ static volatile int bf_sink_i;
 static volatile void *bf_sink_p;
 #define BENCH_SINK_INT(x) bf_sink_i = (x)
 #define BENCH_SINK_PTR(x) bf_sink_p = (x)
+
+/* Section display order — define before RUN_BENCHMARKS() */
+static const char *bf_section_list[64];
+static int bf_section_count = 0;
+
+#define BF_SECTIONS(...) \
+    __attribute__((constructor)) static void bf_init_sections(void) { \
+        const char *_s[] = { __VA_ARGS__ }; \
+        bf_section_count = (int)(sizeof(_s) / sizeof(_s[0])); \
+        for (int _i = 0; _i < bf_section_count; _i++) \
+            bf_section_list[_i] = _s[_i]; \
+    }
+
+static int bf_section_rank(const char *section) {
+    if (!section) return bf_section_count;
+    for (int i = 0; i < bf_section_count; i++)
+        if (strcmp(bf_section_list[i], section) == 0) return i;
+    return bf_section_count;
+}
+
+static int bf_compare_entries(const void *a, const void *b) {
+    const bf_bench_entry *ea = (const bf_bench_entry *)a;
+    const bf_bench_entry *eb = (const bf_bench_entry *)b;
+    int ra = bf_section_rank(ea->section);
+    int rb = bf_section_rank(eb->section);
+    if (ra != rb) return ra - rb;
+    return ea->order - eb->order;
+}
 
 #define RUN_BENCHMARKS() \
     int main(int argc, char **argv) { \
@@ -106,8 +147,19 @@ static volatile void *bf_sink_p;
                "\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88" \
                "\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88" \
                "\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88\xE2\x96\x88" \
-               B_RESET "\n\n"); \
+               B_RESET "\n"); \
+        qsort(bf_registry, bf_registry_count, sizeof(bf_bench_entry), bf_compare_entries); \
+        const char *prev_section = NULL; \
         for (int i = 0; i < bf_registry_count; i++) { \
+            if (bf_registry[i].section && \
+                (prev_section == NULL || strcmp(bf_registry[i].section, prev_section) != 0)) { \
+                printf("\n" B_BMAGENTA \
+                       " \xE2\x96\x93\xE2\x96\x93\xE2\x96\x93 " B_RESET \
+                       B_BOLD "%s" B_RESET \
+                       B_BMAGENTA " \xE2\x96\x93\xE2\x96\x93\xE2\x96\x93" B_RESET "\n", \
+                       bf_registry[i].section); \
+                prev_section = bf_registry[i].section; \
+            } \
             struct timespec start, end; \
             int iters = bf_registry[i].iterations; \
             /* warmup */ \

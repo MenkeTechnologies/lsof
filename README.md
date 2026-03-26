@@ -97,7 +97,7 @@ The core engine is tuned for speed where it matters:
 - **Manual formatting**: field output and path construction bypass `snprintf` for **9–15x** throughput
 - **Hash tables**: port cache, host cache, device lookup, and file name matching all use power-of-2 hash tables with polynomial hashing
 
-Run `make bench` to see all 101 benchmarks on your hardware.
+Run `make bench` or `./bench/run_benchmarks.sh` to see all benchmarks on your hardware. Target a specific suite with `./bench/run_benchmarks.sh hash`.
 
 ---
 
@@ -178,43 +178,37 @@ Invokes the lsof binary and validates output:
 
 ## // BENCHMARKS
 
-Measure performance of core operations:
+### Running benchmarks
 
-```bash
+```sh
+# --- FULL BENCHMARK SWEEP ---
 make bench
+
+# --- TARGETED STRIKE ---
+./bench/run_benchmarks.sh hash
+./bench/run_benchmarks.sh sort
 ```
 
-This builds and runs `benchmark_core`, writing results to `benchmark_core.log` in the build directory.
+### Benchmark suites
 
-### Benchmarks (`bench/bench_core.c`)
-
-101 benchmarks covering core operations, optimization comparisons, and system call overhead.
-
-| Category | What it measures |
-|---|---|
-| **x2dev** | Hex parsing — short, prefixed, and long strings |
-| **HASHPORT** | Port hashing — full range and common ports |
-| **hashbyname** | Name hashing — short names, paths, long paths |
-| **safestrlen** | Safe string length — short, escaped, long paths, binary data |
-| **compdev sort** | Device table sorting via qsort — 100 and 1000 elements |
-| **safepup** | Unprintable char formatting — control chars and high bytes |
-| **safestrprt** | Safe string printing — clean strings and strings with escapes |
-| **mkstrcat** | String concatenation — 2-part, 3-part, with pre-computed lengths |
-| **I/O** | open/close, stat, lstat, getpid, pipe, readdir, readlink, access, dup, write, fcntl |
-| **File streams** | fopen/fclose vs raw open/close overhead |
-| **String ops** | strlen, strcmp, strncmp, strcasecmp, strncpy, snprintf, isprint, strtol |
-| **Socket** | TCP socket create/close, UNIX socketpair create/close |
-| **Memory** | malloc/free (small/medium), realloc growth, safe realloc pattern, memset/memcpy (64B/4KB) |
-| **String copy** | mkstrcpy — short, path-length, and NULL source |
-| **Data structures** | Linked list traversal (100/1000), hash lookup hit/miss/deep chain |
-| **Search** | PID sort (qsort), PID binary search, field ID lookup |
-| **Matching** | Regex match, strncmp prefix, FD status check (numeric/named) |
-| **Path building** | snprintf vs manual `/proc/<pid>/fd/<fd>` construction |
-| **Field output** | snprintf vs manual lsof `-F` field formatting |
-| **Command names** | strncpy truncation — short and long command names |
-| **Time formatting** | strftime — date/time and epoch formats |
-| **Environment** | getenv hit/miss, gethostname |
-| **UID** | getpwuid cached lookup |
+```
+ ┌────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
+ │ SUITE                      │ MEASURES                                                              │
+ ├────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ benchmark_hex              │ x2dev hex parsing, major/minor extract, makedev roundtrip              │
+ │ benchmark_hash             │ HASHPORT range/common, hashbyname short/path/long strings              │
+ │ benchmark_strsafe          │ safestrlen (short/escaped/long/binary), safepup control/high bytes     │
+ │ benchmark_strops           │ strlen, strcmp, strncmp, strcasecmp, strtol, isprint, path classify    │
+ │ benchmark_strbuild         │ mkstrcpy (short/path/null), mkstrcat (2/3-part, pre-computed lengths) │
+ │ benchmark_sort             │ compdev/PID qsort, bsearch, linear vs binary scan (100/1000)          │
+ │ benchmark_datastruct       │ Linked list (100/1000), hash lookup hit/miss/deep, FD status check    │
+ │ benchmark_memory           │ malloc/free (64B/4KB), realloc growth, memset/memcpy (64B/4KB)        │
+ │ benchmark_syscall          │ open/close, stat, lstat, pipe, socket, readdir, readlink, fcntl, dup  │
+ │ benchmark_output           │ safestrprt, strftime, sprintf field output, snpf path/pid/hex format  │
+ │ benchmark_optduel          │ Head-to-head: isprint vs table, snprintf vs manual, regex vs strncmp  │
+ │ benchmark_environ          │ getenv hit/miss, gethostname, getpwuid, UID cache linear vs hash      │
+ └────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
+```
 
 ### Optimization comparisons
 

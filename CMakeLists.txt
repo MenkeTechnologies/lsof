@@ -147,9 +147,12 @@ add_custom_target(leakcheck
 )
 
 # ===== Benchmark Suite =====
-add_executable(benchmark_core bench/bench_core.c)
-target_include_directories(benchmark_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
-target_compile_options(benchmark_core PRIVATE -Wall -Wextra -Wpedantic -O2)
+set(BENCH_SUITES hex hash strsafe strops strbuild sort datastruct memory syscall output optduel environ)
+foreach(SUITE ${BENCH_SUITES})
+    add_executable(benchmark_${SUITE} bench/bench_${SUITE}.c)
+    target_include_directories(benchmark_${SUITE} PRIVATE ${PROJECT_SOURCE_DIR}/bench)
+    target_compile_options(benchmark_${SUITE} PRIVATE -Wall -Wextra -Wpedantic -O2)
+endforeach()
 
 # 'make check' runs all tests
 add_custom_target(check
@@ -160,17 +163,31 @@ add_custom_target(check
     COMMAND ${PROJECT_SOURCE_DIR}/test/banner.sh end
 )
 
-# 'make bench' runs benchmarks
+# 'make bench' runs all benchmarks
 add_custom_target(bench
-    DEPENDS benchmark_core
     COMMAND ${PROJECT_SOURCE_DIR}/bench/banner.sh start
-    COMMAND $<TARGET_FILE:benchmark_core>
+    COMMAND $<TARGET_FILE:benchmark_hex>
+    COMMAND $<TARGET_FILE:benchmark_hash>
+    COMMAND $<TARGET_FILE:benchmark_strsafe>
+    COMMAND $<TARGET_FILE:benchmark_strops>
+    COMMAND $<TARGET_FILE:benchmark_strbuild>
+    COMMAND $<TARGET_FILE:benchmark_sort>
+    COMMAND $<TARGET_FILE:benchmark_datastruct>
+    COMMAND $<TARGET_FILE:benchmark_memory>
+    COMMAND $<TARGET_FILE:benchmark_syscall>
+    COMMAND $<TARGET_FILE:benchmark_output>
+    COMMAND $<TARGET_FILE:benchmark_optduel>
+    COMMAND $<TARGET_FILE:benchmark_environ>
     COMMAND ${PROJECT_SOURCE_DIR}/bench/banner.sh end
 )
+foreach(SUITE ${BENCH_SUITES})
+    add_dependencies(bench benchmark_${SUITE})
+endforeach()
 
 # 'make clean' also removes the lsof binary from the source root if present
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
     "${PROJECT_SOURCE_DIR}/lsof"
+    "${PROJECT_SOURCE_DIR}/benchmark_core"
 )
 
 # ===== Linux Packaging (CPack) =====
