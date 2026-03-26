@@ -354,4 +354,302 @@ BENCH(socket_create_close, 50000) {
 }
 
 
+/* ===== Memory allocation benchmarks ===== */
+BENCH(malloc_free_small, 5000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(64);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+BENCH(malloc_free_medium, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(4096);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+BENCH(realloc_grow, 1000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(64);
+        p = realloc(p, 128);
+        p = realloc(p, 256);
+        p = realloc(p, 512);
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+BENCH(safe_realloc_pattern, 1000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        void *p = malloc(64);
+        void *tmp = realloc(p, 128);
+        if (tmp) p = tmp;
+        tmp = realloc(p, 256);
+        if (tmp) p = tmp;
+        tmp = realloc(p, 512);
+        if (tmp) p = tmp;
+        BENCH_SINK_PTR(p);
+        free(p);
+    }
+}
+
+
+/* ===== String copy benchmarks (mkstrcpy pattern) ===== */
+static char *bench_mkstrcpy(const char *src) {
+    size_t len = src ? strlen(src) : 0;
+    char *ns = (char *)malloc(len + 1);
+    if (ns) {
+        if (src) memcpy(ns, src, len + 1);
+        else *ns = '\0';
+    }
+    return ns;
+}
+
+BENCH(mkstrcpy_short, 5000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcpy("hello");
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+BENCH(mkstrcpy_path, 2000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcpy("/usr/local/share/applications/very/long/path/to/some/file.txt");
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+BENCH(mkstrcpy_null, 5000000) {
+    for (int i = 0; i < bf_iters; i++) {
+        char *s = bench_mkstrcpy(NULL);
+        BENCH_SINK_PTR(s);
+        free(s);
+    }
+}
+
+
+/* ===== Linked list traversal benchmark (common lsof pattern) ===== */
+struct bench_node {
+    int value;
+    struct bench_node *next;
+};
+
+BENCH(linked_list_traverse_100, 1000000) {
+    static struct bench_node nodes[100];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 99; i++) {
+            nodes[i].value = i;
+            nodes[i].next = &nodes[i + 1];
+        }
+        nodes[99].value = 99;
+        nodes[99].next = NULL;
+        initialized = 1;
+    }
+    for (int j = 0; j < bf_iters; j++) {
+        int sum = 0;
+        for (struct bench_node *n = &nodes[0]; n; n = n->next)
+            sum += n->value;
+        BENCH_SINK_INT(sum);
+    }
+}
+
+BENCH(linked_list_traverse_1000, 100000) {
+    static struct bench_node nodes[1000];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 999; i++) {
+            nodes[i].value = i;
+            nodes[i].next = &nodes[i + 1];
+        }
+        nodes[999].value = 999;
+        nodes[999].next = NULL;
+        initialized = 1;
+    }
+    for (int j = 0; j < bf_iters; j++) {
+        int sum = 0;
+        for (struct bench_node *n = &nodes[0]; n; n = n->next)
+            sum += n->value;
+        BENCH_SINK_INT(sum);
+    }
+}
+
+
+/* ===== Hash table lookup benchmark (port hash pattern) ===== */
+struct bench_porttab {
+    int port;
+    char *name;
+    struct bench_porttab *next;
+};
+
+BENCH(hash_lookup_hit, 5000000) {
+    static struct bench_porttab entries[10];
+    static struct bench_porttab *buckets[PORTHASHBUCKETS];
+    static int initialized = 0;
+    static int ports[] = {22, 80, 443, 8080, 8443, 3306, 5432, 6379, 27017, 53};
+
+    if (!initialized) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 10; i++) {
+            entries[i].port = ports[i];
+            entries[i].name = "service";
+            int h = HASHPORT(ports[i]);
+            entries[i].next = buckets[h];
+            buckets[h] = &entries[i];
+        }
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        int p = ports[i % 10];
+        int h = HASHPORT(p);
+        struct bench_porttab *pt;
+        for (pt = buckets[h]; pt; pt = pt->next) {
+            if (pt->port == p) break;
+        }
+        BENCH_SINK_PTR(pt);
+    }
+}
+
+BENCH(hash_lookup_miss, 5000000) {
+    static struct bench_porttab entries[10];
+    static struct bench_porttab *buckets[PORTHASHBUCKETS];
+    static int initialized = 0;
+    static int ports[] = {22, 80, 443, 8080, 8443, 3306, 5432, 6379, 27017, 53};
+
+    if (!initialized) {
+        memset(buckets, 0, sizeof(buckets));
+        for (int i = 0; i < 10; i++) {
+            entries[i].port = ports[i];
+            entries[i].name = "service";
+            int h = HASHPORT(ports[i]);
+            entries[i].next = buckets[h];
+            buckets[h] = &entries[i];
+        }
+        initialized = 1;
+    }
+    /* Look up ports that don't exist */
+    for (int i = 0; i < bf_iters; i++) {
+        int p = 60000 + (i % 1000);
+        int h = HASHPORT(p);
+        struct bench_porttab *pt;
+        for (pt = buckets[h]; pt; pt = pt->next) {
+            if (pt->port == p) break;
+        }
+        BENCH_SINK_PTR(pt);
+    }
+}
+
+
+/* ===== PID binary search benchmark (comppid / qsort + bsearch) ===== */
+static int bench_comppid(const void *a, const void *b) {
+    int pa = *(const int *)a;
+    int pb = *(const int *)b;
+    if (pa < pb) return -1;
+    if (pa > pb) return 1;
+    return 0;
+}
+
+BENCH(pid_sort_1000, 50000) {
+    static int pids[1000];
+    for (int j = 0; j < bf_iters; j++) {
+        for (int i = 0; i < 1000; i++) pids[i] = 1000 - i;
+        qsort(pids, 1000, sizeof(int), bench_comppid);
+        BENCH_SINK_INT(pids[0]);
+    }
+}
+
+BENCH(pid_bsearch_1000, 5000000) {
+    static int pids[1000];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < 1000; i++) pids[i] = i * 3;
+        initialized = 1;
+    }
+    for (int i = 0; i < bf_iters; i++) {
+        int key = (i % 1000) * 3;
+        int *found = (int *)bsearch(&key, pids, 1000, sizeof(int), bench_comppid);
+        BENCH_SINK_PTR(found);
+    }
+}
+
+
+/* ===== Field ID lookup benchmark ===== */
+BENCH(field_id_lookup, 10000000) {
+    char fields[] = "acdfginoprstunR";
+    int nf = (int)strlen(fields);
+    for (int i = 0; i < bf_iters; i++) {
+        char target = fields[i % nf];
+        int found = 0;
+        for (int j = 0; j < nf; j++) {
+            if (fields[j] == target) { found = 1; break; }
+        }
+        BENCH_SINK_INT(found);
+    }
+}
+
+
+/* ===== strncmp prefix match benchmark (command matching pattern) ===== */
+BENCH(strncmp_prefix_match, 10000000) {
+    const char *cmds[] = {"systemd", "sshd", "bash", "python3", "node",
+                          "postgres", "nginx", "docker", "java", "chrome"};
+    for (int i = 0; i < bf_iters; i++) {
+        const char *cmd = cmds[i % 10];
+        int match = (strncmp(cmd, "ssh", 3) == 0);
+        BENCH_SINK_INT(match);
+    }
+}
+
+BENCH(strcasecmp_proto, 10000000) {
+    const char *protos[] = {"TCP", "tcp", "UDP", "udp", "Tcp", "Udp"};
+    for (int i = 0; i < bf_iters; i++) {
+        int is_tcp = (strcasecmp(protos[i % 6], "tcp") == 0);
+        BENCH_SINK_INT(is_tcp);
+    }
+}
+
+
+/* ===== readdir benchmark (relevant to device/directory scanning) ===== */
+#include <dirent.h>
+
+BENCH(readdir_dev, 1000) {
+    for (int i = 0; i < bf_iters; i++) {
+        int count = 0;
+        DIR *d = opendir("/dev");
+        if (d) {
+            struct dirent *e;
+            while ((e = readdir(d)) != NULL) count++;
+            closedir(d);
+        }
+        BENCH_SINK_INT(count);
+    }
+}
+
+
+/* ===== lstat benchmark (relevant to Readlink/path resolution) ===== */
+BENCH(lstat_file, 100000) {
+    struct stat st;
+    for (int i = 0; i < bf_iters; i++) {
+        BENCH_SINK_INT(lstat("/dev/null", &st));
+    }
+}
+
+
+/* ===== pipe create/close benchmark ===== */
+BENCH(pipe_create_close, 100000) {
+    for (int i = 0; i < bf_iters; i++) {
+        int fds[2];
+        if (pipe(fds) == 0) {
+            close(fds[0]);
+            close(fds[1]);
+        }
+        BENCH_SINK_INT(fds[0]);
+    }
+}
+
+
 RUN_BENCHMARKS();
