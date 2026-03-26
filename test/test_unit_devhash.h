@@ -11,7 +11,8 @@
 
 /* ncache hash from rnmh.c */
 static int test_ncache_hash(unsigned long inode, unsigned long addr, int mod) {
-    return ((((int)(addr >> 2) + (int)(inode)) * 31415) & (mod - 1));
+    return ((int)(((unsigned int)((unsigned int)(addr >> 2) + (unsigned int)(inode)) * 31415u) &
+                  (unsigned int)(mod - 1)));
 }
 
 TEST(sfhash_range) {

@@ -36,7 +36,7 @@ static char *counted_mkstrcpy(const char *src) {
     return ns;
 }
 
-static void *counted_realloc(void *ptr, size_t sz) {
+__attribute__((noinline)) static void *counted_realloc(void *ptr, size_t sz) {
     void *p = realloc(ptr, sz);
     if (p && !ptr)
         alloc_count++; /* new allocation */

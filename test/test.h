@@ -33,10 +33,13 @@ static int test_total_count = 0;
     static void test_##name(void);                                  \
     static void run_test_##name(void) {                             \
         test_total_count++;                                         \
+        int _prev_fail = test_fail_count;                           \
         printf("  " T_DIM "\xE2\x96\x90" T_RESET " %-50s ", #name); \
         test_##name();                                              \
-        test_pass_count++;                                          \
-        printf(T_BGREEN "\xE2\x96\x88 PASS" T_RESET "\n");          \
+        if (test_fail_count == _prev_fail) {                        \
+            test_pass_count++;                                      \
+            printf(T_BGREEN "\xE2\x96\x88 PASS" T_RESET "\n");      \
+        }                                                           \
     }                                                               \
     static void test_##name(void)
 
