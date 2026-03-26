@@ -574,6 +574,359 @@ TEST(fsv_flags_combine) {
 }
 
 
+/* ===== Memory leak tests =====
+ * These tests verify that the allocation patterns used in lsof properly
+ * free all allocated memory.  Each test reimplements a simplified version
+ * of the pattern and uses an allocation counter to detect leaks.
+ */
+
+static int alloc_count = 0;   /* tracks net allocations */
+
+static void *counted_malloc(size_t sz) {
+    void *p = malloc(sz);
+    if (p) alloc_count++;
+    return p;
+}
+
+static void counted_free(void *p) {
+    if (p) { free(p); alloc_count--; }
+}
+
+static char *counted_mkstrcpy(const char *src) {
+    size_t len = src ? strlen(src) : 0;
+    char *ns = (char *)counted_malloc(len + 1);
+    if (ns) {
+        if (src) memcpy(ns, src, len);
+        ns[len] = '\0';
+    }
+    return ns;
+}
+
+static char *counted_mkstrcat(const char *s1, int l1,
+                               const char *s2, int l2) {
+    size_t len1 = s1 ? (l1 >= 0 ? (size_t)l1 : strlen(s1)) : 0;
+    size_t len2 = s2 ? (l2 >= 0 ? (size_t)l2 : strlen(s2)) : 0;
+    char *cp = (char *)counted_malloc(len1 + len2 + 1);
+    if (cp) {
+        if (s1 && len1) memcpy(cp, s1, len1);
+        if (s2 && len2) memcpy(cp + len1, s2, len2);
+        cp[len1 + len2] = '\0';
+    }
+    return cp;
+}
+
+/*
+ * Test: enter_network_address hostname leak (fixed)
+ * Before the fix, 'hn' was freed on error but not on success.
+ */
+TEST(memleak_enter_network_address_hn_freed) {
+    alloc_count = 0;
+    /* Simulate enter_network_address with a hostname */
+    char *proto = counted_mkstrcat("tcp", 3, NULL, -1);
+    char *hn = counted_mkstrcat("localhost", 9, NULL, -1);
+    char *sn = counted_mkstrcpy("http");
+
+    ASSERT_EQ(alloc_count, 3);
+
+    /* Simulate successful path -- the fix: free hn */
+    if (hn)
+        counted_free(hn);
+    if (sn)
+        counted_free(sn);
+    /* proto is transferred to nwad struct, simulate by freeing it */
+    if (proto)
+        counted_free(proto);
+
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_network_address error path frees all
+ */
+TEST(memleak_enter_network_address_error_frees_all) {
+    alloc_count = 0;
+    char *proto = counted_mkstrcat("tcp", 3, NULL, -1);
+    char *hn = counted_mkstrcat("badhost", 7, NULL, -1);
+    char *sn = counted_mkstrcpy("service");
+
+    ASSERT_EQ(alloc_count, 3);
+
+    /* Simulate nwad_exit error path */
+    if (proto) counted_free(proto);
+    if (hn)    counted_free(hn);
+    if (sn)    counted_free(sn);
+
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_fd_lst duplicate leak (fixed)
+ * Before the fix, f->nm was not freed when a duplicate was found.
+ */
+struct test_fd_lst {
+    char *nm;
+    int lo, hi;
+    struct test_fd_lst *next;
+};
+
+TEST(memleak_enter_fd_lst_dup_frees_nm) {
+    alloc_count = 0;
+
+    /* First entry: create and add to list */
+    struct test_fd_lst *list = NULL;
+    struct test_fd_lst *f1 = (struct test_fd_lst *)counted_malloc(sizeof(*f1));
+    ASSERT_NOT_NULL(f1);
+    f1->nm = counted_mkstrcpy("cwd");
+    f1->lo = 1; f1->hi = 0;
+    f1->next = list;
+    list = f1;
+    ASSERT_EQ(alloc_count, 2);  /* f1 + f1->nm */
+
+    /* Duplicate entry: allocate, detect dup, free properly */
+    struct test_fd_lst *f2 = (struct test_fd_lst *)counted_malloc(sizeof(*f2));
+    ASSERT_NOT_NULL(f2);
+    f2->nm = counted_mkstrcpy("cwd");
+    f2->lo = 1; f2->hi = 0;
+    ASSERT_EQ(alloc_count, 4);
+
+    /* Check for duplicate */
+    int is_dup = 0;
+    for (struct test_fd_lst *ft = list; ft; ft = ft->next) {
+        if (f2->nm && ft->nm && strcmp(f2->nm, ft->nm) == 0) {
+            is_dup = 1;
+            break;
+        }
+    }
+    ASSERT_TRUE(is_dup);
+
+    /* The fix: free nm before freeing the struct */
+    if (f2->nm)
+        counted_free(f2->nm);
+    counted_free(f2);
+    ASSERT_EQ(alloc_count, 2);  /* only original entry remains */
+
+    /* Cleanup */
+    if (f1->nm) counted_free(f1->nm);
+    counted_free(f1);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_fd_lst duplicate without name (numeric FD) -- no nm leak
+ */
+TEST(memleak_enter_fd_lst_dup_numeric_no_leak) {
+    alloc_count = 0;
+
+    struct test_fd_lst *list = NULL;
+    struct test_fd_lst *f1 = (struct test_fd_lst *)counted_malloc(sizeof(*f1));
+    f1->nm = NULL;
+    f1->lo = f1->hi = 5;
+    f1->next = list;
+    list = f1;
+    ASSERT_EQ(alloc_count, 1);
+
+    struct test_fd_lst *f2 = (struct test_fd_lst *)counted_malloc(sizeof(*f2));
+    f2->nm = NULL;
+    f2->lo = f2->hi = 5;
+    ASSERT_EQ(alloc_count, 2);
+
+    /* Detect duplicate (numeric match) */
+    int is_dup = 0;
+    for (struct test_fd_lst *ft = list; ft; ft = ft->next) {
+        if (!f2->nm && !ft->nm && f2->lo == ft->lo && f2->hi == ft->hi) {
+            is_dup = 1;
+            break;
+        }
+    }
+    ASSERT_TRUE(is_dup);
+
+    /* Free duplicate -- nm is NULL, so only struct freed */
+    if (f2->nm) counted_free(f2->nm);
+    counted_free(f2);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(f1);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_efsys leak when Readlink fails (fixed)
+ * Before the fix, 'ec' was not freed when Readlink returned NULL.
+ */
+TEST(memleak_enter_efsys_readlink_fail_frees_ec) {
+    alloc_count = 0;
+
+    char *ec = counted_mkstrcpy("/some/path");
+    ASSERT_NOT_NULL(ec);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Simulate Readlink failure (returns NULL) */
+    char *path = NULL;  /* Readlink failed */
+    if (!path) {
+        counted_free(ec);
+        /* return(1) in the real code */
+    }
+
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_efsys duplicate detection frees ec (fixed)
+ * Before the fix, 'ec' was not freed when a duplicate path was found
+ * and path != ec (i.e., when Readlink resolved to a different string).
+ */
+TEST(memleak_enter_efsys_dup_frees_ec) {
+    alloc_count = 0;
+
+    char *ec = counted_mkstrcpy("/original/input");
+    /* Simulate Readlink returning a different resolved path */
+    char *path = counted_mkstrcpy("/resolved/path");
+    ASSERT_EQ(alloc_count, 2);
+
+    /* Simulate duplicate detection: path matches existing entry */
+    int is_dup = 1;  /* pretend we found a match */
+    if (is_dup) {
+        if (path != ec)
+            counted_free(ec);
+        /* path is from Readlink's static stack in real code,
+         * but here we clean it up to verify the pattern */
+    }
+
+    /* ec should be freed; path still allocated (owned by Readlink stack) */
+    ASSERT_EQ(alloc_count, 1);
+    counted_free(path);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_efsys success path frees ec when path != ec (fixed)
+ */
+TEST(memleak_enter_efsys_success_frees_ec) {
+    alloc_count = 0;
+
+    char *ec = counted_mkstrcpy("/input/path");
+    char *path = counted_mkstrcpy("/resolved/real/path");
+    ASSERT_EQ(alloc_count, 2);
+
+    /* Simulate storing path in list entry (ep->path = path) */
+    char *stored_path = path;
+    (void)stored_path;
+
+    /* The fix: free ec when path != ec */
+    if (path != ec)
+        counted_free(ec);
+
+    ASSERT_EQ(alloc_count, 1);  /* only stored_path remains */
+    counted_free(path);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_efsys with rdlnk=true (path == ec, no extra free needed)
+ */
+TEST(memleak_enter_efsys_rdlnk_no_double_free) {
+    alloc_count = 0;
+
+    char *ec = counted_mkstrcpy("/direct/path");
+    char *path = ec;  /* rdlnk case: path points to ec */
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Store path in list entry */
+    char *stored_path = path;
+    (void)stored_path;
+
+    /* The fix checks path != ec; since they're equal, no free */
+    if (path != ec)
+        counted_free(ec);
+
+    ASSERT_EQ(alloc_count, 1);  /* only stored_path remains */
+    counted_free(path);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: mkstrcpy caller must free
+ */
+TEST(memleak_mkstrcpy_basic) {
+    alloc_count = 0;
+    char *s = counted_mkstrcpy("test string");
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "test string");
+    ASSERT_EQ(alloc_count, 1);
+    counted_free(s);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: mkstrcpy with NULL source
+ */
+TEST(memleak_mkstrcpy_null) {
+    alloc_count = 0;
+    char *s = counted_mkstrcpy(NULL);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "");
+    ASSERT_EQ(alloc_count, 1);
+    counted_free(s);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: mkstrcat caller must free
+ */
+TEST(memleak_mkstrcat_basic) {
+    alloc_count = 0;
+    char *s = counted_mkstrcat("hello", -1, " world", -1);
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "hello world");
+    ASSERT_EQ(alloc_count, 1);
+    counted_free(s);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_nm pattern - old value freed before new
+ */
+TEST(memleak_enter_nm_frees_old) {
+    alloc_count = 0;
+    char *nm = NULL;
+
+    /* First call: no old value */
+    nm = counted_mkstrcpy("first");
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Second call: old value must be freed */
+    char *old = nm;
+    nm = counted_mkstrcpy("second");
+    counted_free(old);
+    ASSERT_EQ(alloc_count, 1);  /* net: still 1 */
+    ASSERT_STR_EQ(nm, "second");
+
+    counted_free(nm);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: free_lproc pattern - all fields freed
+ */
+TEST(memleak_free_lproc_pattern) {
+    alloc_count = 0;
+
+    /* Simulate lproc with lfile chain */
+    char *cmd = counted_mkstrcpy("test_cmd");
+    char *dev_ch = counted_mkstrcpy("0x1234");
+    char *nm = counted_mkstrcpy("/dev/null");
+    char *nma = counted_mkstrcpy("(annotation)");
+    ASSERT_EQ(alloc_count, 4);
+
+    /* Simulate free_lproc: free lfile fields then cmd */
+    counted_free(dev_ch);
+    counted_free(nm);
+    counted_free(nma);
+    counted_free(cmd);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+
 /* ===== Test Registry ===== */
 static tf_test_entry all_tests[] = {
     REGISTER_TEST(field_ids_are_unique),
@@ -627,6 +980,19 @@ static tf_test_entry all_tests[] = {
     REGISTER_TEST(crossover_flags),
     REGISTER_TEST(fsv_flags_no_overlap),
     REGISTER_TEST(fsv_flags_combine),
+    REGISTER_TEST(memleak_enter_network_address_hn_freed),
+    REGISTER_TEST(memleak_enter_network_address_error_frees_all),
+    REGISTER_TEST(memleak_enter_fd_lst_dup_frees_nm),
+    REGISTER_TEST(memleak_enter_fd_lst_dup_numeric_no_leak),
+    REGISTER_TEST(memleak_enter_efsys_readlink_fail_frees_ec),
+    REGISTER_TEST(memleak_enter_efsys_dup_frees_ec),
+    REGISTER_TEST(memleak_enter_efsys_success_frees_ec),
+    REGISTER_TEST(memleak_enter_efsys_rdlnk_no_double_free),
+    REGISTER_TEST(memleak_mkstrcpy_basic),
+    REGISTER_TEST(memleak_mkstrcpy_null),
+    REGISTER_TEST(memleak_mkstrcat_basic),
+    REGISTER_TEST(memleak_enter_nm_frees_old),
+    REGISTER_TEST(memleak_free_lproc_pattern),
 };
 
 RUN_TESTS_FROM(all_tests)

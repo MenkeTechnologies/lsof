@@ -764,8 +764,10 @@ enter_efsys(e, rdlnk)
     if (rdlnk)
         path = ec;
     else {
-        if (!(path = Readlink(ec)))
-        return(1);
+        if (!(path = Readlink(ec))) {
+            (void) free((FREE_P *) ec);
+            return(1);
+        }
     }
 /*
  * Remove terminating `/' characters from paths longer than one.
@@ -777,8 +779,11 @@ enter_efsys(e, rdlnk)
  * Enter file system path on list, avoiding duplicates.
  */
     for (ep = Efsysl; ep; ep = ep->next) {
-       if (!strcmp(ep->path, path))
+       if (!strcmp(ep->path, path)) {
+        if (path != ec)
+            (void) free((FREE_P *) ec);
         return(0);
+       }
     }
     if (!(ep = (efsys_list_t *)malloc((MALLOC_S)(sizeof(efsys_list_t))))) {
        (void) fprintf(stderr, "%s: no space for \"-e %s\" entry\n",
@@ -789,6 +794,8 @@ enter_efsys(e, rdlnk)
     ep->pathl = i;
     ep->rdlnk = rdlnk;
     ep->mp = (struct mounts *)NULL;
+    if (path != ec)
+        (void) free((FREE_P *) ec);
     if (!(ep->next = Efsysl))
         Efsysl = ep;
     return(0);
@@ -954,6 +961,8 @@ enter_fd_lst(nm, lo, hi, excl)
                 continue;
         } else if ((lo != ft->lo) || (hi != ft->hi))
             continue;
+        if (f->nm)
+            (void) free((FREE_P *) f->nm);
         (void) free((FREE_P *) f);
         return (0);
     }
@@ -1815,6 +1824,8 @@ enter_network_address(na)
         if (!*wa)
             break;
     }
+    if (hn)
+        (void) free((FREE_P *) hn);
     if (sn)
         (void) free((FREE_P *) sn);
     return (0);
