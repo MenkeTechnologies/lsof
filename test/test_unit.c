@@ -265,6 +265,13 @@ int main(int argc, char **argv) {
     RUN(memleak_str_list_cleanup);
     RUN(memleak_double_buffer_pattern);
     RUN(memleak_nested_alloc_pattern);
+    RUN(memleak_nwad_exit_frees_arg);
+    RUN(memleak_nwad_exit_arg_null_safe);
+    RUN(memleak_readlink_path_too_long_frees_stack);
+    RUN(memleak_readlink_path_too_long_empty_stack);
+    RUN(memleak_darwin_safe_realloc_success);
+    RUN(memleak_darwin_safe_realloc_failure);
+    RUN(memleak_darwin_adev_realloc_pattern);
 
     /* --- network --- */
     RUN(ipv4_basic);

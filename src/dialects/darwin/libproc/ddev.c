@@ -513,9 +513,12 @@ saveADev(struct stat * s)
     if (ADevU >= ADevA) {
         ADevA += 16;
         sz = (MALLOC_S)(ADevA * sizeof(dev_t));
-        if (ADev)
-            ADev = (dev_t *) realloc((MALLOC_P *) ADev, sz);
-        else
+        if (ADev) {
+            dev_t *tmp = (dev_t *) realloc((MALLOC_P *) ADev, sz);
+            if (!tmp)
+                free((FREE_P *) ADev);
+            ADev = tmp;
+        } else
             ADev = (dev_t *) malloc(sz);
         if (!ADev) {
             (void) fprintf(stderr, "%s: no space for ADev[]\n", ProgramName);

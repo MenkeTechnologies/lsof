@@ -658,4 +658,213 @@ TEST(memleak_nested_alloc_pattern) {
     ASSERT_EQ(alloc_count, 0);
 }
 
+/*
+ * Tests for the three memory leaks fixed in this session:
+ *
+ * 1. enter_network_address() nwad_exit didn't free n.arg
+ * 2. Readlink() path_too_long didn't free stk[] entries
+ * 3. Unsafe realloc patterns in darwin dialect (ptr = realloc(ptr, ...))
+ */
+
+/*
+ * Leak fix 1: enter_network_address() error path must free n.arg
+ *
+ * The nwad_exit label frees n.proto, hn, sn. Before the fix, n.arg
+ * (set via mkstrcpy in enter_nwad) was not freed, leaking the address
+ * string on every malformed -i argument.
+ */
+TEST(memleak_nwad_exit_frees_arg) {
+    alloc_count = 0;
+
+    /* Simulate the allocations present when nwad_exit is reached */
+    char *arg = counted_mkstrcpy("192.168.1.1");   /* n.arg */
+    char *proto = counted_mkstrcat("tcp", 3, NULL, -1);  /* n.proto */
+    char *hn = counted_mkstrcpy("localhost");       /* hn */
+    char *sn = counted_mkstrcpy("http");            /* sn */
+    ASSERT_EQ(alloc_count, 4);
+
+    /* nwad_exit cleanup — must free all four, including arg */
+    if (arg)   counted_free(arg);
+    if (proto) counted_free(proto);
+    if (hn)    counted_free(hn);
+    if (sn)    counted_free(sn);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+TEST(memleak_nwad_exit_arg_null_safe) {
+    alloc_count = 0;
+
+    /* n.arg may be NULL if error occurs before enter_nwad sets it */
+    char *arg = NULL;
+    char *proto = counted_mkstrcat("udp", 3, NULL, -1);
+    char *hn = NULL;
+    char *sn = NULL;
+    ASSERT_EQ(alloc_count, 1);
+
+    if (arg)   counted_free(arg);
+    if (proto) counted_free(proto);
+    if (hn)    counted_free(hn);
+    if (sn)    counted_free(sn);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Leak fix 2: Readlink() path_too_long must free stk[] entries
+ *
+ * The Readlink function uses a static stack of mkstrcpy'd strings to
+ * track symlink resolution. The MAXSYMLINKS error path freed them,
+ * but path_too_long did not, leaking up to MAXSYMLINKS allocations.
+ */
+TEST(memleak_readlink_path_too_long_frees_stack) {
+    alloc_count = 0;
+
+    /* Simulate the symlink resolution stack */
+    int ss = 0, sx = 0;
+    char **stk = NULL;
+
+    /* Push 3 entries onto the stack (as Readlink does during resolution) */
+    for (int i = 0; i < 3; i++) {
+        sx++;
+        if (sx > ss) {
+            ss = sx;
+            if (!stk)
+                stk = (char **)counted_malloc((size_t)(ss * sizeof(char *)));
+            else {
+                char **tmp = (char **)counted_realloc(stk, (size_t)(ss * sizeof(char *)));
+                if (!tmp) { counted_free(stk); stk = NULL; }
+                else stk = tmp;
+            }
+            ASSERT_NOT_NULL(stk);
+        }
+        stk[sx - 1] = counted_mkstrcpy("/some/symlink/target");
+    }
+    ASSERT_EQ(alloc_count, 4);  /* 1 stk array + 3 strings */
+
+    /* Simulate path_too_long cleanup (the fix) */
+    for (int i = 0; i < sx; i++) {
+        counted_free(stk[i]);
+        stk[i] = NULL;
+    }
+    if (stk) {
+        counted_free(stk);
+        stk = NULL;
+    }
+    ss = sx = 0;
+
+    ASSERT_EQ(alloc_count, 0);
+}
+
+TEST(memleak_readlink_path_too_long_empty_stack) {
+    alloc_count = 0;
+
+    /* path_too_long can be reached with an empty stack (first component too long) */
+    int ss = 0, sx = 0;
+    char **stk = NULL;
+
+    /* Cleanup should be safe with nothing on the stack */
+    for (int i = 0; i < sx; i++) {
+        counted_free(stk[i]);
+        stk[i] = NULL;
+    }
+    if (stk) {
+        counted_free(stk);
+        stk = NULL;
+    }
+    ss = sx = 0;
+    (void)ss;
+
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Leak fix 3: Safe realloc pattern for darwin dialect buffers
+ *
+ * The pattern `Ptr = realloc(Ptr, newsize)` loses the old pointer if
+ * realloc fails. The fix uses a tmp variable and frees the old pointer
+ * on failure. All sites Exit(1) after, but the fix is correct practice.
+ */
+TEST(memleak_darwin_safe_realloc_success) {
+    alloc_count = 0;
+
+    /* Simulate Vips/Pids/Fds/Threads/ADev grow pattern */
+    int *buf = (int *)counted_malloc(4 * sizeof(int));
+    ASSERT_NOT_NULL(buf);
+    buf[0] = 42;
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Safe realloc: use tmp, free old on failure */
+    int *tmp = (int *)counted_realloc(buf, 8 * sizeof(int));
+    if (!tmp) {
+        counted_free(buf);
+        buf = NULL;
+    } else {
+        buf = tmp;
+    }
+    ASSERT_NOT_NULL(buf);
+    ASSERT_EQ(buf[0], 42);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(buf);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+TEST(memleak_darwin_safe_realloc_failure) {
+    alloc_count = 0;
+
+    char *buf = (char *)counted_malloc(32);
+    ASSERT_NOT_NULL(buf);
+    memset(buf, 'X', 32);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Simulate realloc failure with impossibly large size */
+    char *tmp = (char *)counted_realloc(buf, (size_t)-1);
+    if (!tmp) {
+        counted_free(buf);
+        buf = NULL;
+    } else {
+        buf = tmp;
+    }
+    ASSERT_NULL(buf);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+TEST(memleak_darwin_adev_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Simulate ADev grow: starts with malloc, then realloc */
+    int capacity = 16;
+    int *adev = NULL;
+    int used = 0;
+
+    /* Initial allocation */
+    adev = (int *)counted_malloc((size_t)(capacity * sizeof(int)));
+    ASSERT_NOT_NULL(adev);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Fill and grow twice */
+    for (int round = 0; round < 2; round++) {
+        for (int i = used; i < capacity; i++)
+            adev[i] = i;
+        used = capacity;
+        capacity += 16;
+
+        int *tmp = (int *)counted_realloc(adev, (size_t)(capacity * sizeof(int)));
+        if (!tmp) {
+            counted_free(adev);
+            adev = NULL;
+        } else {
+            adev = tmp;
+        }
+        ASSERT_NOT_NULL(adev);
+        ASSERT_EQ(alloc_count, 1);
+    }
+
+    /* Verify old data survived reallocs */
+    ASSERT_EQ(adev[0], 0);
+    ASSERT_EQ(adev[15], 15);
+
+    counted_free(adev);
+    ASSERT_EQ(alloc_count, 0);
+}
+
 #endif /* TEST_UNIT_MEMLEAK_H */

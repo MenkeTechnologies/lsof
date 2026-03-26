@@ -1493,6 +1493,8 @@ enter_network_address(char *na)
                                "%s: no space for protocol name from: -i ", ProgramName);
                 safestrprt(na, stderr, 1);
                 nwad_exit:
+                if (n.arg)
+                    free((FREE_P *) n.arg);
                 if (n.proto)
                     free((FREE_P *) n.proto);
                 if (hn)

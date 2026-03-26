@@ -124,9 +124,13 @@ enter_vn_text(struct vnode_info_path * vip, int * n)
         NbVips += (int) (VIPS_INCR * sizeof(struct vips_info));
         if (!Vips)
             Vips = (struct vips_info *) malloc((MALLOC_S) NbVips);
-        else
-            Vips = (struct vips_info *) realloc((MALLOC_P *) Vips,
+        else {
+            struct vips_info *tmp = (struct vips_info *) realloc((MALLOC_P *) Vips,
                                                 (MALLOC_S) NbVips);
+            if (!tmp)
+                free((FREE_P *) Vips);
+            Vips = tmp;
+        }
         if (!Vips) {
             (void) fprintf(stderr, "%s: PID %d: no text recording space\n",
                            ProgramName, CurrentLocalProc->pid);
@@ -227,8 +231,12 @@ gather_proc_info() {
         }
         if (!Pids)
             Pids = (int *) malloc((MALLOC_S) NbPids);
-        else
-            Pids = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+        else {
+            int *tmp = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+            if (!tmp)
+                free((FREE_P *) Pids);
+            Pids = tmp;
+        }
         if (!Pids) {
             (void) fprintf(stderr,
                            "%s: can't allocate space for %d PIDs\n", ProgramName,
@@ -259,7 +267,12 @@ gather_proc_info() {
              * The PID buffer must be enlarged.
              */
             NbPids += PIDS_INCR;
-            Pids = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+            {
+                int *tmp = (int *) realloc((MALLOC_P *) Pids, (MALLOC_S) NbPids);
+                if (!tmp)
+                    free((FREE_P *) Pids);
+                Pids = tmp;
+            }
             if (!Pids) {
                 (void) fprintf(stderr,
                                "%s: can't allocate space for %d PIDs\n", ProgramName,
@@ -446,8 +459,13 @@ process_fds(int pid, uint32_t n, int ckscko)
          * More proc_fdinfo space is required.  Allocate it.
          */
         NbFds = sizeof(struct proc_fdinfo) * n;
-        Fds = (struct proc_fdinfo *) realloc((MALLOC_P *) Fds,
-                                             (MALLOC_S) NbFds);
+        {
+            struct proc_fdinfo *tmp = (struct proc_fdinfo *) realloc((MALLOC_P *) Fds,
+                                                 (MALLOC_S) NbFds);
+            if (!tmp)
+                free((FREE_P *) Fds);
+            Fds = tmp;
+        }
     }
     if (!Fds) {
         (void) fprintf(stderr,
@@ -608,9 +626,13 @@ process_threads(int pid, uint32_t n)
         }
         if (!Threads)
         Threads = (uint64_t *)malloc((MALLOC_S)NbThreads);
-        else
-        Threads = (uint64_t *)realloc((MALLOC_P *)Threads,
-                          (MALLOC_S)NbThreads);
+        else {
+        uint64_t *tmp = (uint64_t *)realloc((MALLOC_P *)Threads,
+                            (MALLOC_S)NbThreads);
+        if (!tmp)
+            free((FREE_P *)Threads);
+        Threads = tmp;
+        }
         if (!Threads) {
         (void) fprintf(stderr,
             "%s: can't allocate space for %d Threads\n", ProgramName,

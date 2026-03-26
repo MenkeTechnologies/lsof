@@ -1002,6 +1002,15 @@ Readlink(char *arg)
                                "%s: readlink() path too long: ", ProgramName);
                 safestrprt(op ? op : arg, stderr, 1);
             }
+            for (i = 0; i < sx; i++) {
+                free((FREE_P *) stk[i]);
+                stk[i] = NULL;
+            }
+            if (stk) {
+                free((FREE_P *) stk);
+                stk = (char **) NULL;
+            }
+            ss = sx = 0;
             op = NULL;
             return (NULL);
         }
