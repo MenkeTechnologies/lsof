@@ -5,8 +5,8 @@ set -e
 
 BUILD_DIR="${1:-.}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BANNER="$SCRIPT_DIR/../scripts/banner.sh"
 
-C='\033[1;36m'
 M='\033[1;35m'
 G='\033[1;32m'
 Y='\033[1;33m'
@@ -14,11 +14,7 @@ RED='\033[1;31m'
 B='\033[1m'
 R='\033[0m'
 
-printf '\n'
-printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-printf "  ${C}░░${R}  ${B}INITIATING MEMORY LEAK SCAN // DEEP ANALYSIS${R}                  ${C}░░${R}\n"
-printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-printf '\n'
+"$BANNER" leak-start
 
 PASS=0
 FAIL=0
@@ -53,15 +49,9 @@ run_leaks "check_integration" "./check_integration"
 printf '\n'
 
 if [ "$FAIL" -eq 0 ]; then
-    printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-    printf "  ${C}░░${R}  ${G}▓▓ MEMORY CLEAN // 0 LEAKS ACROSS %d BINARIES${R}              ${C}░░${R}\n" "$PASS"
-    printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-    printf '\n'
+    "$BANNER" leak-pass
     exit 0
 else
-    printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-    printf "  ${C}░░${R}  ${RED}▓▓ MEMORY BREACH // %d BINARY(S) LEAKING${R}                    ${C}░░${R}\n" "$FAIL"
-    printf "  ${C}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${R}\n"
-    printf '\n'
+    "$BANNER" leak-fail
     exit 1
 fi

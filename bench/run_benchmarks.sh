@@ -6,13 +6,14 @@ set -e
 BUILD_DIR="${1:-.}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+BANNER="$PROJECT_DIR/scripts/banner.sh"
 
 # ANSI codes
 M='\033[0;35;1m'
 D='\033[2m'
 R='\033[0m'
 
-"$SCRIPT_DIR/banner.sh" start
+"$BANNER" bench-start
 
 SYS="$(uname -ms)"
 CPU="$(sysctl -n machdep.cpu.brand_string 2>/dev/null || cat /proc/cpuinfo 2>/dev/null | grep 'model name' | head -1 | cut -d: -f2)"
@@ -29,4 +30,4 @@ cd "$BUILD_DIR"
 ./benchmark_core > benchmark_core.log 2>&1
 cat benchmark_core.log
 
-"$SCRIPT_DIR/banner.sh" end
+"$BANNER" bench-end

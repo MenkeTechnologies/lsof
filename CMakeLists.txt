@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.10)
 project(lsof C)
 
 set(CMAKE_C_STANDARD 11)
@@ -45,10 +45,9 @@ set(LSOF_DIALECT_PATH ${PROJECT_SOURCE_DIR}/src/dialects/${LSOF_DIALECT_DIR})
 set(LSOF_DIALECT_HEADERS machine.h dlsof.h dproto.h)
 foreach(HDR ${LSOF_DIALECT_HEADERS})
     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/src/${HDR})
-        file(CREATE_LINK
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
             ${LSOF_DIALECT_PATH}/${HDR}
             ${PROJECT_SOURCE_DIR}/src/${HDR}
-            SYMBOLIC
         )
     endif()
 endforeach()
@@ -84,15 +83,15 @@ target_compile_options(lsof PRIVATE
 
 # --- Cyberpunk build banners ---
 add_custom_target(build-banner
-    COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh build-start)
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-start)
 add_dependencies(lsof build-banner)
 add_custom_command(TARGET lsof POST_BUILD
-    COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh build-end)
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-end)
 
 add_custom_target(cyberpunk-clean
-    COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh clean-start
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh clean-start
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean
-    COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh clean-end
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh clean-end
 )
 
 # ===== Test Suite =====
@@ -143,11 +142,11 @@ set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
 )
 
 # ===== Linux Packaging (CPack) =====
-install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh install-start)")
+install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-start)")
 install(TARGETS lsof RUNTIME DESTINATION sbin)
 install(FILES ${PROJECT_SOURCE_DIR}/lsof.1 DESTINATION share/man/man1)
 install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
-install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/build_banner.sh install-end)")
+install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-end)")
 
 set(CPACK_PACKAGE_NAME "lsof")
 set(CPACK_PACKAGE_VERSION "5.0")

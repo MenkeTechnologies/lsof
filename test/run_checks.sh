@@ -5,8 +5,9 @@ set -e
 
 BUILD_DIR="${1:-.}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BANNER="$SCRIPT_DIR/../scripts/banner.sh"
 
-"$SCRIPT_DIR/banner.sh" start
+"$BANNER" test-start
 
 cd "$BUILD_DIR"
 
@@ -23,6 +24,6 @@ cat check_integration.log
 if grep -q FAIL check_unit.log check_integration.log; then
     exit 1
 else
-    "$SCRIPT_DIR/banner.sh" end
+    "$BANNER" test-end
     exit 0
 fi
