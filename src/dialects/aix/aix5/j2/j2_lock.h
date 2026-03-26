@@ -7,8 +7,6 @@
  *	AIX 5.2, because it includes <proc/proc_public.h> and that header
  *	    file is missing from AIX 5.2.
  *
- * V. Abell <abe@purdue.edu>
- * Purdue University
  */
 
 #if    !defined(LSOF_J2_LOCK_H)

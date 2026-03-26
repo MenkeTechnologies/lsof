@@ -6,11 +6,8 @@
 /*
  * Portions Copyright 2005 Apple Computer, Inc.  All rights reserved.
  *
- * Copyright 2005 Purdue Research Foundation, West Lafayette, Indiana
- * 47907.  All rights reserved.
  *
- * Written by Allan Nathanson, Apple Computer, Inc., and Victor A.
- * Abell, Purdue University.
+ * Written by Allan Nathanson, Apple Computer, Inc., and J. Menke.
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or the Regents of the University of California.
@@ -19,12 +16,12 @@
  * any computer system, and to alter it and redistribute it freely, subject
  * to the following restrictions:
  *
- * 1. Neither the authors, nor Apple Computer, Inc. nor Purdue University
+ * 1. Neither the authors, nor Apple Computer, Inc.
  *    are responsible for any consequences of the use of this software.
  *
  * 2. The origin of this software must not be misrepresented, either
  *    by explicit claim or by omission.  Credit to the authors, Apple
- *    Computer, Inc. and Purdue University must appear in documentation
+ *    Computer, Inc. must appear in documentation
  *    and sources.
  *
  * 3. Altered versions must be plainly marked as such, and must not be
@@ -36,8 +33,7 @@
 
 #ifndef lint
 static char copyright[] =
-        "@(#) Copyright 2005 Apple Computer, Inc. and Purdue Research Foundation.\nAll rights reserved.\n";
-static char *rcsid = "$Id: dstore.c,v 1.4 2008/10/21 16:15:16 abe Exp $";
+        "@(#) Copyright 2005 Apple Computer, Inc.\nAll rights reserved.\n";
 #endif
 
 

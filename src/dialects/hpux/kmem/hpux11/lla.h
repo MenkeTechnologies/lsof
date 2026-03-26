@@ -5,7 +5,6 @@
  * to read the Link Level Access (LLA) control block.  Link level access means
  * access to the network link layer access protocol -- e.g., Ethernet 802.5.
  *
- * V. Abell <abe@purdue.edu>
  * February, 1998
  */
 

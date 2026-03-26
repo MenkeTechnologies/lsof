@@ -1,15 +1,13 @@
 /*
  * main.c - common main function for lsof
  *
- * V. Abell, Purdue University
+ * J. Menke
  */
 
 
 /*
- * Copyright 1994 Purdue Research Foundation, West Lafayette, Indiana
- * 47907.  All rights reserved.
  *
- * Written by Victor A. Abell
+ * Written by Jacob Menke
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or the Regents of the University of California.
@@ -18,12 +16,11 @@
  * any computer system, and to alter it and redistribute it freely, subject
  * to the following restrictions:
  *
- * 1. Neither the authors nor Purdue University are responsible for any
+ * 1. Neither the authors are responsible for any
  *    consequences of the use of this software.
  *
  * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Credit to the authors and Purdue
- *    University must appear in documentation and sources.
+ *    explicit claim or by omission.  Credit to the authors must appear in documentation and sources.
  *
  * 3. Altered versions must be plainly marked as such, and must not be
  *    misrepresented as being the original software.
@@ -33,8 +30,7 @@
 
 #ifndef lint
 static char copyright[] =
-        "@(#) Copyright 1994 Purdue Research Foundation.\nAll rights reserved.\n";
-static char *rcsid = "$Id: main.c,v 1.55 2011/09/07 19:13:49 abe Exp $";
+        "@(#) Copyright 1994 lsof contributors.\nAll rights reserved.\n";
 #endif
 
 
@@ -1636,14 +1632,14 @@ main(argc, argv)
  */
 
 static int
-GetOpt(ct, opt, rules, err)
-        int ct;                /* option count */
+GetOpt(opt_count, opt, rules, err)
+        int opt_count;                /* option count */
         char *opt[];            /* options */
         char *rules;            /* option rules */
         int *err;            /* error return */
 {
-    register int c;
-    register char *cp = (char *) NULL;
+    register int opt_char;
+    register char *rule_ptr = (char *) NULL;
 
     if (GOx2 == 0) {
 
@@ -1757,18 +1753,18 @@ GetOpt(ct, opt, rules, err)
  */
 
 static char *
-sv_fmt_str(f)
-        char *f;            /* format string */
+sv_fmt_str(fmt_str)
+        char *fmt_str;            /* format string */
 {
-    char *cp;
-    MALLOC_S l;
+    char *result;
+    MALLOC_S len;
 
-    l = (MALLOC_S)(strlen(f) + 1);
-    if (!(cp = (char *) malloc(l))) {
+    len = (MALLOC_S)(strlen(fmt_str) + 1);
+    if (!(result = (char *) malloc(len))) {
         (void) fprintf(stderr,
-                       "%s: can't allocate %d bytes for format: %s\n", ProgramName, (int) l, f);
+                       "%s: can't allocate %d bytes for format: %s\n", ProgramName, (int) len, fmt_str);
         Exit(1);
     }
-    (void) snpf(cp, l, "%s", f);
-    return (cp);
+    (void) snpf(result, len, "%s", fmt_str);
+    return (result);
 }

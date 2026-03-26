@@ -4,7 +4,6 @@
  * This header file defines the locklist, vnode and vattr structures for lsof
  * in a manner that can be compiled at the application level.
  *
- * V. Abell <abe@purdue.edu>
  * February, 1998
  */
 

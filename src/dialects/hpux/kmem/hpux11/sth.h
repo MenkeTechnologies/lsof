@@ -5,7 +5,7 @@
  * uses the stream head structure to obtain the stream's read and write queue
  * structure pointers.
  *
- * V. Abell
+ * J. Menke
  * February, 1998
  */
 

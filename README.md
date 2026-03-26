@@ -241,7 +241,7 @@ The benchmark suite includes head-to-head comparisons that measure the impact of
 
 ## // CREDITS
 
-Originally written by **Victor A. Abell** at Purdue University.
+Originally written by **Jacob Menke**.
 Maintained by the open-source community.
 
 ---

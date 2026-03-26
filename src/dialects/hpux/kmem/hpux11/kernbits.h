@@ -4,7 +4,7 @@
  * This header file defines the basic kernel word size type for lsof, using
  * the Configure-generated -DHPUXKERNBITS=<32|64> definition.
  *
- * V. Abell
+ * J. Menke
  * February, 1998
  */
 

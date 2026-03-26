@@ -4,7 +4,6 @@
  * This header file defines the rnode structure for lsof.  Lsof uses it to get
  * infomation about remote (NFS) nodes -- e.g., node number and size.
  *
- * V. Abell <abe@purdue.edu>
  * February, 1998
  */
 

@@ -8,7 +8,7 @@
  * structure's private data pointer, q_ptr, addresses its associated tcp_s
  * structure.
  *
- * V. Abell
+ * J. Menke
  * February, 1998
  */
 

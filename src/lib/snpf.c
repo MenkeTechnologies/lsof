@@ -1,15 +1,12 @@
 /*
  * snpf.c -- snprintf() empulation functions for lsof library
  *
- * V. Abell
- * Purdue University Computing Center
+ * J. Menke
  */
 
 /*
- * Copyright 2000 Purdue Research Foundation, West Lafayette, Indiana
- * 47907.  All rights reserved.
  *
- * Written by Victor A. Abell
+ * Written by Jacob Menke
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or the Regents of the University of California.
@@ -23,12 +20,11 @@
  * any computer system, and to alter it and redistribute it freely, subject
  * to the following restrictions:
  *
- * 1. Neither the authors nor Purdue University are responsible for any
+ * 1. Neither the authors are responsible for any
  *    consequences of the use of this software.
  *
  * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Credit to the authors and Purdue
- *    University must appear in documentation and sources.
+ *    explicit claim or by omission.  Credit to the authors must appear in documentation and sources.
  *
  * 3. Altered versions must be plainly marked as such, and must not be
  *    misrepresented as being the original software.
@@ -160,7 +156,7 @@ each of the following conditions is met:
 
 # ifndef lint
 static char copyright[] =
-"@(#) Copyright 2000 Purdue Research Foundation.\nAll rights reserved.\n";
+"@(#) Copyright 2000 lsof contributors.\nAll rights reserved.\n";
 # endif /* !defined(lint) */
 
 #include <varargs.h>

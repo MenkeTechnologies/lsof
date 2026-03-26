@@ -5,16 +5,12 @@
  * This file is used when the UNIX dialect does not have a POSIX-conformant
  * regular expression function set.  In that case USE_LIB_REGEX is defined.
  *
- * V. Abell <abe@purdue.edu>
- * Purdue University Computing Center
  */
 
 
 /*
- * Copyright 2000 Purdue Research Foundation, West Lafayette, Indiana
- * 47907.  All rights reserved.
  *
- * Written by Victor A. Abell
+ * Written by Jacob Menke
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or the Regents of the University of California.
@@ -28,12 +24,11 @@
  * any computer system, and to alter it and redistribute it freely, subject
  * to the following restrictions:
  *
- * 1. Neither the authors nor Purdue University are responsible for any
+ * 1. Neither the authors are responsible for any
  *    consequences of the use of this software.
  *
  * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Credit to the authors and Purdue
- *    University must appear in documentation and sources.
+ *    explicit claim or by omission.  Credit to the authors must appear in documentation and sources.
  *
  * 3. Altered versions must be plainly marked as such, and must not be
  *    misrepresented as being the original software.
@@ -237,7 +232,7 @@ char *realloc ();
 #endif
 
 /* Get the interface, including the syntax bits.  */
-/* Disabled by V. Abell on January 29, 2001: #include <regex.h> */
+/* Disabled by J. Menke on January 29, 2001: #include <regex.h> */
 #include "../regex.h"
 
 /* isalpha etc. are used for the character classes.  */

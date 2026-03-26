@@ -4,7 +4,7 @@
  * This header file defines the mntinfo structure for lsof.  Lsof uses it to
  * obtain the device number of an NFS mount point.
  *
- * V. Abell
+ * J. Menke
  * February, 1998
  */
 

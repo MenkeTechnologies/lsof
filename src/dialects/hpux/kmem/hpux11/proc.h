@@ -5,7 +5,6 @@
  * get process information, including PGID, PID, PPID, UID, CWD, and open
  * file pointers.
  *
- * V. Abell <abe@purdue.edu>
  * February, 1998
  */
 

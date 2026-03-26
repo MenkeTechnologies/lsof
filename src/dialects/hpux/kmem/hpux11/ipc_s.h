@@ -13,7 +13,6 @@
  * two other Q4-derived structures, mirg_s and ipis_s.  The ipis_s structure
  * contains the hash and stream links formerly contained in ipc_s.
  *
- * V. Abell <abe@purdue.edu>
  * February, 1998
  *
  * Patch bundle update supplied by: Kevin Vajk <kvajk@cup.hp.com>
