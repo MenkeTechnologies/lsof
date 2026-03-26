@@ -9,12 +9,14 @@ RED='\033[1;31m'
 B='\033[1m'     # bold
 R='\033[0m'     # reset
 
+VERSION="${2:-5.1}"
+
 case "$1" in
     # Build
     build-start)
         printf '\n'
         printf "  ${M}╔══════════════════════════════════════════════════════════════════════╗${R}\n"
-        printf "  ${M}║${R}  ${C}▓▓ COMPILING FILE DESCRIPTOR SCANNER // lsof ${B}v5.1${R}               ${M}║${R}\n"
+        printf "  ${M}║${R}  ${C}▓▓ COMPILING FILE DESCRIPTOR SCANNER // lsof ${B}v${VERSION}${R}               ${M}║${R}\n"
         printf "  ${M}║${R}  ${Y}>> ENGAGING COMPILER UPLINK ...${R}                                    ${M}║${R}\n"
         printf "  ${M}╚══════════════════════════════════════════════════════════════════════╝${R}\n"
         printf '\n'
@@ -32,7 +34,7 @@ case "$1" in
     install-start)
         printf '\n'
         printf "  ${M}╔══════════════════════════════════════════════════════════════════════╗${R}\n"
-        printf "  ${M}║${R}  ${C}▓▓ DEPLOYING BINARY TO TARGET SYSTEM // lsof ${B}v5.1${R}                ${M}║${R}\n"
+        printf "  ${M}║${R}  ${C}▓▓ DEPLOYING BINARY TO TARGET SYSTEM // lsof ${B}v${VERSION}${R}                ${M}║${R}\n"
         printf "  ${M}║${R}  ${Y}>> INITIATING NEURAL IMPLANT SEQUENCE ...${R}                           ${M}║${R}\n"
         printf "  ${M}╚══════════════════════════════════════════════════════════════════════╝${R}\n"
         printf '\n'

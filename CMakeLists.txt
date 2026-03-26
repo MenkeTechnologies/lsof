@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lsof C)
 
+set(LSOF_VERSION "5.1")
 set(CMAKE_C_STANDARD 11)
 
 # Detect dialect based on platform
@@ -66,7 +67,7 @@ file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h
 #define LSOF_LOGNAME \"\"\n\
 #define LSOF_SYSINFO \"\"\n\
 #define LSOF_USER \"\"\n\
-#define LSOF_VERSION \"5.1\"\n"
+#define LSOF_VERSION \"${LSOF_VERSION}\"\n"
 )
 
 # Source files
@@ -83,7 +84,7 @@ target_compile_options(lsof5 PRIVATE
 
 # --- Cyberpunk build banners ---
 add_custom_target(build-banner
-    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-start)
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-start ${LSOF_VERSION})
 add_dependencies(lsof5 build-banner)
 add_custom_command(TARGET lsof5 POST_BUILD
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh build-end)
@@ -206,14 +207,14 @@ set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES
 )
 
 # ===== Linux Packaging (CPack) =====
-install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-start)")
+install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-start ${LSOF_VERSION})")
 install(TARGETS lsof5 RUNTIME DESTINATION sbin)
 install(FILES ${PROJECT_SOURCE_DIR}/lsof.1 DESTINATION share/man/man1)
 install(FILES ${PROJECT_SOURCE_DIR}/00MANIFEST DESTINATION share/doc/lsof OPTIONAL)
 install(CODE "execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/banner.sh install-end)")
 
 set(CPACK_PACKAGE_NAME "lsof")
-set(CPACK_PACKAGE_VERSION "5.1")
+set(CPACK_PACKAGE_VERSION "${LSOF_VERSION}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "List open files — diagnostic tool for UNIX systems")
 set(CPACK_PACKAGE_DESCRIPTION "lsof (List Open Files) maps the topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.")
 set(CPACK_PACKAGE_CONTACT "lsof-maintainers")
