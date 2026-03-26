@@ -472,12 +472,7 @@ static void get_kernel_access() {
  * get_nlist_path() - get kernel name list path
  */
 
-char *get_nlist_path(ap)
-int ap; /* on success, return an allocated path
-					 * string pointer if 1; return a
-					 * constant character pointer if 0;
-					 * return NULL if failure */
-{
+char *get_nlist_path(int ap) {
     const char *bf;
     static char *bfc;
     MALLOC_S bfl;

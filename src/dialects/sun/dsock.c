@@ -1650,13 +1650,7 @@ void process_socket(KA_T sa, char *ty) {
  * read_icmp_t() - read connections icmp_t info
  */
 
-static int read_icmp_t(va, ph, ia, ic)
-KA_T va;    /* containing vnode kernel address */
-KA_T ph;    /* containing protocol handle kernel
-					 * address */
-KA_T ia;    /* icmp_t structure's kernel address */
-icmp_t *ic; /* local icmp_t receiver */
-{
+static int read_icmp_t(KA_T va, KA_T ph, KA_T ia, icmp_t *ic) {
     char tbuf[32], tbuf1[32]; /* print_kptr() temporary buffers */
 
 #if defined(HAS_CONN_NEW)
@@ -1714,13 +1708,7 @@ icmp_t *ic; /* local icmp_t receiver */
  * read_rts_t() - read connections rts_t info
  */
 
-static int read_rts_t(va, ph, ra, rt)
-KA_T va;   /* containing vnode kernel address */
-KA_T ph;   /* containing protocol handle kernel
-					 * address */
-KA_T ra;   /* rts_t structure's kernel address */
-rts_t *rt; /* local rts_t receiver */
-{
+static int read_rts_t(KA_T va, KA_T ph, KA_T ra, rts_t *rt) {
     char tbuf[32], tbuf1[32]; /* print_kptr() temporary buffers */
 
 #if defined(HAS_CONN_NEW)

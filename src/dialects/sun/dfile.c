@@ -216,14 +216,7 @@ void hashSfile() {
  * is_file_named() - is this file named?
  */
 
-int is_file_named(p, nt, vt, ps)
-char *p;       /* path name; NULL = search by device
-					 * and inode (from *CurrentLocalFile) */
-int nt;        /* node type -- e.g., N_* */
-enum vtype vt; /* vnode type */
-int ps;        /* print status: 0 = don't copy name
-					 * to NameChars */
-{
+int is_file_named(char *p, int nt, enum vtype vt, int ps) {
     char *ep;
     int f = 0;
     struct sfile *s;

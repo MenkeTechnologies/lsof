@@ -84,17 +84,7 @@ static void check_lock() {
  * get_fields() - separate a line into fields
  */
 
-int get_fields(ln, sep, fr, eb, en)
-char *ln;   /* input line */
-char *sep;  /* separator list */
-char ***fr; /* field pointer return address */
-int *eb;    /* indexes of fields where blank or an
-					 * entry from the separator list may be
-					 * embedded and are not separators
-					 * (may be NULL) */
-int en;     /* number of entries in eb[] (may be
-					 * zero) */
-{
+int get_fields(char *ln, char *sep, char ***fr, int *eb, int en) {
     char *bp, *cp, *sp;
     int i, j, n;
     MALLOC_S len;
@@ -320,13 +310,7 @@ void get_locks(char *p) {
  * process_proc_node() - process file node
  */
 
-void process_proc_node(p, s, ss, l, ls) char *p; /* node's readlink() path */
-struct stat *s;                                  /* stat() result for path */
-int ss;                                          /* *s status -- i.e., SB_* values */
-struct stat *l;                                  /* lstat() result for FD (NULL for
-					 * others) */
-int ls;                                          /* *l status -- i.e., SB_* values */
-{
+void process_proc_node(char *p, struct stat *s, int ss, struct stat *l, int ls) {
     mode_t access;
     mode_t type = 0;
     char *cp;

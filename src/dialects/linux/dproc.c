@@ -335,11 +335,7 @@ void gather_proc_info() {
  * get_fdinfo() - get values from /proc/<PID>fdinfo/FD
  */
 
-static int get_fdinfo(p, fi)
-char *p;             /* path to fdinfo file */
-struct l_fdinfo *fi; /* pointer to local fdinfo values
-					 * return structure */
-{
+static int get_fdinfo(char *p, struct l_fdinfo *fi) {
     char buf[MAXPATHLEN + 1], *ep, **fp;
     FILE *fs;
     int rv = 0;
@@ -520,15 +516,7 @@ int make_proc_path(char *pp, int pl, char **np, int *nl, char *sf) {
  * Note: alloc_lfile() must have been called in advance.
  */
 
-static int isefsys(path, type, l, rep, lfr)
-char *path;         /* path to file */
-char *type;         /* unknown file type */
-int l;              /* link request: 0 = report
-					 *               1 = link */
-efsys_list_t **rep; /* returned ExcludedFileSysList pointer, if not
-					 * NULL */
-struct lfile **lfr; /* allocated struct lfile pointer */
-{
+static int isefsys(char *path, char *type, int l, efsys_list_t **rep, struct lfile **lfr) {
     efsys_list_t *ep;
     int ds, len;
     struct mounts *mp;
@@ -617,19 +605,7 @@ static int nm2id(char *nm, int *id, int *idl) {
  * open_proc_stream() -- open a /proc stream
  */
 
-FILE *open_proc_stream(p, m, buf, sz, act)
-char *p;    /* pointer to path to open */
-char *m;    /* pointer to mode -- e.g., "r" */
-char **buf; /* pointer tp setvbuf() address
-					 * (NULL if none) */
-size_t *sz; /* setvbuf() size (0 if none or if
-					 * getpagesize() desired */
-int act;    /* fopen() failure action:
-					 *     0 : return (FILE *)NULL
-					 *   <>0 : fprintf() an error message
-					 *         and Exit(1)
-					 */
-{
+FILE *open_proc_stream(char *p, char *m, char **buf, size_t *sz, int act) {
     FILE *fs;                      /* opened stream */
     static size_t psz = (size_t)0; /* page size */
     size_t tsz;                    /* temporary size */
@@ -1248,15 +1224,7 @@ static void process_proc_map(char *p, struct stat *s, int ss) {
  *	    2 == ID is a thread
  */
 
-static int read_id_stat(ty, p, id, cmd, ppid, pgid)
-int ty;     /* type: 0 == PID, 1 == LWP */
-char *p;    /* path to status file */
-int id;     /* ID: PID or LWP */
-char **cmd; /* malloc'd command name */
-int *ppid;  /* returned parent PID for PID type */
-int *pgid;  /* returned process group ID for PID
-					 * type */
-{
+static int read_id_stat(int ty, char *p, int id, char **cmd, int *ppid, int *pgid) {
     char buf[MAXPATHLEN], *cp, *cp1, **fp;
     static char *cbf = (char *)NULL;
     static MALLOC_S cbfa = 0;
@@ -1348,12 +1316,7 @@ int *pgid;  /* returned process group ID for PID
  *	 resolved in the /proc path by getlinksrc().
  */
 
-static int statEx(p, s, ss)
-char *p;        /* file path */
-struct stat *s; /* stat() result -- NULL if none
-					 * wanted */
-int *ss;        /* stat() status --  SB_* values */
-{
+static int statEx(char *p, struct stat *s, int *ss) {
     static size_t ca = 0;
     static char *cb = NULL;
     char *cp;

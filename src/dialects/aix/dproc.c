@@ -1098,9 +1098,7 @@ static int
 static void
 #endif /* defined(HASINTSIGNAL) */
 
-lowpgsp(sig)
-int sig;
-{
+lowpgsp(int sig) {
     (void)fprintf(stderr, "%s: FATAL: system paging space is low.\n", ProgramName);
     Exit(1);
 }

@@ -48,11 +48,7 @@ _PROTOTYPE(static int readvname, (KA_T addr, char *buf, int buflen));
  *		adapted from build_path() (.../bsd/vfs/vfs_subr.c)
  */
 
-static char *getvpath(va, rv)
-KA_T va;          /* kernel address of the rightmost
-					 * vnode in the path */
-struct vnode *rv; /* pointer to rightmost vnode */
-{
+static char *getvpath(KA_T va, struct vnode *rv) {
     char *ap;
     static char *bp = (char *)NULL;
     static size_t bl = (size_t)(MAXPATHLEN + MAXPATHLEN + 1);

@@ -192,13 +192,7 @@ void hashSfile() {
  * is_file_named() - is file named?
  */
 
-int is_file_named(p, ty, ch, ic)
-char *p;       /* path name; NULL = search by device
-					 * and inode (from *CurrentLocalFile) */
-enum vtype ty; /* vnode type */
-chan_t ch;     /* gnode channel */
-int ic;        /* is clone file (4.1.4 and above) */
-{
+int is_file_named(char *p, enum vtype ty, chan_t ch, int ic) {
     int dmaj, dmin, maj, min, rmaj, rmin;
     static int dsplit = 0;
     char *ep;

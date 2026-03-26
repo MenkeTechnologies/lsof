@@ -49,15 +49,7 @@ char *lkud_d2 = lkud_d1;
  * lkupbdev() - look up a block device
  */
 
-struct l_dev *lkupbdev(dev, rdev, inode_match, rebuild)
-dev_t *dev;      /* pointer to device number */
-dev_t *rdev;     /* pointer to raw device number */
-int inode_match; /* inode match status */
-int rebuild;     /* if 1, rebuild the device cache with
-					 * rereaddev() when no match is found
-					 * and HASDCACHE is defined and
-					 * DevCacheUnsafe is one */
-{
+struct l_dev *lkupbdev(dev_t *dev, dev_t *rdev, int inode_match, int rebuild) {
     INODETYPE inode = (INODETYPE)0;
     int low, hi, mid;
     struct l_dev *dp;
@@ -122,15 +114,7 @@ lkupbdev_again:
  * lkupdev() - look up a character device
  */
 
-struct l_dev *lkupdev(dev, rdev, inode_match, rebuild)
-dev_t *dev;      /* pointer to device number */
-dev_t *rdev;     /* pointer to raw device number */
-int inode_match; /* inode match status */
-int rebuild;     /* if 1, rebuild the device cache with
-					 * rereaddev() when no match is found
-					 * and HASDCACHE is defined and
-					 * DevCacheUnsafe is one */
-{
+struct l_dev *lkupdev(dev_t *dev, dev_t *rdev, int inode_match, int rebuild) {
     INODETYPE inode = (INODETYPE)0;
     int low, hi, mid;
     struct l_dev *dp;

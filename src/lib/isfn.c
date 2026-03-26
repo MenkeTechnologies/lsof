@@ -240,13 +240,7 @@ void hashSfile() {
  * is_file_named() - is this file named?
  */
 
-int is_file_named(path, cdev)
-char *path; /* path name; NULL = search by device
-					 * and inode (from *CurrentLocalFile) */
-int cdev;   /* character or block type file --
-					 * VCHR or VBLK vnode, or S_IFCHR
-					 * or S_IFBLK inode */
-{
+int is_file_named(char *path, int cdev) {
     char *ep;
     int found = 0;
     struct sfile *s = (struct sfile *)NULL;

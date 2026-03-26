@@ -658,11 +658,7 @@ void initialize() {
  * kread() - read from kernel memory
  */
 
-int kread(addr, buf, len)
-KA_T addr;     /* kernel memory address */
-char *buf;     /* buffer to receive data */
-READLEN_T len; /* length to read */
-{
+int kread(KA_T addr, char *buf, READLEN_T len) {
     int br;
 
     if (lseek(Kd, (off_t)addr, L_SET) == (off_t)-1L)
@@ -676,11 +672,7 @@ READLEN_T len; /* length to read */
  * mread() -- read from /dev/mem
  */
 
-static int mread(addr, buf, len)
-KA_T addr;     /* /dev/mem address */
-char *buf;     /* buffer to receive data */
-READLEN_T len; /* length to read */
-{
+static int mread(KA_T addr, char *buf, READLEN_T len) {
     int br;
 
     if (lseek(Mem, addr, L_SET) == (off_t)-1L)
@@ -695,9 +687,7 @@ READLEN_T len; /* length to read */
      * process_text() - process text access information
      */
 
-static void process_text(vasp) KA_T vasp; /* kernel's virtual address space
-					 * pointer */
-{
+static void process_text(KA_T vasp) {
     char fd[FDLEN];
     int i, j, lm;
     MALLOC_S len;

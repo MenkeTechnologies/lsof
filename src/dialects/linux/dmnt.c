@@ -156,12 +156,7 @@ static char *cvtoe(char *os) {
  * getmntdev() - get mount device from mount supplement
  */
 
-static int getmntdev(dn, s, ss)
-char *dn;       /* mount point directory name */
-struct stat *s; /* stat(2) buffer receptor */
-int *ss;        /* stat(2) status result -- i.e., SB_*
-					 * values */
-{
+static int getmntdev(char *dn, struct stat *s, int *ss) {
     static int err = 0;
     int h;
     mntsup_t *mp, *mpn;

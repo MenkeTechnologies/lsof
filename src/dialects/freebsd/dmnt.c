@@ -51,15 +51,13 @@ static char *mnt_names[] = INITMOUNTNAMES;
  * Dev2Udev() -- convert a kernel device number to a user device number
  */
 
-dev_t Dev2Udev(c)
-
+dev_t Dev2Udev(
 #if defined(HAS_CONF_MINOR) || defined(HAS_CDEV2PRIV)
-KA_T c;
+KA_T c
 #else  /* !defined(HAS_CONF_MINOR) && !defined(HAS_CDEV2PRIV) */
-struct cdev *c;
+struct cdev *c
 #endif /* defined(HAS_CONF_MINOR) || defined(HAS_CDEV2PRIV) */
-
-{
+) {
 
 #if !defined(HAS_CONF_MINOR) && !defined(HAS_CDEV2PRIV)
     char *cp;

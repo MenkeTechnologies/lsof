@@ -43,10 +43,7 @@
 #include "proto.h"
 #include "dproto.h"
 
-int readj2lino(ga, li)
-struct gnode *ga; /* gnode address */
-struct l_ino *li; /* local inode receiver */
-{
+int readj2lino(struct gnode *ga, struct l_ino *li) {
     struct inode i; /* jfs2 inode */
     /*
 * Read the jfs2 inode and fill in the local inode receiver.

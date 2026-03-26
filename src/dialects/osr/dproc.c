@@ -485,12 +485,7 @@ static void get_kernel_access() {
  * boot path's name list will have been loaded into NlistTable[].
  */
 
-char *get_nlist_path(ap)
-int ap; /* on success, return an allocated path
-					 * string pointer if 1; return a
-					 * constant character pointer if 0;
-					 * return NULL if failure */
-{
+char *get_nlist_path(int ap) {
     FILE *bf;
     char *bfp, b1[MAXPATHLEN + 1], b2[MAXPATHLEN + 1], *pp, *tp;
     struct dirent *de;

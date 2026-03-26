@@ -242,11 +242,7 @@ void crcbld() {
  * dcpath() - define device cache file paths
  */
 
-int dcpath(read_write, npw)
-int read_write; /* read (1) or write (2) mode */
-int npw;        /* inhibit (0) or enable (1) no
-					 * path warning message */
-{
+int dcpath(int read_write, int npw) {
     char buf[MAXPATHLEN + 1], *cp1, *cp2, hn[MAXPATHLEN + 1];
     int endf;
     int i, j;

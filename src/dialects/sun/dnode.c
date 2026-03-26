@@ -1070,12 +1070,7 @@ static char isvlocked(struct vnode *va) {
  * finddev() - look up device by device number
  */
 
-static struct l_dev *finddev(dev, rdev, flags)
-dev_t *dev;  /* device */
-dev_t *rdev; /* raw device */
-int flags;   /* look flags -- see LOOKDEV_* symbol
-					 * definitions */
-{
+static struct l_dev *finddev(dev_t *dev, dev_t *rdev, int flags) {
     struct clone *c;
     struct l_dev *dp;
     struct pseudo *p;
@@ -3835,17 +3830,13 @@ static void read_mi(KA_T s, dev_t *rdev, caddr_t so, int *so_st, KA_T *so_ad, st
  * read_nan(na, ca, cn) - read node's autofs node
  */
 
-static int read_nan(na, aa, rn)
-KA_T na; /* containing node's address */
-KA_T aa; /* autofs node address */
-
+static int read_nan(KA_T na, KA_T aa,
 #if solaris < 20600
-struct autonode *rn; /* autofs node receiver */
+                    struct autonode *rn
 #else                /* solaris>=20600 */
-struct fnnode *rn; /* autofs node receiver */
+                    struct fnnode *rn
 #endif               /* solaris<20600 */
-
-{
+                    ) {
     char tbuf[32];
 
 #if solaris < 20600
@@ -4929,14 +4920,7 @@ int vop2ty(struct vnode *vp, int fx) {
  * read_ndvn() -- read node's dv_node
  */
 
-static int read_ndvn(na, da, dv, dev, devs)
-KA_T na;             /* containing vnode's address */
-KA_T da;             /* containing vnode's v_data */
-struct dv_node *dv;  /* dv_node receiver */
-dev_t *dev;          /* underlying file system device
-					 * number receptor */
-unsigned char *devs; /* status of *dev */
-{
+static int read_ndvn(KA_T na, KA_T da, struct dv_node *dv, dev_t *dev, unsigned char *devs) {
     struct vnode rv;
     struct snode s;
     char tbuf[32];

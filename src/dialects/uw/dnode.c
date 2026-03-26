@@ -128,27 +128,11 @@ static void ent_fa(KA_T *a1, KA_T *a2, char *d) {
  */
 
 static int
-
 #if UNIXWAREV < 70103
-examine_stream(vs, q, mn, sn, sqp)
+examine_stream(KA_T vs, struct queue *q, char *mn, char *sn, KA_T *sqp)
 #else  /* UNIXWAREV>=70103 */
-examine_stream(vs, q, mch, mn, sn, sqp)
+examine_stream(KA_T vs, struct queue *q, char **mch, char **mn, char *sn, KA_T *sqp)
 #endif /* UNIXWAREV<70103 */
-
-KA_T vs;         /* stream head's stdata kernel
-					 * address */
-struct queue *q; /* queue structure buffer */
-
-#if UNIXWAREV >= 70103
-char **mch; /* important stream module name chain,
-					 * module names separated by "->" */
-char **mn;  /* pointer to module name receiver */
-#else       /* UNIXWAREV<70103 */
-char *mn; /* module name receiver */
-#endif      /* UNIXWAREV>=70103 */
-
-char *sn;  /* special module name */
-KA_T *sqp; /* special module's q_ptr */
 {
     struct module_info mi;
     KA_T qp;

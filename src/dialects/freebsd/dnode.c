@@ -156,10 +156,7 @@ static void getmemsz(pid) pid_t pid;
              * lkup_dev_tty() - look up /dev/tty
              */
 
-static int lkup_dev_tty(dr, ir)
-dev_t *dr;     /* place to return device number */
-INODETYPE *ir; /* place to return inode number */
-{
+static int lkup_dev_tty(dev_t *dr, INODETYPE *ir) {
     int i;
 
     readdev(0);

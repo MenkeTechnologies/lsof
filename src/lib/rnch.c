@@ -181,17 +181,10 @@ _PROTOTYPE(static int ncache_isroot, (KA_T va, char *cp));
 static struct l_nch *
 
 #if defined(NCACHE_NODEID)
-ncache_addr(inode_num, vnode_ptr)
+ncache_addr(unsigned long inode_num, KA_T vnode_ptr) {
 #else  /* !defined(NCACHE_NODEID) */
-ncache_addr(vnode_ptr)
+ncache_addr(KA_T vnode_ptr) {
 #endif /* defined(NCACHE_NODEID) */
-
-#if defined(NCACHE_NODEID)
-unsigned long inode_num; /* capability ID */
-#endif                   /* defined(NCACHE_NODEID) */
-
-KA_T vnode_ptr; /* vnode's address */
-{
     struct l_nch **hp;
 
 #if defined(NCACHE_NODEID)
