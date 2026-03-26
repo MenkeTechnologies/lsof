@@ -44,6 +44,7 @@ static char *rcsid = "$Id: proc.c,v 1.46 2010/07/29 15:59:28 abe Exp $";
  */
 
 _PROTOTYPE(static int is_file_sel, (struct lproc *lp, struct lfile *lf));
+_PROTOTYPE(static struct int_lst *find_int_lst, (struct int_lst *list, int n, int val));
 
 
 /*
@@ -674,6 +675,31 @@ is_file_sel(lp, lf)
 
 
 /*
+ * find_int_lst() - binary search for value in sorted int_lst array
+ */
+
+static struct int_lst *
+find_int_lst(list, n, val)
+	struct int_lst *list;		/* sorted int_lst array */
+	int n;				/* array length */
+	int val;			/* value to find */
+{
+    int lo = 0, hi = n - 1, mid;
+
+    while (lo <= hi) {
+	mid = (lo + hi) >> 1;
+	if (list[mid].i == val)
+	    return &list[mid];
+	if (list[mid].i < val)
+	    lo = mid + 1;
+	else
+	    hi = mid - 1;
+    }
+    return (struct int_lst *)NULL;
+}
+
+
+/*
  * is_proc_excl() - is process excluded?
  */
 
@@ -731,26 +757,18 @@ int tid;			/* task ID (not a task if zero) */
  * PGID is excluded.
  */
     if (NumPgidExclusions) {
-        for (i = j = 0; (i < NumPgidSelections) && (j < NumPgidExclusions); i++) {
-            if (!SearchPgidList[i].x)
-                continue;
-            if (SearchPgidList[i].i == pgid)
-                return (1);
-            j++;
-        }
+        struct int_lst *match = find_int_lst(SearchPgidList, NumPgidSelections, pgid);
+        if (match && match->x)
+            return (1);
     }
 /*
  * If the excluding of process listing by PID has been specified, see if this
  * PID is excluded.
  */
     if (NumPidExclusions) {
-        for (i = j = 0; (i < NumPidSelections) && (j < NumPidExclusions); i++) {
-            if (!SearchPidList[i].x)
-                continue;
-            if (SearchPidList[i].i == pid)
-                return (1);
-            j++;
-        }
+        struct int_lst *match = find_int_lst(SearchPidList, NumPidSelections, pid);
+        if (match && match->x)
+            return (1);
     }
 /*
  * If the listing of all processes is selected, then this one is not excluded.
@@ -775,18 +793,13 @@ int tid;			/* task ID (not a task if zero) */
  * if this one is included or excluded.
  */
     if (NumPgidInclusions && (SelectionFlags & SELPGID)) {
-        for (i = j = 0; (i < NumPgidSelections) && (j < NumPgidInclusions); i++) {
-            if (SearchPgidList[i].x)
-                continue;
-            if (SearchPgidList[i].i == pgid) {
-                SearchPgidList[i].f = 1;
-                *pss = PS_PRI;
-                *sf = SELPGID;
-                if (SelectionFlags == SELPGID)
-                    return (0);
-                break;
-            }
-            j++;
+        struct int_lst *match = find_int_lst(SearchPgidList, NumPgidSelections, pgid);
+        if (match && !match->x) {
+            match->f = 1;
+            *pss = PS_PRI;
+            *sf = SELPGID;
+            if (SelectionFlags == SELPGID)
+                return (0);
         }
         if ((SelectionFlags == SELPGID) && !*sf)
             return (1);
@@ -796,18 +809,13 @@ int tid;			/* task ID (not a task if zero) */
  * included or excluded.
  */
     if (NumPidInclusions && (SelectionFlags & SELPID)) {
-        for (i = j = 0; (i < NumPidSelections) && (j < NumPidInclusions); i++) {
-            if (SearchPidList[i].x)
-                continue;
-            if (SearchPidList[i].i == pid) {
-                SearchPidList[i].f = 1;
-                *pss = PS_PRI;
-                *sf |= SELPID;
-                if (SelectionFlags == SELPID)
-                    return (0);
-                break;
-            }
-            j++;
+        struct int_lst *match = find_int_lst(SearchPidList, NumPidSelections, pid);
+        if (match && !match->x) {
+            match->f = 1;
+            *pss = PS_PRI;
+            *sf |= SELPID;
+            if (SelectionFlags == SELPID)
+                return (0);
         }
         if ((SelectionFlags == SELPID) && !*sf)
             return (1);

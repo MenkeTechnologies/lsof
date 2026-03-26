@@ -36,9 +36,28 @@ static char *rcsid = "$Id: arg.c,v 1.50 2011/09/07 19:13:49 abe Exp $";
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "lsof.h"
+
+
+/*
+ * cmp_int_lst() - compare int_lst entries by integer value for qsort
+ */
+
+static int
+cmp_int_lst(a, b)
+	const void *a;
+	const void *b;
+{
+    const struct int_lst *la = (const struct int_lst *)a;
+    const struct int_lst *lb = (const struct int_lst *)b;
+
+    if (la->i < lb->i) return -1;
+    if (la->i > lb->i) return  1;
+    return 0;
+}
 
 
 /*
@@ -1400,6 +1419,11 @@ enter_id(ty, p)
         else
             ni++;
     }
+/*
+ * Sort the list by ID for binary search in is_proc_excl().
+ */
+    if (n > 1)
+        qsort((void *)s, (size_t)n, sizeof(struct int_lst), cmp_int_lst);
 /*
  * Save variables for the type of ID.
  */

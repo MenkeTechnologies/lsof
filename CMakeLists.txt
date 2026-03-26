@@ -79,7 +79,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(lsof ${SRC_FILES} ${DIALECT_FILES} ${LIB_FILES})
 target_compile_options(lsof PRIVATE
-    -Wno-deprecated-non-prototype
+    -O2 -Wno-deprecated-non-prototype
 )
 
 # --- Cyberpunk build banners ---
