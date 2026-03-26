@@ -87,6 +87,111 @@ lsof -u neo
 
 ---
 
+## // SCREENSHOTS
+
+### > Help screen
+
+```
+  ██▓     ██████  ▒█████    █████▒
+ ▓██▒   ▒██    ▒ ▒██▒  ██▒▓██   ▒
+ ▒██░   ░ ▓██▄   ▒██░  ██▒▒████ ░
+ ░██░     ▒   ██▒▒██   ██░░▓█▒  ░
+ ░██░   ▒██████▒░░ ████▓▒░░▒█░
+ ░▓     ▒ ▒▓▒ ▒ ░░ ▒░▒░▒░  ▒ ░
+  ▒ ░   ░ ░▒  ░ ░  ░ ▒ ▒░  ░
+  ▒ ░   ░  ░  ░  ░ ░ ░ ▒   ░ ░
+  ░           ░      ░ ░
+
+  >> FILE DESCRIPTOR SCANNER v5.7 <<
+  [ mapping the topology of open files ]
+
+  USAGE: lsof [OPTION]... [FILE]...
+
+  ── SELECTION ──────────────────────────────────────
+   -?, -h            display this transmission
+   -a                AND selections (default: OR)
+   -c COMMAND        select by command name (prefix, ^exclude, /regex/)
+   +c WIDTH          set COMMAND column width (default: 9)
+   -d FD             select by file descriptor set
+   -g [PGID]         exclude(^) or select process group IDs
+   -p PID            select by PID (comma-separated, ^excludes)
+   -u USER           select by login name or UID (comma-separated, ^excludes)
+
+  ── NETWORK ───────────────────────────────────────
+   -i [ADDR]         select IPv4 files
+   -n                inhibit host name resolution
+   -P                inhibit port number to name conversion
+   -s [PROTO:STATE]  exclude(^) or select protocol states by name
+   -U                select UNIX domain socket files
+
+  ── FILES & DIRECTORIES ───────────────────────────
+   +d DIR            list open files in DIR
+   +D DIR            recursively list open files in DIR (slow)
+
+  ── DISPLAY ───────────────────────────────────────
+   -F [FIELDS]       select output fields; -F ? for help
+   -l                display UID numbers instead of login names
+   -o [DIGITS]       display file offset (0t format, default: 8 digits)
+   -R                list parent PID
+```
+
+### > Styled terminal output (`lsof -i :5000`)
+
+```
+╔════════════════════════════════════════════════════════════════════════╗
+║  ██▓     ██████  ▒█████    █████▒    ╔═╗ v5.7             ║
+║ ▓██▒   ▒██    ▒ ▒██▒  ██▒▓██   ▒    ║ ║ [ OPEN FILES ]     ║
+║ ▒██░   ░ ▓██▄   ▒██░  ██▒▒████ ░    ╚═╝ CYBERDECK          ║
+║ ▒██░     ▒   ██▒▒██   ██░░▓█▒   ░        sys.probe          ║
+║ ░██████▒██████▒░░ ████▓▒░░▒█████▓        ◉ ACTIVE           ║
+╠════════════════════════════════════════════════════════════════════════╣
+PROCESS   PRC  H4XOR   FD   CL4SS            DEV/ICE BYT3/0FF N0DE T4RGET
+╠────────────────────────────────────────────────────────────────────────╣
+ControlCe 775 wizard   11u   IPv4 0xd21f2bc372b773d3      0t0  TCP *:5000 (LISTEN)
+ControlCe 775 wizard   12u   IPv6 0x7fc301359d0cc5ef      0t0  TCP *:5000 (LISTEN)
+```
+
+### > Network connections (`lsof -i -n -P`)
+
+```
+COMMAND     PID   USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+rapportd    673 wizard   11u  IPv4 0x2764fa8ae4a40797      0t0  TCP *:55619 (LISTEN)
+rapportd    673 wizard   17u  IPv6 0xefa4096199955203      0t0  TCP *:55619 (LISTEN)
+sharingd    682 wizard   10u  IPv6 0x98d84e04f020c14c      0t0  UDP *:60502
+identitys   690 wizard    7u  IPv4 0x311187060b49b308      0t0  UDP *:*
+ControlCe   775 wizard    9u  IPv4 0x6d77ee0fe132b49a      0t0  TCP *:7000 (LISTEN)
+ControlCe   775 wizard   11u  IPv4 0xd21f2bc372b773d3      0t0  TCP *:5000 (LISTEN)
+NTKDaemon  2238 wizard    7u  IPv4 0x143cb80d30705a16      0t0  TCP 127.0.0.1:49245->127.0.0.1:49244 (ESTABLISHED)
+NTKDaemon  2238 wizard   51u  IPv4 0xb408514747714089      0t0  TCP 10.59.0.110:62031->34.141.58.12:443 (ESTABLISHED)
+```
+
+### > Process file listing (`lsof -p <PID>`)
+
+```
+COMMAND   PID   USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME
+zsh     14738 wizard  cwd    DIR               1,16     1248             1946577 /Users/wizard/forkedRepos/lsof
+zsh     14738 wizard  txt    REG               1,16   672928             3810830 /opt/homebrew/Cellar/zsh/5.9/bin/zsh
+zsh     14738 wizard  txt    REG               1,16   288224             3793369 /opt/homebrew/Cellar/pcre/8.45/lib/libpcre.1.dylib
+zsh     14738 wizard  txt    REG               1,16  2357376 1152921500312572606 /usr/lib/dyld
+zsh     14738 wizard    0r   CHR                3,2      0t0                 336 /dev/null
+zsh     14738 wizard   11u  unix 0x3b9978ceaa505cf3      0t0                     ->0x13e4a72303ddaa25
+```
+
+### > Field output — machine-readable mode (`lsof -F pcfn`)
+
+```
+p406
+cloginwindow
+fcwd
+n/
+ftxt
+n/System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+ftxt
+n/usr/lib/dyld
+```
+
+---
+
 ## // PERFORMANCE
 
 The core engine is tuned for speed where it matters:
