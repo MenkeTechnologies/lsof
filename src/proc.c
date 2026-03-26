@@ -244,7 +244,7 @@ void alloc_lfile(char *name, int num) {
  */
 
 void alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, int sel_flags) {
-    static int size = 0;
+    static size_t size = 0;
 
     if (!LocalProcTable) {
         if (!(LocalProcTable =
@@ -260,7 +260,7 @@ void alloc_lproc(int pid, int pgid, int ppid, UID_ARG uid, char *cmd, int pss, i
         tmp = (struct lproc *)realloc((MALLOC_P *)LocalProcTable,
                                       (MALLOC_S)(size * sizeof(struct lproc)));
         if (!tmp) {
-            fprintf(stderr, "%s: no realloc space for %d local proc structures\n", ProgramName,
+            fprintf(stderr, "%s: no realloc space for %zu local proc structures\n", ProgramName,
                     size);
             free((FREE_P *)LocalProcTable);
             LocalProcTable = NULL;

@@ -1636,8 +1636,10 @@ void process_socket(KA_T sa, char *ty) {
             if (tcs)
                 (void)save_TCP_size(&tc);
         }
-    } else
-        (void)strcat(NameChars, "no TCP/UDP/IP information available");
+    } else {
+        (void)snpf(NameChars, NameCharsLength - 1, "no TCP/UDP/IP information available");
+        NameChars[NameCharsLength - 1] = '\0';
+    }
     /*
  * Enter name characters if there are some.
  */
