@@ -60,9 +60,16 @@ add_nma(cp, len)
     if (!cp || !len)
         return;
     if (Lf->nma) {
+        char *tmp;
         nl = (int) strlen(Lf->nma);
-        Lf->nma = (char *) realloc((MALLOC_P *) Lf->nma,
-                                   (MALLOC_S)(len + nl + 2));
+        tmp = (char *) realloc((MALLOC_P *) Lf->nma,
+                               (MALLOC_S)(len + nl + 2));
+        if (tmp)
+            Lf->nma = tmp;
+        else {
+            (void) free((FREE_P *) Lf->nma);
+            Lf->nma = (char *) NULL;
+        }
     } else {
         nl = 0;
         Lf->nma = (char *) malloc((MALLOC_S)(len + 1));
@@ -289,14 +296,19 @@ alloc_lproc(pid, pgid, ppid, uid, cmd, pss, sf)
         }
         sz = LPROCINCR;
     } else if ((Nlproc + 1) > sz) {
+        struct lproc *tmp;
         sz += LPROCINCR;
-        if (!(Lproc = (struct lproc *) realloc((MALLOC_P *) Lproc,
-                                               (MALLOC_S)(sz * sizeof(struct lproc))))) {
+        tmp = (struct lproc *) realloc((MALLOC_P *) Lproc,
+                                       (MALLOC_S)(sz * sizeof(struct lproc)));
+        if (!tmp) {
             (void) fprintf(stderr,
                            "%s: no realloc space for %d local proc structures\n",
                            Pn, sz);
+            (void) free((FREE_P *) Lproc);
+            Lproc = (struct lproc *) NULL;
             Exit(1);
         }
+        Lproc = tmp;
     }
     Lp = &Lproc[Nlproc++];
     Lp->pid = pid;

@@ -537,12 +537,17 @@ enter_IPstate(ty, nm, nr)
                     UdpSt = (char **) NULL;
                 }
                 if (UdpNstates < UdpStAlloc) {
+                    char **tmp;
                     len = (MALLOC_S)(UdpNstates * sizeof(char *));
-                    if (!(UdpSt = (char **) realloc((MALLOC_P *) UdpSt, len))) {
+                    tmp = (char **) realloc((MALLOC_P *) UdpSt, len);
+                    if (!tmp) {
                         (void) fprintf(stderr,
                                        "%s: can't reduce UdpSt[]\n", Pn);
+                        (void) free((FREE_P *) UdpSt);
+                        UdpSt = (char **) NULL;
                         Exit(1);
                     }
+                    UdpSt = tmp;
                 }
                 UdpStAlloc = UdpNstates;
             }
@@ -553,12 +558,17 @@ enter_IPstate(ty, nm, nr)
                     TcpSt = (char **) NULL;
                 }
                 if (TcpNstates < TcpStAlloc) {
+                    char **tmp;
                     len = (MALLOC_S)(TcpNstates * sizeof(char *));
-                    if (!(TcpSt = (char **) realloc((MALLOC_P *) TcpSt, len))) {
+                    tmp = (char **) realloc((MALLOC_P *) TcpSt, len);
+                    if (!tmp) {
                         (void) fprintf(stderr,
                                        "%s: can't reduce TcpSt[]\n", Pn);
+                        (void) free((FREE_P *) TcpSt);
+                        TcpSt = (char **) NULL;
                         Exit(1);
                     }
+                    TcpSt = tmp;
                 }
                 TcpStAlloc = TcpNstates;
             }
@@ -603,12 +613,22 @@ enter_IPstate(ty, nm, nr)
                 }
                 len = (MALLOC_S)(al * sizeof(char *));
                 if (tx) {
-                    if (!(UdpSt = (char **) realloc((MALLOC_P *) UdpSt, len)))
+                    char **tmp = (char **) realloc((MALLOC_P *) UdpSt, len);
+                    if (!tmp) {
+                        (void) free((FREE_P *) UdpSt);
+                        UdpSt = (char **) NULL;
                         goto no_IP_space;
+                    }
+                    UdpSt = tmp;
                     UdpStAlloc = al;
                 } else {
-                    if (!(TcpSt = (char **) realloc((MALLOC_P *) TcpSt, len)))
+                    char **tmp = (char **) realloc((MALLOC_P *) TcpSt, len);
+                    if (!tmp) {
+                        (void) free((FREE_P *) TcpSt);
+                        TcpSt = (char **) NULL;
                         goto no_IP_space;
+                    }
+                    TcpSt = tmp;
                     TcpStAlloc = al;
                 }
                 for (i = 0, j = oc; i < oc; i++, j++) {
@@ -648,9 +668,14 @@ enter_IPstate(ty, nm, nr)
         }
         len = (MALLOC_S)(al * sizeof(char *));
         if (tx) {
-            if (UdpSt)
-                UdpSt = (char **) realloc((MALLOC_P *) UdpSt, len);
-            else
+            if (UdpSt) {
+                char **tmp = (char **) realloc((MALLOC_P *) UdpSt, len);
+                if (!tmp) {
+                    (void) free((FREE_P *) UdpSt);
+                    UdpSt = (char **) NULL;
+                } else
+                    UdpSt = tmp;
+            } else
                 UdpSt = (char **) malloc(len);
             if (!UdpSt) {
 
@@ -662,9 +687,14 @@ enter_IPstate(ty, nm, nr)
             UdpNstates = nn;
             UdpStAlloc = al;
         } else {
-            if (TcpSt)
-                TcpSt = (char **) realloc((MALLOC_P *) TcpSt, len);
-            else
+            if (TcpSt) {
+                char **tmp = (char **) realloc((MALLOC_P *) TcpSt, len);
+                if (!tmp) {
+                    (void) free((FREE_P *) TcpSt);
+                    TcpSt = (char **) NULL;
+                } else
+                    TcpSt = tmp;
+            } else
                 TcpSt = (char **) malloc(len);
             if (!TcpSt)
                 goto no_IP_space;
@@ -1387,14 +1417,43 @@ safestrlen(sp, flags)
 
     c = (flags & 2) ? ' ' : '\0';
     if (sp) {
+    /*
+     * Use a lookup table for character expansion length to avoid
+     * per-character isprint() calls:
+     *   1 = printable (passthrough), 2 = control/0xff (^. form),
+     *   4 = other non-printable (\x%02x form).
+     */
+        static const unsigned char explen[256] = {
+            /* 0x00-0x1f: control chars -> 2 */
+            2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
+            2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
+            /* 0x20-0x7e: printable -> 1 */
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,
+            /* 0x7f: DEL -> 4 */
+            4,
+            /* 0x80-0xfe: high bytes -> 4 */
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,
+            4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,
+            /* 0xff -> 2 */
+            2,
+        };
         for (; *sp; sp++) {
-            if (!isprint((unsigned char) *sp) || *sp == c) {
-                if (*sp < 0x20 || (unsigned char) *sp == 0xff)
-                    len += 2;        /* length of \. or ^. form */
-                else
-                    len += 4;        /* length of "\x%02x" printf */
-            } else
-                len++;
+            unsigned char ch = (unsigned char)*sp;
+            if (ch == (unsigned char)c)
+                len += (ch < 0x20 || ch == 0xff) ? 2 : 4;
+            else
+                len += explen[ch];
         }
     }
     return (len);
@@ -1574,8 +1633,14 @@ stkdir(p)
         len = (MALLOC_S)(Dstkn * sizeof(char *));
         if (!Dstk)
             Dstk = (char **) malloc(len);
-        else
-            Dstk = (char **) realloc((MALLOC_P *) Dstk, len);
+        else {
+            char **tmp = (char **) realloc((MALLOC_P *) Dstk, len);
+            if (!tmp) {
+                (void) free((FREE_P *) Dstk);
+                Dstk = (char **) NULL;
+            } else
+                Dstk = tmp;
+        }
         if (!Dstk) {
             (void) fprintf(stderr,
                            "%s: no space for directory stack at: ", Pn);
@@ -1617,16 +1682,22 @@ x2dev(s, d)
  */
     if (strncasecmp(s, "0x", 2) == 0)
         s += 2;
-    for (cp = s, n = 0; *cp; cp++, n++) {
-        if (isdigit((unsigned char) *cp))
-            continue;
-        if ((unsigned char) *cp >= 'a' && (unsigned char) *cp <= 'f')
-            continue;
-        if ((unsigned char) *cp >= 'A' && (unsigned char) *cp <= 'F')
-            continue;
-        if (*cp == ' ' || *cp == ',')
-            break;
-        return ((char *) NULL);
+    {
+    /*
+     * Classify characters via lookup table to avoid per-character branching.
+     * 1 = hex digit, 2 = stop character (space/comma), 0 = invalid.
+     */
+        static const unsigned char cls[256] = {
+            ['0']=1,['1']=1,['2']=1,['3']=1,['4']=1,['5']=1,['6']=1,['7']=1,
+            ['8']=1,['9']=1,['a']=1,['b']=1,['c']=1,['d']=1,['e']=1,['f']=1,
+            ['A']=1,['B']=1,['C']=1,['D']=1,['E']=1,['F']=1,[' ']=2,[',']=2,
+        };
+        for (cp = s, n = 0; *cp; cp++, n++) {
+            unsigned char c = cls[(unsigned char)*cp];
+            if (c == 1) continue;
+            if (c == 2) break;
+            return ((char *) NULL);
+        }
     }
     if (!n)
         return ((char *) NULL);

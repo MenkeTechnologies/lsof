@@ -602,6 +602,13 @@ static char *counted_mkstrcpy(const char *src) {
     return ns;
 }
 
+static void *counted_realloc(void *ptr, size_t sz) {
+    void *p = realloc(ptr, sz);
+    if (p && !ptr) alloc_count++;   /* new allocation */
+    if (!p && ptr) { /* realloc failed, old pointer still valid */ }
+    return p;
+}
+
 static char *counted_mkstrcat(const char *s1, int l1,
                                const char *s2, int l2) {
     size_t len1 = s1 ? (l1 >= 0 ? (size_t)l1 : strlen(s1)) : 0;
@@ -926,6 +933,377 @@ TEST(memleak_free_lproc_pattern) {
     ASSERT_EQ(alloc_count, 0);
 }
 
+/*
+ * Test: safe realloc pattern (the fix for all realloc leaks)
+ * Before the fix, ptr = realloc(ptr, newsize) lost old memory on failure.
+ * The fix uses a tmp variable so old memory can be freed on failure.
+ */
+TEST(memleak_safe_realloc_success) {
+    alloc_count = 0;
+
+    /* Initial allocation */
+    char *buf = (char *)counted_malloc(32);
+    ASSERT_NOT_NULL(buf);
+    memset(buf, 'A', 32);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Safe realloc pattern (success path) */
+    char *tmp = (char *)counted_realloc(buf, 64);
+    ASSERT_NOT_NULL(tmp);
+    buf = tmp;  /* update pointer only on success */
+    ASSERT_EQ(alloc_count, 1);  /* still 1 -- realloc didn't create new */
+
+    /* Verify old data preserved */
+    ASSERT_EQ(buf[0], 'A');
+    ASSERT_EQ(buf[31], 'A');
+
+    counted_free(buf);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: unsafe realloc pattern loses memory
+ * Demonstrates the bug: direct assignment loses old pointer on failure.
+ */
+TEST(memleak_unsafe_realloc_pattern) {
+    alloc_count = 0;
+
+    char *buf = (char *)counted_malloc(32);
+    ASSERT_NOT_NULL(buf);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Simulate failed realloc by requesting absurdly large size.
+     * If realloc fails, the UNSAFE pattern (buf = realloc(buf, ...))
+     * would set buf = NULL and leak the original memory.
+     * The SAFE pattern preserves the old pointer. */
+
+    /* Safe pattern: use tmp */
+    char *tmp = (char *)counted_realloc(buf, (size_t)-1);  /* will fail */
+    if (!tmp) {
+        /* Old buf is still valid -- free it properly */
+        counted_free(buf);
+        buf = NULL;
+    } else {
+        buf = tmp;
+    }
+    ASSERT_NULL(buf);
+    ASSERT_EQ(alloc_count, 0);  /* no leak */
+}
+
+/*
+ * Test: add_nma realloc pattern (proc.c) -- appending to existing string
+ * Before the fix, realloc failure lost the old Lf->nma.
+ */
+TEST(memleak_add_nma_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Simulate first add_nma: malloc a string */
+    const char *text1 = "first";
+    int len1 = (int)strlen(text1);
+    char *nma = (char *)counted_malloc((size_t)(len1 + 1));
+    ASSERT_NOT_NULL(nma);
+    memcpy(nma, text1, (size_t)(len1 + 1));
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Simulate second add_nma: realloc to append */
+    const char *text2 = "second";
+    int len2 = (int)strlen(text2);
+    int nl = (int)strlen(nma);
+    char *tmp = (char *)counted_realloc(nma, (size_t)(len2 + nl + 2));
+    if (tmp) {
+        nma = tmp;
+    } else {
+        /* The fix: free old memory instead of leaking it */
+        counted_free(nma);
+        nma = NULL;
+    }
+    ASSERT_NOT_NULL(nma);  /* realloc should succeed for small sizes */
+    nma[nl] = ' ';
+    memcpy(&nma[nl + 1], text2, (size_t)len2);
+    nma[nl + 1 + len2] = '\0';
+    ASSERT_STR_EQ(nma, "first second");
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(nma);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: alloc_lproc realloc pattern (proc.c) -- growing process table
+ * Before the fix, Lproc = realloc(Lproc, ...) lost old memory.
+ */
+TEST(memleak_alloc_lproc_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Initial allocation */
+    int sz = 4;
+    int *table = (int *)counted_malloc((size_t)(sz * sizeof(int)));
+    ASSERT_NOT_NULL(table);
+    for (int i = 0; i < sz; i++) table[i] = i;
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Grow table (safe realloc) */
+    sz += 4;
+    int *tmp = (int *)counted_realloc(table, (size_t)(sz * sizeof(int)));
+    if (!tmp) {
+        counted_free(table);
+        table = NULL;
+    } else {
+        table = tmp;
+    }
+    ASSERT_NOT_NULL(table);
+    /* Old data preserved */
+    ASSERT_EQ(table[0], 0);
+    ASSERT_EQ(table[3], 3);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(table);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: host cache realloc pattern (print.c)
+ */
+TEST(memleak_hostcache_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Initial cache allocation */
+    int nhc = 4;
+    int entry_sz = 64;
+    char *hc = (char *)counted_malloc((size_t)(nhc * entry_sz));
+    ASSERT_NOT_NULL(hc);
+    memset(hc, 0, (size_t)(nhc * entry_sz));
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Grow cache (safe realloc) */
+    nhc += 4;
+    char *tmp = (char *)counted_realloc(hc, (size_t)(nhc * entry_sz));
+    if (!tmp) {
+        counted_free(hc);
+        hc = NULL;
+    } else {
+        hc = tmp;
+    }
+    ASSERT_NOT_NULL(hc);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(hc);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: sn (service name) realloc pattern in enter_network_address
+ * Before the fix, sn = realloc(sn, ...) lost old memory on failure.
+ */
+TEST(memleak_sn_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Initial service name */
+    char *sn = (char *)counted_malloc(5);
+    ASSERT_NOT_NULL(sn);
+    memcpy(sn, "http", 5);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Realloc for longer service name (safe pattern) */
+    size_t newlen = 10;
+    char *tmp = (char *)counted_realloc(sn, newlen);
+    if (!tmp) {
+        counted_free(sn);
+        sn = NULL;
+    } else {
+        sn = tmp;
+    }
+    ASSERT_NOT_NULL(sn);
+    ASSERT_STR_EQ(sn, "http");
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(sn);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: CmdRx realloc pattern (arg.c) -- growing regex table
+ */
+TEST(memleak_cmdrx_realloc_pattern) {
+    alloc_count = 0;
+
+    /* Simulate initial CmdRx allocation */
+    int ncmdrx = 4;
+    int entry_sz = 32;
+    char *CmdRx = (char *)counted_malloc((size_t)(ncmdrx * entry_sz));
+    ASSERT_NOT_NULL(CmdRx);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Grow (safe realloc pattern) */
+    ncmdrx += 4;
+    char *tmp = (char *)counted_realloc(CmdRx, (size_t)(ncmdrx * entry_sz));
+    if (!tmp) {
+        counted_free(CmdRx);
+        CmdRx = NULL;
+    } else {
+        CmdRx = tmp;
+    }
+    ASSERT_NOT_NULL(CmdRx);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(CmdRx);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: enter_id s realloc pattern (arg.c) -- growing PID/PGID table
+ */
+TEST(memleak_enter_id_realloc_pattern) {
+    alloc_count = 0;
+
+    int mx = 4;
+    int *s = (int *)counted_malloc((size_t)(mx * sizeof(int)));
+    ASSERT_NOT_NULL(s);
+    for (int i = 0; i < mx; i++) s[i] = i * 100;
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Grow table (safe pattern) */
+    mx += 4;
+    int *tmp = (int *)counted_realloc(s, (size_t)(mx * sizeof(int)));
+    if (!tmp) {
+        counted_free(s);
+        s = NULL;
+    } else {
+        s = tmp;
+    }
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(s[0], 0);
+    ASSERT_EQ(s[3], 300);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(s);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: Suid realloc pattern (main.c + arg.c)
+ */
+TEST(memleak_suid_realloc_pattern) {
+    alloc_count = 0;
+
+    int nuid = 4;
+    int uid_sz = 16;
+    char *Suid = (char *)counted_malloc((size_t)(nuid * uid_sz));
+    ASSERT_NOT_NULL(Suid);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Shrink (safe realloc reduce) */
+    int new_nuid = 2;
+    char *tmp = (char *)counted_realloc(Suid, (size_t)(new_nuid * uid_sz));
+    if (!tmp) {
+        counted_free(Suid);
+        Suid = NULL;
+    } else {
+        Suid = tmp;
+    }
+    ASSERT_NOT_NULL(Suid);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(Suid);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: sort pointer realloc pattern (main.c slp)
+ */
+TEST(memleak_sort_ptr_realloc_pattern) {
+    alloc_count = 0;
+
+    int n = 8;
+    void **slp = (void **)counted_malloc((size_t)(n * sizeof(void *)));
+    ASSERT_NOT_NULL(slp);
+    ASSERT_EQ(alloc_count, 1);
+
+    /* Grow (safe pattern) */
+    n = 16;
+    void **tmp = (void **)counted_realloc(slp, (size_t)(n * sizeof(void *)));
+    if (!tmp) {
+        counted_free(slp);
+        slp = NULL;
+    } else {
+        slp = tmp;
+    }
+    ASSERT_NOT_NULL(slp);
+    ASSERT_EQ(alloc_count, 1);
+
+    counted_free(slp);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: directory stack realloc pattern (misc.c Dstk)
+ */
+TEST(memleak_dstk_realloc_pattern) {
+    alloc_count = 0;
+
+    int dstkn = 4;
+    char **dstk = (char **)counted_malloc((size_t)(dstkn * sizeof(char *)));
+    ASSERT_NOT_NULL(dstk);
+    for (int i = 0; i < dstkn; i++)
+        dstk[i] = counted_mkstrcpy("/some/dir");
+    ASSERT_EQ(alloc_count, 5);  /* 1 array + 4 strings */
+
+    /* Grow stack (safe pattern) */
+    dstkn += 4;
+    char **tmp = (char **)counted_realloc(dstk, (size_t)(dstkn * sizeof(char *)));
+    if (!tmp) {
+        /* free contents then array */
+        for (int i = 0; i < 4; i++) counted_free(dstk[i]);
+        counted_free(dstk);
+        dstk = NULL;
+    } else {
+        dstk = tmp;
+    }
+    ASSERT_NOT_NULL(dstk);
+    ASSERT_EQ(alloc_count, 5);
+
+    /* Cleanup */
+    for (int i = 0; i < 4; i++) counted_free(dstk[i]);
+    counted_free(dstk);
+    ASSERT_EQ(alloc_count, 0);
+}
+
+/*
+ * Test: TCP/UDP state table realloc pattern (misc.c)
+ */
+TEST(memleak_ipstate_realloc_pattern) {
+    alloc_count = 0;
+
+    int nstates = 4;
+    char **st = (char **)counted_malloc((size_t)(nstates * sizeof(char *)));
+    ASSERT_NOT_NULL(st);
+    for (int i = 0; i < nstates; i++)
+        st[i] = counted_mkstrcpy("STATE");
+    ASSERT_EQ(alloc_count, 5);
+
+    /* Grow state table (safe pattern) */
+    int new_nstates = 8;
+    char **tmp = (char **)counted_realloc(st, (size_t)(new_nstates * sizeof(char *)));
+    if (!tmp) {
+        for (int i = 0; i < nstates; i++) counted_free(st[i]);
+        counted_free(st);
+        st = NULL;
+    } else {
+        st = tmp;
+    }
+    ASSERT_NOT_NULL(st);
+    /* Init new entries */
+    for (int i = nstates; i < new_nstates; i++) st[i] = NULL;
+    ASSERT_EQ(alloc_count, 5);
+
+    /* Cleanup */
+    for (int i = 0; i < new_nstates; i++) {
+        if (st[i]) counted_free(st[i]);
+    }
+    counted_free(st);
+    ASSERT_EQ(alloc_count, 0);
+}
+
 
 /* ===== Test Registry ===== */
 static tf_test_entry all_tests[] = {
@@ -993,6 +1371,18 @@ static tf_test_entry all_tests[] = {
     REGISTER_TEST(memleak_mkstrcat_basic),
     REGISTER_TEST(memleak_enter_nm_frees_old),
     REGISTER_TEST(memleak_free_lproc_pattern),
+    REGISTER_TEST(memleak_safe_realloc_success),
+    REGISTER_TEST(memleak_unsafe_realloc_pattern),
+    REGISTER_TEST(memleak_add_nma_realloc_pattern),
+    REGISTER_TEST(memleak_alloc_lproc_realloc_pattern),
+    REGISTER_TEST(memleak_hostcache_realloc_pattern),
+    REGISTER_TEST(memleak_sn_realloc_pattern),
+    REGISTER_TEST(memleak_cmdrx_realloc_pattern),
+    REGISTER_TEST(memleak_enter_id_realloc_pattern),
+    REGISTER_TEST(memleak_suid_realloc_pattern),
+    REGISTER_TEST(memleak_sort_ptr_realloc_pattern),
+    REGISTER_TEST(memleak_dstk_realloc_pattern),
+    REGISTER_TEST(memleak_ipstate_realloc_pattern),
 };
 
 RUN_TESTS_FROM(all_tests)

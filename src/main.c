@@ -1093,11 +1093,15 @@ main(argc, argv)
  * Reduce the size of Suid[], if necessary.
  */
     if (Suid && Nuid && Nuid < Mxuid) {
-        if (!(Suid = (struct seluid *) realloc((MALLOC_P *) Suid,
-                                               (MALLOC_S)(sizeof(struct seluid) * Nuid)))) {
+        struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) Suid,
+                                               (MALLOC_S)(sizeof(struct seluid) * Nuid));
+        if (!tmp) {
             (void) fprintf(stderr, "%s: can't realloc UID table\n", Pn);
+            (void) free((FREE_P *) Suid);
+            Suid = (struct seluid *) NULL;
             Exit(1);
         }
+        Suid = tmp;
         Mxuid = Nuid;
     }
 /*
@@ -1250,8 +1254,14 @@ main(argc, argv)
                 sp = Nlproc;
                 if (!slp)
                     slp = (struct lproc **) malloc(len);
-                else
-                    slp = (struct lproc **) realloc((MALLOC_P *) slp, len);
+                else {
+                    struct lproc **tmp = (struct lproc **) realloc((MALLOC_P *) slp, len);
+                    if (!tmp) {
+                        (void) free((FREE_P *) slp);
+                        slp = (struct lproc **) NULL;
+                    } else
+                        slp = tmp;
+                }
                 if (!slp) {
                     (void) fprintf(stderr,
                                    "%s: no space for %d sort pointers\n", Pn, Nlproc);

@@ -226,9 +226,14 @@ ck_file_arg(i, ac, av, fv, rs, sbp)
             if (nm >= nma) {
                 nma += 5;
                 l = (MALLOC_S)(nma * sizeof(struct mounts *));
-                if (mmp)
-                    mmp = (struct mounts **) realloc((MALLOC_P *) mmp, l);
-                else
+                if (mmp) {
+                    struct mounts **tmp = (struct mounts **) realloc((MALLOC_P *) mmp, l);
+                    if (!tmp) {
+                        (void) free((FREE_P *) mmp);
+                        mmp = (struct mounts **) NULL;
+                    } else
+                        mmp = tmp;
+                } else
                     mmp = (struct mounts **) malloc(l);
                 if (!mmp) {
                     (void) fprintf(stderr,
@@ -697,9 +702,14 @@ enter_cmd_rx(x)
          */
         NCmdRxA += CMDRXINCR;
         xl = (MALLOC_S)(NCmdRxA * sizeof(lsof_rx_t));
-        if (CmdRx)
-            CmdRx = (lsof_rx_t *) realloc((MALLOC_P *) CmdRx, xl);
-        else
+        if (CmdRx) {
+            lsof_rx_t *tmp = (lsof_rx_t *) realloc((MALLOC_P *) CmdRx, xl);
+            if (!tmp) {
+                (void) free((FREE_P *) CmdRx);
+                CmdRx = (lsof_rx_t *) NULL;
+            } else
+                CmdRx = tmp;
+        } else
             CmdRx = (lsof_rx_t *) malloc(xl);
         if (!CmdRx) {
             (void) fprintf(stderr, "%s: no space for regexp: ", Pn);
@@ -1367,9 +1377,15 @@ enter_id(ty, p)
             if (!s)
                 s = (struct int_lst *) malloc(
                         (MALLOC_S)(sizeof(struct int_lst) * mx));
-            else
-                s = (struct int_lst *) realloc((MALLOC_P *) s,
+            else {
+                struct int_lst *tmp = (struct int_lst *) realloc((MALLOC_P *) s,
                                                (MALLOC_S)(sizeof(struct int_lst) * mx));
+                if (!tmp) {
+                    (void) free((FREE_P *) s);
+                    s = (struct int_lst *) NULL;
+                } else
+                    s = tmp;
+            }
             if (!s) {
                 (void) fprintf(stderr, "%s: no space for %d process%s IDs",
                                Pn, mx, (ty == PGID) ? " group" : "");
@@ -1700,7 +1716,12 @@ enter_network_address(na)
                 }
                 if (sn) {
                     if (l > snl) {
-                        sn = (char *) realloc((MALLOC_P *) sn, l + 1);
+                        char *tmp = (char *) realloc((MALLOC_P *) sn, l + 1);
+                        if (!tmp) {
+                            (void) free((FREE_P *) sn);
+                            sn = (char *) NULL;
+                        } else
+                            sn = tmp;
                         snl = l;
                     }
                 } else {
@@ -2343,8 +2364,14 @@ enter_uid(us)
             len = (MALLOC_S)(Mxuid * sizeof(struct seluid));
             if (!Suid)
                 Suid = (struct seluid *) malloc(len);
-            else
-                Suid = (struct seluid *) realloc((MALLOC_P *) Suid, len);
+            else {
+                struct seluid *tmp = (struct seluid *) realloc((MALLOC_P *) Suid, len);
+                if (!tmp) {
+                    (void) free((FREE_P *) Suid);
+                    Suid = (struct seluid *) NULL;
+                } else
+                    Suid = tmp;
+            }
             if (!Suid) {
                 (void) fprintf(stderr, "%s: no space for UIDs", Pn);
                 Exit(1);

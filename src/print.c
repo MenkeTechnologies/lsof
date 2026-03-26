@@ -448,8 +448,15 @@ gethostnm(ia, af)
         len = (MALLOC_S)(nhc * sizeof(struct hostcache));
         if (!hc)
             hc = (struct hostcache *) malloc(len);
-        else
-            hc = (struct hostcache *) realloc((MALLOC_P *) hc, len);
+        else {
+            struct hostcache *tmp;
+            tmp = (struct hostcache *) realloc((MALLOC_P *) hc, len);
+            if (!tmp) {
+                (void) free((FREE_P *) hc);
+                hc = (struct hostcache *) NULL;
+            } else
+                hc = tmp;
+        }
         if (!hc) {
             (void) fprintf(stderr, "%s: no space for host cache\n", Pn);
             Exit(1);

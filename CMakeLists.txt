@@ -113,45 +113,16 @@ add_executable(benchmark_core bench/bench_core.c)
 target_include_directories(benchmark_core PRIVATE ${PROJECT_SOURCE_DIR}/bench)
 target_compile_options(benchmark_core PRIVATE -Wall -Wextra -Wpedantic -O2)
 
-# 'make check' runs all tests and writes output to check_* files
-set(CHECK_SCRIPT "${CMAKE_BINARY_DIR}/run_check.sh")
-file(WRITE ${CHECK_SCRIPT}
-"#!/bin/sh
-set -e
-cd \"${CMAKE_BINARY_DIR}\"
-
-echo '=== check_unit ==='
-./check_unit > check_unit.log 2>&1 && echo PASS >> check_unit.log || echo FAIL >> check_unit.log
-cat check_unit.log
-
-echo ''
-echo '=== check_integration ==='
-./check_integration > check_integration.log 2>&1 && echo PASS >> check_integration.log || echo FAIL >> check_integration.log
-cat check_integration.log
-
-# Exit with failure if any test failed
-grep -q FAIL check_unit.log check_integration.log && exit 1 || exit 0
-")
-
+# 'make check' runs all tests
 add_custom_target(check
-    COMMAND sh ${CHECK_SCRIPT}
+    COMMAND ${PROJECT_SOURCE_DIR}/test/run_checks.sh ${CMAKE_BINARY_DIR}
     DEPENDS check_unit check_integration
     COMMENT "Running check suite -- output in check_*.log"
 )
 
-# 'make bench' runs benchmarks and writes output to benchmark_* files
-set(BENCH_SCRIPT "${CMAKE_BINARY_DIR}/run_bench.sh")
-file(WRITE ${BENCH_SCRIPT}
-"#!/bin/sh
-cd \"${CMAKE_BINARY_DIR}\"
-
-echo '=== benchmark_core ==='
-./benchmark_core > benchmark_core.log 2>&1
-cat benchmark_core.log
-")
-
+# 'make bench' runs benchmarks
 add_custom_target(bench
-    COMMAND sh ${BENCH_SCRIPT}
+    COMMAND ${PROJECT_SOURCE_DIR}/bench/run_benchmarks.sh ${CMAKE_BINARY_DIR}
     DEPENDS benchmark_core
     COMMENT "Running benchmarks -- output in benchmark_*.log"
 )
