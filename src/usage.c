@@ -353,18 +353,22 @@ usage(xv, fh, version)
     int i;
 
     if (Fhelp || xv) {
-        (void) fprintf(stderr, "\n");
         (void) fprintf(stderr,
-            "  " ANSI_MAGENTA "╔══════════════════════════════════════════════════════════════════════╗" ANSI_RESET "\n");
-        (void) fprintf(stderr,
-            "  " ANSI_MAGENTA "║" ANSI_RESET "  " ANSI_CYAN "▓▓ FILE DESCRIPTOR SCANNER // %s" ANSI_RESET "                              " ANSI_MAGENTA "║" ANSI_RESET "\n", Pn);
-        (void) fprintf(stderr,
-            "  " ANSI_MAGENTA "║" ANSI_RESET "  " ANSI_YELLOW ">> SCANNING OPEN FILES ACROSS ALL RUNNING PROCESSES" ANSI_RESET "          " ANSI_MAGENTA "║" ANSI_RESET "\n");
-        (void) fprintf(stderr,
-            "  " ANSI_MAGENTA "╚══════════════════════════════════════════════════════════════════════╝" ANSI_RESET "\n");
-        (void) fprintf(stderr, "\n");
-        (void) fprintf(stderr,
-            "  " ANSI_DIM "USAGE:" ANSI_RESET " %s [OPTION]... [FILE]...\n",
+            "\n"
+            "\033[36m  ██▓     ██████  ▒█████    █████▒\033[0m\n"
+            "\033[36m ▓██▒   ▒██    ▒ ▒██▒  ██▒▓██   ▒ \033[0m\n"
+            "\033[35m ▒██░   ░ ▓██▄   ▒██░  ██▒▒████ ░ \033[0m\n"
+            "\033[35m ░██░     ▒   ██▒▒██   ██░░▓█▒  ░ \033[0m\n"
+            "\033[31m ░██░   ▒██████▒░░ ████▓▒░░▒█░    \033[0m\n"
+            "\033[31m ░▓     ▒ ▒▓▒ ▒ ░░ ▒░▒░▒░  ▒ ░   \033[0m\n"
+            "\033[33m  ▒ ░   ░ ░▒  ░ ░  ░ ▒ ▒░  ░     \033[0m\n"
+            "\033[33m  ▒ ░   ░  ░  ░  ░ ░ ░ ▒   ░ ░   \033[0m\n"
+            "\033[33m  ░           ░      ░ ░          \033[0m\n"
+            "\n"
+            ANSI_CYAN "  >> FILE DESCRIPTOR SCANNER v" LSOF_VERSION " << " ANSI_RESET "\n"
+            ANSI_MAGENTA "  [ mapping the topology of open files ]" ANSI_RESET "\n"
+            "\n"
+            ANSI_YELLOW "  USAGE:" ANSI_RESET " %s [OPTION]... [FILE]...\n",
             Pn);
     }
     if (xv && !Fhelp) {
@@ -374,31 +378,94 @@ usage(xv, fh, version)
             Exit(xv);
     }
     if (Fhelp) {
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── SELECTION ──────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "\n  " ANSI_CYAN "░░" ANSI_RESET " " ANSI_BOLD "OPTIONS" ANSI_RESET " " ANSI_CYAN "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░" ANSI_RESET "\n\n");
+            ANSI_GREEN "   -?, -h            " ANSI_RESET "display this transmission\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-?, -h" ANSI_RESET "              display this help and exit\n");
+            ANSI_GREEN "   -a                " ANSI_RESET "AND selections " ANSI_MAGENTA "(default: OR)" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-a" ANSI_RESET "                  AND selections (default: OR)\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-b" ANSI_RESET "                  avoid kernel blocks\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-c" ANSI_RESET " COMMAND          select by command name (prefix, ^exclude, /regex/)\n");
+            ANSI_GREEN "   -c COMMAND        " ANSI_RESET "select by command name " ANSI_MAGENTA "(prefix, ^exclude, /regex/)" ANSI_RESET "\n");
         (void) snpf(buf, sizeof(buf),
-            "  " ANSI_GREEN "+c" ANSI_RESET " WIDTH            set COMMAND column width (default: %d)\n", CMDL);
+            ANSI_GREEN "   +c WIDTH          " ANSI_RESET "set COMMAND column width " ANSI_MAGENTA "(default: %d)" ANSI_RESET "\n", CMDL);
         (void) fprintf(stderr, "%s", buf);
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -d FD             " ANSI_RESET "select by file descriptor set\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -g [PGID]         " ANSI_RESET "exclude(^) or select process group IDs\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -p PID            " ANSI_RESET "select by PID " ANSI_MAGENTA "(comma-separated, ^excludes)" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -u USER           " ANSI_RESET "select by login name or UID " ANSI_MAGENTA "(comma-separated, ^excludes)" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -x [fl]           " ANSI_RESET "cross over +d|+D file systems (f) or symbolic links (l)\n");
 
-#if    defined(HASNCACHE)
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── NETWORK ───────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-C" ANSI_RESET "                  disable kernel name cache\n");
-#endif    /* defined(HASNCACHE) */
+            ANSI_GREEN "   -i [ADDR]         " ANSI_RESET "select IPv%s files\n",
+#if    defined(HASIPv6)
+            "4/6"
+#else	/* !defined(HASIPv6) */
+            "4"
+#endif    /* defined(HASIPv6) */
+        );
+        (void) fprintf(stderr,
+            "                     " ANSI_MAGENTA "[%s][proto][@host|addr][:svc|port]" ANSI_RESET "\n",
+#if    defined(HASIPv6)
+            "46"
+#else	/* !defined(HASIPv6) */
+            "4"
+#endif    /* defined(HASIPv6) */
+        );
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -n                " ANSI_RESET "inhibit host name resolution\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -N                " ANSI_RESET "select NFS files\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -P                " ANSI_RESET "inhibit port number to name conversion\n");
+
+#if    defined(HASTCPUDPSTATE)
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -s [PROTO:STATE]  " ANSI_RESET "exclude(^) or select protocol states by name\n");
+#else	/* !defined(HASTCPUDPSTATE) */
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -s [PROTO:STATE]  " ANSI_RESET "display file size\n");
+#endif    /* defined(HASTCPUDPSTATE) */
 
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+d" ANSI_RESET " DIR              list open files in DIR\n");
+            ANSI_GREEN "   -T [LEVEL]        " ANSI_RESET "disable or select TCP/TPI info\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-d" ANSI_RESET " FD               select by file descriptor set\n");
+            ANSI_GREEN "   -U                " ANSI_RESET "select UNIX domain socket files\n");
+
+#if    !defined(HASNORPC_H)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+D" ANSI_RESET " DIR              recursively list open files in DIR (slow)\n");
+            ANSI_GREEN "   +|-M              " ANSI_RESET "enable (+) or disable (-) portmap registration");
+        (void) fprintf(stderr, " " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n",
+# if    defined(HASPMAPENABLED)
+            "+"
+# else	/* !defined(HASPMAPENABLED) */
+            "-"
+# endif    /* defined(HASPMAPENABLED) */
+        );
+#endif    /* !defined(HASNORPC_H) */
+
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── FILES & DIRECTORIES ───────────────────────────" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +d DIR            " ANSI_RESET "list open files in DIR\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +D DIR            " ANSI_RESET "recursively list open files in DIR " ANSI_MAGENTA "(slow)" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +|-f              " ANSI_RESET "+filesystem or -file names\n");
+
+#if    defined(HASFSTRUCT)
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +|-f [cfgGn]      " ANSI_RESET "file struct info: count, addr, flags, node\n");
+#endif    /* defined(HASFSTRUCT) */
+
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +|-L [COUNT]      " ANSI_RESET "list (+) or suppress (-) link counts < COUNT\n");
 
 #if    defined(HASDCACHE)
         if (Setuidroot)
@@ -410,47 +477,72 @@ usage(xv, fh, version)
         else
             cp = "?|i|b|r|u[path]";
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-D" ANSI_RESET " ACTION           device cache control (%s)\n", cp);
+            ANSI_GREEN "   -D ACTION         " ANSI_RESET "device cache control " ANSI_MAGENTA "(%s)" ANSI_RESET "\n", cp);
 #endif    /* defined(HASDCACHE) */
 
 #if    defined(HASEOPT)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-e" ANSI_RESET " PATH           exempt filesystem (risky)\n");
+            ANSI_GREEN "   +|-e PATH         " ANSI_RESET "exempt filesystem " ANSI_MAGENTA "(risky)" ANSI_RESET "\n");
 #endif    /* defined(HASEOPT) */
 
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── DISPLAY ───────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-f" ANSI_RESET "                +filesystem or -file names\n");
+            ANSI_GREEN "   -F [FIELDS]       " ANSI_RESET "select output fields; -F ? for help\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -l                " ANSI_RESET "display UID numbers instead of login names\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -o [DIGITS]       " ANSI_RESET "display file offset " ANSI_MAGENTA "(0t format, default: %d digits)" ANSI_RESET "\n",
+            OFFDECDIG);
 
-#if    defined(HASFSTRUCT)
+#if    defined(HASPPID)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-f" ANSI_RESET " [cfgGn]        file struct info: count, addr, flags, node\n");
-#endif    /* defined(HASFSTRUCT) */
+            ANSI_GREEN "   -R                " ANSI_RESET "list parent PID\n");
+#endif    /* defined(HASPPID) */
 
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-F" ANSI_RESET " [FIELDS]         select output fields; -F ? for help\n");
+            ANSI_GREEN "   -t                " ANSI_RESET "terse output " ANSI_MAGENTA "(PID only)" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-g" ANSI_RESET " [PGID]           exclude(^) or select process group IDs\n");
+            ANSI_GREEN "   -v                " ANSI_RESET "display version information\n");
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-i" ANSI_RESET " [ADDR]           select IPv%s files",
-#if    defined(HASIPv6)
-            "4/6"
-#else	/* !defined(HASIPv6) */
-            "4"
-#endif    /* defined(HASIPv6) */
+            ANSI_GREEN "   -V                " ANSI_RESET "verbose search\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +|-w              " ANSI_RESET "enable (+) or suppress (-) warnings");
+        (void) fprintf(stderr, " " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n",
+#if    defined(WARNINGSTATE)
+            "-"
+#else	/* !defined(WARNINGSTATE) */
+            "+"
+#endif    /* defined(WARNINGSTATE) */
         );
+
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── SYSTEM ────────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "\n                        [%s][proto][@host|addr][:svc|port]\n",
-#if    defined(HASIPv6)
-            "46"
-#else	/* !defined(HASIPv6) */
-            "4"
-#endif    /* defined(HASIPv6) */
-        );
+            ANSI_GREEN "   -b                " ANSI_RESET "avoid kernel blocks\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -O                " ANSI_RESET "avoid overhead of extra processing " ANSI_MAGENTA "(risky)" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -S [SECONDS]      " ANSI_RESET "stat(2) timeout " ANSI_MAGENTA "(default: %d)" ANSI_RESET "\n",
+            TMLIMIT);
+        (void) fprintf(stderr,
+            ANSI_GREEN "   +|-r [SECONDS]    " ANSI_RESET "repeat mode: +until no files, -forever");
+        (void) fprintf(stderr, " " ANSI_MAGENTA "(default: %d)" ANSI_RESET "\n", RPTTM);
+
+#if    defined(HAS_STRFTIME)
+        (void) fprintf(stderr,
+            "                     " ANSI_MAGENTA "optional suffix: m<fmt> for strftime(3) markers" ANSI_RESET "\n");
+#endif    /* defined(HAS_STRFTIME) */
+
+#if    defined(HASNCACHE)
+        (void) fprintf(stderr,
+            ANSI_GREEN "   -C                " ANSI_RESET "disable kernel name cache\n");
+#endif    /* defined(HASNCACHE) */
 
 #if    defined(HASKOPT)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-k" ANSI_RESET " FILE             kernel symbols file");
-        (void) fprintf(stderr, " (default: %s)\n",
+            ANSI_GREEN "   -k FILE           " ANSI_RESET "kernel symbols file");
+        (void) fprintf(stderr, " " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n",
             Nmlst ? Nmlst
 # if	defined(N_UNIX)
                   : N_UNIX
@@ -462,152 +554,73 @@ usage(xv, fh, version)
 
 #if    defined(HASTASKS)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-K" ANSI_RESET "                  list tasks (threads)\n");
+            ANSI_GREEN "   -K                " ANSI_RESET "list tasks (threads)\n");
 #endif    /* defined(HASTASKS) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-l" ANSI_RESET "                  display UID numbers instead of login names\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-L" ANSI_RESET " [COUNT]        list (+) or suppress (-) link counts < COUNT\n");
 
 #if    defined(HASMOPT)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-m" ANSI_RESET " FILE             kernel memory file (default: %s)\n", KMEM);
+            ANSI_GREEN "   -m FILE           " ANSI_RESET "kernel memory file " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n", KMEM);
 #endif    /* defined(HASMOPT) */
 
 #if    defined(HASMNTSUP)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+m" ANSI_RESET " [FILE]           use or create mount supplement\n");
+            ANSI_GREEN "   +m [FILE]         " ANSI_RESET "use or create mount supplement\n");
 #endif    /* defined(HASMNTSUP) */
 
-#if    !defined(HASNORPC_H)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-M" ANSI_RESET "                enable (+) or disable (-) portmap registration");
-        (void) fprintf(stderr, " (default: %s)\n",
-# if    defined(HASPMAPENABLED)
-            "+"
-# else	/* !defined(HASPMAPENABLED) */
-            "-"
-# endif    /* defined(HASPMAPENABLED) */
-        );
-#endif    /* !defined(HASNORPC_H) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-n" ANSI_RESET "                  inhibit host name resolution\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-N" ANSI_RESET "                  select NFS files\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-o" ANSI_RESET " [DIGITS]         display file offset (0t format, default: %d digits)\n",
-            OFFDECDIG);
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-O" ANSI_RESET "                  avoid overhead of extra processing (risky)\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-p" ANSI_RESET " PID              select by PID (comma-separated, ^excludes)\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-P" ANSI_RESET "                  inhibit port number to name conversion\n");
-
-#if    defined(HASPPID)
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-R" ANSI_RESET "                  list parent PID\n");
-#endif    /* defined(HASPPID) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-r" ANSI_RESET " [SECONDS]      repeat mode: +until no files, -forever");
-        (void) fprintf(stderr, " (default: %d)\n", RPTTM);
-
-#if    defined(HAS_STRFTIME)
-        (void) fprintf(stderr,
-            "                        optional suffix: m<fmt> for strftime(3) markers\n");
-#endif    /* defined(HAS_STRFTIME) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-s" ANSI_RESET " [PROTO:STATE]    ");
-
-#if    defined(HASTCPUDPSTATE)
-        (void) fprintf(stderr,
-            "exclude(^) or select protocol states by name\n");
-#else	/* !defined(HASTCPUDPSTATE) */
-        (void) fprintf(stderr,
-            "display file size\n");
-#endif    /* defined(HASTCPUDPSTATE) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-S" ANSI_RESET " [SECONDS]        stat(2) timeout (default: %d)\n",
-            TMLIMIT);
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-t" ANSI_RESET "                  terse output (PID only)\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-T" ANSI_RESET " [LEVEL]          disable or select TCP/TPI info\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-u" ANSI_RESET " USER             select by login name or UID (comma-separated, ^excludes)\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-U" ANSI_RESET "                  select UNIX domain socket files\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-v" ANSI_RESET "                  display version information\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-V" ANSI_RESET "                  verbose search\n");
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "+|-w" ANSI_RESET "                enable (+) or suppress (-) warnings");
-        (void) fprintf(stderr, " (default: %s)\n",
-#if    defined(WARNINGSTATE)
-            "-"
-#else	/* !defined(WARNINGSTATE) */
-            "+"
-#endif    /* defined(WARNINGSTATE) */
-        );
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "-x" ANSI_RESET " [fl]             cross over +d|+D file systems (f) or symbolic links (l)\n");
+            ANSI_GREEN "   --                " ANSI_RESET "end option processing\n");
 
 #if    defined(HASXOPT)
 # if	defined(HASXOPT_ROOT)
         if (Myuid == 0)
 # endif	/* defined(HASXOPT_ROOT) */
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-X" ANSI_RESET "                  %s\n", HASXOPT);
+            ANSI_GREEN "   -X                " ANSI_RESET "%s\n", HASXOPT);
 #endif    /* defined(HASXOPT) */
 
 #if    defined(HASZONES)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-z" ANSI_RESET " [ZONE]           select by zone name\n");
+            ANSI_GREEN "   -z [ZONE]         " ANSI_RESET "select by zone name\n");
 #endif    /* defined(HASZONES) */
 
 #if    defined(HASSELINUX)
         if (CntxStatus)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-Z" ANSI_RESET " [CONTEXT]        select by security context\n");
+            ANSI_GREEN "   -Z [CONTEXT]      " ANSI_RESET "select by security context\n");
 #endif    /* defined(HASSELINUX) */
-
-        (void) fprintf(stderr,
-            "  " ANSI_GREEN "--" ANSI_RESET "                  end option processing\n");
 
 #if    defined(HAS_AFS) && defined(HASAOPT)
         (void) fprintf(stderr,
-            "  " ANSI_GREEN "-A" ANSI_RESET " FILE             AFS name list file (default: %s)\n",
+            ANSI_GREEN "   -A FILE           " ANSI_RESET "AFS name list file " ANSI_MAGENTA "(default: %s)" ANSI_RESET "\n",
             AFSAPATHDEF);
 #endif    /* defined(HAS_AFS) && defined(HASAOPT) */
 
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── EXAMPLES ──────────────────────────────────────" ANSI_RESET "\n");
         (void) fprintf(stderr,
-            "\n  " ANSI_CYAN "░░" ANSI_RESET " " ANSI_BOLD "EXAMPLES" ANSI_RESET " " ANSI_CYAN "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░" ANSI_RESET "\n\n");
+            ANSI_GREEN "   %s -i :8080       " ANSI_RESET "list files using port 8080\n", Pn);
         (void) fprintf(stderr,
-            "  " ANSI_YELLOW ">>" ANSI_RESET " %s " ANSI_CYAN "-i :8080" ANSI_RESET "         list files using port 8080\n", Pn);
+            ANSI_GREEN "   %s -p 1234        " ANSI_RESET "list files opened by PID 1234\n", Pn);
         (void) fprintf(stderr,
-            "  " ANSI_YELLOW ">>" ANSI_RESET " %s " ANSI_CYAN "-p 1234" ANSI_RESET "          list files opened by PID 1234\n", Pn);
+            ANSI_GREEN "   %s -u root        " ANSI_RESET "list files opened by root\n", Pn);
         (void) fprintf(stderr,
-            "  " ANSI_YELLOW ">>" ANSI_RESET " %s " ANSI_CYAN "-u root" ANSI_RESET "          list files opened by root\n", Pn);
+            ANSI_GREEN "   %s /var/log/syslog" ANSI_RESET "  list processes using this file\n", Pn);
         (void) fprintf(stderr,
-            "  " ANSI_YELLOW ">>" ANSI_RESET " %s " ANSI_CYAN "/var/log/syslog" ANSI_RESET "  list processes using this file\n", Pn);
-        (void) fprintf(stderr,
-            "  " ANSI_YELLOW ">>" ANSI_RESET " %s " ANSI_CYAN "-i TCP" ANSI_RESET "           list all TCP connections\n", Pn);
+            ANSI_GREEN "   %s -i TCP         " ANSI_RESET "list all TCP connections\n", Pn);
 
-        (void) fprintf(stderr, "\n");
+        (void) fprintf(stderr, "\n"
+            ANSI_CYAN "  ── INFO ──────────────────────────────────────────" ANSI_RESET "\n");
+        (void) fprintf(stderr,
+            ANSI_MAGENTA "  v" LSOF_VERSION " " ANSI_RESET "// " ANSI_YELLOW "(c) Purdue Research Foundation" ANSI_RESET "\n");
         (void) report_SECURITY("", "; ");
         (void) report_WARNDEVACCESS("", NULL, ";");
         (void) report_HASKERNIDCK(" k", NULL);
         (void) report_HASDCACHE(0, NULL, NULL);
+        (void) fprintf(stderr,
+            ANSI_MAGENTA "  Every open file tells a story." ANSI_RESET "\n");
 
 #if    defined(DIALECT_WARNING)
-        (void) fprintf(stderr, "WARNING: %s\n", DIALECT_WARNING);
+        (void) fprintf(stderr, ANSI_YELLOW "WARNING: %s" ANSI_RESET "\n", DIALECT_WARNING);
 #endif    /* defined(DIALECT_WARNING) */
 
     }
