@@ -16,7 +16,7 @@
 
 ## // WHAT IS THIS
 
-**lsof** — **L**ist **S**ystem **O**pen **F**iles — v4.85
+**lsof** — **L**ist **S**ystem **O**pen **F**iles — v5.0
 
 A diagnostic tool forged in the UNIX underground. It maps the invisible topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.
 

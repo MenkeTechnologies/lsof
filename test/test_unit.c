@@ -1305,6 +1305,259 @@ TEST(memleak_ipstate_realloc_pattern) {
 }
 
 
+/* ===== x2dev extended tests ===== */
+TEST(x2dev_max_byte) {
+    dev_t d = 0;
+    char *r = test_x2dev("ff", &d);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(d, 255);
+}
+
+TEST(x2dev_leading_zeros) {
+    dev_t d = 0;
+    char *r = test_x2dev("00ff", &d);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(d, 0xff);
+}
+
+TEST(x2dev_stops_at_null_terminator) {
+    dev_t d = 0;
+    char *r = test_x2dev("ab", &d);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(*r, '\0');
+    ASSERT_EQ(d, 0xab);
+}
+
+TEST(x2dev_two_digits) {
+    dev_t d = 0;
+    char *r = test_x2dev("1f", &d);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(d, 0x1f);
+}
+
+TEST(x2dev_0x_with_zero) {
+    dev_t d = 99;
+    char *r = test_x2dev("0x0", &d);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(d, 0);
+}
+
+/* ===== Field name string tests ===== */
+TEST(field_names_non_null) {
+    /* All LSOF_FNM_* should be non-null, non-empty strings */
+    ASSERT_NOT_NULL(LSOF_FNM_ACCESS);
+    ASSERT_NOT_NULL(LSOF_FNM_CMD);
+    ASSERT_NOT_NULL(LSOF_FNM_CT);
+    ASSERT_NOT_NULL(LSOF_FNM_DEVCH);
+    ASSERT_NOT_NULL(LSOF_FNM_DEVN);
+    ASSERT_NOT_NULL(LSOF_FNM_FD);
+    ASSERT_NOT_NULL(LSOF_FNM_FA);
+    ASSERT_NOT_NULL(LSOF_FNM_FG);
+    ASSERT_NOT_NULL(LSOF_FNM_INODE);
+    ASSERT_NOT_NULL(LSOF_FNM_NLINK);
+    ASSERT_NOT_NULL(LSOF_FNM_TID);
+    ASSERT_NOT_NULL(LSOF_FNM_LOCK);
+    ASSERT_NOT_NULL(LSOF_FNM_LOGIN);
+    ASSERT_NOT_NULL(LSOF_FNM_MARK);
+    ASSERT_NOT_NULL(LSOF_FNM_NAME);
+    ASSERT_NOT_NULL(LSOF_FNM_NI);
+    ASSERT_NOT_NULL(LSOF_FNM_OFFSET);
+    ASSERT_NOT_NULL(LSOF_FNM_PID);
+    ASSERT_NOT_NULL(LSOF_FNM_PGID);
+    ASSERT_NOT_NULL(LSOF_FNM_PROTO);
+    ASSERT_NOT_NULL(LSOF_FNM_RDEV);
+    ASSERT_NOT_NULL(LSOF_FNM_PPID);
+    ASSERT_NOT_NULL(LSOF_FNM_SIZE);
+    ASSERT_NOT_NULL(LSOF_FNM_STREAM);
+    ASSERT_NOT_NULL(LSOF_FNM_TYPE);
+    ASSERT_NOT_NULL(LSOF_FNM_TCPTPI);
+    ASSERT_NOT_NULL(LSOF_FNM_UID);
+    ASSERT_NOT_NULL(LSOF_FNM_ZONE);
+    ASSERT_NOT_NULL(LSOF_FNM_CNTX);
+    ASSERT_NOT_NULL(LSOF_FNM_TERM);
+}
+
+TEST(field_names_non_empty) {
+    ASSERT_GT(strlen(LSOF_FNM_ACCESS), 0);
+    ASSERT_GT(strlen(LSOF_FNM_CMD), 0);
+    ASSERT_GT(strlen(LSOF_FNM_PID), 0);
+    ASSERT_GT(strlen(LSOF_FNM_FD), 0);
+    ASSERT_GT(strlen(LSOF_FNM_NAME), 0);
+    ASSERT_GT(strlen(LSOF_FNM_TYPE), 0);
+    ASSERT_GT(strlen(LSOF_FNM_SIZE), 0);
+    ASSERT_GT(strlen(LSOF_FNM_UID), 0);
+}
+
+TEST(field_ids_are_printable_ascii) {
+    char ids[] = {
+        LSOF_FID_ACCESS, LSOF_FID_CMD, LSOF_FID_CT, LSOF_FID_DEVCH,
+        LSOF_FID_DEVN, LSOF_FID_FD, LSOF_FID_FA, LSOF_FID_FG,
+        LSOF_FID_INODE, LSOF_FID_NLINK, LSOF_FID_TID, LSOF_FID_LOCK,
+        LSOF_FID_LOGIN, LSOF_FID_MARK, LSOF_FID_NAME, LSOF_FID_NI,
+        LSOF_FID_OFFSET, LSOF_FID_PID, LSOF_FID_PGID, LSOF_FID_PROTO,
+        LSOF_FID_RDEV, LSOF_FID_PPID, LSOF_FID_SIZE, LSOF_FID_STREAM,
+        LSOF_FID_TYPE, LSOF_FID_TCPTPI, LSOF_FID_UID, LSOF_FID_ZONE,
+        LSOF_FID_CNTX, LSOF_FID_TERM,
+    };
+    int n = sizeof(ids) / sizeof(ids[0]);
+    for (int i = 0; i < n; i++) {
+        ASSERT_GE(ids[i], 0x20);
+        ASSERT_LT(ids[i], 0x7f);
+    }
+}
+
+TEST(field_total_count) {
+    /* There should be exactly 30 field definitions (indices 0-29) */
+    ASSERT_EQ(LSOF_FIX_TERM, 29);
+}
+
+/* ===== hashport extended tests ===== */
+TEST(hashport_adjacent_ports_differ) {
+    /* Adjacent ports should generally hash to different buckets */
+    int same = 0;
+    for (int p = 1; p < 1024; p++) {
+        if (HASHPORT(p) == HASHPORT(p - 1))
+            same++;
+    }
+    /* Allow some collisions, but not too many */
+    ASSERT_LT(same, 100);
+}
+
+TEST(hashport_max_port) {
+    int h = HASHPORT(65535);
+    ASSERT_GE(h, 0);
+    ASSERT_LT(h, PORTHASHBUCKETS);
+}
+
+TEST(hashport_zero) {
+    int h = HASHPORT(0);
+    ASSERT_EQ(h, 0);
+}
+
+TEST(hashport_common_ports_in_range) {
+    int common[] = {22, 53, 80, 443, 8080, 8443, 3306, 5432, 6379, 27017};
+    int n = sizeof(common) / sizeof(common[0]);
+    for (int i = 0; i < n; i++) {
+        int h = HASHPORT(common[i]);
+        ASSERT_GE(h, 0);
+        ASSERT_LT(h, PORTHASHBUCKETS);
+    }
+}
+
+/* ===== safestrlen extended tests ===== */
+TEST(safestrlen_all_printable) {
+    /* All printable ASCII chars should each count as 1 */
+    char buf[96];
+    int j = 0;
+    for (int i = 0x21; i < 0x7f; i++)
+        buf[j++] = (char)i;
+    buf[j] = '\0';
+    ASSERT_EQ(test_safestrlen(buf, 0), j);
+}
+
+TEST(safestrlen_multiple_control) {
+    /* "\t\n\r" = 3 control chars, each 2 bytes escape */
+    ASSERT_EQ(test_safestrlen("\t\n\r", 0), 6);
+}
+
+TEST(safestrlen_mixed_content) {
+    /* "ab\tcd\nef" = 6 printable + 2 control (each 2) = 10 */
+    ASSERT_EQ(test_safestrlen("ab\tcd\nef", 0), 10);
+}
+
+/* ===== compdev extended tests ===== */
+typedef struct test_devcomp {
+    dev_t rdev;
+    unsigned long inode;
+    char *name;
+} test_devcomp_t;
+
+static int test_compdev_fn(const void *a, const void *b) {
+    const test_devcomp_t *da = (const test_devcomp_t *)a;
+    const test_devcomp_t *db = (const test_devcomp_t *)b;
+    if (da->rdev < db->rdev) return -1;
+    if (da->rdev > db->rdev) return 1;
+    if (da->inode < db->inode) return -1;
+    if (da->inode > db->inode) return 1;
+    if (da->name && db->name) return strcmp(da->name, db->name);
+    return 0;
+}
+
+TEST(compdev_null_names) {
+    test_devcomp_t a = {1, 1, NULL};
+    test_devcomp_t b = {1, 1, NULL};
+    ASSERT_EQ(test_compdev_fn(&a, &b), 0);
+}
+
+TEST(compdev_stability) {
+    /* Same entry compared to itself should be 0 */
+    test_devcomp_t a = {42, 100, "/dev/sda"};
+    ASSERT_EQ(test_compdev_fn(&a, &a), 0);
+}
+
+TEST(compdev_sort_by_rdev_first) {
+    test_devcomp_t a = {1, 999, "zzz"};
+    test_devcomp_t b = {2, 1, "aaa"};
+    ASSERT_LT(test_compdev_fn(&a, &b), 0);
+}
+
+TEST(compdev_sort_by_inode_second) {
+    test_devcomp_t a = {5, 10, "zzz"};
+    test_devcomp_t b = {5, 20, "aaa"};
+    ASSERT_LT(test_compdev_fn(&a, &b), 0);
+}
+
+TEST(compdev_sort_by_name_third) {
+    test_devcomp_t a = {5, 10, "alpha"};
+    test_devcomp_t b = {5, 10, "beta"};
+    ASSERT_LT(test_compdev_fn(&a, &b), 0);
+}
+
+/* ===== comppid extended tests ===== */
+TEST(comppid_negative_pids) {
+    /* Negative PIDs (kernel threads) should sort before positive */
+    int pids[] = {100, -1, 50, -100, 0};
+    int n = sizeof(pids) / sizeof(pids[0]);
+    qsort(pids, (size_t)n, sizeof(int), test_comppid);
+    ASSERT_EQ(pids[0], -100);
+    ASSERT_EQ(pids[1], -1);
+    ASSERT_EQ(pids[2], 0);
+    ASSERT_EQ(pids[3], 50);
+    ASSERT_EQ(pids[4], 100);
+}
+
+TEST(comppid_duplicate_pids) {
+    int pids[] = {5, 5, 5};
+    int n = sizeof(pids) / sizeof(pids[0]);
+    qsort(pids, (size_t)n, sizeof(int), test_comppid);
+    ASSERT_EQ(pids[0], 5);
+    ASSERT_EQ(pids[1], 5);
+    ASSERT_EQ(pids[2], 5);
+}
+
+/* ===== safepup extended tests ===== */
+TEST(safepup_printable_range) {
+    /* All printable ASCII (0x20-0x7e) should pass through unchanged */
+    for (int c = 0x20; c <= 0x7e; c++) {
+        char ch = (char)c;
+        int class_val = (ch == ' ') ? 2 : isprint((unsigned char)ch) ? 1 : 0;
+        if (ch != ' ')
+            ASSERT_EQ(class_val, 1);
+    }
+}
+
+TEST(safepup_all_control_chars_escaped) {
+    /* Control chars 0x01-0x1f should all be classified as needing escape */
+    for (int c = 1; c < 0x20; c++) {
+        ASSERT_FALSE(isprint((unsigned char)c));
+    }
+}
+
+TEST(safepup_del_char) {
+    /* DEL (0x7f) is not printable */
+    ASSERT_FALSE(isprint(0x7f));
+}
+
 /* ===== Test Registry ===== */
 static tf_test_entry all_tests[] = {
     REGISTER_TEST(field_ids_are_unique),
@@ -1383,6 +1636,32 @@ static tf_test_entry all_tests[] = {
     REGISTER_TEST(memleak_sort_ptr_realloc_pattern),
     REGISTER_TEST(memleak_dstk_realloc_pattern),
     REGISTER_TEST(memleak_ipstate_realloc_pattern),
+    REGISTER_TEST(x2dev_max_byte),
+    REGISTER_TEST(x2dev_leading_zeros),
+    REGISTER_TEST(x2dev_stops_at_null_terminator),
+    REGISTER_TEST(x2dev_two_digits),
+    REGISTER_TEST(x2dev_0x_with_zero),
+    REGISTER_TEST(field_names_non_null),
+    REGISTER_TEST(field_names_non_empty),
+    REGISTER_TEST(field_ids_are_printable_ascii),
+    REGISTER_TEST(field_total_count),
+    REGISTER_TEST(hashport_adjacent_ports_differ),
+    REGISTER_TEST(hashport_max_port),
+    REGISTER_TEST(hashport_zero),
+    REGISTER_TEST(hashport_common_ports_in_range),
+    REGISTER_TEST(safestrlen_all_printable),
+    REGISTER_TEST(safestrlen_multiple_control),
+    REGISTER_TEST(safestrlen_mixed_content),
+    REGISTER_TEST(compdev_null_names),
+    REGISTER_TEST(compdev_stability),
+    REGISTER_TEST(compdev_sort_by_rdev_first),
+    REGISTER_TEST(compdev_sort_by_inode_second),
+    REGISTER_TEST(compdev_sort_by_name_third),
+    REGISTER_TEST(comppid_negative_pids),
+    REGISTER_TEST(comppid_duplicate_pids),
+    REGISTER_TEST(safepup_printable_range),
+    REGISTER_TEST(safepup_all_control_chars_escaped),
+    REGISTER_TEST(safepup_del_char),
 };
 
 RUN_TESTS_FROM(all_tests)

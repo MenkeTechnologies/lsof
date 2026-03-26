@@ -567,7 +567,22 @@ lkup_port(p, pr, src)
     pn = Fport ? lkup_svcnam(h, p, pr, 1) : (char *) NULL;
     if (!pn || !strlen(pn)) {
         if (p) {
-            (void) snpf(pb, sizeof(pb), "%d", p);
+        /*
+         * Fast integer-to-string for port numbers (avoids snpf overhead).
+         */
+            char *ep = &pb[sizeof(pb) - 1];
+            int v = p;
+            *ep = '\0';
+            do { *--ep = '0' + (v % 10); v /= 10; } while (v);
+            /* shift to start of pb for stable return pointer */
+            {
+                int dlen = (int)(&pb[sizeof(pb) - 1] - ep);
+                if (ep != pb) {
+                    int k;
+                    for (k = 0; k < dlen; k++) pb[k] = ep[k];
+                    pb[dlen] = '\0';
+                }
+            }
             return (pb);
         } else
             return ("*");
@@ -1166,8 +1181,8 @@ printinaddr() {
                                 "network addresses too long");
                     return (1);
                 }
-            (void) snpf(np, nl, "->");
-            np += 2;
+            *np++ = '-';
+            *np++ = '>';
             nl -= 2;
         }
         /*
