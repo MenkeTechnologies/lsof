@@ -464,7 +464,7 @@ process_proc_node(p, s, ss, l, ls)
         CurrentLocalFile->nlink = (long) s->st_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Format the type name.
@@ -506,14 +506,14 @@ process_proc_node(p, s, ss, l, ls)
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Test for specified file.
  */
     if (SearchFileChain
         && is_file_named((char *) NULL,
                          ((type == S_IFCHR) || (type == S_IFBLK)) ? 1 : 0))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * If no NAME information has been stored, store the path.
  *

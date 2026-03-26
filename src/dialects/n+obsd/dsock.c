@@ -132,9 +132,9 @@ process_socket(sa)
         CurrentLocalFile->off_def = 1;
 
 #if    defined(HASTCPTPIQ)
-    CurrentLocalFile->lts.rq = s.so_rcv.sb_cc;
-    CurrentLocalFile->lts.sq = s.so_snd.sb_cc;
-    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+    CurrentLocalFile->lts.recv_queue = s.so_rcv.sb_cc;
+    CurrentLocalFile->lts.send_queue = s.so_snd.sb_cc;
+    CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
@@ -150,7 +150,7 @@ process_socket(sa)
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-    CurrentLocalFile->lts.ss = (unsigned int)s.so_state;
+    CurrentLocalFile->lts.sock_state = (unsigned int)s.so_state;
 #endif    /* defined(HASSOSTATE) */
 
 /*
@@ -175,7 +175,7 @@ process_socket(sa)
 #endif    /* defined(HASIPv6) */
                         )
 
-                    CurrentLocalFile->sf |= SELNET;
+                    CurrentLocalFile->sel_flags |= SELNET;
             }
             printiproto(p.pr_protocol);
 
@@ -297,7 +297,7 @@ process_socket(sa)
              */
             if (ta && !kread(ta, (char *) &t, sizeof(t))) {
                 CurrentLocalFile->lts.type = 0;
-                CurrentLocalFile->lts.state.i = (int) t.t_state;
+                CurrentLocalFile->lts.state.val = (int) t.t_state;
 
 #if    defined(HASTCPOPT)
 # if	defined(OPENBSDV)
@@ -329,7 +329,7 @@ process_socket(sa)
  */
         case AF_UNIX:
             if (OptUnixSocket)
-                CurrentLocalFile->sf |= SELUNX;
+                CurrentLocalFile->sel_flags |= SELUNX;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
             /*
              * Read Unix protocol control block and the Unix address structure.
@@ -407,7 +407,7 @@ process_socket(sa)
 #endif    /* defined(UNPADDR_IN_MBUF) */
 
                 if (SearchFileChain && is_file_named(ua->sun_path, 0))
-                    CurrentLocalFile->sf |= SELNM;
+                    CurrentLocalFile->sel_flags |= SELNM;
                 if (!NameChars[0])
                     (void) snpf(NameChars, NameCharsLength, "%s", ua->sun_path);
             } else

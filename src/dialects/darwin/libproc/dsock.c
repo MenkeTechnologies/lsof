@@ -88,9 +88,9 @@ process_socket_common(si)
     /*
      * Enter send and receive queue sizes.
      */
-        CurrentLocalFile->lts.rq = si->psi.soi_rcv.sbi_cc;
-        CurrentLocalFile->lts.sq = si->psi.soi_snd.sbi_cc;
-        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = (unsigned char)1;
+        CurrentLocalFile->lts.recv_queue = si->psi.soi_rcv.sbi_cc;
+        CurrentLocalFile->lts.send_queue = si->psi.soi_snd.sbi_cc;
+        CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = (unsigned char)1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
@@ -112,7 +112,7 @@ process_socket_common(si)
     /*
      * Enter socket state.
      */
-        CurrentLocalFile->lts.ss = (unsigned int)si->psi.soi_state;
+        CurrentLocalFile->lts.sock_state = (unsigned int)si->psi.soi_state;
 #endif    /* defined(HASSOSTATE) */
 
 /*
@@ -141,7 +141,7 @@ process_socket_common(si)
                 if ((tsnx >= 0) && (tsnx < TcpNumStates)) {
                     if (TcpStateExcludeCount) {
                         if (TcpStateExclude[tsnx]) {
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
@@ -149,7 +149,7 @@ process_socket_common(si)
                         if (TcpStateInclude[tsnx])
                             TcpStateInclude[tsnx] = 2;
                         else {
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
@@ -163,7 +163,7 @@ process_socket_common(si)
                     || ((OptNetworkType == 4) && (fam == AF_INET))
                     || ((OptNetworkType == 6) && (fam == AF_INET6))
                         )
-                    CurrentLocalFile->sf |= SELNET;
+                    CurrentLocalFile->sel_flags |= SELNET;
             }
             printiproto(si->psi.soi_protocol);
             if ((si->psi.soi_kind == SOCKINFO_TCP)
@@ -257,7 +257,7 @@ process_socket_common(si)
                  * Enter a TCP socket definition and its state.
                  */
                 CurrentLocalFile->lts.type = 0;
-                CurrentLocalFile->lts.state.i = (int) si->psi.soi_proto.pri_tcp.tcpsi_state;
+                CurrentLocalFile->lts.state.val = (int) si->psi.soi_proto.pri_tcp.tcpsi_state;
                 /*
                  * Enter TCP options.
                  */
@@ -283,7 +283,7 @@ process_socket_common(si)
             if (si->psi.soi_kind != SOCKINFO_UN)
                 break;
             if (OptUnixSocket)
-                CurrentLocalFile->sf |= SELUNX;
+                CurrentLocalFile->sel_flags |= SELUNX;
             enter_dev_ch(print_kptr((KA_T) si->psi.soi_pcb, (char *) NULL, 0));
             /*
              * Enter information on a UNIX domain socket that has no address bound
@@ -312,7 +312,7 @@ process_socket_common(si)
                 if (si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path[0]
                     && SearchFileChain
                     && is_file_named(si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path, 0))
-                    CurrentLocalFile->sf |= SELNM;
+                    CurrentLocalFile->sel_flags |= SELNM;
                 if (si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path[0]
                     && !NameChars[0])
                     (void) snpf(NameChars, NameCharsLength, "%s", si->psi.soi_proto.pri_un.unsi_addr.ua_sun.sun_path);

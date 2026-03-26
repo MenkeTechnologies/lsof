@@ -60,7 +60,7 @@ print_tcptpi(nl)
     int s;
 
     if (OptTcpTpiInfo & TCPTPI_STATE) {
-        s = CurrentLocalFile->lts.state.i;
+        s = CurrentLocalFile->lts.state.val;
         switch (CurrentLocalFile->lts.type) {
             case 0:
                 if (s < 0 || s >= TCP_NSTATES) {
@@ -140,7 +140,7 @@ print_tcptpi(nl)
 
 # if    defined(HASTCPTPIQ)
     if (OptTcpTpiInfo & TCPTPI_QUEUES) {
-        if (CurrentLocalFile->lts.rqs) {
+        if (CurrentLocalFile->lts.recv_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -149,12 +149,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        (void) printf("QR=%lu", CurrentLocalFile->lts.recv_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.sqs) {
+        if (CurrentLocalFile->lts.send_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -163,7 +163,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        (void) printf("QS=%lu", CurrentLocalFile->lts.send_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -361,7 +361,7 @@ print_tcptpi(nl)
     if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int ss;
 
-        if ((ss = CurrentLocalFile->lts.ss)) {
+        if ((ss = CurrentLocalFile->lts.sock_state)) {
         char sep = ' ';
 
         if (OptFieldOutput)
@@ -714,7 +714,7 @@ print_tcptpi(nl)
 
 # if    defined(HASTCPTPIW)
     if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
-        if (CurrentLocalFile->lts.rws) {
+        if (CurrentLocalFile->lts.read_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -723,12 +723,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        (void) printf("WR=%lu", CurrentLocalFile->lts.read_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.wws) {
+        if (CurrentLocalFile->lts.write_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -737,7 +737,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        (void) printf("WW=%lu", CurrentLocalFile->lts.write_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -798,7 +798,7 @@ process_socket(pr, q)
 
     if (OptNetwork && (tcp || udp)) {
         if (!OptNetworkType || (OptNetworkType == ipv))
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
     }
 
 #if    defined(HASIPv6)
@@ -833,11 +833,11 @@ process_socket(pr, q)
                     && !kread((KA_T) inp.inp_ppcb, (char *) &t, sizeof(t))) {
                     ts = 1;
                     CurrentLocalFile->lts.type = 0;
-                    CurrentLocalFile->lts.state.i = (int) t.t_state;
+                    CurrentLocalFile->lts.state.val = (int) t.t_state;
                 }
             } else {
                 CurrentLocalFile->lts.type = 1;
-                CurrentLocalFile->lts.state.i = (int) inp.inp_tstate;
+                CurrentLocalFile->lts.state.val = (int) inp.inp_tstate;
             }
         } else
             enter_nm("no address for this protocol");
@@ -865,9 +865,9 @@ process_socket(pr, q)
             CurrentLocalFile->off_def = 1;
 
 #if    defined(HASTCPTPIQ)
-        CurrentLocalFile->lts.rq = (unsigned long)t.t_iqsize;
-        CurrentLocalFile->lts.sq = (unsigned long)t.t_outqsize;
-        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+        CurrentLocalFile->lts.recv_queue = (unsigned long)t.t_iqsize;
+        CurrentLocalFile->lts.send_queue = (unsigned long)t.t_outqsize;
+        CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
@@ -883,7 +883,7 @@ process_socket(pr, q)
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-        CurrentLocalFile->lts.ss = (unsigned int)inp.inp_state;
+        CurrentLocalFile->lts.sock_state = (unsigned int)inp.inp_state;
 #endif    /* defined(HASSOSTATE) */
 
 #if    defined(HASTCPOPT)
@@ -972,7 +972,7 @@ process_unix_sockstr(v, na)
         return(0);
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
     if (OptUnixSocket)
-        CurrentLocalFile->sf |= SELUNX;
+        CurrentLocalFile->sel_flags |= SELUNX;
     CurrentLocalFile->is_stream = 0;
     if (!OptSize)
         CurrentLocalFile->off_def = 1;
@@ -984,7 +984,7 @@ process_unix_sockstr(v, na)
 # if	UNIXWAREV<70103
     if ((la = find_unix_sockaddr_un((KA_T)sd.sd_socket))) {
         if (SearchFileChain && is_file_named(la->sun_path, 0))
-        CurrentLocalFile->sf = SELNM;
+        CurrentLocalFile->sel_flags = SELNM;
     }
 # else	/* UNIXWAREV>=70103 */
     if (((as = (KA_T)ss.local_addrsz) > 0) && (ka = (KA_T)ss.local_addr))
@@ -996,7 +996,7 @@ process_unix_sockstr(v, na)
         if (la.sun_path[0]) {
             las = 1;
             if (SearchFileChain && is_file_named(la.sun_path, 0))
-            CurrentLocalFile->sf = SELNM;
+            CurrentLocalFile->sel_flags = SELNM;
         }
         }
     }
@@ -1009,7 +1009,7 @@ process_unix_sockstr(v, na)
 # if	UNIXWAREV<70103
     if ((ra = find_unix_sockaddr_un((KA_T)ss.conn_ux))) {
         if (SearchFileChain && is_file_named(ra->sun_path, 0))
-        CurrentLocalFile->sf = SELNM;
+        CurrentLocalFile->sel_flags = SELNM;
     }
 # else	/* UNIXWAREV>=70103 */
     if (((as = (KA_T)ss.remote_addrsz) > 0) && (ka = (KA_T)ss.remote_addr))
@@ -1021,7 +1021,7 @@ process_unix_sockstr(v, na)
         if (ra.sun_path[0]) {
             ras = 1;
             if (SearchFileChain && is_file_named(ra.sun_path, 0))
-            CurrentLocalFile->sf = SELNM;
+            CurrentLocalFile->sel_flags = SELNM;
         }
         }
     }

@@ -1503,7 +1503,7 @@ process_node(va)
     }
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = va;
+    CurrentLocalFile->node_addr = va;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
@@ -1625,7 +1625,7 @@ process_node(va)
             }
 
 #if    defined(HASNCACHE)
-            CurrentLocalFile->na = (KA_T)nn.nm_filevp;
+            CurrentLocalFile->node_addr = (KA_T)nn.nm_filevp;
 #endif    /* defined(HASNCACHE) */
 
             if (is_socket(&rv))
@@ -1790,7 +1790,7 @@ process_node(va)
                 realvp = (KA_T) nn.nm_filevp;
 
 #if    defined(HASNCACHE)
-            CurrentLocalFile->na = (KA_T)nn.nm_filevp;
+            CurrentLocalFile->node_addr = (KA_T)nn.nm_filevp;
 #endif    /* defined(HASNCACHE) */
 
             break;
@@ -1998,7 +1998,7 @@ process_node(va)
             else {
 
 #if    defined(HASNCACHE)
-                CurrentLocalFile->na = (KA_T)realvp;
+                CurrentLocalFile->node_addr = (KA_T)realvp;
 #endif    /* defined(HASNCACHE) */
 
                 if ((ka = (KA_T) v->v_vfsp)
@@ -2531,7 +2531,7 @@ process_node(va)
 		) {
 		    if (SearchFileChain
 		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
-			CurrentLocalFile->sf |= SELNM;
+			CurrentLocalFile->sel_flags |= SELNM;
 		    if (len > nmrl)
 			len = nmrl;
 		    if (len > 0) {
@@ -2548,7 +2548,7 @@ process_node(va)
 		) {
 		    if (SearchFileChain
 		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
-			CurrentLocalFile->sf |= SELNM;
+			CurrentLocalFile->sel_flags |= SELNM;
 		    if (len > nmrl)
 			len = nmrl;
 		    if (len > 0) {
@@ -2620,7 +2620,7 @@ process_node(va)
 		{
 		    if (SearchFileChain
 		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
-			CurrentLocalFile->sf |= SELNM;
+			CurrentLocalFile->sel_flags |= SELNM;
 		    sepl = NameChars[0] ? 2 : 0;
 		    if (len > (NameCharsLength - nl - sepl - 1))
 			len = NameCharsLength - nl - sepl - 1;
@@ -2635,7 +2635,7 @@ process_node(va)
 		{
 		    if (SearchFileChain
 		    &&  is_file_named(ua.sun_path, NodeType, VSOCK, 0))
-			CurrentLocalFile->sf |= SELNM;
+			CurrentLocalFile->sel_flags |= SELNM;
 		    sepl = NameChars[0] ? 2 : 0;
 		    if (len > (NameCharsLength - nl - sepl - 1))
 			len = NameCharsLength - nl - sepl - 1;
@@ -2731,7 +2731,7 @@ process_node(va)
 #if    solaris < 100000
             if (((NodeType = vty) == N_STREAM) && so_st) {
                 if (OptUnixSocket)
-                    CurrentLocalFile->sf |= SELUNX;
+                    CurrentLocalFile->sel_flags |= SELUNX;
                 unix_sock = 1;
                 if (so_ad[0]) {
                     if (sdp) {
@@ -2754,9 +2754,9 @@ process_node(va)
                             (void) snpf(ubuf, sizeof(ubuf), "(->%s)",
                                         print_kptr(so_ad[1], (char *) NULL, 0));
                     }
-                    if (!CurrentLocalFile->nma && (CurrentLocalFile->nma = (char *)
+                    if (!CurrentLocalFile->name_append && (CurrentLocalFile->name_append = (char *)
                             malloc((int) strlen(ubuf) + 1))) {
-                        (void) snpf(CurrentLocalFile->nma, (int) strlen(ubuf) + 1, "%s", ubuf);
+                        (void) snpf(CurrentLocalFile->name_append, (int) strlen(ubuf) + 1, "%s", ubuf);
                     }
                 } else if (soso.lux_dev.addr.tu_addr.ino) {
                     if (vfs) {
@@ -2787,7 +2787,7 @@ process_node(va)
                         if (ua.sun_path[0]) {
                             if (SearchFileChain
                                 && is_file_named(ua.sun_path, NodeType, type, 0))
-                                CurrentLocalFile->sf |= SELNM;
+                                CurrentLocalFile->sel_flags |= SELNM;
                             len = (int) strlen(ua.sun_path);
                             nl = (int) strlen(NameChars);
                             sepl = NameChars[0] ? 2 : 0;
@@ -3067,17 +3067,17 @@ process_node(va)
 #if    solaris < 100000
             if (so_st && soso.lux_dev.addr.tu_addr.ino) {
                 if (CurrentLocalFile->inp_ty) {
-                    nl = CurrentLocalFile->nma ? (int) strlen(CurrentLocalFile->nma) : 0;
+                    nl = CurrentLocalFile->name_append ? (int) strlen(CurrentLocalFile->name_append) : 0;
                     (void) snpf(ubuf, sizeof(ubuf),
                                 "%s(Inode=%lu)", nl ? " " : "",
                                 (unsigned long) soso.lux_dev.addr.tu_addr.ino);
                     len = nl + (int) strlen(ubuf) + 1;
-                    if (CurrentLocalFile->nma)
-                        CurrentLocalFile->nma = (char *) realloc(CurrentLocalFile->nma, len);
+                    if (CurrentLocalFile->name_append)
+                        CurrentLocalFile->name_append = (char *) realloc(CurrentLocalFile->name_append, len);
                     else
-                        CurrentLocalFile->nma = (char *) malloc(len);
-                    if (CurrentLocalFile->nma)
-                        (void) snpf(&CurrentLocalFile->nma[nl], len - nl, "%s", ubuf);
+                        CurrentLocalFile->name_append = (char *) malloc(len);
+                    if (CurrentLocalFile->name_append)
+                        (void) snpf(&CurrentLocalFile->name_append[nl], len - nl, "%s", ubuf);
                 } else {
                     CurrentLocalFile->inode = (INODETYPE) soso.lux_dev.addr.tu_addr.ino;
                     CurrentLocalFile->inp_ty = 1;
@@ -3466,7 +3466,7 @@ process_node(va)
 
         }
         if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 
 #if    defined(HASVXFS)
@@ -3484,7 +3484,7 @@ process_node(va)
  */
     if (OptNfs) {
         if ((NodeType == N_NFS) || (NodeType == N_NFS4))
-            CurrentLocalFile->sf |= SELNFS;
+            CurrentLocalFile->sel_flags |= SELNFS;
     }
 
 #if    solaris >= 20500
@@ -3547,7 +3547,7 @@ process_node(va)
  */
 	if (nns && devs && (dev == nn.nm_vattr.va_fsid) && (CurrentLocalFile->inp_ty == 1)
 	&&  (CurrentLocalFile->inode == (INODETYPE)nn.nm_vattr.va_nodeid))
-	    CurrentLocalFile->na = (KA_T)nn.nm_mountpt;
+	    CurrentLocalFile->node_addr = (KA_T)nn.nm_mountpt;
 # endif	/* defined(HASNCACHE) */
 #endif    /* solaris>=20500 */
 
@@ -3676,7 +3676,7 @@ process_node(va)
 	    if (so.so_family == AF_UNIX) {
 		ty = "unix";
 		if (OptUnixSocket)
-		    CurrentLocalFile->sf |= SELUNX;
+		    CurrentLocalFile->sel_flags |= SELUNX;
 	    } else {
 		if (so.so_family == AF_INET) {
 
@@ -3689,9 +3689,9 @@ process_node(va)
 		    (void) snpf(NameChars, NameCharsLength - 1, printsockty(so.so_type));
 		    NameChars[NameCharsLength - 1] = '\0';
 		    if (TcpStateIncludeCount || UdpStateIncludeCount || TcpStateExcludeCount || UdpStateExcludeCount)
-			CurrentLocalFile->sf |= SELEXCLF;
+			CurrentLocalFile->sel_flags |= SELEXCLF;
 		    else if (OptNetwork && (OptNetworkType != 6))
-			CurrentLocalFile->sf |= SELNET;
+			CurrentLocalFile->sel_flags |= SELNET;
 		}
 
 #  if	defined(HASIPv6)
@@ -3700,9 +3700,9 @@ process_node(va)
 		    (void) snpf(NameChars, NameCharsLength - 1, printsockty(so.so_type));
 		    NameChars[NameCharsLength - 1] = '\0';
 		    if (TcpStateIncludeCount || UdpStateIncludeCount || TcpStateExcludeCount || UdpStateExcludeCount)
-			CurrentLocalFile->sf |= SELEXCLF;
+			CurrentLocalFile->sel_flags |= SELEXCLF;
 		    else if (OptNetwork && (OptNetworkType != 4))
-			CurrentLocalFile->sf |= SELNET;
+			CurrentLocalFile->sel_flags |= SELNET;
 		}
 #  endif	/* defined(HASIPv6) */
 
@@ -3838,15 +3838,15 @@ process_node(va)
                     (void) snpf(NameChars, NameCharsLength - 1, "%s", sdp->name);
                     NameChars[NameCharsLength - 1] = '\0';
                 }
-                if (CurrentLocalFile->is_com && !CurrentLocalFile->nma) {
+                if (CurrentLocalFile->is_com && !CurrentLocalFile->name_append) {
                     len = (int) strlen("(COMMON)") + 1;
-                    if (!(CurrentLocalFile->nma = (char *) malloc(len))) {
+                    if (!(CurrentLocalFile->name_append = (char *) malloc(len))) {
                         (void) fprintf(stderr,
                                        "%s: no space for (COMMON): PID %d; FD %s\n",
                                        ProgramName, CurrentLocalProc->pid, CurrentLocalFile->fd);
                         Exit(1);
                     }
-                    (void) snpf(CurrentLocalFile->nma, len, "(COMMON)");
+                    (void) snpf(CurrentLocalFile->name_append, len, "(COMMON)");
                 }
             }
         }
@@ -3864,7 +3864,7 @@ process_node(va)
                                                                                                                             if (NodeType == N_PROC) {
 	    if (ProcFsSearching) {
 		ProcFsFound = 1;
-		CurrentLocalFile->sf |= SELNM;
+		CurrentLocalFile->sel_flags |= SELNM;
 	    } else {
 		for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
 		    if ((pfi->pid && pfi->pid == pids.pid_id)
@@ -3879,7 +3879,7 @@ process_node(va)
 			    (void) snpf(NameChars, NameCharsLength - 1, "%s", pfi->nm);
 			    NameChars[NameCharsLength - 1] = '\0';
 			}
-			CurrentLocalFile->sf |= SELNM;
+			CurrentLocalFile->sel_flags |= SELNM;
 			break;
 		    }
 		}
@@ -3896,7 +3896,7 @@ process_node(va)
                 CurrentLocalFile->rdev_def = 1;
             }
             if (is_file_named(NULL, NodeType, type, 1))
-                CurrentLocalFile->sf |= SELNM;
+                CurrentLocalFile->sel_flags |= SELNM;
             if (trdevs) {
                 CurrentLocalFile->rdev = rdev;
                 CurrentLocalFile->rdev_def = tdef;

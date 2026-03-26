@@ -671,7 +671,7 @@ gather_proc_info() {
         if (!ckscko && cdir) {
             alloc_lfile(CWD, -1);
             process_node(cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -680,7 +680,7 @@ gather_proc_info() {
         if (!ckscko && rdir) {
             alloc_lfile(RTD, -1);
             process_node(rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
 
@@ -691,7 +691,7 @@ gather_proc_info() {
         if (!ckscko && pdir) {
             alloc_lfile("  pd", -1);
             process_node(pdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
 #endif    /* AIXV<4100 */
@@ -748,7 +748,7 @@ gather_proc_info() {
             if (fp) {
                 alloc_lfile((char *) NULL, i);
                 process_file(fp);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS)
@@ -1247,10 +1247,10 @@ process_text(sid)
         if ((le = getle(ll, sid, &err))) {
             if ((xf = le->fp)) {
                 process_file((KA_T) xf);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    AIXV >= 4110 && AIXV < 4300
-                    if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
+                    if (!CurrentLocalFile->name || !CurrentLocalFile->name[0])
                         getlenm(le, sid);
 #endif    /* AIXV>=4110 && AIXV<4300 */
 
@@ -1261,7 +1261,7 @@ process_text(sid)
             (void) snpf(NameChars, NameCharsLength, "text entry at %s: %s",
                         print_kptr((KA_T) ll, (char *) NULL, 0), err);
             enter_nm(NameChars);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
     }
@@ -1284,7 +1284,7 @@ process_text(sid)
             (void) snpf(NameChars, NameCharsLength, "loader entry at %s: %s",
                         print_kptr((KA_T) ll, (char *) NULL, 0), err);
             enter_nm(NameChars);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
             return;
         }
@@ -1322,10 +1322,10 @@ process_text(sid)
          * Save the loader entry.
          */
         process_file((KA_T) le->fp);
-        if (CurrentLocalFile->sf) {
+        if (CurrentLocalFile->sel_flags) {
 
 #if    AIXV >= 4110
-            if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
+            if (!CurrentLocalFile->name || !CurrentLocalFile->name[0])
                 getlenm(le, sid);
 #endif    /* AIXV>=4110 */
 
@@ -1369,8 +1369,8 @@ process_text(pid)
         xnode = CurrentLocalFile->inode;
         xs = 1;
         }
-        if (CurrentLocalFile->sf) {
-        if (!CurrentLocalFile->nm || !CurrentLocalFile->nm[0])
+        if (CurrentLocalFile->sel_flags) {
+        if (!CurrentLocalFile->name || !CurrentLocalFile->name[0])
             getlenm(&le, (KA_T)0);
         link_lfile();
         }
@@ -1461,14 +1461,14 @@ process_text(pid)
 
 # if	defined(HAS_NFS)
         if (OptNfs && (GET_MIN_DEV(CurrentLocalFile->dev_def) & SDEV_REMOTE))
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 # endif	/* defined(HAS_NFS) */
 
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-        CurrentLocalFile->sf |= SELNLINK;
+        CurrentLocalFile->sel_flags |= SELNLINK;
         if (SearchFileChain && is_file_named(NULL, VREG, 0, 0))
-        CurrentLocalFile->sf |= SELNM;
-        if (CurrentLocalFile->sf) {
+        CurrentLocalFile->sel_flags |= SELNM;
+        if (CurrentLocalFile->sel_flags) {
 
         /*
          * If the file was selected, enter its name and link it to the

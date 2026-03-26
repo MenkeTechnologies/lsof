@@ -153,7 +153,7 @@ enter_vnode_info(vip)
         CurrentLocalFile->nlink = vip->vip_vi.vi_stat.vst_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * If a device number is defined, locate file system and save its identity.
@@ -164,7 +164,7 @@ enter_vnode_info(vip)
                 CurrentLocalFile->fsdir = mp->dir;
                 CurrentLocalFile->fsdev = mp->fsname;
                 if (mp->is_nfs && OptNfs)
-                    CurrentLocalFile->sf |= SELNFS;
+                    CurrentLocalFile->sel_flags |= SELNFS;
                 break;
             }
         }
@@ -187,12 +187,12 @@ enter_vnode_info(vip)
     if (SearchFileChain && is_file_named(NULL,
                                ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1
                                                                      : 0))) {
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
     }
 /*
  * Enter name characters.
  */
-    if (!CurrentLocalFile->nm && NameChars[0])
+    if (!CurrentLocalFile->name && NameChars[0])
         enter_nm(NameChars);
 }
 

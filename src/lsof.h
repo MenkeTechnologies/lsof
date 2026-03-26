@@ -712,8 +712,8 @@ struct lfile {
     char fd[FDLEN];
     char iproto[IPROTOL];
     char type[TYPEL];
-    short sf;            /* select flags -- SEL* symbols */
-    int ch;                /* VMPC channel: -1 = none */
+    short sel_flags;        /* select flags -- SEL* symbols */
+    int channel;            /* VMPC channel: -1 = none */
     int ntype;            /* node type -- N_* value */
     SZOFFTYPE off;
     SZOFFTYPE sz;
@@ -730,9 +730,9 @@ struct lfile {
 # endif    /* defined HASFSINO) */
 
     struct linaddr {        /* local Internet address information */
-        int af;            /* address family: 0 for none; AF_INET;
+        int addr_family;        /* address family: 0 for none; AF_INET;
 					 * or AF_INET6 */
-        int p;            /* port */
+        int port;            /* port */
         union {
             struct in_addr a4;    /* AF_INET Internet address */
 
@@ -749,8 +749,8 @@ struct lfile {
 					 *    0 == TCP
 					 *    1 == TPI or socket (SS_*) */
         union {
-            int i;            /* integer state */
-            unsigned int ui;    /* unsigned integer state */
+            int val;            /* integer state */
+            unsigned int uval;    /* unsigned integer state */
         } state;
 
 # if    defined(HASSOOPT)
@@ -770,7 +770,7 @@ struct lfile {
 # endif    /* defined(HASSOOPT) */
 
 # if    defined(HASSOSTATE)
-        unsigned int ss;		/* socket state */
+        unsigned int sock_state;	/* socket state */
 #  if	defined(HASSBSTATE)
         unsigned int sbs_rcv;	/* receive socket buffer state */
         unsigned int sbs_snd;	/* send socket buffer state */
@@ -784,29 +784,29 @@ struct lfile {
 # endif    /* defined(HASTCPOPT) */
 
 # if    defined(HASTCPTPIQ)
-        unsigned long rq;		/* receive queue length */
-        unsigned long sq;		/* send queue length */
-        unsigned char rqs;		/* rq status: 0 = none */
-        unsigned char sqs;		/* sq status: 0 = none */
+        unsigned long recv_queue;	/* receive queue length */
+        unsigned long send_queue;	/* send queue length */
+        unsigned char recv_queue_st;	/* recv_queue status: 0 = none */
+        unsigned char send_queue_st;	/* send_queue status: 0 = none */
 # endif    /* defined(HASTCPTPIQ) */
 
 # if    defined(HASTCPTPIW)
-        unsigned char rws;		/* rw status: 0 = none */
-        unsigned char wws;		/* ww status: 0 = none */
-        unsigned long rw;		/* read window size */
-        unsigned long ww;		/* write window size */
+        unsigned char read_win_st;	/* read_win status: 0 = none */
+        unsigned char write_win_st;	/* write_win status: 0 = none */
+        unsigned long read_win;		/* read window size */
+        unsigned long write_win;	/* write window size */
 # endif    /* defined(HASTCPTPIW) */
 
     } lts;
-    char *nm;
-    char *nma;            /* NAME column addition */
+    char *name;
+    char *name_append;        /* NAME column addition */
 
 # if    defined(HASNCACHE) && HASNCACHE < 2
-    KA_T na;			/* file structure's node address */
+    KA_T node_addr;		/* file structure's node address */
 # endif    /* defined(HASNCACHE) && HASNCACHE<2 */
 
 # if    defined(HASNCACHE) && defined(HASNCVPID)
-    unsigned long id;		/* capability ID */
+    unsigned long cap_id;	/* capability ID */
 # endif    /* defined(HASNCACHE) && defined(HASNCVPID) */
 
 # if    defined(HASLFILEADD)
@@ -833,8 +833,8 @@ struct lproc {
     char *cntx;			/* security context */
 # endif    /* defined(HASSELINUX) */
 
-    short sf;            /* select flags -- SEL* symbols */
-    short pss;            /* state: 0 = not selected
+    short sel_flags;        /* select flags -- SEL* symbols */
+    short sel_state;        /* state: 0 = not selected
 				 	 *	  1 = wholly selected
 				 	 *	  2 = partially selected */
     int pid;            /* process ID */
@@ -898,12 +898,12 @@ extern int NumUidInclusions;
 struct nwad {
     char *arg;            /* argument */
     char *proto;            /* protocol */
-    int af;                /* address family -- e.g.,
+    int addr_family;        /* address family -- e.g.,
 					 * AF_INET, AF_INET6 */
-    unsigned char a[MAX_AF_ADDR];    /* address */
+    unsigned char addr[MAX_AF_ADDR];    /* address */
     int sport;            /* starting port */
     int eport;            /* ending port */
-    int f;                /* find state */
+    int found;            /* find state */
     struct nwad *next;        /* forward link */
 };
 extern struct nwad *NetworkAddrList;

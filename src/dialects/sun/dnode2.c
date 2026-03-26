@@ -414,7 +414,7 @@ read_vxnode(va, v, vfs, fx, li, vnops)
         }
 
 # if	defined(HASNCACHE)
-        CurrentLocalFile->na = (KA_T)v->v_data;
+        CurrentLocalFile->node_addr = (KA_T)v->v_data;
 # endif	/* defined(HASNCACHE) */
 
         *v = cv;

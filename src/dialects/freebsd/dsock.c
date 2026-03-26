@@ -103,23 +103,23 @@ ckstate(ta, t, fam)
         tsnx = (int) t->t_state + TcpStateOffset;
         if (TcpStateExcludeCount) {
             if (TcpStateExclude[tsnx]) {
-                CurrentLocalFile->sf &= ~SELNET;
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags &= ~SELNET;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return (1);
             }
         }
         if (TcpStateIncludeCount) {
             if (TcpStateInclude[tsnx]) {
                 TcpStateInclude[tsnx] = 2;
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
             } else {
-                CurrentLocalFile->sf &= ~SELNET;
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags &= ~SELNET;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return (1);
             }
         }
     }
-    if (!(CurrentLocalFile->sf & SELNET) && !TcpStateIncludeCount) {
+    if (!(CurrentLocalFile->sel_flags & SELNET) && !TcpStateIncludeCount) {
 
         /*
          * See if this TCP file should be selected.
@@ -133,7 +133,7 @@ ckstate(ta, t, fam)
 #endif    /* defined(HASIPv6) */
 
                     ) {
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
             }
         }
     }
@@ -221,9 +221,9 @@ process_socket(sa)
         CurrentLocalFile->off_def = 1;
 
 #if    defined(HASTCPTPIQ)
-    CurrentLocalFile->lts.rq = s.so_rcv.sb_cc;
-    CurrentLocalFile->lts.sq = s.so_snd.sb_cc;
-    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+    CurrentLocalFile->lts.recv_queue = s.so_rcv.sb_cc;
+    CurrentLocalFile->lts.send_queue = s.so_snd.sb_cc;
+    CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASSOOPT)
@@ -239,7 +239,7 @@ process_socket(sa)
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-    CurrentLocalFile->lts.ss = (unsigned int)s.so_state;
+    CurrentLocalFile->lts.sock_state = (unsigned int)s.so_state;
 # if	defined(HASSBSTATE)
     CurrentLocalFile->lts.sbs_rcv = s.so_rcv.sb_state;
     CurrentLocalFile->lts.sbs_snd = s.so_snd.sb_state;
@@ -269,7 +269,7 @@ process_socket(sa)
 
                         ) {
                     if (!TcpStateIncludeCount && !UdpStateIncludeCount)
-                        CurrentLocalFile->sf |= SELNET;
+                        CurrentLocalFile->sel_flags |= SELNET;
                 }
             }
             printiproto(p.pr_protocol);
@@ -408,7 +408,7 @@ process_socket(sa)
                 (void) ent_inaddr(la, lp, fa, fp, fam);
             if (ts == 0) {
                 CurrentLocalFile->lts.type = 0;
-                CurrentLocalFile->lts.state.i = (int) t.t_state;
+                CurrentLocalFile->lts.state.val = (int) t.t_state;
 
 #if    defined(HASTCPOPT)
                 CurrentLocalFile->lts.mss = (unsigned long)t.t_maxseg;
@@ -435,7 +435,7 @@ process_socket(sa)
  */
         case AF_UNIX:
             if (OptUnixSocket)
-                CurrentLocalFile->sf |= SELUNX;
+                CurrentLocalFile->sel_flags |= SELUNX;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
             /*
              * Read Unix protocol control block and the Unix address structure.
@@ -520,7 +520,7 @@ process_socket(sa)
 #endif    /* FREEBSDV<4050 */
 
                 if (ua->sun_path[0] && SearchFileChain && is_file_named(ua->sun_path, 0))
-                    CurrentLocalFile->sf |= SELNM;
+                    CurrentLocalFile->sel_flags |= SELNM;
                 if (ua->sun_path[0] && !NameChars[0])
                     (void) snpf(NameChars, NameCharsLength, "%s", ua->sun_path);
             } else

@@ -152,7 +152,7 @@ gather_proc_info() {
         if (p->p_cdir) {
             alloc_lfile(CWD, -1);
             process_node((KA_T) p->p_cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -161,7 +161,7 @@ gather_proc_info() {
         if (p->p_rdir) {
             alloc_lfile(RTD, -1);
             process_node((KA_T) p->p_rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -203,7 +203,7 @@ gather_proc_info() {
 
                 alloc_lfile(NULL, i);
                 process_file(fa);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS)
@@ -478,7 +478,7 @@ process_text(pa)
             if (l >= k) {
                 alloc_lfile(fd, -1);
                 process_node(vp);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
                     link_lfile();
                     i++;
                 }

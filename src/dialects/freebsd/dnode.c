@@ -435,9 +435,9 @@ get_lock_state(f)
                 }
 
 #if    defined(HASNCACHE)
-                CurrentLocalFile->na = va;
+                CurrentLocalFile->node_addr = va;
 # if	defined(HASNCVPID)
-                CurrentLocalFile->id = v->v_id;
+                CurrentLocalFile->cap_id = v->v_id;
 # endif	/* defined(HASNCVPID) */
 #endif    /* defined(HASNCACHE) */
 
@@ -1206,13 +1206,13 @@ get_lock_state(f)
 
                     }
                     if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-                        CurrentLocalFile->sf |= SELNLINK;
+                        CurrentLocalFile->sel_flags |= SELNLINK;
                 }
 /*
  * Record an NFS file selection.
  */
                 if (NodeType == N_NFS && OptNfs)
-                    CurrentLocalFile->sf |= SELNFS;
+                    CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Save the file system names.
  */
@@ -1398,7 +1398,7 @@ get_lock_state(f)
                 if (NodeType == N_PROC) {
                     if (ProcFsSearching) {
                     ProcFsFound = 1;
-                    CurrentLocalFile->sf |= SELNM;
+                    CurrentLocalFile->sel_flags |= SELNM;
                     } else {
                     for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
                         if ((pfi->pid && pfi->pid == p->pfs_pid)
@@ -1413,7 +1413,7 @@ get_lock_state(f)
                         pfi->f = 1;
                         if (!NameChars[0])
                             (void) snpf(NameChars, NameCharsLength, "%s", pfi->nm);
-                        CurrentLocalFile->sf |= SELNM;
+                        CurrentLocalFile->sel_flags |= SELNM;
                         break;
                         }
                     }
@@ -1425,7 +1425,7 @@ get_lock_state(f)
                     if (SearchFileChain && is_file_named((char *) NULL,
                                                ((type == VCHR) || (type == VBLK)) ? 1
                                                                                   : 0))
-                        CurrentLocalFile->sf |= SELNM;
+                        CurrentLocalFile->sel_flags |= SELNM;
                 }
 /*
  * Enter name characters.

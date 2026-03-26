@@ -380,7 +380,7 @@ gather_proc_info() {
             if (CURDIR) {
                 alloc_lfile(CWD, -1);
                 process_node((KA_T) CURDIR);
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
             /*
@@ -389,7 +389,7 @@ gather_proc_info() {
             if (ROOTDIR) {
                 alloc_lfile(RTD, -1);
                 process_node((KA_T) ROOTDIR);
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
 
@@ -471,7 +471,7 @@ gather_proc_info() {
                 {
                     alloc_lfile(NULL, i);
                     process_file(fp);
-                    if (CurrentLocalFile->sf) {
+                    if (CurrentLocalFile->sel_flags) {
 
 #if    defined(USESPOFILE)
                         if (OptFileStructValues & FSV_FILE_FLAGS)
@@ -826,7 +826,7 @@ gather_proc_info() {
          * Save vnode information.
          */
             process_node(va);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
             link_lfile();
         }
     }

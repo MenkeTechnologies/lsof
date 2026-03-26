@@ -135,7 +135,7 @@ ent_fa(a1, a2, d)
     char buf[64], *cp, tbuf[32];
     MALLOC_S len;
 
-    if (CurrentLocalFile->nma)
+    if (CurrentLocalFile->name_append)
         return;
     if (!a1)
         (void) snpf(buf, sizeof(buf), "(FA:%s%s)", d,
@@ -152,7 +152,7 @@ ent_fa(a1, a2, d)
         Exit(1);
     }
     (void) snpf(cp, len, "%s", buf);
-    CurrentLocalFile->nma = cp;
+    CurrentLocalFile->name_append = cp;
 }
 
 
@@ -694,7 +694,7 @@ process_node(na)
     }
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = na;
+    CurrentLocalFile->node_addr = na;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
@@ -707,7 +707,7 @@ process_node(na)
  */
     if ((NodeType = get_vty(&v, na, &kv, &fx)) < 0) {
         if (NodeType == -1)
-            CurrentLocalFile->sf = 0;
+            CurrentLocalFile->sel_flags = 0;
         return;
     }
 /*
@@ -741,7 +741,7 @@ process_node(na)
                 }
 
 #if    defined(HASNCACHE)
-                CurrentLocalFile->na = (KA_T)f.fn_realvp;
+                CurrentLocalFile->node_addr = (KA_T)f.fn_realvp;
 #endif    /* defined(HASNCACHE) */
 
                 if (!rv.v_data || (is = readlino(fx, &rv, &i))) {
@@ -791,7 +791,7 @@ process_node(na)
             }
             if ((NodeType = get_vty(&rv, (KA_T) nn.nm_mountpt, &rkv, &rfx)) < 0) {
                 if (NodeType == -1)
-                    CurrentLocalFile->sf = 0;
+                    CurrentLocalFile->sel_flags = 0;
                 return;
             }
             /*
@@ -1279,13 +1279,13 @@ process_node(na)
                 break;
         }
         if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Defer file system info lookup until printname().
  */
@@ -1371,7 +1371,7 @@ process_node(na)
  */
     if (NodeType == N_STREAM && sqp) {
         if (OptUnixSocket)
-            CurrentLocalFile->sf |= SELUNX;
+            CurrentLocalFile->sel_flags |= SELUNX;
         (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
         if (!NameChars[0]
             && so.laddr.buf && so.laddr.len == sizeof(ua)
@@ -1379,7 +1379,7 @@ process_node(na)
             ua.sun_path[sizeof(ua.sun_path) - 1] = '\0';
             (void) snpf(NameChars, NameCharsLength, "%s", ua.sun_path);
             if (SearchFileChain && is_file_named(NameChars, 0))
-                CurrentLocalFile->sf = SELNM;
+                CurrentLocalFile->sel_flags = SELNM;
             if (so.lux_dev.size >= 8) {
                 CurrentLocalFile->inode = (INODETYPE) so.lux_dev.addr.tu_addr.ino;
                 CurrentLocalFile->inp_ty = 1;
@@ -1400,7 +1400,7 @@ process_node(na)
     if (NodeType == N_PROC) {
         if (ProcFsSearching) {
         ProcFsFound = 1;
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
         } else {
         for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
 
@@ -1412,7 +1412,7 @@ process_node(na)
 
             ) {
             pfi->f = 1;
-            CurrentLocalFile->sf |= SELNM;
+            CurrentLocalFile->sel_flags |= SELNM;
             if (!NameChars[0] && pfi->nm) {
                 (void) strncpy(NameChars, pfi->nm, NameCharsLength - 1);
                 NameChars[NameCharsLength-1] = '\0';
@@ -1428,14 +1428,14 @@ process_node(na)
         if (SearchFileChain && is_file_named((char *) NULL,
                                    ((type == VCHR) || (type == VBLK)) ? 1
                                                                       : 0))
-            CurrentLocalFile->sf |= SELNM;
+            CurrentLocalFile->sel_flags |= SELNM;
     }
 /*
  * Enter name characters.  If there's an l_ino structure with a file name
  * pointer, and no name column addition exists, make what the l_ino file
  * name pointer addresses a name column addition.
  */
-    if (!CurrentLocalFile->nma && !is && i.nm) {
+    if (!CurrentLocalFile->name_append && !is && i.nm) {
         if ((msz = (MALLOC_S) strlen(i.nm))) {
             if (!(cp = (char *) malloc(msz + 1))) {
                 (void) fprintf(stderr,
@@ -1444,7 +1444,7 @@ process_node(na)
                 Exit(1);
             }
             (void) snpf(cp, msz + 1, "%s", i.nm);
-            CurrentLocalFile->nma = cp;
+            CurrentLocalFile->name_append = cp;
         }
     }
     if (NameChars[0])

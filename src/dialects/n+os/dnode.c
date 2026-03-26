@@ -339,7 +339,7 @@ process_node(va)
     }
 
 # if    defined(HASNCACHE)
-    CurrentLocalFile->na = va;
+    CurrentLocalFile->node_addr = va;
 # endif    /* defined(HASNCACHE) */
 
 # if    defined(HASFSTRUCT)
@@ -621,13 +621,13 @@ process_node(va)
                 break;
         }
         if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Defer file system info lookup until printname().
  */
@@ -697,7 +697,7 @@ process_node(va)
  */
     if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == VCHR) || (type == VBLK)) ? 1 : 0))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter name characters.
  */

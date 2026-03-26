@@ -141,7 +141,7 @@ process_node(na)
     }
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = na;
+    CurrentLocalFile->node_addr = na;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
@@ -192,7 +192,7 @@ process_node(na)
            NodeType = N_NFS;
            CurrentLocalFile->is_nfs = 1;
            if (OptNfs)
-               CurrentLocalFile->sf |= SELNFS;
+               CurrentLocalFile->sel_flags |= SELNFS;
            if (!i.i_fsptr || readrnode((KA_T)i.i_fsptr, &r)) {
            (void) snpf(NameChars, NameCharsLength, "can't read rnode (%s)",
                print_kptr((KA_T)i.i_fsptr, (char *)NULL, 0));
@@ -201,7 +201,7 @@ process_node(na)
            }
 
 # if    defined(HASNCACHE)
-           CurrentLocalFile->na = (KA_T)i.i_fsptr;
+           CurrentLocalFile->node_addr = (KA_T)i.i_fsptr;
 # endif /* defined(HASNCACHE) */
 
        }
@@ -399,7 +399,7 @@ process_node(na)
                     if (kread(p, (char *) &pcb, sizeof(pcb)))
                         break;
                     if (OptNetwork)
-                        CurrentLocalFile->sf |= SELNET;
+                        CurrentLocalFile->sel_flags |= SELNET;
                     if ((k + 1) > (NameCharsLength - 1))
                         break;
                     if (pt == 1 && pcb.inp_ppcb) {
@@ -459,7 +459,7 @@ process_node(na)
                     }
                     if (fa || la) {
                         (void) ent_inaddr(la, lp, fa, fp, AF_INET);
-                        if (udptm && !CurrentLocalFile->nma)
+                        if (udptm && !CurrentLocalFile->name_append)
                             (void) udp_tm(udp.ud_ftime);
                     }
                     if (!i.i_number)
@@ -616,7 +616,7 @@ process_node(na)
         CurrentLocalFile->nlink = (long) i.i_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Format the type name.
@@ -715,7 +715,7 @@ process_node(na)
     if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == IFCHR) || (type == IFBLK) || (type == IFNAM)) ? 1
                                                                                        : 0))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 
 #if    OSRV >= 500
     /*

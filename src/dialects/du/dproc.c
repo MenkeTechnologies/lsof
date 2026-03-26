@@ -119,7 +119,7 @@ enter_vn_text(va, n)
     alloc_lfile(" txt", -1);
     FILEPTR = (struct file *) NULL;
     process_node(va);
-    if (CurrentLocalFile->sf)
+    if (CurrentLocalFile->sel_flags)
         link_lfile();
     if (i >= Nv) {
 
@@ -235,7 +235,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) utp->uu_utnd.utnd_cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -245,7 +245,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) utp->uu_utnd.utnd_rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -331,7 +331,7 @@ gather_proc_info() {
             if (fp && (ulong) fp != 0xffffffffffffffff) {
                 alloc_lfile(NULL, i);
                 process_file((KA_T) fp);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 # if    defined(HASFSTRUCT) && DUV >= 40000
                     if (OptFileStructValues & FSV_FILE_FLAGS) {
@@ -400,7 +400,7 @@ gather_proc_info() {
         if (fp && (ulong)fp != 0xffffffffffffffff) {
             alloc_lfile(NULL, i);
             process_file((KA_T)fp);
-            if (CurrentLocalFile->sf) {
+            if (CurrentLocalFile->sel_flags) {
 
 # if	defined(HASFSTRUCT) && DUV>=40000
             if (OptFileStructValues & FSV_FILE_FLAGS) {
@@ -1543,7 +1543,7 @@ ncache_lookup(buf, blen, fp)
 /*
  * Look up the name cache entry for the node address.
  */
-    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->id)) || !(nc = lc->nc)) {
+    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->cap_id)) || !(nc = lc->nc)) {
 
     /*
      * If the node has no cache entry, see if it's the mount

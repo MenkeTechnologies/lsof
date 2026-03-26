@@ -1290,7 +1290,7 @@ main(argc, argv)
             for (saved_lfile = CurrentLocalFile, print_init(); PrintPass < 2; PrintPass++) {
                 for (i = num_parsed = 0; i < NumLocalProcs; i++) {
                     CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
-                    if (CurrentLocalProc->pss) {
+                    if (CurrentLocalProc->sel_state) {
                         if (print_proc())
                             num_parsed++;
                     }
@@ -1449,17 +1449,17 @@ main(argc, argv)
                      * mark them both found.  If neither was found, mark all
                      * but the first one found.
                      */
-                    if (net_addr_ptr->f)
-                        net_addr_next->f = net_addr_ptr->f;
-                    else if (net_addr_next->f)
-                        net_addr_ptr->f = net_addr_next->f;
+                    if (net_addr_ptr->found)
+                        net_addr_next->found = net_addr_ptr->found;
+                    else if (net_addr_next->found)
+                        net_addr_ptr->found = net_addr_next->found;
                     else
-                        net_addr_next->f = 1;
+                        net_addr_next->found = 1;
                 }
             }
         }
         for (net_addr_ptr = NetworkAddrList; net_addr_ptr; net_addr_ptr = net_addr_ptr->next) {
-            if (!net_addr_ptr->f && (char_ptr = net_addr_ptr->arg)) {
+            if (!net_addr_ptr->found && (char_ptr = net_addr_ptr->arg)) {
                 return_val = 1;
                 if (OptVerbose) {
                     (void) printf("%s: Internet address not located: ", ProgramName);

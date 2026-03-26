@@ -146,7 +146,7 @@ read_vxnode(v, vfs, dev, devs, rdev, rdevs)
         CurrentLocalFile->nlink = (long)i.i_nlink;
         CurrentLocalFile->nlink_def = 1;
         if (LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-        CurrentLocalFile->sf |= SELNLINK;
+        CurrentLocalFile->sel_flags |= SELNLINK;
     }
     return(0);
 }

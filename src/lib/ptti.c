@@ -76,7 +76,7 @@ print_tcptpi(newline)
         putchar('(');
         if (!TcpNumStates)
         (void) build_IPstates();
-        if ((state = CurrentLocalFile->lts.state.i) < 0 || state >= TcpNumStates)
+        if ((state = CurrentLocalFile->lts.state.val) < 0 || state >= TcpNumStates)
         (void) printf("UNKNOWN_TCP_STATE_%d", state);
         else
         (void) fputs(TcpStateNames[state], stdout);
@@ -87,7 +87,7 @@ print_tcptpi(newline)
 
 #if	defined(HASTCPTPIQ)
     if (OptTcpTpiInfo & TCPTPI_QUEUES) {
-        if (CurrentLocalFile->lts.rqs) {
+        if (CurrentLocalFile->lts.recv_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -96,12 +96,12 @@ print_tcptpi(newline)
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        (void) printf("QR=%lu", CurrentLocalFile->lts.recv_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         print_state++;
         }
-        if (CurrentLocalFile->lts.sqs) {
+        if (CurrentLocalFile->lts.send_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -110,7 +110,7 @@ print_tcptpi(newline)
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        (void) printf("QS=%lu", CurrentLocalFile->lts.send_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         print_state++;
@@ -470,7 +470,7 @@ print_tcptpi(newline)
     if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         unsigned int ss;
 
-        if ((ss = CurrentLocalFile->lts.ss)) {
+        if ((ss = CurrentLocalFile->lts.sock_state)) {
         char sep = ' ';
 
         if (OptFieldOutput)
@@ -1325,7 +1325,7 @@ print_tcptpi(newline)
 
 #if	defined(HASTCPTPIW)
     if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
-        if (CurrentLocalFile->lts.rws) {
+        if (CurrentLocalFile->lts.read_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -1334,12 +1334,12 @@ print_tcptpi(newline)
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        (void) printf("WR=%lu", CurrentLocalFile->lts.read_win);
         if (OptFieldOutput)
             putchar(Terminator);
         print_state++;
         }
-        if (CurrentLocalFile->lts.wws) {
+        if (CurrentLocalFile->lts.write_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -1348,7 +1348,7 @@ print_tcptpi(newline)
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        (void) printf("WW=%lu", CurrentLocalFile->lts.write_win);
         if (OptFieldOutput)
             putchar(Terminator);
         print_state++;

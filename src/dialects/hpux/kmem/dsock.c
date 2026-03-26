@@ -76,7 +76,7 @@ print_tcptpi(nl)
     if (OptTcpTpiInfo & TCPTPI_STATE) {
         switch ((t = CurrentLocalFile->lts.type)) {
         case 0:				/* TCP */
-        switch ((i = CurrentLocalFile->lts.state.i)) {
+        switch ((i = CurrentLocalFile->lts.state.val)) {
         case TCPS_CLOSED:
             cp = "CLOSED";
             break;
@@ -122,7 +122,7 @@ print_tcptpi(nl)
         }
         break;
         case 1:				/* TPI */
-        switch ((u = CurrentLocalFile->lts.state.ui)) {
+        switch ((u = CurrentLocalFile->lts.state.uval)) {
         case TS_UNINIT:
             cp = "Uninitialized";
             break;
@@ -188,7 +188,7 @@ print_tcptpi(nl)
 
 # if	defined(HASTCPTPIQ)
     if (OptTcpTpiInfo & TCPTPI_QUEUES) {
-        if (CurrentLocalFile->lts.rqs) {
+        if (CurrentLocalFile->lts.recv_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -197,12 +197,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        (void) printf("QR=%lu", CurrentLocalFile->lts.recv_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.sqs) {
+        if (CurrentLocalFile->lts.send_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -211,7 +211,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        (void) printf("QS=%lu", CurrentLocalFile->lts.send_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -367,7 +367,7 @@ print_tcptpi(nl)
 
 # if	defined(HASTCPTPIW)
     if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
-        if (CurrentLocalFile->lts.rws) {
+        if (CurrentLocalFile->lts.read_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -376,12 +376,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        (void) printf("WR=%lu", CurrentLocalFile->lts.read_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.wws) {
+        if (CurrentLocalFile->lts.write_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -390,7 +390,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        (void) printf("WW=%lu", CurrentLocalFile->lts.write_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -565,9 +565,9 @@ process_socket(sa)
         CurrentLocalFile->off_def = 1;
 
 # if    defined(HASTCPTPIQ)
-    CurrentLocalFile->lts.rq = s.so_rcv.sb_cc;
-    CurrentLocalFile->lts.sq = s.so_snd.sb_cc;
-    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+    CurrentLocalFile->lts.recv_queue = s.so_rcv.sb_cc;
+    CurrentLocalFile->lts.send_queue = s.so_snd.sb_cc;
+    CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 # endif    /* defined(HASTCPTPIQ) */
 #endif    /* HPUXV<1030 */
 
@@ -589,7 +589,7 @@ process_socket(sa)
          */
             case AF_CCITT:
                 if (OptNetwork)
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
                 (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "x.25");
                 (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), "%.*s", IPROTOL,
                 "CCITT");
@@ -658,7 +658,7 @@ process_socket(sa)
  */
         case AF_INET:
             if (OptNetwork)
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
             printiproto(p.pr_protocol);
 
@@ -770,7 +770,7 @@ process_socket(sa)
                 if (p.pr_protocol == IPPROTO_TCP && inp.inp_ppcb
                     && kread((KA_T) inp.inp_ppcb, (char *) &t, sizeof(t)) == 0) {
                     CurrentLocalFile->lts.type = 0;
-                    CurrentLocalFile->lts.state.i = (int) t.t_state;
+                    CurrentLocalFile->lts.state.val = (int) t.t_state;
                 }
             }
             break;
@@ -781,7 +781,7 @@ process_socket(sa)
  */
         case AF_UNIX:
             if (OptUnixSocket)
-                CurrentLocalFile->sf |= SELUNX;
+                CurrentLocalFile->sel_flags |= SELUNX;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
 
 #if    HPUXV >= 1030
@@ -905,7 +905,7 @@ process_socket(sa)
                     mbl = sizeof(struct sockaddr_un) - 1;
                 *((char *) ua + mbl) = '\0';
                 if (SearchFileChain && is_file_named(ua->sun_path, 0))
-                    CurrentLocalFile->sf |= SELNM;
+                    CurrentLocalFile->sel_flags |= SELNM;
                 if (!NameChars[0])
                     (void) snpf(NameChars, NameCharsLength, "%s", ua->sun_path);
             } else
@@ -945,7 +945,7 @@ process_stream_sock(ip, pcb, pn, vt)
  * Set file type and protocol.  If AF_INET selection is in effect, set its flag.
  */
     if (OptNetwork)
-        CurrentLocalFile->sf |= SELNET;
+        CurrentLocalFile->sel_flags |= SELNET;
     (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
     if (pn) {
         (void) snpf(CurrentLocalFile->iproto, sizeof(CurrentLocalFile->iproto), pn);
@@ -958,7 +958,7 @@ process_stream_sock(ip, pcb, pn, vt)
      * Thus, a named file check is appropriate.
      */
         if (is_file_named((char *)NULL, (vt == VCHR) ? 1 : 0))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
     }
 /*
  * Get IP structure.
@@ -1030,13 +1030,13 @@ process_stream_sock(ip, pcb, pn, vt)
      * Save TCP state and size information.
      */
         CurrentLocalFile->lts.type = 0;
-        CurrentLocalFile->lts.state.i = (int)tc.tcp_state;
+        CurrentLocalFile->lts.state.val = (int)tc.tcp_state;
 
 # if	defined(HASTCPTPIQ) || defined(HASTCPTPIW)
 #  if	defined(HASTCPTPIW)
-        CurrentLocalFile->lts.rw = (int)tc.tcp_rwnd;
-        CurrentLocalFile->lts.ww = (int)tc.tcp_swnd;
-        CurrentLocalFile->lts.rws = CurrentLocalFile->lts.wws = 1;
+        CurrentLocalFile->lts.read_win = (int)tc.tcp_rwnd;
+        CurrentLocalFile->lts.write_win = (int)tc.tcp_swnd;
+        CurrentLocalFile->lts.read_win_st = CurrentLocalFile->lts.write_win_st = 1;
 #  endif	/* defined(HASTCPTPIW) */
 
         if ((rq = (int)tc.tcp_rnxt - (int)tc.tcp_rack - 1) < 0)
@@ -1045,9 +1045,9 @@ process_stream_sock(ip, pcb, pn, vt)
         sq  = 0;
 
 #  if	defined(HASTCPTPIQ)
-        CurrentLocalFile->lts.rq = (unsigned long)rq;
-        CurrentLocalFile->lts.sq = (unsigned long)sq;
-        CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+        CurrentLocalFile->lts.recv_queue = (unsigned long)rq;
+        CurrentLocalFile->lts.send_queue = (unsigned long)sq;
+        CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 #  endif	/* defined(HASTCPTPIQ) */
 
         if (OptSize) {
@@ -1148,7 +1148,7 @@ process_stream_sock(ip, pcb, pn, vt)
         if (!OptSize)
         CurrentLocalFile->off_def = 1;
         CurrentLocalFile->lts.type = 1;
-        CurrentLocalFile->lts.state.ui = (unsigned int)ud.udp_state;
+        CurrentLocalFile->lts.state.uval = (unsigned int)ud.udp_state;
         NameChars[0] = '\0';
         return;
     } else {

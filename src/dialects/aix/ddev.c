@@ -121,11 +121,11 @@ printdevname(dev, rdev, f, nty)
  * Search device table for a full match.
  */
     if ((dp = lkupdev(dev, rdev, 1, 1))) {
-        if (CurrentLocalFile->ch < 0)
+        if (CurrentLocalFile->channel < 0)
             safestrprt(dp->name, stdout, f);
         else {
             safestrprt(dp->name, stdout, 0);
-            (void) printf("/%d%s", CurrentLocalFile->ch, f ? "\n" : "");
+            (void) printf("/%d%s", CurrentLocalFile->channel, f ? "\n" : "");
         }
         return (1);
     }

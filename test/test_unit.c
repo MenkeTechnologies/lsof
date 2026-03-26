@@ -992,7 +992,7 @@ TEST(memleak_unsafe_realloc_pattern) {
 
 /*
  * Test: add_nma realloc pattern (proc.c) -- appending to existing string
- * Before the fix, realloc failure lost the old CurrentLocalFile->nma.
+ * Before the fix, realloc failure lost the old CurrentLocalFile->name_append.
  */
 TEST(memleak_add_nma_realloc_pattern) {
     alloc_count = 0;

@@ -117,7 +117,7 @@ enter_vn_text(va, n)
     alloc_lfile(" txt", -1);
     Cfp = (struct file *) NULL;
     process_node((KA_T) va);
-    if (CurrentLocalFile->sf)
+    if (CurrentLocalFile->sel_flags)
         link_lfile();
     if (i >= Nv) {
 
@@ -242,7 +242,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) CDIR);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -252,7 +252,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             Cfp = (struct file *) NULL;
             process_node((KA_T) RDIR);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
 
@@ -264,7 +264,7 @@ gather_proc_info() {
             alloc_lfile("tr", -1);
             Cfp = (struct file *)NULL;
             process_node((KA_T)p->P_TRACEP);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
             }
 #endif    /* defined(OPENBSDV) && OPENBSDV>=3020 */
@@ -322,7 +322,7 @@ gather_proc_info() {
             if (ofb[i]) {
                 alloc_lfile(NULL, i);
                 process_file((KA_T)(Cfp = ofb[i]));
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS)

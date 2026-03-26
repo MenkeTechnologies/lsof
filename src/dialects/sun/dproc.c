@@ -417,8 +417,8 @@ gather_proc_info() {
                 if (!zp)
                 continue;
                 zp->f = 1;
-                CurrentLocalProc->pss |= PS_PRI;
-                CurrentLocalProc->sf |= SELZONE;
+                CurrentLocalProc->sel_state |= PS_PRI;
+                CurrentLocalProc->sel_flags |= SELZONE;
             }
             /*
              * Make sure the zone name is cached, then save a pointer to it in
@@ -476,7 +476,7 @@ gather_proc_info() {
 #endif    /* defined(FILEPTR) */
 
             process_node((KA_T) u->u_cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -490,7 +490,7 @@ gather_proc_info() {
 #endif    /* defined(FILEPTR) */
 
             process_node((KA_T) u->u_rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -554,7 +554,7 @@ gather_proc_info() {
             process_file((KA_T)uf[j-1].uf_ofile);
 #endif    /* solaris <20400 */
 
-            if (CurrentLocalFile->sf) {
+            if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                 if (OptFileStructValues & FSV_FILE_FLAGS)
@@ -1173,7 +1173,7 @@ process_text(pa)
         (void) snpf(NameChars, NameCharsLength, "can't read text segment list (%s)",
         print_kptr(pa, (char *)NULL, 0));
         enter_nm(NameChars);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
         link_lfile();
         return;
     }
@@ -1213,7 +1213,7 @@ process_text(pa)
 # endif	/* defined(FILEPTR) */
 
             process_node((KA_T)vn.vp);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
             }
         }
@@ -1246,7 +1246,7 @@ process_text(pa)
         (void) snpf(NameChars, NameCharsLength, "can't read text segment list (%s)",
                     print_kptr(pa, (char *) NULL, 0));
         enter_nm(NameChars);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
         return;
     }
@@ -1286,7 +1286,7 @@ process_text(pa)
 # endif    /* defined(FILEPTR) */
 
                     process_node((KA_T) vn.vp);
-                    if (CurrentLocalFile->sf)
+                    if (CurrentLocalFile->sel_flags)
                         link_lfile();
                 }
             }
@@ -2177,7 +2177,7 @@ ncache_lookup(buf, blen, fp)
 /*
  * Look up the name cache entry for the node address.
  */
-    if (!Nlu || !(lc = ncache_addr(CurrentLocalFile->na))) {
+    if (!Nlu || !(lc = ncache_addr(CurrentLocalFile->node_addr))) {
 
     /*
      * If the node has no cache entry, see if it's the mount

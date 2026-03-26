@@ -1520,12 +1520,12 @@ enter_network_address(na)
  */
     switch (ft) {
         case 4:
-            n.af = AF_INET;
+            n.addr_family = AF_INET;
             break;
 
 #if    defined(HASIPv6)
         case 6:
-            n.af = AF_INET6;
+            n.addr_family = AF_INET6;
             break;
 #endif    /* defined(HASIPv6) */
 
@@ -1590,7 +1590,7 @@ enter_network_address(na)
             goto nwad_exit;
         }
 
-        if ((p = isIPv4addr(wa, n.a, sizeof(n.a)))) {
+        if ((p = isIPv4addr(wa, n.addr, sizeof(n.addr)))) {
 
             /*
              * Process IPv4 address.
@@ -1602,7 +1602,7 @@ enter_network_address(na)
                 goto nwad_exit;
             }
             wa = p;
-            n.af = AF_INET;
+            n.addr_family = AF_INET;
         } else if (*wa == '[') {
 
 #if    defined(HASIPv6)
@@ -1619,17 +1619,17 @@ enter_network_address(na)
             if (!(char_ptr = strrchr(++wa, ']')))
                 goto unacc_address;
             *char_ptr = '\0';
-            i = inet_pton(AF_INET6, wa, (void *)&n.a);
+            i = inet_pton(AF_INET6, wa, (void *)&n.addr);
             *char_ptr = ']';
             if (i != 1)
                 goto unacc_address;
             for (addr_entry = i = 0; i < MAX_AF_ADDR; i++) {
-                if ((addr_entry |= n.a[i]))
+                if ((addr_entry |= n.addr[i]))
                 break;
             }
             if (!addr_entry)
                 goto unacc_address;
-            if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.a[0])) {
+            if (IN6_IS_ADDR_V4MAPPED((struct in6_addr *)&n.addr[0])) {
                 if (ft == 6) {
                 (void) fprintf(stderr,
                     "%s: IPv4 addresses are prohibited: -i ", ProgramName);
@@ -1637,11 +1637,11 @@ enter_network_address(na)
                 goto nwad_exit;
                 }
                 for (i = 0; i < 4; i++) {
-                n.a[i] = n.a[i+12];
+                n.addr[i] = n.addr[i+12];
                 }
-                n.af = AF_INET;
+                n.addr_family = AF_INET;
             } else
-                n.af = AF_INET6;
+                n.addr_family = AF_INET6;
             wa = char_ptr + 1;
 #else	/* !defined(HASIPv6) */
             (void) fprintf(stderr,
@@ -1675,14 +1675,14 @@ enter_network_address(na)
                  * name only under its IP version specification.
                  */
                     if (!ft)
-                    n.af = AF_INET6;
+                    n.addr_family = AF_INET6;
                     if (!(host_entry = lkup_hostnm(hn, &n)) && !ft) {
-                    n.af = AF_INET;
+                    n.addr_family = AF_INET;
                     host_entry = lkup_hostnm(hn, &n);
                     }
 #else	/* !defined(HASIPv6) */
                 if (!ft)
-                    n.af = AF_INET;
+                    n.addr_family = AF_INET;
                 host_entry = lkup_hostnm(hn, &n);
 #endif    /* defined(HASIPv6) */
 
@@ -1853,8 +1853,8 @@ enter_network_address(na)
              * try to get and address for the AF_INET family, too, unless
              * IPv4 is prohibited.
              */
-            if (hn && (n.af == AF_INET6) && (ft != 6)) {
-                n.af = AF_INET;
+            if (hn && (n.addr_family == AF_INET6) && (ft != 6)) {
+                n.addr_family = AF_INET;
                 if ((host_entry = lkup_hostnm(hn, &n)))
                 continue;
             }
@@ -1914,13 +1914,13 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
          * list.
          */
         if (!nc.proto
-            && !nc.a[0] && !nc.a[1] && !nc.a[2] && !nc.a[3]
+            && !nc.addr[0] && !nc.addr[1] && !nc.addr[2] && !nc.addr[3]
 
             #if    defined(HASIPv6)
-            &&  (nc.af != AF_INET6
-	    ||   (!nc.a[4]  && !nc.a[5]  && !nc.a[6]  && !nc.a[7]
-	    &&    !nc.a[8]  && !nc.a[9]  && !nc.a[10] && !nc.a[11]
-	    &&    !nc.a[12] && !nc.a[13] && !nc.a[14] && !nc.a[15]))
+            &&  (nc.addr_family != AF_INET6
+	    ||   (!nc.addr[4]  && !nc.addr[5]  && !nc.addr[6]  && !nc.addr[7]
+	    &&    !nc.addr[8]  && !nc.addr[9]  && !nc.addr[10] && !nc.addr[11]
+	    &&    !nc.addr[12] && !nc.addr[13] && !nc.addr[14] && !nc.addr[15]))
             #endif    /* defined(HASIPv6) */
 
             && start_port == -1) {
@@ -1955,7 +1955,7 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
         *np = nc;
         np->sport = start_port;
         np->eport = end_port;
-        np->f = 0;
+        np->found = 0;
         np->next = NetworkAddrList;
         NetworkAddrList = np;
         na++;
@@ -1976,15 +1976,15 @@ enter_nwad(nwad_ptr, start_port, end_port, addr_str, host_entry)
              (i < (host_entry->h_length - 1)) && (i < (MAX_AF_ADDR - 1));
              i++)
         {
-            nc.a[i] = *ap++;
+            nc.addr[i] = *ap++;
         }
-        nc.a[i] = *ap;
+        nc.addr[i] = *ap;
         }
 #else	/* !defined(HASIPv6) */
-        nc.a[0] = *ap++;
-        nc.a[1] = *ap++;
-        nc.a[2] = *ap++;
-        nc.a[3] = *ap;
+        nc.addr[0] = *ap++;
+        nc.addr[1] = *ap++;
+        nc.addr[2] = *ap++;
+        nc.addr[3] = *ap;
 #endif    /* defined(HASIPv6) */
 
     }
@@ -2510,7 +2510,7 @@ lkup_hostnm(hostname, nwad_ptr)
  */
 
 #if    defined(HASIPv6)
-    he = gethostbyname2(hostname, nwad_ptr->af);
+    he = gethostbyname2(hostname, nwad_ptr->addr_family);
 #else	/* !defined(HASIPv6) */
     he = gethostbyname(hostname);
 #endif    /* defined(HASIPv6) */
@@ -2522,18 +2522,18 @@ lkup_hostnm(hostname, nwad_ptr)
  */
 
 #if    defined(HASIPv6)
-    if (nwad_ptr->af != he->h_addrtype)
+    if (nwad_ptr->addr_family != he->h_addrtype)
         return((struct hostent *)NULL);
-    if (nwad_ptr->af == AF_INET6) {
+    if (nwad_ptr->addr_family == AF_INET6) {
 
     /*
      * Copy an AF_INET6 address.
      */
         if (he->h_length > MAX_AF_ADDR)
         return((struct hostent *)NULL);
-        (void) memcpy((void *)&nwad_ptr->a[0], (void *)he->h_addr, he->h_length);
+        (void) memcpy((void *)&nwad_ptr->addr[0], (void *)he->h_addr, he->h_length);
         if ((ln = MAX_AF_ADDR - he->h_length) > 0)
-        zeromem((char *)&nwad_ptr->a[he->h_length], ln);
+        zeromem((char *)&nwad_ptr->addr[he->h_length], ln);
         return(he);
     }
 #endif    /* defined(HASIPv6) */
@@ -2544,11 +2544,11 @@ lkup_hostnm(hostname, nwad_ptr)
     if (he->h_length != 4)
         return ((struct hostent *) NULL);
     ap = (unsigned char *) he->h_addr;
-    nwad_ptr->a[0] = *ap++;
-    nwad_ptr->a[1] = *ap++;
-    nwad_ptr->a[2] = *ap++;
-    nwad_ptr->a[3] = *ap;
+    nwad_ptr->addr[0] = *ap++;
+    nwad_ptr->addr[1] = *ap++;
+    nwad_ptr->addr[2] = *ap++;
+    nwad_ptr->addr[3] = *ap;
     if ((ln = MAX_AF_ADDR - 4) > 0)
-        zeromem((char *) &nwad_ptr->a[4], ln);
+        zeromem((char *) &nwad_ptr->addr[4], ln);
     return (he);
 }

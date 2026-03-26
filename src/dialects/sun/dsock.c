@@ -386,9 +386,9 @@ print_tcptpi(nl)
             case 0:                /* TCP */
                 if (!TcpStateNames)
                     (void) build_IPstates();
-                if ((i = CurrentLocalFile->lts.state.i + TcpStateOffset) < 0 || i >= TcpNumStates) {
+                if ((i = CurrentLocalFile->lts.state.val + TcpStateOffset) < 0 || i >= TcpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UNKNOWN_TCP_STATE_%d",
-                                CurrentLocalFile->lts.state.i);
+                                CurrentLocalFile->lts.state.val);
                     cp = sbuf;
                 } else
                     cp = TcpStateNames[i];
@@ -396,9 +396,9 @@ print_tcptpi(nl)
             case 1:                /* TPI */
                 if (!UdpStateNames)
                     (void) build_IPstates();
-                if ((u = CurrentLocalFile->lts.state.ui + UdpStateOffset) < 0 || u >= UdpNumStates) {
+                if ((u = CurrentLocalFile->lts.state.uval + UdpStateOffset) < 0 || u >= UdpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UNKNOWN_UDP_STATE_%u",
-                                CurrentLocalFile->lts.state.ui);
+                                CurrentLocalFile->lts.state.uval);
                     cp = sbuf;
                 } else
                     cp = UdpStateNames[u];
@@ -416,7 +416,7 @@ print_tcptpi(nl)
 
 #if    defined(HASTCPTPIQ)
     if (OptTcpTpiInfo & TCPTPI_QUEUES) {
-        if (CurrentLocalFile->lts.rqs) {
+        if (CurrentLocalFile->lts.recv_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -425,12 +425,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        (void) printf("QR=%lu", CurrentLocalFile->lts.recv_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.sqs) {
+        if (CurrentLocalFile->lts.send_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -439,7 +439,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        (void) printf("QS=%lu", CurrentLocalFile->lts.send_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -649,7 +649,7 @@ print_tcptpi(nl)
 
 #if    defined(HASTCPTPIW)
     if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
-        if (CurrentLocalFile->lts.rws) {
+        if (CurrentLocalFile->lts.read_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -658,12 +658,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        (void) printf("WR=%lu", CurrentLocalFile->lts.read_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.wws) {
+        if (CurrentLocalFile->lts.write_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -672,7 +672,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        (void) printf("WW=%lu", CurrentLocalFile->lts.write_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -798,16 +798,16 @@ process_VSOCK(va, v, so)
             if ((s = (int)tc.tcp_state + TcpStateOffset) < TcpNumStates) {
             if (TcpStateExcludeCount) {
                 if (TcpStateExclude[s]) {
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return(1);
                 }
             }
             if (TcpStateIncludeCount) {
                 if (TcpStateInclude[s]) {
                 TcpStateInclude[s] = 2;
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
                 } else {
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return(1);
                 }
             }
@@ -821,7 +821,7 @@ process_VSOCK(va, v, so)
             ||  ((OptNetworkType == 4) && (af == AF_INET))
             ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
             }
         }
         /*
@@ -878,7 +878,7 @@ process_VSOCK(va, v, so)
 # endif	/* defined(HAS_CONN_NEW) */
 
         CurrentLocalFile->lts.type = 0;
-        CurrentLocalFile->lts.state.i = (int)tc.tcp_state;
+        CurrentLocalFile->lts.state.val = (int)tc.tcp_state;
         /*
          * Save TCP size information.
          */
@@ -912,16 +912,16 @@ process_VSOCK(va, v, so)
             if ((s = (int)uc.udp_state + TcpStateOffset) < UdpNumStates) {
             if (UdpStateExcludeCount) {
                 if (UdpStateExclude[s]) {
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return(1);
                 }
             }
             if (UdpStateIncludeCount) {
                 if (UdpStateInclude[s]) {
                 UdpStateInclude[s] = 2;
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
                 } else {
-                CurrentLocalFile->sf |= SELEXCLF;
+                CurrentLocalFile->sel_flags |= SELEXCLF;
                 return(1);
                 }
             }
@@ -935,7 +935,7 @@ process_VSOCK(va, v, so)
             ||  ((OptNetworkType == 4) && (af == AF_INET))
             ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
             }
         }
         /*
@@ -960,7 +960,7 @@ process_VSOCK(va, v, so)
         if (!OptSize)
             CurrentLocalFile->off_def = 1;
         CurrentLocalFile->lts.type = 1;
-        CurrentLocalFile->lts.state.ui = (unsigned int)uc.udp_state;
+        CurrentLocalFile->lts.state.uval = (unsigned int)uc.udp_state;
 
 # if	defined(HASSOOPT)
         /*
@@ -1022,7 +1022,7 @@ process_VSOCK(va, v, so)
         if (!OptSize)
             CurrentLocalFile->off_def = 1;
         CurrentLocalFile->lts.type = 1;
-        CurrentLocalFile->lts.state.ui = (unsigned int)ic.icmp_state;
+        CurrentLocalFile->lts.state.uval = (unsigned int)ic.icmp_state;
         /*
          * Set network file selection status.
          */
@@ -1031,7 +1031,7 @@ process_VSOCK(va, v, so)
             ||  ((OptNetworkType == 4) && (af == AF_INET))
             ||  ((OptNetworkType == 6) && (af == AF_INET6))
             ) {
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
             }
         }
         /*
@@ -1108,7 +1108,7 @@ process_VSOCK(va, v, so)
         if (!OptSize)
         CurrentLocalFile->off_def = 1;
         CurrentLocalFile->lts.type = 1;
-        CurrentLocalFile->lts.state.i = (int)rt.rts_state;
+        CurrentLocalFile->lts.state.val = (int)rt.rts_state;
     /*
      * Set network file selection status.
      */
@@ -1117,7 +1117,7 @@ process_VSOCK(va, v, so)
         ||  ((OptNetworkType == 4) && (af == AF_INET))
         ||  ((OptNetworkType == 6) && (af == AF_INET6))
         ) {
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
         }
         }
 
@@ -1321,7 +1321,7 @@ process_socket(sa, ty)
 
                 ) {
             if (!TcpStateIncludeCount && !UdpStateIncludeCount)
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
         }
     }
     CurrentLocalFile->inp_ty = 2;
@@ -1417,24 +1417,24 @@ process_socket(sa, ty)
                 if (s < TcpNumStates) {
                     if (TcpStateExcludeCount) {
                         if (TcpStateExclude[s]) {
-                            CurrentLocalFile->sf &= ~SELNET;
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags &= ~SELNET;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
                     if (TcpStateIncludeCount) {
                         if (TcpStateInclude[s]) {
                             TcpStateInclude[s] = 2;
-                            CurrentLocalFile->sf |= SELNET;
+                            CurrentLocalFile->sel_flags |= SELNET;
                         } else {
-                            CurrentLocalFile->sf &= ~SELNET;
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags &= ~SELNET;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
                 }
             }
-            if (!(CurrentLocalFile->sf & SELNET) && !TcpStateIncludeCount && UdpStateIncludeCount) {
+            if (!(CurrentLocalFile->sel_flags & SELNET) && !TcpStateIncludeCount && UdpStateIncludeCount) {
                 if (OptNetwork) {
                     if (!OptNetworkType
                         || (OptNetworkType == 4) && (af == AF_INET)
@@ -1444,7 +1444,7 @@ process_socket(sa, ty)
 #endif    /* defined(HASIPv6) */
 
                             ) {
-                        CurrentLocalFile->sf |= SELNET;
+                        CurrentLocalFile->sel_flags |= SELNET;
                     }
                 }
             }
@@ -1477,23 +1477,23 @@ process_socket(sa, ty)
                 if (s < UdpNumStates) {
                     if (UdpStateExcludeCount) {
                         if (UdpStateExclude[s]) {
-                            CurrentLocalFile->sf &= ~SELNET;
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags &= ~SELNET;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
                     if (UdpStateIncludeCount) {
                         if (UdpStateInclude[s]) {
                             UdpStateInclude[s] = 2;
-                            CurrentLocalFile->sf |= SELNET;
+                            CurrentLocalFile->sel_flags |= SELNET;
                         } else {
-                            CurrentLocalFile->sf |= SELEXCLF;
+                            CurrentLocalFile->sel_flags |= SELEXCLF;
                             return;
                         }
                     }
                 }
             }
-            if (!(CurrentLocalFile->sf & SELNET) && TcpStateIncludeCount && !UdpStateIncludeCount) {
+            if (!(CurrentLocalFile->sel_flags & SELNET) && TcpStateIncludeCount && !UdpStateIncludeCount) {
                 if (OptNetwork) {
                     if (!OptNetworkType
                         || (OptNetworkType == 4) && (af == AF_INET)
@@ -1503,7 +1503,7 @@ process_socket(sa, ty)
 #endif    /* defined(HASIPv6) */
 
                             ) {
-                        CurrentLocalFile->sf |= SELNET;
+                        CurrentLocalFile->sel_flags |= SELNET;
                     }
                 }
             }
@@ -1576,7 +1576,7 @@ process_socket(sa, ty)
                 CurrentLocalFile->off_def = 1;
             if (ucs) {
                 CurrentLocalFile->lts.type = 1;
-                CurrentLocalFile->lts.state.ui = (unsigned int) uc.udp_state;
+                CurrentLocalFile->lts.state.uval = (unsigned int) uc.udp_state;
             }
         } else if (strncmp(CurrentLocalFile->iproto, "TCP", 3) == 0) {
             if (ics) {
@@ -1721,7 +1721,7 @@ process_socket(sa, ty)
                 (void) save_TCP_states(&tc, (caddr_t *) tha, tcbp,
                                        (caddr_t *) NULL);
                 CurrentLocalFile->lts.type = 0;
-                CurrentLocalFile->lts.state.i = (int) tc.tcp_state;
+                CurrentLocalFile->lts.state.val = (int) tc.tcp_state;
             }
             /*
              * Save TCP size information.
@@ -1933,9 +1933,9 @@ save_TCP_size(tc)
 
 #if    defined(HASTCPTPIQ) || defined(HASTCPTPIW)
 # if	defined(HASTCPTPIW)
-    CurrentLocalFile->lts.rw = (int)tc->tcp_rwnd;
-    CurrentLocalFile->lts.ww = (int)tc->tcp_swnd;
-    CurrentLocalFile->lts.rws = CurrentLocalFile->lts.wws = 1;
+    CurrentLocalFile->lts.read_win = (int)tc->tcp_rwnd;
+    CurrentLocalFile->lts.write_win = (int)tc->tcp_swnd;
+    CurrentLocalFile->lts.read_win_st = CurrentLocalFile->lts.write_win_st = 1;
 # endif	/* defined(HASTCPTPIW) */
 
     if ((rq = (int)tc->tcp_rnxt - (int)tc->tcp_rack) < 0)
@@ -1944,9 +1944,9 @@ save_TCP_size(tc)
         sq  = 0;
 
 # if	defined(HASTCPTPIQ)
-    CurrentLocalFile->lts.rq = (unsigned long)rq;
-    CurrentLocalFile->lts.sq = (unsigned long)sq;
-    CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+    CurrentLocalFile->lts.recv_queue = (unsigned long)rq;
+    CurrentLocalFile->lts.send_queue = (unsigned long)sq;
+    CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 # endif	/* defined(HASTCPTPIQ) */
 
     if (OptSize) {

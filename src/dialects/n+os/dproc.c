@@ -187,7 +187,7 @@ gather_proc_info() {
             alloc_lfile(CWD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) u->u_cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -197,7 +197,7 @@ gather_proc_info() {
             alloc_lfile(RTD, -1);
             FILEPTR = (struct file *) NULL;
             process_node((KA_T) u->u_rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -251,7 +251,7 @@ gather_proc_info() {
             if (uf[i]) {
                 alloc_lfile((char *) NULL, i);
                 process_file((KA_T) uf[i]);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS)
@@ -602,7 +602,7 @@ process_map(map)
         alloc_lfile("txt", -1);
         FILEPTR = (struct file *) NULL;
         process_node((KA_T) vmp.vs_vp);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
         /*
          * Allocate space for remembering the vnode.

@@ -118,7 +118,7 @@ enter_vn_text(vip, n)
     alloc_lfile(" txt", -1);
     Cfp = (struct file *) NULL;
     (void) enter_vnode_info(vip);
-    if (CurrentLocalFile->sf)
+    if (CurrentLocalFile->sel_flags)
         link_lfile();
 /*
  * Record the entry of the vnode information.
@@ -372,12 +372,12 @@ gather_proc_info() {
                                     &CWD[1], &RTD[1], strerror(cre));
                         NameChars[NameCharsLength - 1] = '\0';
                         enter_nm(NameChars);
-                        if (CurrentLocalFile->sf)
+                        if (CurrentLocalFile->sel_flags)
                             link_lfile();
                     }
                 } else {
                     (void) enter_vnode_info(&vpi.pvi_cdir);
-                    if (CurrentLocalFile->sf)
+                    if (CurrentLocalFile->sel_flags)
                         link_lfile();
                 }
             }
@@ -390,7 +390,7 @@ gather_proc_info() {
                 alloc_lfile(RTD, -1);
                 Cfp = (struct file *) NULL;
                 (void) enter_vnode_info(&vpi.pvi_rdir);
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
         }
@@ -485,7 +485,7 @@ process_fds(pid, n, ckscko)
         (void) snpf(NameChars, NameCharsLength, "FD info error: %s", strerror(errno));
         NameChars[NameCharsLength - 1] = '\0';
         enter_nm(NameChars);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
         return;
     }
@@ -538,7 +538,7 @@ process_fds(pid, n, ckscko)
                 (void) enter_nm(NameChars);
                 break;
         }
-        if (CurrentLocalFile->sf) {
+        if (CurrentLocalFile->sel_flags) {
             if (!ckscko || isock)
                 link_lfile();
         }
@@ -579,7 +579,7 @@ process_text(pid)
                         "region info error: %s", strerror(errno));
             NameChars[NameCharsLength - 1] = '\0';
             enter_nm(NameChars);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
             return;
         } else if (nb < sizeof(rwpi)) {
@@ -675,7 +675,7 @@ process_threads(pid, n)
             "thread info error: %s", strerror(errno));
         NameChars[NameCharsLength - 1] = '\0';
         enter_nm(NameChars);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
         return;
         } else if (nb < sizeof(tpi)) {
@@ -691,7 +691,7 @@ process_threads(pid, n)
         alloc_lfile(TWD, -1);
         Cfp = (struct file *)NULL;
         (void) enter_vnode_info(&tpi.pvip);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
         }
     }

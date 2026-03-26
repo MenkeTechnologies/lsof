@@ -204,7 +204,7 @@ gather_proc_info() {
         if (u->u_cdir) {
             alloc_lfile(CWD, -1);
             process_node((KA_T) u->u_cdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -213,7 +213,7 @@ gather_proc_info() {
         if (u->u_rdir) {
             alloc_lfile(RTD, -1);
             process_node((KA_T) u->u_rdir);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -272,7 +272,7 @@ gather_proc_info() {
             if (u->u_ofile[i]) {
                 alloc_lfile((char *) NULL, i);
                 process_file((KA_T) u->u_ofile[i]);
-                if (CurrentLocalFile->sf) {
+                if (CurrentLocalFile->sel_flags) {
 
 #if    defined(HASFSTRUCT)
                     if (OptFileStructValues & FSV_FILE_FLAGS && pof)
@@ -888,7 +888,7 @@ process_text(prp)
         if (ty) {
             alloc_lfile(ty, -1);
             process_node(na);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
     }
@@ -1653,7 +1653,7 @@ ncache_lookup(buf, blen, fp)
  * Look up the NFS name cache entry.
  */
     if (CurrentLocalFile->is_nfs) {
-        if ((lc = NFS_addr(CurrentLocalFile->na)) && !lc->dup) {
+        if ((lc = NFS_addr(CurrentLocalFile->node_addr)) && !lc->dup) {
         if ((nl = (int)lc->nl) > (blen - 1))
             return(*cp ? cp : (char *)NULL);
         cp = buf + blen - nl - 1;

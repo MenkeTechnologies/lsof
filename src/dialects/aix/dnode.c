@@ -317,7 +317,7 @@ process_node(va)
  */
     if (!v->v_gnode || readgnode((KA_T) v->v_gnode, &g)) {
         if (SelectInetOnly) {
-            CurrentLocalFile->sf = SELEXCLF;
+            CurrentLocalFile->sel_flags = SELEXCLF;
             return;
         }
         (void) snpf(NameChars, NameCharsLength, "vnode at %s has no gnode\n",
@@ -358,7 +358,7 @@ process_node(va)
          */
             if (!g.gn_data || kread((KA_T)g.gn_data, (char *)&sn, sizeof(sn))) {
             if (SelectInetOnly) {
-                CurrentLocalFile->sf = SELEXCLF;
+                CurrentLocalFile->sel_flags = SELEXCLF;
                 return;
             }
             (void) snpf(NameChars, NameCharsLength,
@@ -373,7 +373,7 @@ process_node(va)
          */
             if (sn.sn_pfsgnode) {
             if (SelectInetOnly) {
-                CurrentLocalFile->sf = SELEXCLF;
+                CurrentLocalFile->sel_flags = SELEXCLF;
                 return;
             }
             if (readgnode((KA_T)sn.sn_pfsgnode, &g)) {
@@ -443,7 +443,7 @@ process_node(va)
                     if (ClonePtc >= 0
                     &&  GET_MAJ_DEV(g.gn_rdev) == ClonePtc) {
                     if (SelectInetOnly) {
-                        CurrentLocalFile->sf = SELEXCLF;
+                        CurrentLocalFile->sel_flags = SELEXCLF;
                         return;
                     }
                     /*
@@ -528,7 +528,7 @@ process_node(va)
 #endif	/* AIXV>=4140 */
 
             if (SelectInetOnly) {
-                CurrentLocalFile->sf = SELEXCLF;
+                CurrentLocalFile->sel_flags = SELEXCLF;
                 return;
             }
             }
@@ -1023,7 +1023,7 @@ process_node(va)
                 break;
         }
         if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 
 #if    defined(HAS_NFS)
@@ -1031,7 +1031,7 @@ process_node(va)
      * Record an NFS file selection.
      */
         if (NodeType == N_NFS && OptNfs)
-            CurrentLocalFile->sf |= SELNFS;
+            CurrentLocalFile->sel_flags |= SELNFS;
 #endif    /* defined(HAS_NFS) */
 
 /*
@@ -1120,7 +1120,7 @@ process_node(va)
                 CurrentLocalFile->dev = vfs->dev;
                 CurrentLocalFile->dev_def = 1;
             }
-            CurrentLocalFile->ch = g.gn_chan;
+            CurrentLocalFile->channel = g.gn_chan;
 
 #if    AIXV < 3200
             CurrentLocalFile->inp_ty = 0;
@@ -1160,7 +1160,7 @@ process_node(va)
  * Test for specified file.
  */
     if (SearchFileChain && is_file_named(NULL, type, g.gn_chan, ic))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter name characters.
  */
@@ -1194,7 +1194,7 @@ process_shmt(sa)
  * Ignore this file if only Internet files are selected.
  */
     if (SelectInetOnly) {
-        CurrentLocalFile->sf |= SELEXCLF;
+        CurrentLocalFile->sel_flags |= SELEXCLF;
         return;
     }
 /*

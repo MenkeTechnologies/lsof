@@ -560,9 +560,9 @@ print_tcptpi(nl)
             case 0:                /* TCP */
                 if (!TcpStateNames)
                     (void) build_IPstates();
-                if ((i = CurrentLocalFile->lts.state.i + TcpStateOffset) < 0 || i >= TcpNumStates) {
+                if ((i = CurrentLocalFile->lts.state.val + TcpStateOffset) < 0 || i >= TcpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UknownState_%d",
-                                CurrentLocalFile->lts.state.i);
+                                CurrentLocalFile->lts.state.val);
                     cp = sbuf;
                 } else
                     cp = TcpStateNames[i];
@@ -570,9 +570,9 @@ print_tcptpi(nl)
             case 1:                /* UDP */
                 if (!UdpStateNames)
                     (void) build_IPstates();
-                if ((u = CurrentLocalFile->lts.state.ui + UdpStateOffset) > UdpNumStates) {
+                if ((u = CurrentLocalFile->lts.state.uval + UdpStateOffset) > UdpNumStates) {
                     (void) snpf(sbuf, sizeof(sbuf), "UNKNOWN_TPI_STATE_%u",
-                                CurrentLocalFile->lts.state.ui);
+                                CurrentLocalFile->lts.state.uval);
                     cp = sbuf;
                 } else
                     cp = UdpStateNames[u];
@@ -590,7 +590,7 @@ print_tcptpi(nl)
 
 #if    defined(HASTCPTPIQ)
     if (OptTcpTpiInfo & TCPTPI_QUEUES) {
-        if (CurrentLocalFile->lts.rqs) {
+        if (CurrentLocalFile->lts.recv_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -599,12 +599,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QR=%lu", CurrentLocalFile->lts.rq);
+        (void) printf("QR=%lu", CurrentLocalFile->lts.recv_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.sqs) {
+        if (CurrentLocalFile->lts.send_queue_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -613,7 +613,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("QS=%lu", CurrentLocalFile->lts.sq);
+        (void) printf("QS=%lu", CurrentLocalFile->lts.send_queue);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -765,7 +765,7 @@ print_tcptpi(nl)
     if (OptTcpTpiInfo & TCPTPI_FLAGS) {
         int ss;
 
-        if ((ss = CurrentLocalFile->lts.ss)) {
+        if ((ss = CurrentLocalFile->lts.sock_state)) {
         char sep = ' ';
 
         if (OptFieldOutput)
@@ -906,7 +906,7 @@ print_tcptpi(nl)
 
 #if    defined(HASTCPTPIW)
     if (OptTcpTpiInfo & TCPTPI_WINDOWS) {
-        if (CurrentLocalFile->lts.rws) {
+        if (CurrentLocalFile->lts.read_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -915,12 +915,12 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WR=%lu", CurrentLocalFile->lts.rw);
+        (void) printf("WR=%lu", CurrentLocalFile->lts.read_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
         }
-        if (CurrentLocalFile->lts.wws) {
+        if (CurrentLocalFile->lts.write_win_st) {
         if (OptFieldOutput)
             putchar(LSOF_FID_TCP_TPI_INFO);
         else {
@@ -929,7 +929,7 @@ print_tcptpi(nl)
             else
             putchar('(');
         }
-        (void) printf("WW=%lu", CurrentLocalFile->lts.ww);
+        (void) printf("WW=%lu", CurrentLocalFile->lts.write_win);
         if (OptFieldOutput)
             putchar(Terminator);
         ps++;
@@ -1025,7 +1025,7 @@ process_socket(f, s)
                  */
                 if (sx >= 0 && sx < TcpNumStates) {
                     if (TcpStateExclude[sx]) {
-                        CurrentLocalFile->sf |= SELEXCLF;
+                        CurrentLocalFile->sel_flags |= SELEXCLF;
                         return;
                     }
                 }
@@ -1035,7 +1035,7 @@ process_socket(f, s)
                     if (TcpStateInclude[sx])
                         TcpStateInclude[sx] = 2;
                     else {
-                        CurrentLocalFile->sf |= SELEXCLF;
+                        CurrentLocalFile->sel_flags |= SELEXCLF;
                         return;
                     }
                 }
@@ -1049,7 +1049,7 @@ process_socket(f, s)
                  */
                 if (sx >= 0 && sx < UdpNumStates) {
                     if (UdpStateExclude[sx]) {
-                        CurrentLocalFile->sf |= SELEXCLF;
+                        CurrentLocalFile->sel_flags |= SELEXCLF;
                         return;
                     }
                 }
@@ -1059,7 +1059,7 @@ process_socket(f, s)
                     if (UdpStateInclude[sx])
                         UdpStateInclude[sx] = 2;
                     else {
-                        CurrentLocalFile->sf |= SELEXCLF;
+                        CurrentLocalFile->sel_flags |= SELEXCLF;
                         return;
                     }
                 }
@@ -1107,9 +1107,9 @@ process_socket(f, s)
         switch (s->pst_family) {
         case PS_AF_INET:
         case PS_AF_INET6:
-            CurrentLocalFile->lts.rq = (unsigned long)s->pst_idata;
-            CurrentLocalFile->lts.sq = (unsigned long)s->pst_odata;
-            CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = (unsigned char)1;
+            CurrentLocalFile->lts.recv_queue = (unsigned long)s->pst_idata;
+            CurrentLocalFile->lts.send_queue = (unsigned long)s->pst_odata;
+            CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = (unsigned char)1;
         }
 #endif  /* defined(HASTCPTPIQ) */
 
@@ -1128,7 +1128,7 @@ process_socket(f, s)
     /*
      * Enter socket state flags.
      */
-        CurrentLocalFile->lts.ss = (unsigned int)s->pst_state;
+        CurrentLocalFile->lts.sock_state = (unsigned int)s->pst_state;
 #endif    /* defined(HASSOSTATE) */
 
 #if    defined(HASTCPTPIW)
@@ -1138,9 +1138,9 @@ process_socket(f, s)
         switch (s->pst_family) {
         case PS_AF_INET:
         case PS_AF_INET6:
-            CurrentLocalFile->lts.rw = (unsigned long)s->pst_rwnd;
-            CurrentLocalFile->lts.ww = (unsigned long)s->pst_swnd;
-            CurrentLocalFile->lts.rws = CurrentLocalFile->lts.wws = (unsigned char)1;
+            CurrentLocalFile->lts.read_win = (unsigned long)s->pst_rwnd;
+            CurrentLocalFile->lts.write_win = (unsigned long)s->pst_swnd;
+            CurrentLocalFile->lts.read_win_st = CurrentLocalFile->lts.write_win_st = (unsigned char)1;
         }
 #endif    /* defined(HASTCPTPIW) */
 
@@ -1150,7 +1150,7 @@ process_socket(f, s)
     switch (s->pst_family) {
         case PS_AF_INET:
             if (OptNetwork && (!OptNetworkType || (OptNetworkType != 6)))
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type),
 
 #if    defined(HASIPv6)
@@ -1165,11 +1165,11 @@ process_socket(f, s)
             switch (s->pst_protocol) {
                 case PS_PROTO_TCP:
                     CurrentLocalFile->lts.type = 0;
-                    CurrentLocalFile->lts.state.i = (int) s->pst_pstate;
+                    CurrentLocalFile->lts.state.val = (int) s->pst_pstate;
                     break;
                 case PS_PROTO_UDP:
                     CurrentLocalFile->lts.type = 1;
-                    CurrentLocalFile->lts.state.ui = (unsigned int) s->pst_pstate;
+                    CurrentLocalFile->lts.state.uval = (unsigned int) s->pst_pstate;
             }
             /*
              * Enter local and remote addresses, being careful to generate
@@ -1195,18 +1195,18 @@ process_socket(f, s)
         case PS_AF_INET6:
             af = AF_INET6;
             if (OptNetwork && (!OptNetworkType || (OptNetworkType != 4)))
-            CurrentLocalFile->sf |= SELNET;
+            CurrentLocalFile->sel_flags |= SELNET;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "IPv6");
             printpsproto(s->pst_protocol);
             enter_dev_ch(print_kptr(na, (char *)NULL, 0));
             switch (s->pst_protocol) {
             case PS_PROTO_TCP:
             CurrentLocalFile->lts.type = 0;
-            CurrentLocalFile->lts.state.i = (int)s->pst_pstate;
+            CurrentLocalFile->lts.state.val = (int)s->pst_pstate;
             break;
             case PS_PROTO_UDP:
             CurrentLocalFile->lts.type = 1;
-            CurrentLocalFile->lts.state.ui = (unsigned int)s->pst_pstate;
+            CurrentLocalFile->lts.state.uval = (unsigned int)s->pst_pstate;
             }
         /*
          * Enter local and remote addresses, being careful to generate
@@ -1242,7 +1242,7 @@ process_socket(f, s)
 
         case PS_AF_UNIX:
             if (OptUnixSocket)
-                CurrentLocalFile->sf |= SELUNX;
+                CurrentLocalFile->sel_flags |= SELUNX;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
             if (((len = (size_t) s->pst_boundaddr_len) > 0)
                 && (len <= sizeof(struct sockaddr_un))) {
@@ -1274,7 +1274,7 @@ process_socket(f, s)
                                            ProgramName, (long) CurrentLocalProc->pid, CurrentLocalFile->fd);
                         }
                         (void) snpf(nma, len, "%s", buf);
-                        CurrentLocalFile->nma = nma;
+                        CurrentLocalFile->name_append = nma;
                     }
                     /*
                      * Read the pst_filedetails for the bound address and process
@@ -1302,7 +1302,7 @@ process_socket(f, s)
                             err = 0;
                         if (nma) {
                             (void) free((MALLOC_P *) nma);
-                            CurrentLocalFile->nma = (char *) NULL;
+                            CurrentLocalFile->name_append = (char *) NULL;
                         }
                         if (s->pst_lo_nodeid) {
                             enter_dev_ch(print_kptr((KA_T) s->pst_lo_nodeid,
@@ -1330,10 +1330,10 @@ process_socket(f, s)
                                                ProgramName, (long) CurrentLocalProc->pid, CurrentLocalFile->fd);
                             }
                             (void) snpf(nma, len, "%s", buf);
-                            CurrentLocalFile->nma = nma;
+                            CurrentLocalFile->name_append = nma;
                         }
                         if (SearchFileChain && is_file_named(ua->sun_path, 0))
-                            CurrentLocalFile->sf |= SELNM;
+                            CurrentLocalFile->sel_flags |= SELNM;
                         break;
                     }
                 }
@@ -1608,7 +1608,7 @@ process_stream(f, ckscko)
     else
         i = 0;
     if (SearchFileChain && is_file_named((char *) NULL, i))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter any name characters.
  */

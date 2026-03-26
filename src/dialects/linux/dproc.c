@@ -644,7 +644,7 @@ isefsys(path, type, l, rep, lfr)
                     ep->rdlnk ? '+' : '-', ep->path);
         nmabuf[sizeof(nmabuf) - 1] = '\0';
         (void) add_nma(nmabuf, strlen(nmabuf));
-        if (CurrentLocalFile->sf) {
+        if (CurrentLocalFile->sel_flags) {
             if (lfr)
                 *lfr = CurrentLocalFile;
             link_lfile();
@@ -861,7 +861,7 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
             (void) process_proc_node(lnk ? pbuf : path,
                                      &sb, ss,
                                      (struct stat *) NULL, 0);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
     }
@@ -908,7 +908,7 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
             (void) process_proc_node(lnk ? pbuf : path,
                                      &sb, ss,
                                      (struct stat *) NULL, 0);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
     }
@@ -962,7 +962,7 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
             (void) process_proc_node(lnk ? pbuf : path,
                                      &sb, ss,
                                      (struct stat *) NULL, 0);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
     }
@@ -1005,8 +1005,8 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
             for (cntxp = ContextArgList; cntxp; cntxp = cntxp->next) {
                 if (cmp_cntx_eq(CurrentLocalProc->cntx, cntxp->cntx)) {
                 cntxp->f = 1;
-                CurrentLocalProc->pss |= PS_PRI;
-                CurrentLocalProc->sf |= SELCNTX;
+                CurrentLocalProc->sel_state |= PS_PRI;
+                CurrentLocalProc->sel_flags |= SELCNTX;
                 break;
                 }
             }
@@ -1134,7 +1134,7 @@ process_id(idp, idpl, cmd, uid, pid, ppid, pgid, tid)
             }
             if (pn) {
                 process_proc_node(lnk ? pbuf : path, &sb, ss, &lsb, ls);
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
         }
@@ -1361,7 +1361,7 @@ process_proc_map(p, s, ss)
             nmabuf[sizeof(nmabuf) - 1] = '\0';
             (void) add_nma(nmabuf, strlen(nmabuf));
         }
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
     }
     (void) fclose(ms);

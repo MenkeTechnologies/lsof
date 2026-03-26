@@ -596,9 +596,9 @@ ncache_lookup(buf, blen, full_path)
  */
 
 # if	defined(NCACHE_NODEID)
-    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->id, CurrentLocalFile->na)))
+    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->cap_id, CurrentLocalFile->node_addr)))
 # else	/* defined(NCACHE_NODEID) */
-    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->na)))
+    if (Nc == 0 || !(lc = ncache_addr(CurrentLocalFile->node_addr)))
 # endif	/* defined(NCACHE_NODEID) */
 
 

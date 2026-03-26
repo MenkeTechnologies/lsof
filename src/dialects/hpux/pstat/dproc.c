@@ -270,7 +270,7 @@ gather_proc_info() {
                             errno ? ": " : "", errno ? strerror(errno) : "");
                 enter_nm(NameChars);
             }
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -299,7 +299,7 @@ gather_proc_info() {
                                 errno ? strerror(errno) : "");
                     enter_nm(NameChars);
                 }
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
             }
         }
@@ -434,7 +434,7 @@ gather_proc_info() {
                     (void) enter_nm("no more information");
                     break;
             }
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
         }
         /*
@@ -597,7 +597,7 @@ process_text(p)
                         "can't read txt pst_filedetails%s%s",
                         errno ? ": " : "", errno ? strerror(errno) : "");
             enter_nm(NameChars);
-            if (CurrentLocalFile->sf)
+            if (CurrentLocalFile->sel_flags)
                 link_lfile();
             ntvu = 0;
         }
@@ -646,7 +646,7 @@ process_text(p)
                             "can't read mem pst_filedetails%s%s",
                             errno ? ": " : "", errno ? strerror(errno) : "");
                 enter_nm(NameChars);
-                if (CurrentLocalFile->sf)
+                if (CurrentLocalFile->sel_flags)
                     link_lfile();
                 meme = 1;
             }
@@ -659,7 +659,7 @@ process_text(p)
         alloc_lfile(tv[i].fd, -1);
         (void) process_finfo(&tv[i].pd, &tv[i].opfid, &tv[i].psfid,
                              tv[i].na);
-        if (CurrentLocalFile->sf)
+        if (CurrentLocalFile->sel_flags)
             link_lfile();
     }
 }

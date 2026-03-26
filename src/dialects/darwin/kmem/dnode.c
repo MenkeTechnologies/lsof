@@ -399,9 +399,9 @@ process_node(va)
     type = v->v_type;
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = va;
+    CurrentLocalFile->node_addr = va;
 # if	defined(HASNCVPID)
-    CurrentLocalFile->id = v->v_id;
+    CurrentLocalFile->cap_id = v->v_id;
 # endif	/* defined(HASNCVPID) */
 #endif    /* defined(HASNCACHE) */
 
@@ -813,7 +813,7 @@ process_node(va)
                 break;
         }
         if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 #else	/* DARWINV>=800 */
 
@@ -905,7 +905,7 @@ process_node(va)
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Save the file system names.
  */
@@ -994,7 +994,7 @@ process_node(va)
     if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == VCHR) || (type == VBLK) ? 1
                                                                  : 0)))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter name characters.
  */

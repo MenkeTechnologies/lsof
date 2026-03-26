@@ -1160,7 +1160,7 @@ printinaddr() {
  * separate it from the local address with "->".
  */
     for (i = 0, *np = '\0'; i < 2; i++) {
-        if (!CurrentLocalFile->li[i].af)
+        if (!CurrentLocalFile->li[i].addr_family)
             continue;
         host = port = (char *) NULL;
         if (i) {
@@ -1186,24 +1186,24 @@ printinaddr() {
          */
 
 #if    defined(HASIPv6)
-        if ((CurrentLocalFile->li[i].af == AF_INET6
+        if ((CurrentLocalFile->li[i].addr_family == AF_INET6
         &&   IN6_IS_ADDR_UNSPECIFIED(&CurrentLocalFile->li[i].ia.a6))
-        ||  (CurrentLocalFile->li[i].af == AF_INET
+        ||  (CurrentLocalFile->li[i].addr_family == AF_INET
         &&    CurrentLocalFile->li[i].ia.a4.s_addr == INADDR_ANY))
         host ="*";
         else
-        host = gethostnm((unsigned char *)&CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].af);
+        host = gethostnm((unsigned char *)&CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].addr_family);
 #else /* !defined(HASIPv6) */
         if (CurrentLocalFile->li[i].ia.a4.s_addr == INADDR_ANY)
             host = "*";
         else
-            host = gethostnm((unsigned char *) &CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].af);
+            host = gethostnm((unsigned char *) &CurrentLocalFile->li[i].ia, CurrentLocalFile->li[i].addr_family);
 #endif    /* defined(HASIPv6) */
 
         /*
          * Process the port number.
          */
-        if (CurrentLocalFile->li[i].p > 0) {
+        if (CurrentLocalFile->li[i].port > 0) {
 
             if (OptPortLookup
 
@@ -1228,7 +1228,7 @@ printinaddr() {
                 if ((src = i) && OptPortMap) {
 
 # if    defined(HASIPv6)
-                    if (CurrentLocalFile->li[0].af == AF_INET6) {
+                    if (CurrentLocalFile->li[0].addr_family == AF_INET6) {
                         if (IN6_IS_ADDR_LOOPBACK(&CurrentLocalFile->li[i].ia.a6)
                         ||  IN6_ARE_ADDR_EQUAL(&CurrentLocalFile->li[0].ia.a6,
                                    &CurrentLocalFile->li[1].ia.a6)
@@ -1237,7 +1237,7 @@ printinaddr() {
                     } else
 # endif    /* defined(HASIPv6) */
 
-                    if (CurrentLocalFile->li[0].af == AF_INET) {
+                    if (CurrentLocalFile->li[0].addr_family == AF_INET) {
                         if (CurrentLocalFile->li[i].ia.a4.s_addr == htonl(INADDR_LOOPBACK)
                             || CurrentLocalFile->li[0].ia.a4.s_addr == CurrentLocalFile->li[1].ia.a4.s_addr
                                 )
@@ -1247,15 +1247,15 @@ printinaddr() {
 #endif    /* !defined(HASNORPC_H) */
 
                 if (strcasecmp(CurrentLocalFile->iproto, "TCP") == 0)
-                    port = lkup_port(CurrentLocalFile->li[i].p, 0, src);
+                    port = lkup_port(CurrentLocalFile->li[i].port, 0, src);
                 else if (strcasecmp(CurrentLocalFile->iproto, "UDP") == 0)
-                    port = lkup_port(CurrentLocalFile->li[i].p, 1, src);
+                    port = lkup_port(CurrentLocalFile->li[i].port, 1, src);
             }
             if (!port) {
-                (void) snpf(pbuf, sizeof(pbuf), "%d", CurrentLocalFile->li[i].p);
+                (void) snpf(pbuf, sizeof(pbuf), "%d", CurrentLocalFile->li[i].port);
                 port = pbuf;
             }
-        } else if (CurrentLocalFile->li[i].p == 0)
+        } else if (CurrentLocalFile->li[i].port == 0)
             port = "*";
         /*
          * Enter the host name.
@@ -2025,17 +2025,17 @@ printname(newline)
 
     int print_status = 0;
 
-    if (CurrentLocalFile->nm && CurrentLocalFile->nm[0]) {
+    if (CurrentLocalFile->name && CurrentLocalFile->name[0]) {
 
         /*
          * Print the name characters, if there are some.
          */
-        safestrprt(CurrentLocalFile->nm, stdout, 0);
+        safestrprt(CurrentLocalFile->name, stdout, 0);
         print_status++;
-        if (!CurrentLocalFile->li[0].af && !CurrentLocalFile->li[1].af)
+        if (!CurrentLocalFile->li[0].addr_family && !CurrentLocalFile->li[1].addr_family)
             goto print_nma;
     }
-    if (CurrentLocalFile->li[0].af || CurrentLocalFile->li[1].af) {
+    if (CurrentLocalFile->li[0].addr_family || CurrentLocalFile->li[1].addr_family) {
         if (print_status)
             putchar(' ');
         /*
@@ -2109,7 +2109,7 @@ printname(newline)
 #if    defined(HASNCACHE)
 
 # if	HASNCACHE<2
-        if (CurrentLocalFile->na) {
+        if (CurrentLocalFile->node_addr) {
         if (NameCacheReload) {
 
 #  if	defined(NCACHELDPFX)
@@ -2198,10 +2198,10 @@ printname(newline)
 
     print_nma:
 
-    if (CurrentLocalFile->nma) {
+    if (CurrentLocalFile->name_append) {
         if (print_status)
             putchar(' ');
-        safestrprt(CurrentLocalFile->nma, stdout, 0);
+        safestrprt(CurrentLocalFile->name_append, stdout, 0);
         print_status++;
     }
 /*
@@ -2211,11 +2211,11 @@ printname(newline)
         && (CurrentLocalFile->lts.type >= 0
 
 #if    defined(HASTCPTPIQ)
-                ||   ((OptTcpTpiInfo & TCPTPI_QUEUES) && (CurrentLocalFile->lts.rqs || CurrentLocalFile->lts.sqs))
+                ||   ((OptTcpTpiInfo & TCPTPI_QUEUES) && (CurrentLocalFile->lts.recv_queue_st || CurrentLocalFile->lts.send_queue_st))
 #endif    /* defined(HASTCPTPIQ) */
 
 #if    defined(HASTCPTPIW)
-                ||   ((OptTcpTpiInfo & TCPTPI_WINDOWS) && (CurrentLocalFile->lts.rws || CurrentLocalFile->lts.wws))
+                ||   ((OptTcpTpiInfo & TCPTPI_WINDOWS) && (CurrentLocalFile->lts.read_win_st || CurrentLocalFile->lts.write_win_st))
 #endif    /* defined(HASTCPTPIW) */
 
         )) {

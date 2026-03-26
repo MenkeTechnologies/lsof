@@ -106,7 +106,7 @@ process_socket(i)
     switch ((fam = d.dom_family)) {
         case AF_INET:
             if (OptNetwork)
-                CurrentLocalFile->sf |= SELNET;
+                CurrentLocalFile->sel_flags |= SELNET;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "inet");
             printiproto((int) s.so_proto.pr_protocol);
             CurrentLocalFile->inp_ty = 2;
@@ -183,7 +183,7 @@ process_socket(i)
                 }
                 if (la || fa) {
                     (void) ent_inaddr(la, lp, fa, fp, AF_INET);
-                    if (udptm && !CurrentLocalFile->nma)
+                    if (udptm && !CurrentLocalFile->name_append)
                         (void) udp_tm(udp.ud_ftime);
                 }
                 if (pcb.inp_ppcb && strcasecmp(CurrentLocalFile->iproto, "tcp") == 0
@@ -193,7 +193,7 @@ process_socket(i)
                      * Save the TCP state from its control block.
                      */
                     CurrentLocalFile->lts.type = 0;
-                    CurrentLocalFile->lts.state.i = (int) t.t_state;
+                    CurrentLocalFile->lts.state.val = (int) t.t_state;
                 }
             } else {
 
@@ -243,7 +243,7 @@ process_socket(i)
 #endif    /* defined(HASSOOPT) */
 
 #if    defined(HASSOSTATE)
-            CurrentLocalFile->lts.ss = s.so_state;
+            CurrentLocalFile->lts.sock_state = s.so_state;
 #endif    /* defined(HASSOSTATE) */
 
 
@@ -256,9 +256,9 @@ process_socket(i)
 #endif    /* defined(HASTCPOPT) */
 
 #if    defined(HASTCPTPIQ)
-                CurrentLocalFile->lts.rq = (unsigned long)t.t_iqsize;
-                CurrentLocalFile->lts.sq = (unsigned long)t.t_qsize;
-                CurrentLocalFile->lts.rqs = CurrentLocalFile->lts.sqs = 1;
+                CurrentLocalFile->lts.recv_queue = (unsigned long)t.t_iqsize;
+                CurrentLocalFile->lts.send_queue = (unsigned long)t.t_qsize;
+                CurrentLocalFile->lts.recv_queue_st = CurrentLocalFile->lts.send_queue_st = 1;
 #endif    /* defined(HASTCPTPIQ) */
 
                 if (OptSize) {
@@ -284,7 +284,7 @@ process_socket(i)
 #if    OSRV >= 500
         case AF_UNIX:
             if (OptUnixSocket)
-            CurrentLocalFile->sf |= SELUNX;
+            CurrentLocalFile->sel_flags |= SELUNX;
             (void) snpf(CurrentLocalFile->type, sizeof(CurrentLocalFile->type), "unix");
         /*
          * Read Unix protocol control block and the Unix address structure.
@@ -309,7 +309,7 @@ process_socket(i)
                 ud.local_addr.sun_path[sizeof(ud.local_addr.sun_path) - 1]
                 = '\0';
                 if (SearchFileChain && is_file_named(ud.local_addr.sun_path, 0))
-                CurrentLocalFile->sf |= SELNM;
+                CurrentLocalFile->sel_flags |= SELNM;
                 if (!NameChars[0])
                 (void) snpf(NameChars,NameCharsLength,"%s",ud.local_addr.sun_path);
             } else if (ud.for_addr.sun_family == AF_UNIX) {
@@ -318,7 +318,7 @@ process_socket(i)
                 ud.for_addr.sun_path[sizeof(ud.for_addr.sun_path) - 1]
                 = '\0';
                 if (SearchFileChain && is_file_named(ud.for_addr.sun_path, 0))
-                CurrentLocalFile->sf |= SELNM;
+                CurrentLocalFile->sel_flags |= SELNM;
                 else
                 (void) snpf(NameChars,NameCharsLength,"%s",ud.for_addr.sun_path);
             } else if (ud.other_q)
@@ -413,5 +413,5 @@ udp_tm(tm)
         Exit(1);
     }
     (void) snpf(cp, len, "%s", buf);
-    CurrentLocalFile->nma = cp;
+    CurrentLocalFile->name_append = cp;
 }

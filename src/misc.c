@@ -754,9 +754,9 @@ enter_nm(name)
         safestrprt(name, stderr, 1);
         Exit(1);
     }
-    if (CurrentLocalFile->nm)
-        (void) free((FREE_P *) CurrentLocalFile->nm);
-    CurrentLocalFile->nm = name_ptr;
+    if (CurrentLocalFile->name)
+        (void) free((FREE_P *) CurrentLocalFile->name);
+    CurrentLocalFile->name = name_ptr;
 }
 
 
@@ -870,32 +870,32 @@ is_nw_addr(inet_addr, port, addr_family)
             if (strcasecmp(node->proto, CurrentLocalFile->iproto) != 0)
                 continue;
         }
-        if (addr_family && node->af && addr_family != node->af)
+        if (addr_family && node->addr_family && addr_family != node->addr_family)
             continue;
 
 #if    defined(HASIPv6)
         if (addr_family == AF_INET6) {
-        if (node->a[15] || node->a[14] || node->a[13] || node->a[12]
-        ||  node->a[11] || node->a[10] || node->a[9]  || node->a[8]
-        ||  node->a[7]  || node->a[6]  || node->a[5]  || node->a[4]
-        ||  node->a[3]  || node->a[2]  || node->a[1]  || node->a[0]) {
-            if (inet_addr[15] != node->a[15] || inet_addr[14] != node->a[14]
-            ||  inet_addr[13] != node->a[13] || inet_addr[12] != node->a[12]
-            ||  inet_addr[11] != node->a[11] || inet_addr[10] != node->a[10]
-            ||  inet_addr[9]  != node->a[9]  || inet_addr[8]  != node->a[8]
-            ||  inet_addr[7]  != node->a[7]  || inet_addr[6]  != node->a[6]
-            ||  inet_addr[5]  != node->a[5]  || inet_addr[4]  != node->a[4]
-            ||  inet_addr[3]  != node->a[3]  || inet_addr[2]  != node->a[2]
-            ||  inet_addr[1]  != node->a[1]  || inet_addr[0]  != node->a[0])
+        if (node->addr[15] || node->addr[14] || node->addr[13] || node->addr[12]
+        ||  node->addr[11] || node->addr[10] || node->addr[9]  || node->addr[8]
+        ||  node->addr[7]  || node->addr[6]  || node->addr[5]  || node->addr[4]
+        ||  node->addr[3]  || node->addr[2]  || node->addr[1]  || node->addr[0]) {
+            if (inet_addr[15] != node->addr[15] || inet_addr[14] != node->addr[14]
+            ||  inet_addr[13] != node->addr[13] || inet_addr[12] != node->addr[12]
+            ||  inet_addr[11] != node->addr[11] || inet_addr[10] != node->addr[10]
+            ||  inet_addr[9]  != node->addr[9]  || inet_addr[8]  != node->addr[8]
+            ||  inet_addr[7]  != node->addr[7]  || inet_addr[6]  != node->addr[6]
+            ||  inet_addr[5]  != node->addr[5]  || inet_addr[4]  != node->addr[4]
+            ||  inet_addr[3]  != node->addr[3]  || inet_addr[2]  != node->addr[2]
+            ||  inet_addr[1]  != node->addr[1]  || inet_addr[0]  != node->addr[0])
             continue;
         }
         } else if (addr_family == AF_INET)
 #endif    /* defined(HASIPv6) */
 
         {
-            if (node->a[3] || node->a[2] || node->a[1] || node->a[0]) {
-                if (inet_addr[3] != node->a[3] || inet_addr[2] != node->a[2]
-                    || inet_addr[1] != node->a[1] || inet_addr[0] != node->a[0])
+            if (node->addr[3] || node->addr[2] || node->addr[1] || node->addr[0]) {
+                if (inet_addr[3] != node->addr[3] || inet_addr[2] != node->addr[2]
+                    || inet_addr[1] != node->addr[1] || inet_addr[0] != node->addr[0])
                     continue;
             }
         }
@@ -906,7 +906,7 @@ is_nw_addr(inet_addr, port, addr_family)
 #endif    /* defined(HASIPv6) */
 
         if (node->sport == -1 || (port >= node->sport && port <= node->eport)) {
-            node->f = 1;
+            node->found = 1;
             return (1);
         }
     }

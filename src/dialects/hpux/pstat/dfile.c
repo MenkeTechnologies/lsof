@@ -738,7 +738,7 @@ process_finfo(pd, opfid, psfid, na)
         if ((CurrentLocalFile->nlink = (long) pd->psfd_nlink) || (NodeType != N_FIFO))
             CurrentLocalFile->nlink_def = 1;
         if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Save file system identity.
@@ -784,7 +784,7 @@ process_finfo(pd, opfid, psfid, na)
         if (HasNFS < 0)
             (void) scanmnttab();
         if (HasNFS && mp && mp->is_nfs)
-            CurrentLocalFile->sf |= SELNFS;
+            CurrentLocalFile->sel_flags |= SELNFS;
     }
 /*
  * Test for specified file.
@@ -792,10 +792,10 @@ process_finfo(pd, opfid, psfid, na)
     if (SearchFileChain && is_file_named(NULL,
                                ((NodeType == N_CHR) || (NodeType == N_BLK) ? 1
                                                                      : 0)))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter name characters.
  */
-    if (!CurrentLocalFile->nm && NameChars[0])
+    if (!CurrentLocalFile->name && NameChars[0])
         enter_nm(NameChars);
 }

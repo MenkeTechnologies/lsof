@@ -67,11 +67,11 @@ static void
 enter_nma(b)
     char *b;			/* addition buffer */
 {
-    if (CurrentLocalFile->nma)
+    if (CurrentLocalFile->name_append)
         return;
     if (strlen(b) < 1)
         return;
-    CurrentLocalFile->nma = mkstrcpy(b, (MALLOC_S *)NULL);
+    CurrentLocalFile->name_append = mkstrcpy(b, (MALLOC_S *)NULL);
 }
 
 
@@ -384,7 +384,7 @@ process_node(va)
     }
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = va;
+    CurrentLocalFile->node_addr = va;
 #endif    /* defined(HASNCACHE) */
 
 #if    defined(HASFSTRUCT)
@@ -948,13 +948,13 @@ process_node(va)
                 break;
         }
         if (LinkCountThreshold && CurrentLocalFile->nlink_def && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 /*
  * Save the file system names.
  */
@@ -1049,7 +1049,7 @@ process_node(va)
  */
     if (SearchFileChain && is_file_named((char *) NULL,
                                ((type == VCHR) || (type == VBLK) ? 1 : 0)))
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
 /*
  * Enter name characters.
  */

@@ -326,9 +326,9 @@ process_node(va)
     }
 
 #if    defined(HASNCACHE)
-    CurrentLocalFile->na = va;
+    CurrentLocalFile->node_addr = va;
 # if	defined(HASNCVPID)
-    CurrentLocalFile->id = v->v_id;
+    CurrentLocalFile->cap_id = v->v_id;
 # endif	/* defined(HASNCVPID) */
 #endif    /* defined(HASNCACHE) */
 
@@ -1122,13 +1122,13 @@ process_node(va)
                 break;
         }
         if (CurrentLocalFile->nlink_def && LinkCountThreshold && (CurrentLocalFile->nlink < LinkCountThreshold))
-            CurrentLocalFile->sf |= SELNLINK;
+            CurrentLocalFile->sel_flags |= SELNLINK;
     }
 /*
  * Record an NFS file selection.
  */
     if (NodeType == N_NFS && OptNfs)
-        CurrentLocalFile->sf |= SELNFS;
+        CurrentLocalFile->sel_flags |= SELNFS;
 
 #if    defined(HASNULLFS)
     /*
@@ -1359,7 +1359,7 @@ process_node(va)
     if (NodeType == N_PROC) {
         if (ProcFsSearching) {
         ProcFsFound = 1;
-        CurrentLocalFile->sf |= SELNM;
+        CurrentLocalFile->sel_flags |= SELNM;
         } else if (nty == PFSNODE) {
         for (pfi = ProcFsIdTable; pfi; pfi = pfi->next) {
             if ((pfi->pid && pfi->pid == p.pfs_pid)
@@ -1372,7 +1372,7 @@ process_node(va)
             pfi->f = 1;
             if (NameChars[0] && pfi->nm)
                 (void) snpf(NameChars, NameCharsLength, "%s", pfi->nm);
-            CurrentLocalFile->sf |= SELNM;
+            CurrentLocalFile->sel_flags |= SELNM;
             break;
             }
         }
@@ -1389,7 +1389,7 @@ process_node(va)
         if (SearchFileChain && is_file_named((char *) NULL,
                                    ((type == VCHR) || (type == VBLK)) ? 1
                                                                       : 0)) {
-            CurrentLocalFile->sf |= SELNM;
+            CurrentLocalFile->sel_flags |= SELNM;
         }
         if (ns)
             NameChars[0] = '\0';
