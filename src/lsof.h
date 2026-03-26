@@ -401,46 +401,64 @@ static struct utmp dummy_utmp; /* to get login name length */
  * Output title definitions
  */
 
-#define CMDTTL "COMMAND"
+/* Cyberpunk TTY detection flag */
+extern int CyberpunkTTY;
+
+/* ANSI color codes for cyberpunk theme — empty strings when piped */
+#define CP_RESET         (CyberpunkTTY ? "\033[0m" : "")
+#define CP_NEON_CYAN     (CyberpunkTTY ? "\033[1;96m" : "")
+#define CP_NEON_MAGENTA  (CyberpunkTTY ? "\033[1;95m" : "")
+#define CP_NEON_GREEN    (CyberpunkTTY ? "\033[1;92m" : "")
+#define CP_NEON_YELLOW   (CyberpunkTTY ? "\033[1;93m" : "")
+#define CP_NEON_RED      (CyberpunkTTY ? "\033[1;91m" : "")
+#define CP_NEON_BLUE     (CyberpunkTTY ? "\033[1;94m" : "")
+#define CP_DIM           (CyberpunkTTY ? "\033[2m" : "")
+#define CP_BOLD          (CyberpunkTTY ? "\033[1m" : "")
+#define CP_HDR_BG        (CyberpunkTTY ? "\033[48;5;234m" : "")
+#define CP_ROW_ALT       (CyberpunkTTY ? "\033[48;5;233m" : "")
+
+/* Column titles — cyberpunk when TTY, plain when piped */
+#define CMDTTL   (CyberpunkTTY ? "PROCESS"  : "COMMAND")
+#define CNTXTTL  (CyberpunkTTY ? "SEC-CNTX" : "SECURITY-CONTEXT")
+#define DEVTTL   (CyberpunkTTY ? "DEV/ICE"  : "DEVICE")
+#define FCTTL    "FCT"
+#define FDTTL    "FD"
+#define FGTTL    (CyberpunkTTY ? "FL4GS"    : "FILE-FLAG")
+#define FSTTL    (CyberpunkTTY ? "F-ADDR"   : "FILE-ADDR")
+#define NLTTL    (CyberpunkTTY ? "NLNK"     : "NLINK")
+#define NMTTL    (CyberpunkTTY ? "T4RGET"   : "NAME")
+#define NODETTL  (CyberpunkTTY ? "N0DE"     : "NODE")
+#define OFFTTL   (CyberpunkTTY ? "0FFSET"   : "OFFSET")
+#define PGIDTTL  "PGID"
+#define PIDTTL   (CyberpunkTTY ? "PRC"      : "PID")
+#define PPIDTTL  (CyberpunkTTY ? "PPRC"     : "PPID")
+#define SZTTL    (CyberpunkTTY ? "BYT3S"    : "SIZE")
+#define SZOFFTTL (CyberpunkTTY ? "BYT3/0FF" : "SIZE/OFF")
+#define TIDTTL   (CyberpunkTTY ? "THR"      : "TID")
+#define TYPETTL  (CyberpunkTTY ? "CL4SS"    : "TYPE")
+#define USERTTL  (CyberpunkTTY ? "H4XOR"    : "USER")
+#define ZONETTL  (CyberpunkTTY ? "Z0NE"     : "ZONE")
+
 extern int CommandColWidth;
-#define CNTXTTL "SECURITY-CONTEXT"
 extern int ContextColWidth;
-#define DEVTTL "DEVICE"
 extern int DeviceColWidth;
-#define FCTTL "FCT"
 extern int FileCountColWidth;
-#define FDTTL "FD"
 extern int FileDescColWidth;
-#define FGTTL "FILE-FLAG"
 extern int FileFlagColWidth;
-#define FSTTL "FILE-ADDR"
 extern int FileStructAddrColWidth;
-#define NODE_ID_TITLE "NODE-ID"
+#define NODE_ID_TITLE (CyberpunkTTY ? "NOD3-ID" : "NODE-ID")
 extern int NodeIdColWidth;
 extern char *NodeIdTitle;
-#define NLTTL "NLINK"
 extern int LinkCountColWidth;
-#define NMTTL "NAME"
 extern int NameColWidth;
-#define NODETTL "NODE"
 extern int NodeColWidth;
-#define OFFTTL  "OFFSET"
-#define PGIDTTL "PGID"
 extern int PgidColWidth;
-#define PIDTTL "PID"
 extern int PidColWidth;
-#define PPIDTTL "PPID"
 extern int PpidColWidth;
-#define SZTTL    "SIZE"
-#define SZOFFTTL "SIZE/OFF"
 extern int SizeOffColWidth;
-#define TIDTTL "TID"
 extern int TidColWidth;
-#define TYPETTL "TYPE"
 extern int TypeColWidth;
-#define USERTTL "USER"
 extern int UserColWidth;
-#define ZONETTL "ZONE"
 extern int ZoneColWidth;
 
 /*

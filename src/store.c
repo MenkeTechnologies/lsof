@@ -161,7 +161,7 @@ int OptFileStructSetByFlag = 0;        /* OptFileStructValues was set by +f */
 int OptFileStructFlagHex = 0;          /* hex format status for FSV_FILE_FLAGS */
 int OptTask = 0;                       /* -K option value */
 int NodeIdColWidth;                    /* NODE-ID column width */
-char *NodeIdTitle = NODE_ID_TITLE;     /* NODE-ID column title */
+char *NodeIdTitle = NULL;              /* NODE-ID column title, set at runtime */
 int OptTcpTpiInfo = TCPTPI_STATE;      /* -T option status */
 int OptTerse = 0;                      /* -t option status */
 int OptUnixSocket = 0;                 /* -U option status */
@@ -222,6 +222,7 @@ struct fieldsel FieldSelection[] = {
     {LSOF_FID_TERM, 0, LSOF_FNM_TERM, NULL, 0},                                          /* 29 */
     {' ', 0, NULL, NULL, 0}};
 
+int CyberpunkTTY = 0;  /* 1 if stdout is a TTY (cyberpunk mode) */
 int HeaderPrinted = 0; /* header print status */
 char *InodeFormatDecimal = NULL;
 /* INODETYPE decimal printf specification */

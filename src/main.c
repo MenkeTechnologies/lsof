@@ -88,6 +88,11 @@ int main(int argc, char *argv[]) {
 #endif
 
     /*
+ * Detect if stdout is a TTY for cyberpunk output.
+ */
+    CyberpunkTTY = isatty(STDOUT_FILENO) ? 1 : 0;
+    NodeIdTitle = (char *)NODE_ID_TITLE;
+    /*
  * Save program name.
  */
     if ((ProgramName = strrchr(argv[0], '/')))

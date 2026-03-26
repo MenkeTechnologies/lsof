@@ -26,6 +26,7 @@
  */
 
 #include "lsof.h"
+#include "version.h"
 
 /*
  * Local definitions, structures and function prototypes
@@ -641,6 +642,22 @@ void print_file() {
          * Print the header line if this is the second pass and the
          * header hasn't already been printed.
          */
+        /* Cyberpunk banner — only on TTY */
+        if (CyberpunkTTY) {
+            printf("%s╔", CP_NEON_MAGENTA);
+            for (int _i = 0; _i < 72; _i++) printf("═");
+            printf("╗\n");
+            printf("║%s  ██▓     ██████  ▒█████    █████▒    ╔═╗ %sv%s%s             ║\n", CP_NEON_CYAN, CP_NEON_GREEN, LSOF_VERSION, CP_NEON_MAGENTA);
+            printf("║%s ▓██▒   ▒██    ▒ ▒██▒  ██▒▓██   ▒    ║ ║ %s[ OPEN FILES ]%s%s     ║\n", CP_NEON_CYAN, CP_DIM, CP_RESET, CP_NEON_MAGENTA);
+            printf("║%s ▒██░   ░ ▓██▄   ▒██░  ██▒▒████ ░    ╚═╝ %sCYBERDECK%s          ║\n", CP_NEON_CYAN, CP_NEON_YELLOW, CP_NEON_MAGENTA);
+            printf("║%s ▒██░     ▒   ██▒▒██   ██░░▓█▒   ░        %ssys.probe%s%s          ║\n", CP_NEON_CYAN, CP_DIM, CP_RESET, CP_NEON_MAGENTA);
+            printf("║%s ░██████▒██████▒░░ ████▓▒░░▒█████▓        %s◉ ACTIVE%s           ║\n", CP_NEON_CYAN, CP_NEON_RED, CP_NEON_MAGENTA);
+            printf("╠");
+            for (int _i = 0; _i < 72; _i++) printf("═");
+            printf("╣%s\n", CP_RESET);
+        }
+        /* Colored header row */
+        printf("%s%s%s", CP_HDR_BG, CP_NEON_CYAN, CP_BOLD);
         printf("%-*.*s %*s", CommandColWidth, CommandColWidth, CMDTTL, PidColWidth, PIDTTL);
 
 #if defined(HASTASKS)
@@ -702,7 +719,13 @@ void print_file() {
             printf(" %*s", SizeOffColWidth, SZOFFTTL);
         if (OptLinkCount)
             printf(" %*s", LinkCountColWidth, NLTTL);
-        printf(" %*s %s\n", NodeColWidth, NODETTL, NMTTL);
+        printf(" %*s %s%s\n", NodeColWidth, NODETTL, NMTTL, CP_RESET);
+        /* Cyberpunk separator under header — only on TTY */
+        if (CyberpunkTTY) {
+            printf("%s╠", CP_NEON_MAGENTA);
+            for (int _i = 0; _i < 72; _i++) printf("─");
+            printf("╣%s\n", CP_RESET);
+        }
         HeaderPrinted++;
     }
     /*
@@ -716,8 +739,11 @@ void print_file() {
             len = CommandColLimit;
         if (len > CommandColWidth)
             CommandColWidth = len;
-    } else
+    } else {
+        printf("%s", CP_NEON_GREEN);
         safestrprtn(char_ptr, CommandColWidth, stdout, 2);
+        printf("%s", CP_RESET);
+    }
     /*
  * Size or print the process ID.
  */
@@ -726,7 +752,7 @@ void print_file() {
         if ((len = strlen(buf)) > PidColWidth)
             PidColWidth = len;
     } else
-        printf(" %*d", PidColWidth, CurrentLocalProc->pid);
+        printf("%s %*d%s", CP_NEON_YELLOW, PidColWidth, CurrentLocalProc->pid, CP_RESET);
 
 #if defined(HASTASKS)
     /*
@@ -811,8 +837,8 @@ void print_file() {
         if ((len = strlen(printuid((UID_ARG)CurrentLocalProc->uid, NULL))) > UserColWidth)
             UserColWidth = len;
     } else
-        printf(" %*.*s", UserColWidth, UserColWidth,
-               printuid((UID_ARG)CurrentLocalProc->uid, NULL));
+        printf("%s %*.*s%s", CP_NEON_MAGENTA, UserColWidth, UserColWidth,
+               printuid((UID_ARG)CurrentLocalProc->uid, NULL), CP_RESET);
     /*
  * Size or print the file descriptor, access mode and lock status.
  */
@@ -825,11 +851,11 @@ void print_file() {
         if ((len = strlen(buf)) > FileDescColWidth)
             FileDescColWidth = len;
     } else
-        printf(" %*.*s%c%c", FileDescColWidth - 2, FileDescColWidth - 2, CurrentLocalFile->fd,
+        printf("%s %*.*s%c%c%s", CP_NEON_CYAN, FileDescColWidth - 2, FileDescColWidth - 2, CurrentLocalFile->fd,
                (CurrentLocalFile->lock == ' ')     ? CurrentLocalFile->access
                : (CurrentLocalFile->access == ' ') ? '-'
                                                    : CurrentLocalFile->access,
-               CurrentLocalFile->lock);
+               CurrentLocalFile->lock, CP_RESET);
     /*
  * Size or print the type.
  */
@@ -837,7 +863,7 @@ void print_file() {
         if ((len = strlen(CurrentLocalFile->type)) > TypeColWidth)
             TypeColWidth = len;
     } else
-        printf(" %*.*s", TypeColWidth, TypeColWidth, CurrentLocalFile->type);
+        printf("%s %*.*s%s", CP_NEON_RED, TypeColWidth, TypeColWidth, CurrentLocalFile->type, CP_RESET);
 
 #if defined(HASFSTRUCT)
     /*
@@ -938,10 +964,10 @@ void print_file() {
             DeviceColWidth = len;
     } else {
         if (devs)
-            printf(" %*.*s", DeviceColWidth, DeviceColWidth, char_ptr);
+            printf("%s %*.*s%s", CP_DIM, DeviceColWidth, DeviceColWidth, char_ptr, CP_RESET);
         else {
             if (CurrentLocalFile->dev_ch)
-                printf(" %*.*s", DeviceColWidth, DeviceColWidth, CurrentLocalFile->dev_ch);
+                printf("%s %*.*s%s", CP_DIM, DeviceColWidth, DeviceColWidth, CurrentLocalFile->dev_ch, CP_RESET);
             else
                 printf(" %*.*s", DeviceColWidth, DeviceColWidth, "");
         }
@@ -1063,20 +1089,21 @@ void print_file() {
         if ((len = strlen(char_ptr)) > NodeColWidth)
             NodeColWidth = len;
     } else {
-        printf(" %*.*s", NodeColWidth, NodeColWidth, char_ptr);
+        printf("%s %*.*s%s", CP_NEON_BLUE, NodeColWidth, NodeColWidth, char_ptr, CP_RESET);
     }
     /*
  * If this is the second pass, print the name column.  (It doesn't need
  * to be sized.)
  */
     if (PrintPass) {
-        putchar(' ');
+        printf(" %s", CP_NEON_CYAN);
 
 #if defined(HASPRINTNM)
         HASPRINTNM(CurrentLocalFile);
 #else
         printname(1);
 #endif
+        printf("%s", CP_RESET);
     }
 }
 
