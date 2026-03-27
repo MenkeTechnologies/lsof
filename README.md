@@ -16,7 +16,7 @@
 
 ## // WHAT IS THIS
 
-**lsof** — **L**ist **S**ystem **O**pen **F**iles — v6.2
+**lsof** — **L**ist **S**ystem **O**pen **F**iles — v6.3
 
 A diagnostic tool forged in the UNIX underground. It maps the invisible topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.
 
@@ -95,6 +95,15 @@ lsofng --leak-detect=10,5
 lsofng --monitor
 lsofng -W -i              # watch network connections live
 lsofng -W --delta -p $$   # monitor with new/gone highlighting
+
+# Aggregate FD summary — type breakdown, top processes, per-user
+lsofng --summary
+lsofng --stats -i          # summary of network connections only
+lsofng --summary -J        # JSON summary output
+
+# Follow a single process — watch FD opens/closes in real-time
+lsofng --follow 1234
+lsofng --follow=$PID
 ```
 
 ---
@@ -128,6 +137,14 @@ lsofng -W --delta -p $$   # monitor with new/gone highlighting
 ### > Monitor mode (`lsofng --monitor`)
 
 ![Monitor mode](screenshots/monitor.png)
+
+### > Summary mode (`lsofng --summary`)
+
+![Summary mode](screenshots/summary.png)
+
+### > Follow mode (`lsofng --follow PID`)
+
+![Follow mode](screenshots/follow.png)
 
 ---
 
@@ -240,7 +257,70 @@ lsofng -W -u neo -i :8080
 - Clean terminal restore on Ctrl-C
 - Composable with `--delta`, `-i`, `-p`, `-c`, `-u`, and all other filters
 
+**Interactive controls** (new in v6.3):
+- `s` — cycle sort column (PID, COMMAND, USER, FDs)
+- `r` — reverse sort order
+- `f` — filter by file type (e.g. "REG", "SOCK")
+- `/` — search/highlight by name substring
+- `p` — pause/unpause refresh
+- `?`/`h` — toggle help bar
+- `q` — quit
+
 **Requires a terminal** — exits with an error if stdout is not a TTY. Incompatible with `-J` (JSON), `-F` (field output), and `-t` (terse mode).
+
+---
+
+## // SUMMARY MODE
+
+Aggregate system health snapshot — type breakdown with bar chart, top processes by FD count, and per-user totals.
+
+```bash
+# Full system summary
+lsofng --summary
+lsofng --stats           # alias
+
+# Summary of network connections only
+lsofng --summary -i
+
+# Summary for a specific user
+lsofng --stats -u neo
+
+# JSON summary output — pipe to jq or monitoring systems
+lsofng --summary -J
+lsofng --summary -J -i | jq '.summary.types'
+```
+
+**Features:**
+- Per-type FD breakdown with bar chart and percentages
+- Top 10 processes ranked by open FD count
+- Per-user totals (process count and file count)
+- Supports all existing filter flags (`-c`, `-u`, `-p`, `-i`, etc.)
+- JSON output via `-J` for programmatic consumption
+
+---
+
+## // FOLLOW MODE
+
+Continuously watch a single process's file descriptors, highlighting opens and closes in real-time.
+
+```bash
+# Watch PID 1234
+lsofng --follow 1234
+lsofng --follow=$PID
+
+# Default refresh: 1 second, custom:
+lsofng --follow 1234 -r 5
+```
+
+**Features:**
+- Real-time FD tracking with status highlighting:
+  - `+NEW` (green) — newly opened file descriptors
+  - `-DEL` (red) — recently closed file descriptors
+- Full-screen alternate buffer (like `--monitor`)
+- Interactive quit with `q`
+- Useful for debugging file descriptor leaks during development
+
+**Requires a terminal** — exits with an error if stdout is not a TTY.
 
 ---
 
@@ -270,6 +350,8 @@ Tests core algorithms in isolation — no kernel access or lsof binary required:
 - **JSON escape** — null handling, special character escaping (quotes, backslash, control chars, Unicode), output structure validation
 - **FD leak detection** — hash table distribution, entry creation/reuse, recording with threshold tracking, circular buffer wrapping, multi-process independence
 - **Monitor mode** — row budget calculation (normal/small/large terminals, minimum clamp, boundary conditions), ANSI escape sequence validation (alt screen, cursor, symmetry), row counter logic
+- **Summary mode** — type hash range/distribution/determinism, UID hash properties, number formatting (commas, negatives, boundary values, rotating buffers), JSON field validation, sort mode cycling
+- **Follow mode** — FD hash range/distribution/determinism, status transitions (new/existing/gone), sort ordering (new first, gone last), status label mapping
 
 ### Integration tests (`test/test_integration.c`)
 
@@ -283,6 +365,9 @@ Invokes the lsof binary and validates output:
 - JSON output (`-J`/`--json`) — valid array structure, process fields, file detection
 - Leak detection (`--leak-detect`) — flag acceptance, help text verification
 - Monitor mode (`--monitor`/`-W`) — TTY requirement enforcement, short/long flag aliases, incompatibility with `-J`/`-t`, help text verification
+- Summary mode (`--summary`/`--stats`) — output structure, section headers, JSON structure/fields, filter compatibility, alias equivalence, help text verification
+- Follow mode (`--follow`) — TTY requirement, PID validation (missing/invalid/zero), `--follow=PID` syntax, help text verification
+- Interactive monitor — help text mentions interactive controls
 
 ---
 

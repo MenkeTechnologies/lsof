@@ -344,9 +344,21 @@ extern void delta_print_gone(void);
 extern void delta_print_summary(void);
 extern void delta_cleanup(void);
 
+extern void summary_collect(void);
+extern void summary_report_text(void);
+extern void summary_report_json(void);
+extern void summary_cleanup(void);
+
 extern void monitor_init(void);
 extern void monitor_enter(void);
 extern void monitor_begin_frame(int count, int interval);
 extern void monitor_leave(void);
+extern void monitor_sort_procs(struct lproc **sorted, int count);
+extern int monitor_filter_match(struct lproc *proc);
+extern int monitor_sleep(int seconds);
+
+extern void follow_collect(void);
+extern void follow_report(void);
+extern void follow_cleanup(void);
 
 #endif

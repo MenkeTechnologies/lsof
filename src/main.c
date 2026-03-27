@@ -171,6 +171,55 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /*
+     * Pre-scan argv for --summary / --stats long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--summary") == 0 || strcmp(argv[i], "--stats") == 0) {
+            OptSummaryMode = 1;
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
+    /*
+     * Pre-scan argv for --follow PID long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--follow", 8) == 0) {
+            if (argv[i][8] == '=') {
+                FollowTargetPid = atoi(&argv[i][9]);
+            } else if (i + 1 < argc) {
+                FollowTargetPid = atoi(argv[i + 1]);
+                /* Remove the PID argument */
+                {
+                    int j;
+                    for (j = i + 1; j < argc - 1; j++)
+                        argv[j] = argv[j + 1];
+                    argc--;
+                }
+            }
+            if (FollowTargetPid <= 0) {
+                fprintf(stderr, "%s: --follow requires a valid PID\n",
+                        argv[0]);
+                Exit(1);
+            }
+            OptFollowPid = 1;
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
     NodeIdTitle = (char *)NODE_ID_TITLE;
     /*
  * Save program name.
@@ -1304,6 +1353,17 @@ int main(int argc, char *argv[]) {
     }
     if (OptDeltaHighlight)
         delta_init();
+    if (OptFollowPid) {
+        if (!CyberpunkTTY) {
+            fprintf(stderr, "%s: --follow requires stdout to be a terminal\n",
+                    ProgramName);
+            Exit(1);
+        }
+        if (!RepeatTime)
+            RepeatTime = 1;
+        monitor_init();
+        monitor_enter();
+    }
     if (OptMonitorMode) {
         monitor_init();
         monitor_enter();
@@ -1364,7 +1424,25 @@ int main(int argc, char *argv[]) {
              * If stdout is a TTY and we're not in repeat mode, pipe output
              * through less(1) so it pages when longer than a screenful.
              */
-            if (LeakDetectMode) {
+            if (OptFollowPid) {
+                follow_collect();
+                follow_report();
+                if (RepeatTime) {
+                    for (i = 0; i < NumLocalProcs; i++)
+                        free_lproc(&LocalProcTable[i]);
+                }
+            } else if (OptSummaryMode) {
+                summary_collect();
+                if (OptJsonOutput)
+                    summary_report_json();
+                else
+                    summary_report_text();
+                summary_cleanup();
+                if (RepeatTime) {
+                    for (i = 0; i < NumLocalProcs; i++)
+                        free_lproc(&LocalProcTable[i]);
+                }
+            } else if (LeakDetectMode) {
                 leak_detect_update();
                 leak_detect_report();
                 if (RepeatTime) {
@@ -1395,8 +1473,13 @@ int main(int argc, char *argv[]) {
                 if (OptDeltaHighlight)
                     delta_begin_iteration();
 
-                if (OptMonitorMode)
+                if (OptMonitorMode) {
+                    /* Apply interactive sort if not default PID sort */
+                    if (sorted_procs && NumLocalProcs > 1 &&
+                        (MonitorSortMode != 0 || MonitorSortReverse))
+                        monitor_sort_procs(sorted_procs, NumLocalProcs);
                     monitor_begin_frame(NumLocalProcs, RepeatTime);
+                }
 
                 if (CyberpunkTTY && !RepeatTime && !OptFieldOutput && !OptTerse && !OptMonitorMode) {
                     pager_fp = popen("less -RFX", "w");
@@ -1410,6 +1493,12 @@ int main(int argc, char *argv[]) {
                     for (i = num_parsed = 0; i < NumLocalProcs; i++) {
                         CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
                         if (CurrentLocalProc->sel_state) {
+                            /* In monitor mode, apply type filter */
+                            if (OptMonitorMode && !monitor_filter_match(CurrentLocalProc)) {
+                                if (RepeatTime && PrintPass)
+                                    free_lproc(CurrentLocalProc);
+                                continue;
+                            }
                             if (print_proc())
                                 num_parsed++;
                         }
@@ -1454,7 +1543,7 @@ int main(int argc, char *argv[]) {
             }
 #endif
 
-            if (!OptMonitorMode) {
+            if (!OptMonitorMode && !OptFollowPid) {
                 if (OptFieldOutput) {
                     putchar(LSOF_FID_MARK);
 
@@ -1480,13 +1569,20 @@ int main(int argc, char *argv[]) {
             }
             fflush(stdout);
             childx();
-            sleep(RepeatTime);
+            if (OptMonitorMode || OptFollowPid) {
+                if (monitor_sleep(RepeatTime))
+                    break; /* quit requested */
+            } else {
+                sleep(RepeatTime);
+            }
             HeaderPrinted = NumLocalProcs = 0;
             CheckPasswdChange = 1;
         }
     } while (RepeatTime);
-    if (OptMonitorMode)
+    if (OptMonitorMode || OptFollowPid)
         monitor_leave();
+    if (OptFollowPid)
+        follow_cleanup();
     /*
  * See if all requested information was displayed.  Return zero if it
  * was; one, if not.  If -V was specified, report what was not displayed.

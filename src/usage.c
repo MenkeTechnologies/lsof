@@ -438,6 +438,10 @@ void usage(int exit_val, int field_help, int version) {
         fprintf(stderr, ANSI_GREEN "   -W, --monitor     " ANSI_RESET
                         "live full-screen refresh mode " ANSI_MAGENTA
                         "(like top, implies +r 2)" ANSI_RESET "\n");
+        fprintf(stderr, ANSI_GREEN "   --summary, --stats " ANSI_RESET
+                        "aggregate FD summary: type breakdown, top processes, per-user\n");
+        fprintf(stderr, ANSI_GREEN "   --follow PID      " ANSI_RESET
+                        "watch a single process's FDs, highlight opens/closes\n");
 
 #if defined(HASNCACHE)
         fprintf(stderr,

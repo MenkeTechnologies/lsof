@@ -44,6 +44,8 @@
 #include "test_unit_json.h"
 #include "test_unit_leak.h"
 #include "test_unit_monitor.h"
+#include "test_unit_summary.h"
+#include "test_unit_follow.h"
 
 int main(int argc, char **argv) {
     (void)argc;
@@ -608,6 +610,55 @@ int main(int argc, char **argv) {
     RUN(monitor_row_counter_decrement);
     RUN(monitor_row_counter_truncation);
     RUN(monitor_header_reduces_budget);
+
+    /* --- summary mode --- */
+    RUN(summary_type_hash_range);
+    RUN(summary_type_hash_deterministic);
+    RUN(summary_type_hash_different_types_differ);
+    RUN(summary_type_hash_empty_string);
+    RUN(summary_type_hash_distribution);
+    RUN(summary_uid_hash_range);
+    RUN(summary_uid_hash_deterministic);
+    RUN(summary_uid_hash_root);
+    RUN(summary_uid_hash_different_uids_differ);
+    RUN(summary_fmt_num_zero);
+    RUN(summary_fmt_num_small);
+    RUN(summary_fmt_num_hundreds);
+    RUN(summary_fmt_num_thousands);
+    RUN(summary_fmt_num_ten_thousands);
+    RUN(summary_fmt_num_millions);
+    RUN(summary_fmt_num_negative);
+    RUN(summary_fmt_num_negative_thousands);
+    RUN(summary_fmt_num_rotating_buffers);
+    RUN(summary_fmt_num_one);
+    RUN(summary_fmt_num_boundary_999);
+    RUN(summary_fmt_num_boundary_1000);
+    RUN(summary_json_expected_fields);
+    RUN(summary_json_process_fields);
+    RUN(summary_json_user_fields);
+    RUN(summary_sort_modes_valid);
+    RUN(summary_sort_mode_count);
+
+    /* --- follow mode --- */
+    RUN(follow_hash_range);
+    RUN(follow_hash_deterministic);
+    RUN(follow_hash_different_fds_differ);
+    RUN(follow_hash_empty_string);
+    RUN(follow_hash_numeric_fds_spread);
+    RUN(follow_status_new);
+    RUN(follow_status_existing);
+    RUN(follow_status_gone);
+    RUN(follow_status_new_to_existing);
+    RUN(follow_status_existing_to_gone);
+    RUN(follow_status_gone_to_new);
+    RUN(follow_sort_new_before_existing);
+    RUN(follow_sort_existing_before_gone);
+    RUN(follow_sort_new_before_gone);
+    RUN(follow_sort_same_status_by_fd);
+    RUN(follow_sort_same_status_equal);
+    RUN(follow_status_label_new);
+    RUN(follow_status_label_gone);
+    RUN(follow_status_label_existing);
 
     TEST_REPORT();
 }

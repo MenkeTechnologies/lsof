@@ -379,7 +379,16 @@ int LeakDetectInterval = 5;
 int LeakDetectThreshold = 3;
 
 int OptDeltaHighlight = 0;
+int OptSummaryMode = 0;       /* --summary / --stats aggregate view */
 int OptMonitorMode = 0;       /* --monitor / -W live refresh mode */
 int MonitorTermRows = 24;     /* terminal rows (updated by SIGWINCH) */
 int MonitorTermCols = 80;     /* terminal cols (updated by SIGWINCH) */
 int MonitorRowsRemaining = 0; /* rows left to print in current frame */
+int MonitorSortMode = 0;     /* sort mode: 0=PID, 1=CMD, 2=USER, 3=FDs */
+int MonitorSortReverse = 0;  /* reverse sort order */
+int MonitorPaused = 0;       /* pause refresh */
+int MonitorShowHelp = 1;     /* show help bar (on by default initially) */
+char MonitorTypeFilter[32];  /* type filter string */
+char MonitorSearchStr[128];  /* search/highlight string */
+int OptFollowPid = 0;        /* --follow PID mode */
+int FollowTargetPid = -1;    /* PID to follow */

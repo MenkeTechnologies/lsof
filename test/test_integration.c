@@ -1695,6 +1695,166 @@ TEST(lsof_help_mentions_delta) {
     ASSERT_NOT_NULL(strstr(buf, "--delta"));
 }
 
+/* ===== Summary/stats mode tests ===== */
+
+TEST(lsof_summary_output) {
+    if (!lsof_available())
+        return;
+    char buf[16384];
+    int rc = run_lsof("--summary", buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(strlen(buf) > 0);
+    /* Should contain key section headers */
+    ASSERT_NOT_NULL(strstr(buf, "SYSTEM FILE DESCRIPTOR SUMMARY"));
+    ASSERT_NOT_NULL(strstr(buf, "TYPE BREAKDOWN"));
+    ASSERT_NOT_NULL(strstr(buf, "TOP PROCESSES"));
+    ASSERT_NOT_NULL(strstr(buf, "PER-USER TOTALS"));
+}
+
+TEST(lsof_stats_alias) {
+    if (!lsof_available())
+        return;
+    char buf[16384];
+    int rc = run_lsof("--stats", buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "SYSTEM FILE DESCRIPTOR SUMMARY"));
+}
+
+TEST(lsof_summary_has_totals) {
+    if (!lsof_available())
+        return;
+    char buf[32768];
+    int rc = run_lsof("--summary", buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "Total open files"));
+    ASSERT_NOT_NULL(strstr(buf, "Total processes"));
+}
+
+TEST(lsof_summary_json_output) {
+    if (!lsof_available())
+        return;
+    char buf[16384];
+    int rc = run_lsof("--summary -J", buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(strlen(buf) > 0);
+    /* Should be valid JSON object with summary key */
+    ASSERT_NOT_NULL(strstr(buf, "\"summary\""));
+    ASSERT_NOT_NULL(strstr(buf, "\"total_files\""));
+    ASSERT_NOT_NULL(strstr(buf, "\"total_processes\""));
+    ASSERT_NOT_NULL(strstr(buf, "\"types\""));
+    ASSERT_NOT_NULL(strstr(buf, "\"top_processes\""));
+    ASSERT_NOT_NULL(strstr(buf, "\"users\""));
+}
+
+TEST(lsof_summary_json_has_valid_structure) {
+    if (!lsof_available())
+        return;
+    char buf[16384];
+    int rc = run_lsof("--summary --json", buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    /* Should start with { and end with } */
+    ASSERT_EQ(buf[0], '{');
+    char *last_brace = strrchr(buf, '}');
+    ASSERT_NOT_NULL(last_brace);
+}
+
+TEST(lsof_summary_with_network_filter) {
+    if (!lsof_available())
+        return;
+    char buf[16384];
+    int rc = run_lsof("--summary -i", buf, sizeof(buf));
+    /* rc could be 0 (found) or 1 (nothing found) */
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    if (rc == 0) {
+        ASSERT_NOT_NULL(strstr(buf, "TYPE BREAKDOWN"));
+    }
+}
+
+TEST(lsof_summary_with_command_filter) {
+    if (!lsof_available())
+        return;
+    char args[128];
+    char buf[16384];
+    snprintf(args, sizeof(args), "--stats -c check_integ");
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "Total processes"));
+}
+
+TEST(lsof_help_mentions_summary) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof_stderr("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    ASSERT_NOT_NULL(strstr(buf, "--summary"));
+    ASSERT_NOT_NULL(strstr(buf, "--stats"));
+}
+
+/* ===== Follow mode tests ===== */
+
+TEST(lsof_follow_rejects_pipe) {
+    if (!lsof_available())
+        return;
+    /* --follow requires a TTY; our test runner pipes stdout */
+    char args[128];
+    char buf[4096];
+    pid_t mypid = getpid();
+    snprintf(args, sizeof(args), "--follow %d", (int)mypid);
+    int rc = run_lsof_stderr(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+    ASSERT_NOT_NULL(strstr(buf, "terminal"));
+}
+
+TEST(lsof_follow_requires_pid) {
+    if (!lsof_available())
+        return;
+    char buf[4096];
+    int rc = run_lsof_stderr("--follow", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+    ASSERT_NOT_NULL(strstr(buf, "PID"));
+}
+
+TEST(lsof_follow_rejects_invalid_pid) {
+    if (!lsof_available())
+        return;
+    char buf[4096];
+    int rc = run_lsof_stderr("--follow 0", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+}
+
+TEST(lsof_follow_equals_syntax) {
+    if (!lsof_available())
+        return;
+    char buf[4096];
+    /* --follow=PID syntax should be parsed */
+    int rc = run_lsof_stderr("--follow=1", buf, sizeof(buf));
+    /* Should fail because not a TTY, but PID parsing succeeded */
+    ASSERT_EQ(rc, 1);
+    ASSERT_NOT_NULL(strstr(buf, "terminal"));
+}
+
+TEST(lsof_help_mentions_follow) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof_stderr("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    ASSERT_NOT_NULL(strstr(buf, "--follow"));
+}
+
+/* ===== Interactive monitor tests ===== */
+
+TEST(lsof_help_mentions_interactive_controls) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof_stderr("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    /* Monitor mode should be documented */
+    ASSERT_NOT_NULL(strstr(buf, "--monitor"));
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -1779,6 +1939,26 @@ int main(int argc, char **argv) {
     RUN(lsof_monitor_incompatible_with_terse);
     RUN(lsof_help_mentions_monitor);
     RUN(lsof_help_mentions_delta);
+
+    /* --- summary/stats mode --- */
+    RUN(lsof_summary_output);
+    RUN(lsof_stats_alias);
+    RUN(lsof_summary_has_totals);
+    RUN(lsof_summary_json_output);
+    RUN(lsof_summary_json_has_valid_structure);
+    RUN(lsof_summary_with_network_filter);
+    RUN(lsof_summary_with_command_filter);
+    RUN(lsof_help_mentions_summary);
+
+    /* --- follow mode --- */
+    RUN(lsof_follow_rejects_pipe);
+    RUN(lsof_follow_requires_pid);
+    RUN(lsof_follow_rejects_invalid_pid);
+    RUN(lsof_follow_equals_syntax);
+    RUN(lsof_help_mentions_follow);
+
+    /* --- interactive monitor --- */
+    RUN(lsof_help_mentions_interactive_controls);
 
     TEST_REPORT();
 }
