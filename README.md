@@ -16,7 +16,7 @@
 
 ## // WHAT IS THIS
 
-**lsof** — **L**ist **S**ystem **O**pen **F**iles — v6.1
+**lsof** — **L**ist **S**ystem **O**pen **F**iles — v6.2
 
 A diagnostic tool forged in the UNIX underground. It maps the invisible topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.
 
@@ -90,6 +90,11 @@ lsofng -J -p 1337
 # Detect FD leaks — poll every 5s, flag after 3 increases
 lsofng --leak-detect
 lsofng --leak-detect=10,5
+
+# Live monitor — full-screen refresh like top(1)
+lsofng --monitor
+lsofng -W -i              # watch network connections live
+lsofng -W --delta -p $$   # monitor with new/gone highlighting
 ```
 
 ---
@@ -119,6 +124,10 @@ lsofng --leak-detect=10,5
 ### > JSON output (`lsofng -J`)
 
 ![JSON output](screenshots/json-output.png)
+
+### > Monitor mode (`lsofng --monitor`)
+
+![Monitor mode](screenshots/monitor.png)
 
 ---
 
@@ -201,6 +210,40 @@ lsofng --leak-detect -p 1234
 
 ---
 
+## // MONITOR MODE
+
+Live full-screen refresh mode — like `top(1)` for open files. Uses the ANSI alternate screen buffer for flicker-free updates that redraw in place.
+
+```bash
+# Watch all open files, refreshing every 2 seconds
+lsofng --monitor
+lsofng -W
+
+# Monitor network connections live
+lsofng -W -i
+
+# Monitor with delta highlighting (new/gone FDs colored)
+lsofng -W --delta
+
+# Watch a specific process with custom refresh interval
+lsofng -W -r 5 -p 1234
+
+# Combine with any filter
+lsofng -W -u neo -i :8080
+```
+
+**Features:**
+- Flicker-free full-screen redraw using alternate screen buffer
+- Status bar with timestamp, file count, and refresh interval
+- Automatic terminal resize handling (SIGWINCH)
+- Row truncation to fit terminal height
+- Clean terminal restore on Ctrl-C
+- Composable with `--delta`, `-i`, `-p`, `-c`, `-u`, and all other filters
+
+**Requires a terminal** — exits with an error if stdout is not a TTY. Incompatible with `-J` (JSON), `-F` (field output), and `-t` (terse mode).
+
+---
+
 ## // TESTING
 
 lsof ships with a unit test suite and an integration test suite. Run them with:
@@ -226,6 +269,7 @@ Tests core algorithms in isolation — no kernel access or lsof binary required:
 - **Memory safety** — safe realloc patterns, leak detection for process tables, host cache, regex tables, PID/UID arrays, directory stacks, state tables, service names, FD lists, efsys paths, network addresses
 - **JSON escape** — null handling, special character escaping (quotes, backslash, control chars, Unicode), output structure validation
 - **FD leak detection** — hash table distribution, entry creation/reuse, recording with threshold tracking, circular buffer wrapping, multi-process independence
+- **Monitor mode** — row budget calculation (normal/small/large terminals, minimum clamp, boundary conditions), ANSI escape sequence validation (alt screen, cursor, symmetry), row counter logic
 
 ### Integration tests (`test/test_integration.c`)
 
@@ -238,6 +282,7 @@ Invokes the lsof binary and validates output:
 - Invalid PID handling, AND selection (`-a`), FD selection (`-d`)
 - JSON output (`-J`/`--json`) — valid array structure, process fields, file detection
 - Leak detection (`--leak-detect`) — flag acceptance, help text verification
+- Monitor mode (`--monitor`/`-W`) — TTY requirement enforcement, short/long flag aliases, incompatibility with `-J`/`-t`, help text verification
 
 ---
 

@@ -155,6 +155,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /*
+     * Pre-scan argv for --monitor long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--monitor") == 0) {
+            OptMonitorMode = 1;
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
     NodeIdTitle = (char *)NODE_ID_TITLE;
     /*
  * Save program name.
@@ -206,7 +222,7 @@ int main(int argc, char *argv[]) {
  * Create option mask.
  */
     snpf(options, sizeof(options),
-         "?a%sbc:%sD:d:%sf:F:g:hi:%s%sJlL:%s%snNo:Op:Pr:%ss:S:tT:u:UvVwx:%s%s%s",
+         "?a%sbc:%sD:d:%sf:F:g:hi:%s%sJlL:%s%snNo:Op:Pr:%ss:S:tT:u:UvVWwx:%s%s%s",
 
 #if defined(HAS_AFS) && defined(HASAOPT)
          "A:",
@@ -920,6 +936,9 @@ int main(int argc, char *argv[]) {
         case 'V':
             OptVerbose = 1;
             break;
+        case 'W':
+            OptMonitorMode = 1;
+            break;
         case 'w':
             OptWarnings = (GOp == '+') ? 0 : 1;
             break;
@@ -1268,8 +1287,27 @@ int main(int argc, char *argv[]) {
         /* --delta requires repeat mode; default to 2 seconds */
         RepeatTime = 2;
     }
+    if (OptMonitorMode) {
+        if (!CyberpunkTTY) {
+            fprintf(stderr, "%s: --monitor requires stdout to be a terminal\n",
+                    ProgramName);
+            Exit(1);
+        }
+        if (OptJsonOutput || OptFieldOutput || OptTerse) {
+            fprintf(stderr,
+                    "%s: --monitor is incompatible with -J, -F, and -t\n",
+                    ProgramName);
+            Exit(1);
+        }
+        if (!RepeatTime)
+            RepeatTime = 2;
+    }
     if (OptDeltaHighlight)
         delta_init();
+    if (OptMonitorMode) {
+        monitor_init();
+        monitor_enter();
+    }
     if (RepeatTime)
         CheckPasswdChange = 1;
     do {
@@ -1357,7 +1395,10 @@ int main(int argc, char *argv[]) {
                 if (OptDeltaHighlight)
                     delta_begin_iteration();
 
-                if (CyberpunkTTY && !RepeatTime && !OptFieldOutput && !OptTerse) {
+                if (OptMonitorMode)
+                    monitor_begin_frame(NumLocalProcs, RepeatTime);
+
+                if (CyberpunkTTY && !RepeatTime && !OptFieldOutput && !OptTerse && !OptMonitorMode) {
                     pager_fp = popen("less -RFX", "w");
                     if (pager_fp) {
                         saved_stdout = stdout;
@@ -1413,27 +1454,29 @@ int main(int argc, char *argv[]) {
             }
 #endif
 
-            if (OptFieldOutput) {
-                putchar(LSOF_FID_MARK);
+            if (!OptMonitorMode) {
+                if (OptFieldOutput) {
+                    putchar(LSOF_FID_MARK);
 
 #if defined(HAS_STRFTIME)
-                if (fmtr)
-                    printf("%s", fmtr);
+                    if (fmtr)
+                        printf("%s", fmtr);
 #endif
 
-                putchar(Terminator);
-                if (Terminator != '\n')
-                    putchar('\n');
-            } else {
+                    putchar(Terminator);
+                    if (Terminator != '\n')
+                        putchar('\n');
+                } else {
 
 #if defined(HAS_STRFTIME)
-                if (fmtr)
-                    char_ptr = fmtr;
-                else
+                    if (fmtr)
+                        char_ptr = fmtr;
+                    else
 #endif
 
-                    char_ptr = "=======";
-                puts(char_ptr);
+                        char_ptr = "=======";
+                    puts(char_ptr);
+                }
             }
             fflush(stdout);
             childx();
@@ -1442,6 +1485,8 @@ int main(int argc, char *argv[]) {
             CheckPasswdChange = 1;
         }
     } while (RepeatTime);
+    if (OptMonitorMode)
+        monitor_leave();
     /*
  * See if all requested information was displayed.  Return zero if it
  * was; one, if not.  If -V was specified, report what was not displayed.

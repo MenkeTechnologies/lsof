@@ -344,4 +344,9 @@ extern void delta_print_gone(void);
 extern void delta_print_summary(void);
 extern void delta_cleanup(void);
 
+extern void monitor_init(void);
+extern void monitor_enter(void);
+extern void monitor_begin_frame(int count, int interval);
+extern void monitor_leave(void);
+
 #endif

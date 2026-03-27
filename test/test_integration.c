@@ -1565,6 +1565,136 @@ TEST(lsof_help_mentions_json) {
     ASSERT_NOT_NULL(strstr(buf, "-J"));
 }
 
+/* ===== Monitor mode tests ===== */
+
+/*
+ * Run lsof and capture stderr (not stdout).
+ * Used for testing error messages that go to stderr.
+ */
+static int run_lsof_stderr(const char *args, char *buf, size_t bufsz) {
+    const char *lsof = find_lsof();
+    if (!lsof)
+        return -1;
+
+    char argbuf[1024];
+    char *argv_arr[64];
+    int ac = 0;
+    argv_arr[ac++] = (char *)lsof;
+    if (args && *args) {
+        strncpy(argbuf, args, sizeof(argbuf) - 1);
+        argbuf[sizeof(argbuf) - 1] = '\0';
+        char *tok = strtok(argbuf, " ");
+        while (tok && ac < 63) {
+            argv_arr[ac++] = tok;
+            tok = strtok(NULL, " ");
+        }
+    }
+    argv_arr[ac] = NULL;
+
+    int pipefd[2];
+    if (pipe(pipefd) < 0)
+        return -1;
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return -1;
+    }
+    if (pid == 0) {
+        close(pipefd[0]);
+        dup2(pipefd[1], STDERR_FILENO);
+        close(pipefd[1]);
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0) {
+            dup2(devnull, STDOUT_FILENO);
+            close(devnull);
+        }
+        execv(lsof, argv_arr);
+        _exit(127);
+    }
+
+    close(pipefd[1]);
+    if (buf && bufsz > 0) {
+        size_t total = 0;
+        while (total < bufsz - 1) {
+            ssize_t n = read(pipefd[0], buf + total, bufsz - 1 - total);
+            if (n <= 0)
+                break;
+            total += (size_t)n;
+        }
+        buf[total] = '\0';
+    }
+    close(pipefd[0]);
+
+    int status;
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status))
+        return WEXITSTATUS(status);
+    return -1;
+}
+
+TEST(lsof_monitor_rejects_pipe) {
+    if (!lsof_available())
+        return;
+    /* --monitor requires a TTY; our test runner pipes stdout,
+     * so it should fail with exit code 1 */
+    char buf[4096];
+    int rc = run_lsof_stderr("--monitor", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+    ASSERT_NOT_NULL(strstr(buf, "terminal"));
+}
+
+TEST(lsof_monitor_W_alias_rejects_pipe) {
+    if (!lsof_available())
+        return;
+    /* -W is the short alias for --monitor */
+    char buf[4096];
+    int rc = run_lsof_stderr("-W", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+    ASSERT_NOT_NULL(strstr(buf, "terminal"));
+}
+
+TEST(lsof_monitor_incompatible_with_json) {
+    if (!lsof_available())
+        return;
+    /* --monitor with -J should produce an error */
+    char buf[4096];
+    int rc = run_lsof_stderr("--monitor -J", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+    /* Error should mention terminal (TTY check fires first since piped) */
+    ASSERT_NOT_NULL(strstr(buf, "terminal"));
+}
+
+TEST(lsof_monitor_incompatible_with_terse) {
+    if (!lsof_available())
+        return;
+    char buf[4096];
+    int rc = run_lsof_stderr("--monitor -t", buf, sizeof(buf));
+    ASSERT_EQ(rc, 1);
+}
+
+TEST(lsof_help_mentions_monitor) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof_stderr("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    /* Help should mention --monitor */
+    ASSERT_NOT_NULL(strstr(buf, "--monitor"));
+    /* Help should mention -W */
+    ASSERT_NOT_NULL(strstr(buf, "-W"));
+}
+
+TEST(lsof_help_mentions_delta) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof_stderr("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    ASSERT_NOT_NULL(strstr(buf, "--delta"));
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -1641,6 +1771,14 @@ int main(int argc, char **argv) {
     /* --- leak detection --- */
     RUN(lsof_leak_detect_flag_accepted);
     RUN(lsof_help_mentions_json);
+
+    /* --- monitor mode --- */
+    RUN(lsof_monitor_rejects_pipe);
+    RUN(lsof_monitor_W_alias_rejects_pipe);
+    RUN(lsof_monitor_incompatible_with_json);
+    RUN(lsof_monitor_incompatible_with_terse);
+    RUN(lsof_help_mentions_monitor);
+    RUN(lsof_help_mentions_delta);
 
     TEST_REPORT();
 }

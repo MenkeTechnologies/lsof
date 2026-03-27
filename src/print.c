@@ -642,8 +642,8 @@ void print_file() {
          * Print the header line if this is the second pass and the
          * header hasn't already been printed.
          */
-        /* Cyberpunk banner — only on TTY */
-        if (CyberpunkTTY) {
+        /* Cyberpunk banner — only on TTY, suppressed in monitor mode */
+        if (CyberpunkTTY && !OptMonitorMode) {
             printf("%s╔", CP_NEON_MAGENTA);
             for (int _i = 0; _i < 72; _i++) printf("═");
             printf("╗\n");
@@ -727,7 +727,26 @@ void print_file() {
             printf("╣%s\n", CP_RESET);
         }
         HeaderPrinted++;
+        if (OptMonitorMode) {
+            /* Account for header lines (header row + separator = 2) in row budget */
+            MonitorRowsRemaining -= (CyberpunkTTY ? 2 : 1);
+        }
     }
+    /*
+     * Monitor mode row truncation: stop printing when terminal is full.
+     * Still allow delta recording so tracking stays accurate.
+     */
+    if (OptMonitorMode && PrintPass && MonitorRowsRemaining <= 0) {
+        /* Still record for delta tracking even when not printing */
+        if (OptDeltaHighlight) {
+            delta_record_file(CurrentLocalProc->pid, CurrentLocalFile->fd,
+                              CurrentLocalFile->name, CurrentLocalFile->type,
+                              CurrentLocalProc->cmd, CurrentLocalProc->uid);
+        }
+        return;
+    }
+    if (OptMonitorMode && PrintPass)
+        MonitorRowsRemaining--;
     /*
      * Delta highlighting: record file and classify during print pass.
      */

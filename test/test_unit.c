@@ -43,6 +43,7 @@
 #include "test_unit_environ.h"
 #include "test_unit_json.h"
 #include "test_unit_leak.h"
+#include "test_unit_monitor.h"
 
 int main(int argc, char **argv) {
     (void)argc;
@@ -584,6 +585,29 @@ int main(int argc, char **argv) {
     RUN(leak_multiple_processes_independent);
     RUN(leak_cleanup_frees_all);
     RUN(leak_flag_stays_set_after_more_records);
+
+    /* --- monitor mode --- */
+    RUN(monitor_row_budget_normal_terminal);
+    RUN(monitor_row_budget_standard_24);
+    RUN(monitor_row_budget_small_terminal);
+    RUN(monitor_row_budget_minimum_clamp);
+    RUN(monitor_row_budget_large_terminal);
+    RUN(monitor_row_budget_plain_mode);
+    RUN(monitor_row_budget_zero_rows);
+    RUN(monitor_row_budget_exact_threshold);
+    RUN(monitor_row_budget_one_above_threshold);
+    RUN(monitor_row_budget_one_below_threshold);
+    RUN(monitor_ansi_alt_screen_enter);
+    RUN(monitor_ansi_alt_screen_leave);
+    RUN(monitor_ansi_alt_screen_symmetry);
+    RUN(monitor_ansi_cursor_home);
+    RUN(monitor_ansi_clear_to_end);
+    RUN(monitor_ansi_hide_cursor);
+    RUN(monitor_ansi_show_cursor);
+    RUN(monitor_ansi_cursor_visibility_symmetry);
+    RUN(monitor_row_counter_decrement);
+    RUN(monitor_row_counter_truncation);
+    RUN(monitor_header_reduces_budget);
 
     TEST_REPORT();
 }

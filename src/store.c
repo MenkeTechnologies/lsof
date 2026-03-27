@@ -379,3 +379,7 @@ int LeakDetectInterval = 5;
 int LeakDetectThreshold = 3;
 
 int OptDeltaHighlight = 0;
+int OptMonitorMode = 0;       /* --monitor / -W live refresh mode */
+int MonitorTermRows = 24;     /* terminal rows (updated by SIGWINCH) */
+int MonitorTermCols = 80;     /* terminal cols (updated by SIGWINCH) */
+int MonitorRowsRemaining = 0; /* rows left to print in current frame */

@@ -877,6 +877,10 @@ extern int LeakDetectInterval;
 extern int LeakDetectThreshold;
 
 extern int OptDeltaHighlight;
+extern int OptMonitorMode;
+extern int MonitorTermRows;
+extern int MonitorTermCols;
+extern int MonitorRowsRemaining;
 extern int DeltaFileStatus;
 #define DELTA_UNCHANGED 0
 #define DELTA_NEW       1

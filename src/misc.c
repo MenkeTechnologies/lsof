@@ -683,6 +683,8 @@ void enter_nm(char *name) {
  */
 
 void Exit(int exit_val) {
+    if (OptMonitorMode)
+        monitor_leave();
     childx();
 
 #if defined(HASDCACHE)
