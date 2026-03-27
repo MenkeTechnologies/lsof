@@ -91,6 +91,54 @@ int main(int argc, char *argv[]) {
  * Detect if stdout is a TTY for cyberpunk output.
  */
     CyberpunkTTY = isatty(STDOUT_FILENO) ? 1 : 0;
+
+    /*
+     * Pre-scan argv for --json long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--json") == 0) {
+            OptJsonOutput = 1;
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
+    /*
+     * Pre-scan argv for --leak-detect long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--leak-detect", 13) == 0) {
+            LeakDetectMode = 1;
+            LeakDetectInterval = 5;
+            LeakDetectThreshold = 3;
+            if (argv[i][13] == '=') {
+                char *ld_arg = &argv[i][14];
+                char *comma = strchr(ld_arg, ',');
+                if (comma) {
+                    *comma = '\0';
+                    LeakDetectThreshold = atoi(comma + 1);
+                    if (LeakDetectThreshold < 2)
+                        LeakDetectThreshold = 2;
+                }
+                LeakDetectInterval = atoi(ld_arg);
+                if (LeakDetectInterval < 1)
+                    LeakDetectInterval = 1;
+            }
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
     NodeIdTitle = (char *)NODE_ID_TITLE;
     /*
  * Save program name.
@@ -142,7 +190,7 @@ int main(int argc, char *argv[]) {
  * Create option mask.
  */
     snpf(options, sizeof(options),
-         "?a%sbc:%sD:d:%sf:F:g:hi:%s%slL:%s%snNo:Op:Pr:%ss:S:tT:u:UvVwx:%s%s%s",
+         "?a%sbc:%sD:d:%sf:F:g:hi:%s%sJlL:%s%snNo:Op:Pr:%ss:S:tT:u:UvVwx:%s%s%s",
 
 #if defined(HAS_AFS) && defined(HASAOPT)
          "A:",
@@ -557,6 +605,9 @@ int main(int argc, char *argv[]) {
             break;
 #endif
 
+        case 'J':
+            OptJsonOutput = 1;
+            break;
         case 'l':
             OptUserToLogin = 0;
             break;
@@ -1192,6 +1243,11 @@ int main(int argc, char *argv[]) {
     /*
  * Gather and report process information every RepeatTime seconds.
  */
+    if (LeakDetectMode) {
+        if (!RepeatTime)
+            RepeatTime = LeakDetectInterval;
+        leak_detect_init();
+    }
     if (RepeatTime)
         CheckPasswdChange = 1;
     do {
@@ -1248,7 +1304,31 @@ int main(int argc, char *argv[]) {
              * If stdout is a TTY and we're not in repeat mode, pipe output
              * through less(1) so it pages when longer than a screenful.
              */
-            {
+            if (LeakDetectMode) {
+                leak_detect_update();
+                leak_detect_report();
+                if (RepeatTime) {
+                    for (i = 0; i < NumLocalProcs; i++)
+                        free_lproc(&LocalProcTable[i]);
+                }
+            } else if (OptJsonOutput) {
+                json_begin();
+                {
+                    int first = 1;
+                    for (i = num_parsed = 0; i < NumLocalProcs; i++) {
+                        CurrentLocalProc = (NumLocalProcs > 1) ? sorted_procs[i] : &LocalProcTable[i];
+                        if (CurrentLocalProc->sel_state) {
+                            json_print_proc(CurrentLocalProc, first);
+                            first = 0;
+                            num_parsed++;
+                        }
+                        if (RepeatTime)
+                            free_lproc(CurrentLocalProc);
+                    }
+                }
+                json_end();
+                fflush(stdout);
+            } else {
                 FILE *pager_fp = NULL;
                 FILE *saved_stdout = NULL;
 
@@ -1592,6 +1672,8 @@ int main(int argc, char *argv[]) {
         return_val = exit_val;
     if (!return_val && PathStatErrorCount)
         return_val = 1;
+    if (LeakDetectMode)
+        leak_detect_cleanup();
     Exit(return_val);
     return (return_val); /* to make code analyzers happy */
 }

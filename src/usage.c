@@ -382,6 +382,8 @@ void usage(int exit_val, int field_help, int version) {
                         "  ── DISPLAY ───────────────────────────────────────" ANSI_RESET "\n");
         fprintf(stderr, ANSI_GREEN "   -F [FIELDS]       " ANSI_RESET
                                    "select output fields; -F ? for help\n");
+        fprintf(stderr, ANSI_GREEN "   -J, --json        " ANSI_RESET
+                        "output in JSON format\n");
         fprintf(stderr, ANSI_GREEN "   -l                " ANSI_RESET
                                    "display UID numbers instead of login names\n");
         fprintf(stderr,
@@ -426,6 +428,10 @@ void usage(int exit_val, int field_help, int version) {
         fprintf(stderr, "                     " ANSI_MAGENTA
                         "optional suffix: m<fmt> for strftime(3) markers" ANSI_RESET "\n");
 #endif
+
+        fprintf(stderr, ANSI_GREEN "   --leak-detect[=I[,N]] " ANSI_RESET
+                        "detect FD leaks: poll every I secs " ANSI_MAGENTA
+                        "(default: 5,3)" ANSI_RESET "\n");
 
 #if defined(HASNCACHE)
         fprintf(stderr,

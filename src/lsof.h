@@ -870,6 +870,11 @@ struct lproc {
     struct lfile *file; /* open files of process */
 };
 extern struct lproc *CurrentLocalProc, *LocalProcTable;
+extern int OptJsonOutput;
+
+extern int LeakDetectMode;
+extern int LeakDetectInterval;
+extern int LeakDetectThreshold;
 
 extern char *Memory;
 extern int MountSupplementState;

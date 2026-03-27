@@ -371,3 +371,9 @@ znhash_t **ZoneArg = (znhash_t **)NULL;
 #endif
 
 int ZoneColWidth; /* ZONE column width */
+
+int OptJsonOutput = 0;
+
+int LeakDetectMode = 0;
+int LeakDetectInterval = 5;
+int LeakDetectThreshold = 3;

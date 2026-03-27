@@ -326,4 +326,13 @@ extern int readvnode(KA_T va, struct vnode *v);
 extern int snpf(char *str, int len, char *fmt, ...);
 #endif
 
+extern void json_begin(void);
+extern void json_end(void);
+extern void json_print_proc(struct lproc *proc, int is_first);
+
+extern void leak_detect_init(void);
+extern void leak_detect_update(void);
+extern void leak_detect_report(void);
+extern void leak_detect_cleanup(void);
+
 #endif
