@@ -432,6 +432,9 @@ void usage(int exit_val, int field_help, int version) {
         fprintf(stderr, ANSI_GREEN "   --leak-detect[=I[,N]] " ANSI_RESET
                         "detect FD leaks: poll every I secs " ANSI_MAGENTA
                         "(default: 5,3)" ANSI_RESET "\n");
+        fprintf(stderr, ANSI_GREEN "   --delta           " ANSI_RESET
+                        "highlight new/gone FDs in repeat mode " ANSI_MAGENTA
+                        "(implies +r 2)" ANSI_RESET "\n");
 
 #if defined(HASNCACHE)
         fprintf(stderr,

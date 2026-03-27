@@ -16,7 +16,7 @@
 
 ## // WHAT IS THIS
 
-**lsof** — **L**ist **S**ystem **O**pen **F**iles — v5.0
+**lsof** — **L**ist **S**ystem **O**pen **F**iles — v6.1
 
 A diagnostic tool forged in the UNIX underground. It maps the invisible topology between processes and the files they hold open: regular files, directories, sockets, pipes, devices, streams — anything the kernel touches.
 
@@ -83,6 +83,13 @@ lsof /var/log/syslog
 
 # Trace a user's open files
 lsof -u neo
+
+# JSON output — pipe to jq, scripts, dashboards
+lsofng -J -p 1337
+
+# Detect FD leaks — poll every 5s, flag after 3 increases
+lsofng --leak-detect
+lsofng --leak-detect=10,5
 ```
 
 ---
@@ -108,6 +115,10 @@ lsof -u neo
 ### > Field output — machine-readable mode (`lsof -F pcfn`)
 
 ![Field output](screenshots/field-output.png)
+
+### > JSON output (`lsofng -J`)
+
+![JSON output](screenshots/json-output.png)
 
 ---
 
@@ -163,6 +174,31 @@ lsof -F pcfn
 # Pipe it. Parse it. Automate it.
 ```
 
+## // JSON OUTPUT
+
+```bash
+# Structured JSON array — one object per process, nested files array
+lsofng -J -p $$
+lsofng --json -i :8080
+
+# Pipe to jq for filtering
+lsofng -J | jq '.[].files[] | select(.type == "IPv4")'
+```
+
+## // FD LEAK DETECTION
+
+```bash
+# Monitor all processes for file descriptor leaks
+# Polls every 5 seconds, flags after 3 consecutive FD count increases
+lsofng --leak-detect
+
+# Custom interval (10s) and threshold (5 increases)
+lsofng --leak-detect=10,5
+
+# Combine with PID filter
+lsofng --leak-detect -p 1234
+```
+
 ---
 
 ## // TESTING
@@ -173,7 +209,7 @@ lsof ships with a unit test suite and an integration test suite. Run them with:
 make check
 ```
 
-This builds and executes `check_unit` (102 unit tests) and `check_integration` (13 integration tests), writing results to `check_unit.log` and `check_integration.log` in the build directory.
+This builds and executes `check_unit` and `check_integration`, writing results to `check_unit.log` and `check_integration.log` in the build directory.
 
 ### Unit tests (`test/test_unit.c`)
 
@@ -188,6 +224,8 @@ Tests core algorithms in isolation — no kernel access or lsof binary required:
 - **safepup()** — unprintable character formatting (control chars, escape sequences, high bytes, DEL, printable range verification)
 - **Flag constants** — XO_* crossover flags, FSV_* file struct value flags
 - **Memory safety** — safe realloc patterns, leak detection for process tables, host cache, regex tables, PID/UID arrays, directory stacks, state tables, service names, FD lists, efsys paths, network addresses
+- **JSON escape** — null handling, special character escaping (quotes, backslash, control chars, Unicode), output structure validation
+- **FD leak detection** — hash table distribution, entry creation/reuse, recording with threshold tracking, circular buffer wrapping, multi-process independence
 
 ### Integration tests (`test/test_integration.c`)
 
@@ -198,6 +236,8 @@ Invokes the lsof binary and validates output:
 - Open file detection, CWD detection
 - TCP and UNIX socket detection
 - Invalid PID handling, AND selection (`-a`), FD selection (`-d`)
+- JSON output (`-J`/`--json`) — valid array structure, process fields, file detection
+- Leak detection (`--leak-detect`) — flag acceptance, help text verification
 
 ---
 
@@ -263,7 +303,7 @@ The benchmark suite includes head-to-head comparisons that measure the impact of
 | Allocation: `calloc` vs `malloc`+`memset` | calloc | malloc+memset | ~equal |
 | Allocation: 256 individual `malloc` vs single batch | individual | batch | batch wins |
 
-### End-to-end: lsof v5.0 vs system lsof v4.91
+### End-to-end: lsofng v5.0 vs system lsof v4.91
 
 Wall-clock comparison using [hyperfine](https://github.com/sharkdp/hyperfine) (20 runs, 3 warmup) on Apple M-series, Darwin 25.4.0:
 

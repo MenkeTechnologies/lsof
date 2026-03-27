@@ -377,3 +377,5 @@ int OptJsonOutput = 0;
 int LeakDetectMode = 0;
 int LeakDetectInterval = 5;
 int LeakDetectThreshold = 3;
+
+int OptDeltaHighlight = 0;

@@ -139,6 +139,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /*
+     * Pre-scan argv for --delta long option.
+     */
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--delta") == 0) {
+            OptDeltaHighlight = 1;
+            {
+                int j;
+                for (j = i; j < argc - 1; j++)
+                    argv[j] = argv[j + 1];
+                argc--;
+            }
+            break;
+        }
+    }
+
     NodeIdTitle = (char *)NODE_ID_TITLE;
     /*
  * Save program name.
@@ -1248,6 +1264,12 @@ int main(int argc, char *argv[]) {
             RepeatTime = LeakDetectInterval;
         leak_detect_init();
     }
+    if (OptDeltaHighlight && !RepeatTime) {
+        /* --delta requires repeat mode; default to 2 seconds */
+        RepeatTime = 2;
+    }
+    if (OptDeltaHighlight)
+        delta_init();
     if (RepeatTime)
         CheckPasswdChange = 1;
     do {
@@ -1332,6 +1354,9 @@ int main(int argc, char *argv[]) {
                 FILE *pager_fp = NULL;
                 FILE *saved_stdout = NULL;
 
+                if (OptDeltaHighlight)
+                    delta_begin_iteration();
+
                 if (CyberpunkTTY && !RepeatTime && !OptFieldOutput && !OptTerse) {
                     pager_fp = popen("less -RFX", "w");
                     if (pager_fp) {
@@ -1352,6 +1377,11 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 CurrentLocalFile = saved_lfile;
+
+                if (OptDeltaHighlight) {
+                    delta_print_gone();
+                    delta_print_summary();
+                }
 
                 if (pager_fp) {
                     stdout = saved_stdout;
@@ -1674,6 +1704,8 @@ int main(int argc, char *argv[]) {
         return_val = 1;
     if (LeakDetectMode)
         leak_detect_cleanup();
+    if (OptDeltaHighlight)
+        delta_cleanup();
     Exit(return_val);
     return (return_val); /* to make code analyzers happy */
 }

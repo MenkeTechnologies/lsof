@@ -41,6 +41,8 @@
 #include "test_unit_devlookup.h"
 #include "test_unit_regex.h"
 #include "test_unit_environ.h"
+#include "test_unit_json.h"
+#include "test_unit_leak.h"
 
 int main(int argc, char **argv) {
     (void)argc;
@@ -541,6 +543,47 @@ int main(int argc, char **argv) {
     RUN(pid_list_single_comma);
     RUN(pid_list_trailing_comma);
     RUN(pid_list_large);
+
+    /* --- json --- */
+    RUN(json_escape_plain_string);
+    RUN(json_escape_empty_string);
+    RUN(json_escape_null_becomes_null);
+    RUN(json_escape_double_quote);
+    RUN(json_escape_backslash);
+    RUN(json_escape_newline);
+    RUN(json_escape_tab);
+    RUN(json_escape_carriage_return);
+    RUN(json_escape_backspace);
+    RUN(json_escape_formfeed);
+    RUN(json_escape_control_char_unicode);
+    RUN(json_escape_mixed_specials);
+    RUN(json_escape_path_with_spaces);
+    RUN(json_escape_printable_ascii_passthrough);
+    RUN(json_escape_all_special_chars);
+    RUN(json_array_brackets);
+    RUN(json_object_structure);
+    RUN(json_file_fields);
+
+    /* --- leak detection --- */
+    RUN(leak_hash_range);
+    RUN(leak_hash_deterministic);
+    RUN(leak_hash_distribution);
+    RUN(leak_hash_adjacent_pids_differ);
+    RUN(leak_find_or_create_new);
+    RUN(leak_find_or_create_existing);
+    RUN(leak_find_or_create_pid_reuse_resets);
+    RUN(leak_find_or_create_different_pids);
+    RUN(leak_record_single_sample);
+    RUN(leak_record_increasing_triggers_flag);
+    RUN(leak_record_decrease_resets_count);
+    RUN(leak_record_equal_resets_count);
+    RUN(leak_record_threshold_2);
+    RUN(leak_record_just_below_threshold);
+    RUN(leak_history_circular_buffer);
+    RUN(leak_history_wraps_correctly);
+    RUN(leak_multiple_processes_independent);
+    RUN(leak_cleanup_frees_all);
+    RUN(leak_flag_stays_set_after_more_records);
 
     TEST_REPORT();
 }

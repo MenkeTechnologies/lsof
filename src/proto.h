@@ -335,4 +335,13 @@ extern void leak_detect_update(void);
 extern void leak_detect_report(void);
 extern void leak_detect_cleanup(void);
 
+extern void delta_init(void);
+extern void delta_begin_iteration(void);
+extern void delta_record_file(int pid, const char *fd, const char *name,
+                              const char *type, const char *cmd, uid_t uid);
+extern void delta_classify(int pid, const char *fd, const char *name);
+extern void delta_print_gone(void);
+extern void delta_print_summary(void);
+extern void delta_cleanup(void);
+
 #endif

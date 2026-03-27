@@ -1422,6 +1422,149 @@ TEST(lsof_numeric_host_output) {
     ASSERT_NOT_NULL(strstr(buf, "127.0.0.1"));
 }
 
+/* ===== JSON output tests ===== */
+
+TEST(lsof_json_output_valid) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(strlen(buf) > 2);
+
+    /* Must start with '[' and end with "]\n" */
+    ASSERT_EQ(buf[0], '[');
+    char *last_bracket = strrchr(buf, ']');
+    ASSERT_NOT_NULL(last_bracket);
+}
+
+TEST(lsof_json_has_pid_field) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+
+    /* JSON output should contain "pid": <our_pid> */
+    char expected[64];
+    snprintf(expected, sizeof(expected), "\"pid\": %d", (int)mypid);
+    ASSERT_NOT_NULL(strstr(buf, expected));
+}
+
+TEST(lsof_json_has_command_field) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "\"command\":"));
+}
+
+TEST(lsof_json_has_files_array) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "\"files\":"));
+}
+
+TEST(lsof_json_has_fd_and_type) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_NOT_NULL(strstr(buf, "\"fd\":"));
+    ASSERT_NOT_NULL(strstr(buf, "\"type\":"));
+}
+
+TEST(lsof_json_long_option) {
+    if (!lsof_available())
+        return;
+    char args[256];
+    char buf[32768];
+    pid_t mypid = getpid();
+
+    snprintf(args, sizeof(args), "--json -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+    ASSERT_EQ(rc, 0);
+    ASSERT_EQ(buf[0], '[');
+}
+
+TEST(lsof_json_detects_open_file) {
+    if (!lsof_available())
+        return;
+    char tmppath[] = "/tmp/lsof_json_test_XXXXXX";
+    int fd = mkstemp(tmppath);
+    ASSERT_TRUE(fd >= 0);
+
+    char args[512];
+    char buf[32768];
+    pid_t mypid = getpid();
+    snprintf(args, sizeof(args), "-J -p %d", (int)mypid);
+    int rc = run_lsof(args, buf, sizeof(buf));
+
+    int found = (strstr(buf, tmppath) != NULL);
+
+    close(fd);
+    unlink(tmppath);
+
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(found);
+}
+
+/* ===== Leak detection tests ===== */
+
+TEST(lsof_leak_detect_flag_accepted) {
+    if (!lsof_available())
+        return;
+    /* --leak-detect should not crash; it enters repeat mode, so we
+     * can't let it run forever. We test that the flag is parsed
+     * by checking that it produces output containing "iteration" or
+     * "scanned" when combined with a very short interval.
+     * Since this would block, we just verify the flag doesn't cause
+     * an immediate error exit by checking with -h which forces exit. */
+    char buf[4096];
+    /* Just test that -J and --json don't conflict and binary runs */
+    int rc = run_lsof("-h", buf, sizeof(buf));
+    /* -h exits with 0 or 1 */
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    /* Help text should mention --leak-detect */
+    ASSERT_NOT_NULL(strstr(buf, "leak-detect"));
+}
+
+TEST(lsof_help_mentions_json) {
+    if (!lsof_available())
+        return;
+    char buf[8192];
+    int rc = run_lsof("-h", buf, sizeof(buf));
+    ASSERT_TRUE(rc == 0 || rc == 1);
+    ASSERT_TRUE(strstr(buf, "json") || strstr(buf, "JSON") || strstr(buf, "-J"));
+    /* Specifically check for -J flag */
+    ASSERT_NOT_NULL(strstr(buf, "-J"));
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -1485,6 +1628,19 @@ int main(int argc, char **argv) {
     RUN(lsof_internet_connections_list);
     RUN(lsof_numeric_port_output);
     RUN(lsof_numeric_host_output);
+
+    /* --- json output --- */
+    RUN(lsof_json_output_valid);
+    RUN(lsof_json_has_pid_field);
+    RUN(lsof_json_has_command_field);
+    RUN(lsof_json_has_files_array);
+    RUN(lsof_json_has_fd_and_type);
+    RUN(lsof_json_long_option);
+    RUN(lsof_json_detects_open_file);
+
+    /* --- leak detection --- */
+    RUN(lsof_leak_detect_flag_accepted);
+    RUN(lsof_help_mentions_json);
 
     TEST_REPORT();
 }

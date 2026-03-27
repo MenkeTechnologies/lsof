@@ -876,6 +876,11 @@ extern int LeakDetectMode;
 extern int LeakDetectInterval;
 extern int LeakDetectThreshold;
 
+extern int OptDeltaHighlight;
+extern int DeltaFileStatus;
+#define DELTA_UNCHANGED 0
+#define DELTA_NEW       1
+
 extern char *Memory;
 extern int MountSupplementState;
 extern char *MountSupplementPath;

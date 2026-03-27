@@ -729,6 +729,18 @@ void print_file() {
         HeaderPrinted++;
     }
     /*
+     * Delta highlighting: record file and classify during print pass.
+     */
+    if (OptDeltaHighlight && PrintPass) {
+        delta_record_file(CurrentLocalProc->pid, CurrentLocalFile->fd,
+                          CurrentLocalFile->name, CurrentLocalFile->type,
+                          CurrentLocalProc->cmd, CurrentLocalProc->uid);
+        delta_classify(CurrentLocalProc->pid, CurrentLocalFile->fd,
+                       CurrentLocalFile->name);
+        if (DeltaFileStatus == DELTA_NEW)
+            printf("%s", CyberpunkTTY ? "\033[48;5;22m" : "");
+    }
+    /*
  * Size or print the command.
  */
     char_ptr = (CurrentLocalProc->cmd && *CurrentLocalProc->cmd != '\0') ? CurrentLocalProc->cmd
@@ -1104,6 +1116,8 @@ void print_file() {
         printname(1);
 #endif
         printf("%s", CP_RESET);
+        if (OptDeltaHighlight && DeltaFileStatus == DELTA_NEW)
+            printf("%s  [NEW]%s", CyberpunkTTY ? "\033[1;92m" : "", CP_RESET);
     }
 }
 
