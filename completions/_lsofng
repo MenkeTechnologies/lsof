@@ -1,0 +1,57 @@
+#compdef lsofng
+
+function __lsofng_users(){
+    _alternative 'users:users:_users'
+}
+
+function __lsofng_pids(){
+    _alternative 'processes:pids:_pids'
+}
+
+function __lsofng_files(){
+    _alternative 'files:files:_files'
+}
+
+function _lsofng(){
+
+    local arguments
+
+    arguments=(
+        '-a[AND selections]'
+        '-b[avoid kernel blocks]'
+        '-c[select by command name]:command name pattern: '
+        '+d[search directory]:directory:_directories'
+        '+D[search directory tree]:directory:_directories'
+        '-d[select by file descriptor]:fd list: '
+        '+f[enable path name arguments]'
+        '-f[disable path name arguments]'
+        '-F[select output fields]:field list: '
+        '-g[select by process group ID]:pgid list: '
+        '-i[select by internet address]:address: '
+        '-l[inhibit login name conversion]'
+        '+L[enable link count display]'
+        '-L[disable link count display]'
+        '-n[inhibit host name resolution]'
+        '-N[select NFS files]'
+        '-o[define file offset digits]:digits: '
+        '-O[avoid overhead of kernel blocks]'
+        '-p[select by PID]:pid:__lsofng_pids'
+        '-P[inhibit port number conversion]'
+        '+r[repeat mode with delay]:seconds: '
+        '-r[repeat mode with delay]:seconds: '
+        '-R[list parent PID]'
+        '-s[select by protocol and state]:protocol\:state: '
+        '-S[set timeout]:seconds: '
+        '-t[terse output]'
+        '-T[select TCP/TPI info]:level: '
+        '-u[select by user]:user:__lsofng_users'
+        '-U[select UNIX domain socket files]'
+        '-v[display version]'
+        '-V[indicate unsearched items]'
+        '-x[file/directory cross options]:cross options:(f l fl)'
+        '*:file:_files'
+    )
+    _arguments -S -s $arguments
+}
+
+_lsofng "$@"

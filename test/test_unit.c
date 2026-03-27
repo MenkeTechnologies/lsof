@@ -10,8 +10,13 @@
 #include "test.h"
 
 #include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <pwd.h>
+#include <signal.h>
 #include <stdarg.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -29,6 +34,13 @@
 #include "test_unit_path.h"
 #include "test_unit_devhash.h"
 #include "test_unit_portcache.h"
+#include "test_unit_uid.h"
+#include "test_unit_stat.h"
+#include "test_unit_readlink.h"
+#include "test_unit_strftime.h"
+#include "test_unit_devlookup.h"
+#include "test_unit_regex.h"
+#include "test_unit_environ.h"
 
 int main(int argc, char **argv) {
     (void)argc;
@@ -389,6 +401,146 @@ int main(int argc, char **argv) {
     RUN(port_table_all_common_ports);
     RUN(port_table_max_port);
     RUN(port_table_zero_port);
+
+    /* --- uid --- */
+    RUN(uid_lookup_root);
+    RUN(uid_lookup_current_user);
+    RUN(uid_lookup_nonexistent);
+    RUN(uid_cache_hit);
+    RUN(uid_hash_range);
+    RUN(uid_hash_deterministic);
+    RUN(uid_hash_distribution);
+    RUN(uid_cache_multiple_users);
+    RUN(uid_cache_collision_chain);
+
+    /* --- stat --- */
+    RUN(stat_regular_file);
+    RUN(stat_directory);
+    RUN(stat_dev_null);
+    RUN(stat_nonexistent);
+    RUN(stat_null_path);
+    RUN(stat_null_buf);
+    RUN(stat_file_size);
+    RUN(stat_empty_file);
+    RUN(stat_permissions);
+    RUN(stat_inode_nonzero);
+    RUN(stat_nlink);
+    RUN(stat_dev_zero);
+    RUN(lstat_symlink);
+    RUN(lstat_follows_regular);
+    RUN(stat_resolves_symlink);
+    RUN(lstat_null_path);
+    RUN(lstat_null_buf);
+    RUN(file_type_name_reg);
+    RUN(file_type_name_dir);
+    RUN(file_type_name_chr);
+    RUN(file_type_name_blk);
+    RUN(file_type_name_fifo);
+    RUN(file_type_name_lnk);
+    RUN(file_type_name_sock);
+    RUN(file_type_name_unknown);
+    RUN(stat_dev_major_minor);
+    RUN(stat_pipe_via_fifo);
+
+    /* --- readlink --- */
+    RUN(readlink_valid_symlink);
+    RUN(readlink_not_a_symlink);
+    RUN(readlink_nonexistent);
+    RUN(readlink_null_path);
+    RUN(readlink_chain);
+    RUN(readlink_dev_stdin);
+    RUN(readlink_relative_target);
+    RUN(readlink_self_link);
+
+    /* --- strftime --- */
+    RUN(strftime_basic);
+    RUN(strftime_full_date);
+    RUN(strftime_time_only);
+    RUN(strftime_null_buf);
+    RUN(strftime_zero_bufsz);
+    RUN(strftime_null_fmt);
+    RUN(strftime_small_buffer);
+    RUN(strftime_epoch);
+    RUN(strftime_day_of_week);
+    RUN(strftime_percent_literal);
+    RUN(strftime_mixed_text);
+    RUN(strftime_current_time_reasonable);
+
+    /* --- devlookup --- */
+    RUN(devlookup_found);
+    RUN(devlookup_not_found);
+    RUN(devlookup_first_element);
+    RUN(devlookup_last_element);
+    RUN(devlookup_single_element_found);
+    RUN(devlookup_single_element_miss);
+    RUN(devlookup_same_rdev_diff_inode);
+    RUN(devlookup_same_rdev_miss_inode);
+    RUN(devlookup_empty_table);
+    RUN(devlookup_large_values);
+    RUN(devlookup_zero_device);
+    RUN(devlookup_sort_then_search);
+    RUN(devlookup_sort_preserves_names);
+    RUN(devlookup_binary_search_boundary);
+
+    /* --- regex/matching --- */
+    RUN(cmd_match_exact);
+    RUN(cmd_match_prefix);
+    RUN(cmd_match_no_match);
+    RUN(cmd_match_empty_pattern);
+    RUN(cmd_match_empty_cmd);
+    RUN(cmd_match_both_empty);
+    RUN(cmd_match_null_pattern);
+    RUN(cmd_match_null_cmd);
+    RUN(cmd_match_longer_pattern);
+    RUN(cmd_match_case_sensitive);
+    RUN(cmd_match_with_numbers);
+    RUN(cmd_match_with_special_chars);
+    RUN(glob_match_exact);
+    RUN(glob_match_star_all);
+    RUN(glob_match_star_prefix);
+    RUN(glob_match_star_suffix);
+    RUN(glob_match_star_middle);
+    RUN(glob_match_question);
+    RUN(glob_match_no_match);
+    RUN(glob_match_star_empty);
+    RUN(glob_match_multiple_stars);
+    RUN(glob_match_question_no_match);
+    RUN(glob_match_empty_pattern);
+    RUN(glob_match_star_only);
+    RUN(glob_match_double_star);
+    RUN(glob_match_complex);
+    RUN(glob_match_complex_no_match);
+    RUN(charclass_single);
+    RUN(charclass_range);
+    RUN(charclass_range_boundary_low);
+    RUN(charclass_range_boundary_high);
+    RUN(charclass_range_miss);
+    RUN(charclass_digit_range);
+    RUN(charclass_digit_range_miss);
+    RUN(charclass_multiple_ranges);
+
+    /* --- environ --- */
+    RUN(env_path_exists);
+    RUN(env_home_exists);
+    RUN(env_nonexistent);
+    RUN(env_null_name);
+    RUN(env_user_exists);
+    RUN(pid_valid_positive);
+    RUN(pid_valid_zero);
+    RUN(pid_valid_negative);
+    RUN(pid_valid_current);
+    RUN(process_exists_self);
+    RUN(process_exists_parent);
+    RUN(process_exists_init);
+    RUN(process_exists_invalid);
+    RUN(pid_list_single);
+    RUN(pid_list_multiple);
+    RUN(pid_list_spaces);
+    RUN(pid_list_empty);
+    RUN(pid_list_null);
+    RUN(pid_list_single_comma);
+    RUN(pid_list_trailing_comma);
+    RUN(pid_list_large);
 
     TEST_REPORT();
 }
