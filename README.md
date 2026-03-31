@@ -10,6 +10,8 @@
     ░        ░        ░ ░
 ```
 
+> **DEPRECATED** — This project is no longer maintained. See [lsofrs](https://github.com/MenkeTechnologies/lsofrs), a modern Rust rewrite.
+
 > *"In the sprawl of running processes, every open file is a signal. Every socket, a wire in the dark."*
 
 ---
